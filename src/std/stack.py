@@ -15,10 +15,13 @@ class Stack:
 	def isEmpty(self):
 		return len(self.data) == 0
 
+	def last(self):
+		if self.isEmpty():
+			raise IndexError("Cannot get last element, stack is empty.")
+		return self.data[-1]
+
 	def pop(self):
-		if len(self.data) == 0:
-			raise IndexError("Stack is empty")
-		last = self.data[-1]
+		last      = self.last()
 		self.data = self.data[:-1]
 		return last
 

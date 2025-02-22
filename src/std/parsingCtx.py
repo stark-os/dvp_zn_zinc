@@ -7,6 +7,9 @@
 #system
 import os
 
+#stack
+from std.stack import *
+
 
 
 
@@ -16,9 +19,9 @@ import os
 
 #istr
 class istr:
-	def __init__(self, initStr):
-		self.index = -1
-		self.s     = initStr #[:] #<<<<<<<<<<<<<<<<<<< DO NOT USE A COPY HERE
+	def __init__(self, initStr, index=-1):
+		self.index = index
+		self.s     = initStr
 
 	def get(self):
 		return self.s[self.index]
@@ -35,6 +38,9 @@ class istr:
 	def inc(self):
 		return self.forward(1)
 
+	def copy(self):
+		return istr(self.s, self.index)
+
 
 
 #parsing ctx object
@@ -48,6 +54,9 @@ class ParsingCtx:
 		self.icontent   = istr(content)
 		self.detectedLF = False
 
+
+
+	#regular parsing
 	def get(self):
 		return self.icontent.get()
 
@@ -71,3 +80,63 @@ class ParsingCtx:
 		#regular behavior
 		self.columnNbr += 1
 		return False
+
+	def forward(self, step):
+		for s in range(step):
+			if self.inc():
+				return True
+		return False
+
+	def reset(self, newText=None):
+		self.lineNbr    = 1
+		self.columnNbr  = 1
+		self.detectedLF = False
+		if newText is not None:
+			self.icontent.s     = newText
+			self.icontent.index = -1
+
+
+
+	#includers
+	def getCorrespondingPeerIndex(self,
+		peers={
+			'(':')',
+			'[':']',
+			'{':'}',
+			'<':'>'
+		}
+	):
+		c = self.icontent.get()
+		if c in peers.keys():
+			target = peers[c]
+		else:
+			return -1 #current position is not at a valid openning target
+
+		#read rest of the code taking into account every oppening subzone
+		subZones = Stack()
+		icontent = self.icontent.copy() #use copy not to affect current context
+		while not icontent.inc():
+			c = icontent.get()
+
+			#oppenning subzone
+			if c in peers.keys():
+				subZones.push(c)
+
+			#closing subzone
+			elif c in peers.values():
+
+				#no subzone remaining => looking for the targetted peer
+				if subZones.isEmpty():
+					if c == target:
+						return icontent.index #found it
+					return -2                 #inconsistent includer peering
+
+				#closing latest subzone
+				elif c == peers[subZones.pop()]:
+					continue
+
+				#inconsistent includer peering
+				return -2
+
+		#peer not found
+		return -3

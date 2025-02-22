@@ -58,7 +58,7 @@ def p1_CommentsPItemText(zctx):
 
 	#ANALYSIS
 
-	#for each character in old code
+	#parsing byte per byte
 	while not zctx.inc():
 		c = zctx.get()
 
@@ -75,6 +75,12 @@ def p1_CommentsPItemText(zctx):
 
 		#in multi-line comment => skip all
 		if inMultiCom:
+
+			#must keep the same line number (for further pcpl steps)
+			if c == '\n':
+				output += '\n'
+
+			#end of comment
 			if (prevC == '*') and (c == '/'):
 				inMultiCom = False
 			prevC = c #store current character for next check
@@ -151,7 +157,6 @@ def p1_CommentsPItemText(zctx):
 
 		#in pcplItem => store its name / replace it if we have the whole name
 		if inPcplItem:
-			zctx.debug("INSIDE")
 
 			#end detected
 			if c == '>':
@@ -163,7 +168,6 @@ def p1_CommentsPItemText(zctx):
 
 				#case 2 : anything else
 				else:
-					print("GOT [" + pcplItem_name + "]")
 					piNotFound = True
 					for pi in zctx.pcpl.items.keys():
 
@@ -179,15 +183,12 @@ def p1_CommentsPItemText(zctx):
 				continue
 
 			#valid content => fill variable name
-			print("CHARSET[" + PCPL_VAR_NAME_CHARSET + "]")
 			if c in PCPL_VAR_NAME_CHARSET:
-				zctx.debug("IN CHARSET")
 				pcplItem_name += c
 				continue
 
 			#invalid content => cancel operation : that wasn't a Pcpl item
 			else:
-				zctx.debug("OUT CHARSET")
 				output += '<' + pcplItem_name
 				inPcplItem = False #do NOT use "continue", current character could be a beginning-of-string or anything
 
@@ -239,7 +240,6 @@ def p1_CommentsPItemText(zctx):
 		if c == '<':
 			pcplItem_name = ""
 			inPcplItem    = True
-			zctx.debug("FOUND ONE")
 			continue
 
 		#nothing to detect => regular code
@@ -263,5 +263,5 @@ def p1_CommentsPItemText(zctx):
 	if zctx.debugMode:
 		writeFile(zctx.ctx.filename + ".p1.z", output)
 
-	#output will be used as input in next steps
-	return output
+	#output now replaces previous file content : original => p1 version stored in memory (for further steps)
+	zctx.ctx.reset(newText=output)

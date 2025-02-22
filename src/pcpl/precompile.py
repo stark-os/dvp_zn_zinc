@@ -5,7 +5,8 @@
 # -------- IMPORTATIONS --------
 
 #precompilation steps
-from pcpl.p1_CommentsPItemText import *
+from pcpl.p1_CommentsPItemText  import *
+from pcpl.p2_applyConfiguration import *
 
 
 
@@ -16,4 +17,5 @@ from pcpl.p1_CommentsPItemText import *
 
 #compilation
 def precompile(zctx):
-	p1Text = p1_CommentsPItemText(zctx)
+	p1_CommentsPItemText(zctx)
+	p2_applyConfiguration(zctx)
