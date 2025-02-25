@@ -46,13 +46,22 @@ class istr:
 #parsing ctx object
 class ParsingCtx:
 	def __init__(self, filepath, content):
-		self.filepath   = filepath
-		self.dirname    = os.path.dirname(filepath)
-		self.filename   = os.path.basename(filepath)
+		self.filepath   = os.path.realpath(filepath)
+		self.dirname    = os.path.dirname(self.filepath)
+		self.filename   = os.path.basename(self.filepath)
 		self.lineNbr    = 1
-		self.columnNbr  = 1
+		self.columnNbr  = 0
 		self.icontent   = istr(content)
 		self.detectedLF = False
+
+	#copy
+	def copy(self):
+		newCtx = ParsingCtx(self.filepath[:], self.icontent.s[:])
+		newCtx.icontent.index = self.icontent.index
+		newCtx.lineNbr        = self.lineNbr
+		newCtx.columnNbr      = self.columnNbr
+		newCtx.detectedLF     = self.detectedLF
+		return newCtx
 
 
 
@@ -89,7 +98,7 @@ class ParsingCtx:
 
 	def reset(self, newText=None):
 		self.lineNbr    = 1
-		self.columnNbr  = 1
+		self.columnNbr  = 0
 		self.detectedLF = False
 		if newText is not None:
 			self.icontent.s     = newText
@@ -106,7 +115,10 @@ class ParsingCtx:
 			'<':'>'
 		}
 	):
-		c = self.icontent.get()
+
+		#use a local copy of context to allow precise indication in errors without affecting the original
+		localCtx = self.copy()
+		c = localCtx.get()
 		if c in peers.keys():
 			target = peers[c]
 		else:
@@ -114,9 +126,8 @@ class ParsingCtx:
 
 		#read rest of the code taking into account every oppening subzone
 		subZones = Stack()
-		icontent = self.icontent.copy() #use copy not to affect current context
-		while not icontent.inc():
-			c = icontent.get()
+		while not localCtx.inc():
+			c = localCtx.get()
 
 			#oppenning subzone
 			if c in peers.keys():
@@ -128,14 +139,19 @@ class ParsingCtx:
 				#no subzone remaining => looking for the targetted peer
 				if subZones.isEmpty():
 					if c == target:
-						return icontent.index #found it
-					return -2                 #inconsistent includer peering
+						return localCtx.icontent.index #found it
+
+					#inconsistency 1: closing too soon
+					print("getCorrespondingPeerIndex: Closing pair with '" + c + "' but expected '" + target + "' (at " + localCtx.filepath + ":" + str(localCtx.lineNbr) + ":" + str(localCtx.columnNbr) + ").")
+					return -2 #inconsistent includer peering
 
 				#closing latest subzone
-				elif c == peers[subZones.pop()]:
+				subtarget = peers[subZones.pop()]
+				if c == subtarget:
 					continue
 
-				#inconsistent includer peering
+				#inconsistency 2: unexpected peer
+				print("getCorrespondingPeerIndex: Closing pair with '" + c + "' but expected '" + subtarget + "' (at " + localCtx.filepath + ":" + str(localCtx.lineNbr) + ":" + str(localCtx.columnNbr) + ").")
 				return -2
 
 		#peer not found

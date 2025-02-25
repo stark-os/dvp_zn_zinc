@@ -19,5 +19,5 @@ def chr_hex(c):
 	return hex(ord(c))[2:]
 
 #printable
-def isPrintable():
-	return c in strings.printable[:-5]
+def chr_isPrintable(c):
+	return c in string.printable[:-5]

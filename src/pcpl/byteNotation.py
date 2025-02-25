@@ -7,6 +7,9 @@
 #std
 from std.character import *
 
+#internal
+from zctx import *
+
 
 
 
@@ -37,7 +40,7 @@ BN_VERTICAL_TAB    = "0b"
 
 
 #get byte notation (=> remove any text character from code => easier precompilation/compilation)
-def BN_fromChr(zctx, c, escaping=False):
+def BN_fromChr(zCtx, c, escaping=False):
 
 	#special cases
 	if escaping:
@@ -72,10 +75,10 @@ def BN_fromChr(zctx, c, escaping=False):
 
 		#undefined escape sequence
 		else:
-			if chr__isPrintable(c):
-				zctx.error("Undefined escape sequence for character '" + c + "' (" + BN_PREFIX + chr_hex(c) + ").")
+			if chr_isPrintable(c):
+				zCtx.error("Undefined escape sequence for character '" + c + "' (" + BN_PREFIX + chr_hex(c) + ").")
 			else:
-				zctx.error("Undefined escape sequence for unprintable character : " + BN_PREFIX + chr_hex() + ".")
+				zCtx.error("Undefined escape sequence for unprintable character : " + BN_PREFIX + chr_hex() + ".")
 
 	#regular case
 	else:

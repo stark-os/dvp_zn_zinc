@@ -56,6 +56,9 @@ SCOPE_STATEMENT = 2
 def main():
 
 	#args
+	if len(sys.argv) < 3:
+		print("zcc: Missing arguments (filename, LLI_requirement_file).")
+		exit(1)
 	filepath         = sys.argv[1]
 	LLI_requirements = config.read(sys.argv[2])
 
@@ -67,7 +70,7 @@ def main():
 	#z code context
 	config.COMMENT_CHARACTER         = '%'
 	config.ADDITIONAL_SPACES_ALLOWED = False
-	zctx = ZCtx(
+	zCtx = zctx(
 		filepath,
 		LLI_requirements,
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
@@ -77,12 +80,12 @@ def main():
 	)
 
 	#precompile
-	precompile(zctx)
-	writeFile(output_PCPL, dreamlands.toText(zctx.pcpl.dataResult))
+	precompile(zCtx)
+	writeFile(output_PCPL, dreamlands.toText(zCtx.pcpl.dataResult))
 
 	#compile
-	compile(zctx)
-	writeFile(output_CPL, zctx.cpl.textResult)
+	compile(zCtx)
+	writeFile(output_CPL, zCtx.cpl.textResult)
 
 #run main
 main()

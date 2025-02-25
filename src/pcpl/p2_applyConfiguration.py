@@ -6,6 +6,7 @@
 
 #std
 from std.string import *
+from std.path   import *
 
 #internal
 from zctx import *
@@ -18,10 +19,8 @@ from zctx import *
 # -------- EXECUTION --------
 
 #apply precompiler configurations (environment-related modifications in code)
-def p2_applyConfiguration(zctx):
+def p2_applyConfiguration(zCtx):
 	output = ""
-	if zctx.inc():
-		return output
 
 	#parsing states
 	OUTSIDE       = 0
@@ -39,12 +38,12 @@ def p2_applyConfiguration(zctx):
 	zoneLineFeeds = ""
 
 	#all configs
-	CFGKeys = zctx.pcpl.configs.keys()
+	CFGKeys = zCtx.pcpl.configs.keys()
 
 	#parsing byte per byte
-	currentText  = zctx.ctx.icontent.s
-	while not zctx.inc():
-		c = zctx.get()
+	currentText  = zCtx.ctx.icontent.s
+	while not zCtx.inc():
+		c = zCtx.get()
 
 
 
@@ -64,7 +63,7 @@ def p2_applyConfiguration(zctx):
 
 				#unknown CFG name
 				if CFGName not in CFGKeys:
-					zctx.error("Unknown precompiler configuration \"" + CFGName + "\".")
+					zCtx.error("Unknown precompiler configuration \"" + CFGName + "\".")
 				parsingState = BEFORE_ZONE
 
 			#storing config name
@@ -80,7 +79,7 @@ def p2_applyConfiguration(zctx):
 
 				#error case
 				if c != '{':
-					zctx.error("Invalid zone delimiter for precompiler configuration \"" + CFGName + "\" (must start with '{').")
+					zCtx.error("Invalid zone delimiter for precompiler configuration \"" + CFGName + "\" (must start with '{').")
 
 				#as we said, no more blank found => turn into "in zone" mode
 				zoneContent   = ""
@@ -88,13 +87,13 @@ def p2_applyConfiguration(zctx):
 				parsingState = IN_ZONE
 
 				#get index of its peer (end of zone). Here, we don't care about other includers,
-				peerIndex = zctx.ctx.getCorrespondingPeerIndex(peers={'{':'}'}) #only braces are taken into account
+				peerIndex = zCtx.ctx.getCorrespondingPeerIndex(peers={'{':'}'}) #only braces are taken into account
 
 				#error cases: -1 must never occur (c == '{'), neither -2 (only 1 includer type taken into account => cannot have inconsistency)
 				if peerIndex == -3:
-					zctx.error("Missing end delimiter for precompiler configuration \"" + CFGName + "\" (corresponding '}' expected).")
+					zCtx.error("Missing end delimiter for precompiler configuration \"" + CFGName + "\" (corresponding '}' expected).")
 				if peerIndex < 0:
-					zctx.internal("Negative peerIndex found in PCPL CFG parsing.")
+					zCtx.internal("Negative peerIndex found in PCPL CFG parsing.")
 				continue
 			continue
 
@@ -102,8 +101,8 @@ def p2_applyConfiguration(zctx):
 
 		#4) inside zone to consider
 		if parsingState == IN_ZONE:
-			if zctx.ctx.icontent.index == peerIndex:
-				if zctx.pcpl.configs[CFGName] != hasNegation: #apply configuration
+			if zCtx.ctx.icontent.index == peerIndex:
+				if zCtx.pcpl.configs[CFGName] != hasNegation: #apply configuration
 					output += zoneContent
 				else:
 					output += zoneLineFeeds
@@ -119,28 +118,28 @@ def p2_applyConfiguration(zctx):
 
 		#5) outside anything
 		if parsingState == OUTSIDE:
-			currentIndex = zctx.ctx.icontent.index
+			currentIndex = zCtx.ctx.icontent.index
 
 			# #CFG field detection
 			if str_subEqual(currentText, "#CFG", 4, first_from=currentIndex):
 				parsingState = BEFORE_NAME
 				hasNegation  = False
-				zctx.ctx.forward(3) #jump after expression
+				zCtx.ctx.forward(3) #jump after expression
 				continue
 
 			# #!CFG field detection
 			if str_subEqual(currentText, "#!CFG", 5, first_from=currentIndex):
 				parsingState = BEFORE_NAME
 				hasNegation  = True
-				zctx.ctx.forward(4) #jump after expression
+				zCtx.ctx.forward(4) #jump after expression
 				continue
 
 			#regular code
 			output += c
 
 	#debug
-	if zctx.debugMode:
-		writeFile(zctx.ctx.filename + ".p2.z", output)
+	if zCtx.debugMode:
+		writeFile(path_name(zCtx.ctx.filename) + ".p2.z", output)
 
 	#output now replaces previous ctx content : p1 version => p2 version stored in memory (for further steps)
-	zctx.ctx.reset(newText=output)
+	zCtx.ctx.reset(newText=output)

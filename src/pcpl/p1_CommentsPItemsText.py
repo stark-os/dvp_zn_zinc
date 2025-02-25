@@ -4,6 +4,9 @@
 
 # -------- IMPORTATIONS --------
 
+#std
+from std.path import *
+
 #internal
 from zctx              import *
 from pcpl.byteNotation import *
@@ -16,9 +19,9 @@ from pcpl.byteNotation import *
 # -------- EXECUTION --------
 
 #module
-def p1_CommentsPItemText(zctx):
+def p1_CommentsPItemsText(zCtx):
 	output = ""
-	if zctx.inc():
+	if zCtx.inc():
 		return output
 
 
@@ -46,21 +49,23 @@ def p1_CommentsPItemText(zctx):
 	escaping = False
 
 	#first character
-	c = zctx.get()
+	c = zCtx.get()
 	if c == '\'':
 		inChr = True
-	if c == '"':
+	elif c == '"':
 		inStr = True
-	if c == '/':
+	elif c == '/':
 		inPotentialComment = True
+	else:
+		output += c
 
 
 
 	#ANALYSIS
 
 	#parsing byte per byte
-	while not zctx.inc():
-		c = zctx.get()
+	while not zCtx.inc():
+		c = zCtx.get()
 
 
 
@@ -99,7 +104,7 @@ def p1_CommentsPItemText(zctx):
 
 					#too early : no character has been set yet
 					if not isChrSet:
-						zctx.error("Character definition requires at leat 1 element (empty character found).")
+						zCtx.error("Character definition requires at leat 1 element (empty character found).")
 					inChr = False
 					continue
 
@@ -108,12 +113,16 @@ def p1_CommentsPItemText(zctx):
 					escaping = True
 					continue
 
+			#turn back into regular mode
+			else:
+				escaping = False
+
 			#escaping or not => set character
-			output += BN_fromChr(zctx, c, escaping=escaping)
+			output += BN_fromChr(zCtx, c, escaping=escaping)
 
 			#check character length
 			if isChrSet:
-				zctx.error("Character definition allows only 1 element (at least 2 found).")
+				zCtx.error("Character definition allows only 1 element (at least 2 found).")
 			isChrSet = True
 			continue
 
@@ -146,8 +155,12 @@ def p1_CommentsPItemText(zctx):
 					escaping = True
 					continue
 
+			#turn back to regular character mode
+			else:
+				escaping = False
+
 			#escaping or not => set character
-			currentString_data   += BN_fromChr(zctx, c, escaping=escaping)
+			currentString_data   += BN_fromChr(zCtx, c, escaping=escaping)
 			currentString_length += 1
 			continue
 
@@ -169,17 +182,17 @@ def p1_CommentsPItemText(zctx):
 				#case 2 : anything else
 				else:
 					piNotFound = True
-					for pi in zctx.pcpl.items.keys():
+					for pi in zCtx.pcpl.items.keys():
 
 						#found a definition => replace it
 						if pcplItem_name == pi:
-							output     += zctx.pcpl.items[pi]
+							output     += zCtx.pcpl.items[pi]
 							piNotFound  = False
 							break
 
 					#item not found => WARNING (text will be kept AS IS)
 					if piNotFound:
-						zctx.warning("Precompiler item \"" + pcplItem_name + "\" not found (in \"" + str(zctx.pcpl.items) + "\").")
+						zCtx.warning("Precompiler item \"" + pcplItem_name + "\" not found (in \"" + str(zCtx.pcpl.items) + "\").")
 				continue
 
 			#valid content => fill variable name
@@ -251,17 +264,17 @@ def p1_CommentsPItemText(zctx):
 
 	#incomplete definition
 	if inMultiCom:
-		zctx.error("Missing ending delimiter for multi-line comment (end of file reached too early).")
+		zCtx.error("Missing ending delimiter for multi-line comment (end of file reached too early).")
 	if inChr:
-		zctx.error("Missing ending delimiter for character (end of file reached too early).")
+		zCtx.error("Missing ending delimiter for character (end of file reached too early).")
 	if inStr:
-		zctx.error("Missing ending delimiter for string (end of file reached too early).")
+		zCtx.error("Missing ending delimiter for string (end of file reached too early).")
 	if inPcplItem:
-		zctx.error("Missing ending delimiter for precompilation variable (end of file reached too early).")
+		zCtx.error("Missing ending delimiter for precompilation variable (end of file reached too early).")
 
 	#debug
-	if zctx.debugMode:
-		writeFile(zctx.ctx.filename + ".p1.z", output)
+	if zCtx.debugMode:
+		writeFile(path_name(zCtx.ctx.filename) + ".p1.z", output)
 
 	#output now replaces previous file content : original => p1 version stored in memory (for further steps)
-	zctx.ctx.reset(newText=output)
+	zCtx.ctx.reset(newText=output)
