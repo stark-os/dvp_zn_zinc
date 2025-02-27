@@ -45,8 +45,11 @@ class istr:
 
 #parsing ctx object
 class ParsingCtx:
-	def __init__(self, filepath, content):
-		self.filepath   = os.path.realpath(filepath)
+	def __init__(self, filepath, content, resolveSymlinks=False):
+		if resolveSymlinks:
+			self.filepath = os.path.realpath(filepath)
+		else:
+			self.filepath = os.path.abspath(filepath)
 		self.dirname    = os.path.dirname(self.filepath)
 		self.filename   = os.path.basename(self.filepath)
 		self.lineNbr    = 1
@@ -62,6 +65,10 @@ class ParsingCtx:
 		newCtx.columnNbr      = self.columnNbr
 		newCtx.detectedLF     = self.detectedLF
 		return newCtx
+
+	#print: temporarily made like this
+	def toStr(self):
+		return self.filepath + ":" + str(self.lineNbr) + ":" + str(self.columnNbr)
 
 
 
@@ -142,7 +149,7 @@ class ParsingCtx:
 						return localCtx.icontent.index #found it
 
 					#inconsistency 1: closing too soon
-					print("getCorrespondingPeerIndex: Closing pair with '" + c + "' but expected '" + target + "' (at " + localCtx.filepath + ":" + str(localCtx.lineNbr) + ":" + str(localCtx.columnNbr) + ").")
+					print("getCorrespondingPeerIndex: Closing pair with '" + c + "' but expected '" + target + "' (at " + localCtx.toStr() + ").")
 					return -2 #inconsistent includer peering
 
 				#closing latest subzone
@@ -151,7 +158,7 @@ class ParsingCtx:
 					continue
 
 				#inconsistency 2: unexpected peer
-				print("getCorrespondingPeerIndex: Closing pair with '" + c + "' but expected '" + subtarget + "' (at " + localCtx.filepath + ":" + str(localCtx.lineNbr) + ":" + str(localCtx.columnNbr) + ").")
+				print("getCorrespondingPeerIndex: Closing pair with '" + c + "' but expected '" + subtarget + "' (at " + localCtx.toStr() + ").")
 				return -2
 
 		#peer not found

@@ -52,7 +52,7 @@ def p2_applyConfiguration(zCtx):
 			if c not in BLANKS: #no more blank found => turn into "in name" mode
 				CFGName      = ""
 				parsingState = IN_NAME
-			else: #do not forward if still in blanks
+			else: #blanks => skip them
  				continue
 
 
@@ -94,7 +94,6 @@ def p2_applyConfiguration(zCtx):
 					zCtx.error("Missing end delimiter for precompiler configuration \"" + CFGName + "\" (corresponding '}' expected).")
 				if peerIndex < 0:
 					zCtx.internal("Negative peerIndex found in PCPL CFG parsing.")
-				continue
 			continue
 
 
@@ -107,6 +106,7 @@ def p2_applyConfiguration(zCtx):
 				else:
 					output += zoneLineFeeds
 				parsingState = OUTSIDE
+				continue
 
 			#just storing content elsewhere
 			zoneContent += c
@@ -139,7 +139,7 @@ def p2_applyConfiguration(zCtx):
 
 	#debug
 	if zCtx.debugMode:
-		writeFile(path_name(zCtx.ctx.filename) + ".p2.z", output)
+		writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p2.z", output)
 
 	#output now replaces previous ctx content : p1 version => p2 version stored in memory (for further steps)
 	zCtx.ctx.reset(newText=output)

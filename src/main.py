@@ -63,9 +63,7 @@ def main():
 	LLI_requirements = config.read(sys.argv[2])
 
 	#prepare output filename
-	output_name = path_name(os.path.basename(filepath))
-	output_PCPL = output_name + ".pcpl.nc"
-	output_CPL  = output_name + ".cpl.nc"
+	outputFilename = path_name(os.path.basename(filepath)) + ".nc"
 
 	#z code context
 	config.COMMENT_CHARACTER         = '%'
@@ -78,14 +76,15 @@ def main():
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
 		debugMode = DEBUG_MODE
 	)
+	if DEBUG_MODE and not os.path.isdir("debug"):
+		os.mkdir("debug")
 
 	#precompile
 	precompile(zCtx)
-	writeFile(output_PCPL, dreamlands.toText(zCtx.pcpl.dataResult))
 
 	#compile
 	compile(zCtx)
-	writeFile(output_CPL, zCtx.cpl.textResult)
+	writeFile(outputFilename, zCtx.cpl.textResult)
 
 #run main
 main()

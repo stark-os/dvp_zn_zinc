@@ -42,7 +42,6 @@ class pzci:
 #precompiler data
 class pcplDat:
 	def __init__(self, configs, items):
-		self.dataResult = {}
 		self.items      = items
 		self.configs    = configs
 		self.ZCIs       = [] #lst[pzci]
@@ -70,10 +69,18 @@ INCLUDERS = { '(':')', '[':']', '{':'}' }
 
 # -------- COMPILATION --------
 
+#program structure
+class program:
+	def __init__(self):
+		self.globalData = []
+		self.types      = []
+		self.functions  = []
+
 #compiler data
 class cplDat:
 	def __init__(self, options):
 		self.options    = options
+		self.dataResult = program()
 		self.textResult = ""
 
 
@@ -96,8 +103,9 @@ class zctx:
 		#every imported context & the current one
 		initialCtx        = ParsingCtx(filepath, readFile(filepath))
 		self.ctx          = initialCtx
-		self.importedCtxs = Stack()
-		self.importedCtxs.push(initialCtx)
+		self.imported     = Stack() #history of every filename imported
+		self.subCtxs      = Stack() #subcontexts currently in use
+		self.subCtxs.push(initialCtx)
 
 		#syntax
 		self.scope    = Stack()
@@ -105,7 +113,7 @@ class zctx:
 
 		#data
 		self.zcs  = []
-		self.pcpl = pcplDat(pcpl_cfg, pcpl_itm)
+		self.pcpl = pcplDat_new(pcpl_cfg, pcpl_itm)
 		self.cpl  = cplDat(cpl_opt)
 
 
@@ -125,24 +133,24 @@ class zctx:
 	#output
 	def debug(self, msg):
 		print("[ DEBUG ] " + msg)
-		for ctx in self.importedCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
-			print("    At " + ctx.filepath + ':' + str(ctx.lineNbr) + ':' + str(ctx.columnNbr))
+		for ctx in self.subCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
+			print("    At " + ctx.toStr())
 
 	def warning(self, msg):
 		print("[WARNING] " + msg)
-		for ctx in self.importedCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
-			print("    At " + ctx.filepath + ':' + str(ctx.lineNbr) + ':' + str(ctx.columnNbr))
+		for ctx in self.subCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
+			print("    At " + ctx.toStr())
 
 	def error(self, msg):
 		print("[ ERROR ] " + msg)
-		for ctx in self.importedCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
-			print("    At " + ctx.filepath + ':' + str(ctx.lineNbr) + ':' + str(ctx.columnNbr))
+		for ctx in self.subCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
+			print("    At " + ctx.toStr())
 		exit(1)
 
 	def internal(self, msg):
 		print("[INT ERR] " + msg)
-		for ctx in self.importedCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
-			print("    At " + ctx.filepath + ':' + str(ctx.lineNbr) + ':' + str(ctx.columnNbr))
+		for ctx in self.subCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
+			print("    At " + ctx.toStr())
 		exit(2)
 
 
@@ -165,29 +173,31 @@ class zctx:
 			self.error("Element " + filepath + " is a directory (expected file).")
 
 		#check already openned
-		for c in self.importedCtxs.data:
-			if newCtx.filepath == c.filepath:
-				print("FILE " + newCtx.filepath + " already processed")
+		realNewPath = os.path.realpath(newCtx.filepath)
+		for c in self.imported.data:
+			if realNewPath == c:
 				return False
 
 		#not already openned => add it to importations
 		self.ctx = newCtx
-		self.importedCtxs.push(newCtx)
+		self.subCtxs.push(newCtx)
+		self.imported.push(realNewPath)
 		return True
 
 	def closeCurrentCtx(self): #return True if no more context remains
-		self.importedCtxs.pop()
-		if self.importedCtxs.isEmpty():
+		self.subCtxs.pop()
+		if self.subCtxs.isEmpty():
 			return True
-		self.ctx = self.importedCtxs.last()
+		self.ctx = self.subCtxs.last()
 		return False
 
 
 
 	#precompilation
-	def appendZCI(self, ZCIText, ZCIBeginningColumnNbr):
+	def appendZCI(self, ZCIText, zci_columnNbr, zci_lineNbr):
 		ZCICtx           = self.ctx.copy()
-		ZCICtx.columnNbr = ZCIBeginningColumnNbr
+		ZCICtx.columnNbr = zci_columnNbr
+		ZCICtx.lineNbr   = zci_lineNbr
 		self.pcpl.ZCIs.append(
 			pzci(
 				ZCICtx,

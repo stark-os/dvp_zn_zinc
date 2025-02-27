@@ -274,7 +274,7 @@ def p1_CommentsPItemsText(zCtx):
 
 	#debug
 	if zCtx.debugMode:
-		writeFile(path_name(zCtx.ctx.filename) + ".p1.z", output)
+		writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p1.z", output)
 
 	#output now replaces previous file content : original => p1 version stored in memory (for further steps)
 	zCtx.ctx.reset(newText=output)
