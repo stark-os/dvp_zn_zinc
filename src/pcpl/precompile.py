@@ -20,4 +20,4 @@ from pcpl.p3_splitZCIsAndImport import *
 def precompile(zCtx):
 	p1_CommentsPItemsText(zCtx)
 	p2_applyConfiguration(zCtx)
-	p3_splitZCIsAndImport(zCtx)
+	return p3_splitZCIsAndImport(zCtx)

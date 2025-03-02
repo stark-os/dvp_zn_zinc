@@ -33,18 +33,12 @@ VAR_NAME_CHARSET = PCPL_VAR_NAME_CHARSET
 
 # -------- PRECOMPILATION --------
 
-#precompiled ZCI
-class pzci:
-	def __init__(self, ctx, text):
-		self.ctx  = ctx
-		self.text = text
-
 #precompiler data
 class pcplDat:
 	def __init__(self, configs, items):
 		self.items      = items
 		self.configs    = configs
-		self.ZCIs       = [] #lst[pzci]
+		self.ZCIs       = None #lst[^Parsing.ctx]
 
 #format configs
 def pcplDat_new(configs, items):
@@ -190,17 +184,3 @@ class zctx:
 			return True
 		self.ctx = self.subCtxs.last()
 		return False
-
-
-
-	#precompilation
-	def appendZCI(self, ZCIText, zci_columnNbr, zci_lineNbr):
-		ZCICtx           = self.ctx.copy()
-		ZCICtx.columnNbr = zci_columnNbr
-		ZCICtx.lineNbr   = zci_lineNbr
-		self.pcpl.ZCIs.append(
-			pzci(
-				ZCICtx,
-				ZCIText
-			)
-		)

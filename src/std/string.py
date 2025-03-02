@@ -23,3 +23,18 @@ def str_subEqual( #that is tab_subequal in stdz actually
 		if second[second_from + c] != t[first_from + c]:
 			return False
 	return True
+
+def str_stripEnd(t, charset=" \t"):
+	len_t        = len(t)
+	result       = ""
+	currentIndex = len_t
+	stripping    = True
+	for i in range(len_t):
+		currentIndex -= 1
+		currentChr    = t[currentIndex]
+		if stripping:
+			if currentChr in charset:
+				continue
+			stripping = False
+		result = currentChr + result
+	return result

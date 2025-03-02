@@ -80,7 +80,7 @@ def main():
 		os.mkdir("debug")
 
 	#precompile
-	precompile(zCtx)
+	zCtx.pcpl.ZCIs = precompile(zCtx)
 
 	#compile
 	compile(zCtx)

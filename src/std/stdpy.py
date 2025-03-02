@@ -5,5 +5,5 @@
 # -------- TOOLS --------
 
 #exact range
-def exactRange(start, stop):
-	return range(start, stop+1)
+def exactRange(start, stop, step=1):
+	return range(start, stop+1, step)
