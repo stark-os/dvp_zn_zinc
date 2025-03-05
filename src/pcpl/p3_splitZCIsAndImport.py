@@ -23,69 +23,67 @@ from pcpl.p3_splitZCIsAndImport import *
 
 # -------- TOOLS --------
 
-#prepare a raw parsed ZCI text zone into just the minimum required (useless blanks + expand imports if needed)
+#prepare a raw parsed ZCI into just the minimum required (useless blanks + expand imports if needed)
 #result can be several ZCIs so we directly add them to the result list given as parameter
-def stripAndAppendZCI(zCtx, ZCICtx, result, allowImportsExpansion=False):
+def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False):
 
 	#get REAL beginning of ZCI (prepare for stripping BEGINNING blanks)
 	beginningIndex = 0
 	lineFeedFound  = False
-	for c in ZCICtx.icontent.s:
+	for c in ZCI.ctx.icontent.s:
 
 		#as long as we have blanks, shift real beginning of ZCI
 		if c in BLANKS:
 			beginningIndex += 1
 			if lineFeedFound: #if at least 1 line feed has been found, we MUST count columnNbr
-				zci_columnNbr += 1
+				ZCI.ctx.columnNbr += 1
 
 		#line feed found => ZCI does not start at current lineNbr, it may be next line (or further)
 		elif c == '\n':
 			lineFeedFound     = True
 			beginningIndex   += 1
-			ZCICtx.lineNbr   += 1 #lineNbr/columnNbr were not totally accurate
-			ZCICtx.columnNbr  = 1 # => we must count them again starting from where we were
+			ZCI.ctx.lineNbr  += 1 #lineNbr/columnNbr were not totally accurate
+			ZCI.ctx.columnNbr = 1 # => we must count them again starting from where we were
 
 		#any other character => beginning of ZCI => stop stripping here
 		else:
 			break
 
 	#strip BEGINNING blanks
-	ZCICtx.icontent.s = ZCICtx.icontent.s[beginningIndex:]
+	ZCI.ctx.icontent.s = ZCI.ctx.icontent.s[beginningIndex:]
 
 	#strip END blanks
-	ZCICtx.icontent.s = str_stripEnd(ZCICtx.icontent.s, BLANKS)
+	ZCI.ctx.icontent.s = str_stripEnd(ZCI.ctx.icontent.s, BLANKS)
+	ZCIText = ZCI.ctx.icontent.s
+
+	#reset ZCI ctx parsing (not lineNbr/columnNbr) for blank/name parsing
+	ZCI.ctx.icontent.index = -1
+	ZCI.ctx.detectedLF     = False
 
 	#empty ZCI => ignore it
-	if len(ZCICtx.icontent.s) == 0:
+	if len(ZCIText) == 0:
 		return
 
 	#not long enough to be an import => regular ZCI
-	if len(ZCICtx.icontent.s) < 5:
-		result.append(ZCICtx)
+	if len(ZCIText) < 5:
+		result.append(ZCI)
 
 	#import ZCI : process it NOW
-	s = ZCICtx.icontent.s
-	if s.startswith("imp") and s[3] in BLANKS:
+	if ZCIText.startswith("imp") and ZCIText[3] in BLANKS:
+		ZCI.ctx.forward(4)
+
+		#importations not allowed
 		if not allowImportsExpansion:
 			zCtx.error("Invalid ZCS: Import ZCIs are only allowed in global scope.")
 
-		#strip beginning of path
-		pathNotFound       = True
-		pathBeginningIndex = 4
-		while pathBeginningIndex < len(s):
-			if s[pathBeginningIndex] in BLANKS:
-				pathBeginningIndex += 1
-				continue
-			else:
-				pathNotFound = False
-				break
+		#read path
+		zCtx.jumpBlankZone(ZCI.ctx, "File path in import ZCI (EXT_IMP)")
 
 		#no path given
-		if pathNotFound:
-			zCtx.error("Missing path for import ZCI (EXT_IMP).")
+		path = zCtx.readName(ZCI.ctx, "File path in import ZCI (EXT_IMP).")
 
 		#process import : Will add every ZCI of the imported file instead of the current one
-		if zCtx.openNewSubCtx(s[pathBeginningIndex:]):
+		if zCtx.openNewSubCtx(path):
 
 			#precompile imported file
 			p1_CommentsPItemsText(zCtx) #these 3 calls should be replaced by a precompile(zCtx) call but python doesn't manage parent-file importation well so...
@@ -94,7 +92,7 @@ def stripAndAppendZCI(zCtx, ZCICtx, result, allowImportsExpansion=False):
 		return
 
 	#not an import => regular ZCI
-	result.append(ZCICtx)
+	result.append(ZCI)
 
 
 
@@ -112,9 +110,9 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False):
 	peerIndex        = 0
 
 	#prepare current ZCI result : Keep the same lineNbr/columnNbr/filename/... BUT changing the icontent inside.
-	ZCICtx = ctx.copy()         # It will start as it was a totally new content but we keep the old file position for error indication.
-	ZCICtx.icontent.index = -1
-	ZCICtx.icontent.s     = ""  # length=0 (can be weird cause we may have big lineNbr/columnNbr)
+	ZCI = zci(ctx.copy())       # It will start as it was a totally new content but we keep the old file position for error indication.
+	ZCI.ctx.icontent.index = -1
+	ZCI.ctx.icontent.s     = "" # length=0 (can be weird cause we may have big lineNbr/columnNbr)
 
 	#prepare whole result
 	ZCIs = []
@@ -141,16 +139,16 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False):
 			if skipLineFeed:
 				if c == '\n': #really skipping line feed
 					skipLineFeed       = False
-					ZCICtx.icontent.s += '\n' #storing the line feed in all cases => necessary to get consistent BEGINNING lineNbr/columnNbr of ZCI when stripping it
+					ZCI.ctx.icontent.s += '\n' #storing the line feed in all cases => necessary to get consistent BEGINNING lineNbr/columnNbr of ZCI when stripping it
 					continue
 				else: #not actually skipping it, that was just a regular backslash
-					ZCICtx.icontent.s += '\\'
+					ZCI.ctx.icontent.s += '\\'
 
 			#end of ZCI
 			if c == ';' or c == '\n':
-				stripAndAppendZCI(zCtx, ZCICtx, ZCIs, allowImportsExpansion=global_)
-				ZCICtx            = ctx.copy() #reset current ZCI result
-				ZCICtx.icontent.s = ""         # length=0 : really important to reset length
+				stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_)
+				ZCI                = zci(ctx.copy()) #reset current ZCI result
+				ZCI.ctx.icontent.s = ""              # length=0 : really important to reset length
 				ZCIUninitialized  = True
 				continue
 
@@ -171,13 +169,13 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False):
 
 		#3) regular case
 		if ZCIUninitialized: #init current ZCI with its real position in file
-			ZCIUninitialized = False
-			ZCICtx.lineNbr   = ctx.lineNbr
-			ZCICtx.columnNbr = ctx.columnNbr
-		ZCICtx.icontent.s += c
+			ZCIUninitialized  = False
+			ZCI.ctx.lineNbr   = ctx.lineNbr
+			ZCI.ctx.columnNbr = ctx.columnNbr
+		ZCI.ctx.icontent.s += c
 
 	#last ZCI remaining
-	stripAndAppendZCI(zCtx, ZCICtx, ZCIs, allowImportsExpansion=global_)
+	stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_)
 
 	#return result
 	return ZCIs
@@ -193,8 +191,8 @@ def p3_splitZCIsAndImport(zCtx):
 	#debug
 	if zCtx.debugMode:
 		debugOutput = ""
-		for z in ZCIs:
-			debugOutput += z.toStr() + "\"" + z.icontent.s + "\"\n"
+		for ZCI in ZCIs:
+			debugOutput += ZCI.ctx.toStr() + "\"" + ZCI.ctx.icontent.s + "\"\n"
 		writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p3.lst", debugOutput)
 
 	#no need current context anymore (end of precompilation by the way)

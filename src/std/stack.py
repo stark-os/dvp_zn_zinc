@@ -4,7 +4,7 @@
 
 # -------- TYPE DEF --------
 
-#stack object
+#stack object (completely optionnal type, we can consider these functions to be applied on lst directly)
 class Stack:
 	def __init__(self):
 		self.data = []
