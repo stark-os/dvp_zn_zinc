@@ -38,3 +38,13 @@ def str_stripEnd(t, charset=" \t"):
 			stripping = False
 		result = currentChr + result
 	return result
+
+def str_sub(s, start=None, stop=None):
+	if start is None:
+		start = 0
+	if stop is None:
+		stop = len(s)-1
+	return s[start:stop+1]
+
+def lst_sub(l, start=None, stop=None):
+	return str_sub(l, start=start, stop=stop)

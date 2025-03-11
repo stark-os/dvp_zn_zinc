@@ -5,7 +5,7 @@
 # -------- IMPORTATIONS --------
 
 #std
-from std.stack      import *
+from std.list       import *
 from std.io         import *
 from std.parsingCtx import *
 
@@ -40,9 +40,11 @@ NOTHING_AFTER_NAME = -3
 
 #ZCI
 class zci:
-	def __init__(self, ctx, module=""):
-		self.ctx    = ctx
-		self.module = module
+	def __init__(self, ctx, subCtxs, module=""):
+		self.subCtxs = subCtxs
+		self.ctx     = ctx
+		self.pairs   = {} #map[ulng,ulng]
+		self.module  = module
 
 #precompiler data
 class pcplDat:
@@ -113,9 +115,9 @@ class zctx:
 		#every imported context & the current one
 		initialCtx        = ParsingCtx(filepath, readFile(filepath))
 		self.ctx          = initialCtx
-		self.imported     = Stack() #history of every filename imported
-		self.subCtxs      = Stack() #subcontexts currently in use
-		self.subCtxs.push(initialCtx)
+		self.imported     = [] #history of every filename imported
+		self.subCtxs      = [] #subcontexts currently in use
+		self.subCtxs.append(initialCtx)
 
 		#data
 		self.ZCIs = None
@@ -139,23 +141,23 @@ class zctx:
 	#output
 	def debug(self, msg):
 		print("[ DEBUG ] " + msg)
-		for ctx in self.subCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
+		for ctx in self.subCtxs:
 			print("    At " + ctx.toStr())
 
 	def warning(self, msg):
 		print("[WARNING] " + msg)
-		for ctx in self.subCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
+		for ctx in self.subCtxs:
 			print("    At " + ctx.toStr())
 
 	def error(self, msg):
 		print("[ ERROR ] " + msg)
-		for ctx in self.subCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
+		for ctx in self.subCtxs:
 			print("    At " + ctx.toStr())
 		exit(1)
 
 	def internal(self, msg):
 		print("[INT ERR] " + msg)
-		for ctx in self.subCtxs.data: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< could have avoided .data in Z using indexing functions
+		for ctx in self.subCtxs:
 			print("    At " + ctx.toStr())
 		exit(2)
 
@@ -182,21 +184,21 @@ class zctx:
 
 		#check already openned
 		realNewPath = os.path.realpath(newCtx.filepath)
-		for c in self.imported.data:
+		for c in self.imported:
 			if realNewPath == c:
 				return False
 
 		#not already openned => add it to importations
 		self.ctx = newCtx
-		self.subCtxs.push(newCtx)
-		self.imported.push(realNewPath)
+		self.subCtxs.append(newCtx)
+		self.imported.append(realNewPath)
 		return True
 
 	def closeCurrentCtx(self): #return True if no more context remains
-		self.subCtxs.pop()
-		if self.subCtxs.isEmpty():
+		lst_pop(self.subCtxs)
+		if lst_isEmpty(self.subCtxs):
 			return True
-		self.ctx = self.subCtxs.last()
+		self.ctx = lst_last(self.subCtxs)
 		return False
 
 
@@ -204,19 +206,19 @@ class zctx:
 	# COMPILATION TOOLS
 
 	#move ctx cursor just before the first non-blank character found
-	def jumpBlankZone(self, ctx, missingFieldsIfError):
-		while not ctx.inc():
-			if ctx.get() not in BLANKS:
+	def jumpBlankZone(self, ZCI, missingFieldsIfError):
+		while not ZCI.ctx.inc():
+			if ZCI.ctx.get() not in BLANKS:
 				return
-		self.ctx = ctx
+		self.subCtxs = ZCI.subCtxs
 		self.error("Expected something after blank zone : " + missingFieldsIfError)
 
 	#read a name according to the given charset (either blacklist or whitelist)
 	# IMPORTANT : Reading ctx from its CURRENT position and move it right AFTER the extracted result
-	def readName(self, ctx, missingFieldIfError, blacklist=BLANKS, whitelist=None):
+	def readName(self, ZCI, missingFieldIfError, blacklist=BLANKS, whitelist=None):
 
 		#check initial character first
-		c = ctx.get()
+		c = ZCI.ctx.get()
 		if whitelist is None:
 			error = c in blacklist
 		else:
@@ -224,13 +226,13 @@ class zctx:
 
 		#missing name field
 		if error:
-			self.ctx = ctx
+			self.subCtxs = ZCI.subCtxs
 			self.error("Missing name : " + missingFieldIfError)
 
 		#read until BLANK or end
 		name = c
-		while not ctx.inc():
-			c = ctx.get()
+		while not ZCI.ctx.inc():
+			c = ZCI.ctx.get()
 			if whitelist is None:
 				if c in blacklist:
 					break

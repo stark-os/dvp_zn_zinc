@@ -7,8 +7,8 @@
 #system
 import os
 
-#stack
-from std.stack import *
+#lists
+from std.list import *
 
 
 
@@ -58,8 +58,12 @@ class ParsingCtx:
 		self.detectedLF = False
 
 	#copy
-	def copy(self):
-		newCtx = ParsingCtx(self.filepath[:], self.icontent.s[:])
+	def copy(self, copyContent=True):
+		#if copyContent:
+		#	content = self.icontent.s[:]
+		#else:
+		#	content = self.icontent.s
+		newCtx = ParsingCtx(self.filepath[:], self.icontent.s)
 		newCtx.icontent.index = self.icontent.index
 		newCtx.lineNbr        = self.lineNbr
 		newCtx.columnNbr      = self.columnNbr
@@ -125,26 +129,26 @@ class ParsingCtx:
 
 		#use a local copy of context to allow precise indication in errors without affecting the original
 		localCtx = self.copy()
-		c = localCtx.get()
+		c        = localCtx.get()
 		if c in peers.keys():
 			target = peers[c]
 		else:
 			return -1 #current position is not at a valid openning target
 
 		#read rest of the code taking into account every oppening subzone
-		subZones = Stack()
+		subZones = []
 		while not localCtx.inc():
 			c = localCtx.get()
 
-			#oppenning subzone
+			#openning subzone
 			if c in peers.keys():
-				subZones.push(c)
+				subZones.append(c)
 
 			#closing subzone
 			elif c in peers.values():
 
 				#no subzone remaining => looking for the targetted peer
-				if subZones.isEmpty():
+				if lst_isEmpty(subZones):
 					if c == target:
 						return localCtx.icontent.index #found it
 
@@ -153,7 +157,7 @@ class ParsingCtx:
 					return -2 #inconsistent includer peering
 
 				#closing latest subzone
-				subtarget = peers[subZones.pop()]
+				subtarget = peers[lst_pop(subZones)]
 				if c == subtarget:
 					continue
 
@@ -163,3 +167,11 @@ class ParsingCtx:
 
 		#peer not found
 		return -3
+
+
+
+def lst_ctx__copy(l):
+	n = []
+	for e in l:
+		n.append(e.copy(copyContent=False))
+	return n
