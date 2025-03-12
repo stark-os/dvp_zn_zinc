@@ -28,20 +28,21 @@ from pcpl.p3_splitZCIsAndImport import *
 def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, module=""):
 	ZCI.module = module
 
+
+
+	# 1) STRIPPING SIDES
+
 	#get REAL beginning of ZCI (prepare for stripping BEGINNING blanks)
 	beginningIndex = 0
-	lineFeedFound  = False
 	for c in ZCI.ctx.icontent.s:
 
 		#as long as we have blanks, shift real beginning of ZCI
 		if c in BLANKS:
 			beginningIndex += 1
-			if lineFeedFound: #if at least 1 line feed has been found, we MUST count columnNbr
-				ZCI.ctx.columnNbr += 1
+			ZCI.ctx.columnNbr += 1
 
 		#line feed found => ZCI does not start at current lineNbr, it may be next line (or further)
 		elif c == '\n':
-			lineFeedFound     = True
 			beginningIndex   += 1
 			ZCI.ctx.lineNbr  += 1 #lineNbr/columnNbr were not totally accurate
 			ZCI.ctx.columnNbr = 1 # => we must count them again starting from where we were
@@ -62,6 +63,10 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, module="")
 	#strip END blanks
 	ZCI.ctx.icontent.s = str_stripEnd(ZCI.ctx.icontent.s, BLANKS)
 	ZCIText = ZCI.ctx.icontent.s
+
+
+
+	# 2) PROCESSING REGULAR/IMPORT ZCI
 
 	#reset ZCI ctx parsing (not lineNbr/columnNbr) for blank/name parsing
 	ZCI.ctx.icontent.index = -1
@@ -109,7 +114,9 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, module="")
 # -------- EXECUTION --------
 
 #split raw text into ZCI list (ZCS)
-def extractZCIsFromCtx(zCtx, ctx, global_=False, module=""):
+def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, module=""):
+	if subCtxs is None:
+		subCtxs = zCtx.subCtxs
 
 	#initial state
 	ZCIUninitialized = True
@@ -117,9 +124,12 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, module=""):
 	peerIndex        = 0
 
 	#prepare current ZCI result : Keep the same lineNbr/columnNbr/filename/... BUT changing the icontent inside.
-	ZCI = zci(ctx.copy(), lst_ctx__copy(zCtx.subCtxs))       # It will start as it was a totally new content but we keep the old file position for error indication.
+	ZCI = zci(ctx.copy(), lst_ctx__copy(subCtxs)) # It will start as it was a totally new content but we keep the old file position for error indication.
 	ZCI.ctx.icontent.index = -1
 	ZCI.ctx.icontent.s     = "" # length=0 (can be weird cause we may have big lineNbr/columnNbr)
+
+	#overwrite latest subCtx with a reference to the active one (it will change during parsing)
+	ZCI.subCtxs[-1] = ZCI.ctx
 
 	#prepare whole result
 	ZCIs = []
@@ -154,8 +164,9 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, module=""):
 			#end of ZCI
 			if c == ';' or c == '\n':
 				stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, module=module)
-				ZCI                = zci(ctx.copy(), lst_ctx__copy(zCtx.subCtxs)) #reset current ZCI result
+				ZCI                = zci(ctx.copy(), lst_ctx__copy(subCtxs)) #reset current ZCI result
 				ZCI.ctx.icontent.s = "" # length=0 : really important to reset length
+				ZCI.subCtxs[-1]    = ZCI.ctx #update latest subCtx as well
 				ZCIUninitialized   = True
 				continue
 
@@ -199,11 +210,11 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, module=""):
 def p3_splitZCIsAndImport(zCtx):
 
 	#extract global scope ZCIs
-	ZCIs = extractZCIsFromCtx(zCtx, zCtx.ctx, True)
+	ZCIs = extractZCIsFromCtx(zCtx, zCtx.ctx, global_=True)
 
 	#debug
 	if zCtx.debugMode:
-		debugOutput = "[\n"
+		debugOutput = "//columnNbr are -1 from reality (for parsing efficiency)\n[\n"
 		for ZCI in ZCIs:
 			content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
 			debugOutput += "{module:\"" + ZCI.module + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"

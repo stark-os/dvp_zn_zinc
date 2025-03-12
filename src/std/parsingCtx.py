@@ -89,9 +89,9 @@ class ParsingCtx:
 
 		#last character was a line feed => update line indicators
 		if self.detectedLF:
-			self.detectedLF  = False
-			self.lineNbr    += 1
-			self.columnNbr   = 0
+			self.detectedLF = False
+			self.lineNbr   += 1
+			self.columnNbr  = 0
 
 		#LF behavior
 		if self.icontent.get() == '\n':
