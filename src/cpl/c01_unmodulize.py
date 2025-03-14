@@ -12,6 +12,34 @@ from pcpl.p3_splitZCIsAndImport import *
 
 
 
+# -------- TOOLS --------
+
+#check & turn raw Module name into prefix
+def formatModuleName(zCtx, ZCI, moduleName):
+
+	#charset check
+	checkedModuleName = ""
+	backShift         = len(moduleName)
+	for c in moduleName:
+		if c not in VAR_NAME_CHARSET:
+			ZCI.ctx.icontent.index -= backShift #target exact position of invalid character
+			ZCI.ctx.columnNbr      -= backShift
+			zCtx.ZCIError(ZCI, "Character not allowed in module name.")
+		checkedModuleName += c
+
+		#doubling underscores
+		if c == '_':
+			checkedModuleName += '_'
+		backShift -= 1
+
+	#final module prefix
+	return "M" + checkedModuleName + "_"
+
+
+
+
+
+
 # -------- EXECUTION --------
 
 #compilation
@@ -39,38 +67,46 @@ def c01_unmodulize(zCtx):
 			zCtx.jumpBlankZone(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
 			moduleName = zCtx.readName(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
 
-			#addition to an already existing module
+			#combine with current module (we can be in another module => this allow submodularization)
+			modulePrefix = ZCI.modulePrefix + formatModuleName(zCtx, ZCI, moduleName)
+
+			#CASE 1 - ADD TO MODULE
 			if moduleName == "add":
+
+				#read one more name
 				zCtx.jumpBlankZone(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD).")
-				moduleName = zCtx.readName(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD).")
-				if moduleName not in zCtx.cpl.modules:
-					#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< print the list of the available modules ? debug mode only ?
-					zCtx.subCtxs = ZCI.subCtxs
-					zCtx.error("No module " + moduleName + " declared yet, can't add to it.")
+				modulePrefix = ZCI.modulePrefix + formatModuleName(
+					zCtx, ZCI,
+					zCtx.readName(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD).")
+				)
 
-			#already in a submodule <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-			#if moduleName in ZCI.modules:
-			#	zCtx.subCtxs = ZCI.subCtxs
-			#	zCtx.error("Already inside module " + moduleName + ", could not declare it inside itself.")
+				#adding to inexistent module
+				if modulePrefix not in zCtx.cpl.modulePrefixes:
+					zCtx.debugModules()
+					zCtx.ZCIError(ZCI, "No module " + unprefixizeModule(modulePrefix) + " declared yet, can't add to it.")
 
-			#add module declaration
-			zCtx.cpl.modules.append(moduleName)
+			#CASE 2 - NEW MODULE
+			else:
 
-			#looking for starting point of module content
-			zCtx.jumpBlankZone(ZCI, "Module content between braces includer.")
+				#already declared the same exact module
+				if modulePrefix in zCtx.cpl.modulePrefixes:
+					zCtx.debugModules()
+					zCtx.ZCIError(ZCI, "Module " + unprefixizeModule(modulePrefix) + " already declared, you may consider \"adding\" to it.")
+
+				#avoid re-declaration
+				zCtx.cpl.modulePrefixes.append(modulePrefix)
+
+			#looking for starting point of module content #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 1st IF CONCERNS OPTIONAL BLANK, CAN BE USEFUL !
+			if ZCI.ctx.get() in BLANKS:
+				zCtx.jumpBlankZone(ZCI, "Module content after name (braces includer).")
 			if ZCI.ctx.get() != '{':
-				zCtx.subCtxs = ZCI.subCtxs
-				zCtx.error("Expected module content between braces includer.")
+				zCtx.ZCIError(ZCI, "Expected module content after name (braces includer).")
 
 			#get module content boundaries
 			moduleContent_startIndex = ZCI.ctx.icontent.index
 			if moduleContent_startIndex not in ZCI.pairs.keys():
-				zCtx.subCtxs = ZCI.subCtxs
-				zCtx.internal("Missing pair information for current includer.")
+				zCtx.ZCIInternal(ZCI, "Missing pair information for current includer.")
 			moduleContent_stopIndex  = ZCI.pairs[moduleContent_startIndex]
-			print("start/stop Index ["+str(moduleContent_startIndex)+"]["+str(moduleContent_stopIndex)+"]")
-			print("MODULE 1ST BRACE ["+ZCI.ctx.toStr()+"]["+ZCI.ctx.icontent.s[moduleContent_startIndex:]+"]")
-			print("MODULE LAST BRACE ["+ZCI.ctx.toStr()+"]["+ZCI.ctx.icontent.s[moduleContent_stopIndex:]+"]")
 
 			#shift 1st character '{'
 			moduleContent_startIndex += 1
@@ -81,38 +117,24 @@ def c01_unmodulize(zCtx):
 			moduleContent.icontent.s     = str_sub(ZCI.ctx.icontent.s, moduleContent_startIndex, moduleContent_stopIndex-1)
 			moduleContent.icontent.index = -1
 			moduleContent.columnNbr     -=  1 #shift to compensate the -1 set as index
-			moduleZCIs                   = extractZCIsFromCtx(zCtx, moduleContent, global_=True, subCtxs=ZCI.subCtxs, module=moduleName)
-			print("CONTENT READy FOR EXTRACTION["+moduleContent.toStr()+"]["+moduleContent.icontent.s+"]")
+			moduleZCIs                   = extractZCIsFromCtx(zCtx, moduleContent, global_=True, subCtxs=ZCI.subCtxs, modulePrefix=modulePrefix)
 
 			#remove current ZCI in general ZCtx
-			print("\n\n\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ALPHA <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-			debugOutput = "[\n"
-			for ZCI in zCtx.ZCIs:
-				content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
-				debugOutput += "{module:\"" + ZCI.module + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content[:30] + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"
-			debugOutput += "]"
-			print(debugOutput)
 			zCtx.ZCIs = lst_remove(zCtx.ZCIs, z)
 			z -= 1
-			print("\n\n\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< BETA <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-			debugOutput = "[\n"
-			for ZCI in zCtx.ZCIs:
-				content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
-				debugOutput += "{module:\"" + ZCI.module + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content[:30] + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"
-			debugOutput += "]"
-			print(debugOutput)
 
 			#complete general ZCI list
 			previousZCIs = lst_sub(zCtx.ZCIs, stop=z)
 			nextZCIs     = lst_sub(zCtx.ZCIs, start=z+1)
 			zCtx.ZCIs    = previousZCIs + moduleZCIs + nextZCIs
-			print("\n\n\n\n\n<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< GAMMA <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
-			debugOutput = "[\n"
-			for ZCI in zCtx.ZCIs:
-				content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
-				debugOutput += "{module:\"" + ZCI.module + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content[:30] + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"
-			debugOutput += "]"
-			print(debugOutput)
+
+			#for deep debugging, just in case
+			#debugOutput = "[\n"
+			#for ZCI in zCtx.ZCIs:
+			#	content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
+			#	debugOutput += "{module:\"" + ZCI.modulePrefix + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"
+			#debugOutput += "]"
+			#print(debugOutput)
 
 			_ZCIsLen = len(zCtx.ZCIs) # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only in python, not required in Z (.length field)
 

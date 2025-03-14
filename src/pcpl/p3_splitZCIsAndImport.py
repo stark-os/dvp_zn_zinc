@@ -25,8 +25,8 @@ from pcpl.p3_splitZCIsAndImport import *
 
 #prepare a raw parsed ZCI into just the minimum required (useless blanks + expand imports if needed)
 #result can be several ZCIs so we directly add them to the result list given as parameter
-def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, module=""):
-	ZCI.module = module
+def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePrefix=""):
+	ZCI.modulePrefix = modulePrefix
 
 
 
@@ -85,14 +85,14 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, module="")
 		ZCI.ctx.forward(4)
 
 		#importations not allowed
-		if not allowImportsExpansion or len(module) != 0:
+		if not allowImportsExpansion or len(modulePrefix) != 0:
 			zCtx.error("Invalid ZCS: Import ZCIs are only allowed in global scope outside any module.")
 
 		#read path
 		zCtx.jumpBlankZone(ZCI, "File path in import ZCI (EXT_IMP)")
 
 		#no path given
-		path = zCtx.readName(ZCI, "File path in import ZCI (EXT_IMP).")
+		path = zCtx.readName(ZCI, "File path in import ZCI (EXT_IMP).", blacklist=BLANKS)
 
 		#process import : Will add every ZCI of the imported file instead of the current one
 		if zCtx.openNewSubCtx(path):
@@ -114,7 +114,7 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, module="")
 # -------- EXECUTION --------
 
 #split raw text into ZCI list (ZCS)
-def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, module=""):
+def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
 	if subCtxs is None:
 		subCtxs = zCtx.subCtxs
 
@@ -163,7 +163,7 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, module=""):
 
 			#end of ZCI
 			if c == ';' or c == '\n':
-				stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, module=module)
+				stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, modulePrefix=modulePrefix)
 				ZCI                = zci(ctx.copy(), lst_ctx__copy(subCtxs)) #reset current ZCI result
 				ZCI.ctx.icontent.s = "" # length=0 : really important to reset length
 				ZCI.subCtxs[-1]    = ZCI.ctx #update latest subCtx as well
@@ -199,7 +199,7 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, module=""):
 		ZCI.ctx.icontent.s += c
 
 	#last ZCI remaining
-	stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, module=module)
+	stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, modulePrefix=modulePrefix)
 
 	#return result
 	return ZCIs
@@ -217,7 +217,7 @@ def p3_splitZCIsAndImport(zCtx):
 		debugOutput = "//columnNbr are -1 from reality (for parsing efficiency)\n[\n"
 		for ZCI in ZCIs:
 			content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
-			debugOutput += "{module:\"" + ZCI.module + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"
+			debugOutput += "{module:\"" + ZCI.modulePrefix + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"
 		debugOutput += "]"
 		writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p3.json", debugOutput)
 

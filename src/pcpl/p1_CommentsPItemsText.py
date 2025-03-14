@@ -33,13 +33,14 @@ def p1_CommentsPItemsText(zCtx):
 	currentString_data   = ""
 
 	#fields detection
-	inChr              = False
-	inStr              = False
-	inPotentialComment = False
-	inSingleCom        = False
-	inMultiCom         = False
-	inPcplItem         = False
-	pcplItem_name      = ""
+	inChr               = False
+	inStr               = False
+	inPotentialComment  = False
+	commentBeginningCtx = [None] #will only contain 1 element, this is to be used as "subCtxs" in zctx.overwriteSubCtxs()
+	inSingleCom         = False
+	inMultiCom          = False
+	inPcplItem          = False
+	pcplItem_name       = ""
 
 	#useful for multi-line comments only : we don't really care about its value, must only be != '*'
 	prevC = '_'
@@ -211,7 +212,7 @@ def p1_CommentsPItemsText(zCtx):
 
 		#potential comment detection
 		if inPotentialComment:
-			inPotentialComment = False
+			inPotentialComment     = False
 
 			#single-line comment detection
 			if c == '/':
@@ -220,8 +221,9 @@ def p1_CommentsPItemsText(zCtx):
 
 			#multi-line comment detection
 			if c == '*':
-				prevC      = '_' #does'nt really matter what that prevC is defined with. It must only be != '*'
-				inMultiCom = True
+				commentBeginningCtx[0] = zCtx.ctx.copy(copyContent=False) #keep track of comment beginning
+				prevC                  = '_' #does'nt really matter what that prevC is defined with. It must only be != '*'
+				inMultiCom             = True
 				continue
 
 			#that was'nt a comment => store previous slash before continuing in regular case
@@ -264,6 +266,7 @@ def p1_CommentsPItemsText(zCtx):
 
 	#incomplete definition
 	if inMultiCom:
+		zCtx.overwriteSubCtxs(commentBeginningCtx)
 		zCtx.error("Missing ending delimiter for multi-line comment (end of file reached too early).")
 	if inChr:
 		zCtx.error("Missing ending delimiter for character (end of file reached too early).")

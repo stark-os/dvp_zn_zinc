@@ -36,15 +36,26 @@ NOTHING_AFTER_NAME = -3
 
 
 
-# -------- PRECOMPILATION --------
+# -------- GENERAL --------
+
+#tools
+def unprefixizeModule(modulePrefix):
+	return "^" + modulePrefix[1:].replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1]
 
 #ZCI
 class zci:
-	def __init__(self, ctx, subCtxs, module=""):
-		self.subCtxs = subCtxs
-		self.ctx     = ctx
-		self.pairs   = {} #map[ulng,ulng]
-		self.module  = module
+	def __init__(self, ctx, subCtxs, modulePrefix=""):
+		self.subCtxs      = subCtxs
+		self.ctx          = ctx
+		self.pairs        = {} #map[ulng,ulng]
+		self.modulePrefix = modulePrefix
+
+
+
+
+
+
+# -------- PRECOMPILATION --------
 
 #precompiler data
 class pcplDat:
@@ -88,8 +99,8 @@ class cplDat:
 		self.options    = options
 
 		#z abstract elements
-		self.modules = []
-		self.zcs     = []
+		self.modulePrefixes = []
+		self.zcs            = []
 
 		#program concrete elements
 		self.dataResult = program()
@@ -139,10 +150,12 @@ class zctx:
 		return self.ctx.forward(step)
 
 	#output
-	def debug(self, msg):
-		print("[ DEBUG ] " + msg)
-		for ctx in self.subCtxs:
-			print("    At " + ctx.toStr())
+	def debug(self, msg, printSubCtxs=True):
+		if self.debugMode:
+			print("[ DEBUG ] " + msg)
+			if printSubCtxs:
+				for ctx in self.subCtxs:
+					print("    At " + ctx.toStr())
 
 	def warning(self, msg):
 		print("[WARNING] " + msg)
@@ -197,48 +210,75 @@ class zctx:
 	def closeCurrentCtx(self): #return True if no more context remains
 		lst_pop(self.subCtxs)
 		if lst_isEmpty(self.subCtxs):
+			self.ctx = None
 			return True
 		self.ctx = lst_last(self.subCtxs)
 		return False
 
+	def overwriteSubCtxs(self, subCtxs):
+		self.subCtxs = subCtxs
+		if lst_isEmpty(subCtxs):
+			self.ctx = None
+		else:
+			self.ctx = subCtxs[-1]
+
 
 
 	# COMPILATION TOOLS
+
+	#errors after precompilation are closely related to ZCIs, no longer to global subCtxs
+	def ZCIError(self, ZCI, msg):
+		self.overwriteSubCtxs(ZCI.subCtxs)
+		self.error(msg)
+
+	def ZCIInternal(self, ZCI, msg):
+		self.overwriteSubCtxs(ZCI.subCtxs)
+		self.internal(msg)
 
 	#move ctx cursor just before the first non-blank character found
 	def jumpBlankZone(self, ZCI, missingFieldsIfError):
 		while not ZCI.ctx.inc():
 			if ZCI.ctx.get() not in BLANKS:
 				return
-		self.subCtxs = ZCI.subCtxs
-		self.error("Expected something after blank zone : " + missingFieldsIfError)
+		self.ZCIError(ZCI, "Expected something after blank zone : " + missingFieldsIfError)
 
 	#read a name according to the given charset (either blacklist or whitelist)
 	# IMPORTANT : Reading ctx from its CURRENT position and move it right AFTER the extracted result
-	def readName(self, ZCI, missingFieldIfError, blacklist=BLANKS, whitelist=None):
+	#also, blacklist is prioritary : if null => use whitelist, else, use it (no matter whitelist value)
+	def readName(self, ZCI, missingFieldIfError, blacklist=None, whitelist=VAR_NAME_CHARSET):
 
 		#check initial character first
 		c = ZCI.ctx.get()
-		if whitelist is None:
-			error = c in blacklist
-		else:
+		if blacklist is None:
 			error = c not in whitelist
+		else:
+			error = c in blacklist
 
 		#missing name field
 		if error:
-			self.subCtxs = ZCI.subCtxs
-			self.error("Missing name : " + missingFieldIfError)
+			self.ZCIError(ZCI, "Missing name : " + missingFieldIfError)
 
 		#read until BLANK or end
 		name = c
 		while not ZCI.ctx.inc():
 			c = ZCI.ctx.get()
-			if whitelist is None:
-				if c in blacklist:
+			if blacklist is None:
+				if c not in whitelist:
 					break
-			elif c not in whitelist:
+			elif c in blacklist:
 				break
 			name += c
 
 		#return result
 		return name
+
+
+
+	# DEBUG
+
+	#modules
+	def debugModules(self):
+		unprefixedModules = ""
+		for mp in self.cpl.modulePrefixes:
+			unprefixedModules += "\n - " + unprefixizeModule(mp)
+		self.debug("Available modules are :" + unprefixedModules, printSubCtxs=False)
