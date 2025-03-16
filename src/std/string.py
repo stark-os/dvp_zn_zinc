@@ -4,7 +4,15 @@
 
 # -------- TOOLS --------
 
-#subequal
+#TO BE ADDED TO STDZ : this is a tiny bit more optimized version of ==(str,str).
+#                      We don't compare lengths, assuming that they have been checked before.
+#                      By the way, it must be called in ==(str,str) instead.
+def str_cmp(s1, s2):
+	for c in range(len(s1)):
+		if s1[c] != s2[c]:
+			return False
+	return True
+
 def str_subEqual( #that is tab_subequal in stdz actually
 	t, second,
 	length      = -1,

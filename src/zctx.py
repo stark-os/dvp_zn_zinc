@@ -20,11 +20,16 @@ import string
 # -------- CONSTANTS --------
 
 #precompiler
-PCPL_VAR_NAME_CHARSET = string.ascii_letters + string.digits + '_'
+PCPL_ITEM_NAME_CHARSET = string.ascii_letters + string.digits + '_'
 
 #general syntax
-BLANKS           = (" ", "\t")
-VAR_NAME_CHARSET = PCPL_VAR_NAME_CHARSET
+BLANKS    = (" ", "\t")
+INCLUDERS = { '(':')', '[':']', '{':'}' }
+
+#charsets
+DATAITEM_NAME_CHARSET           = PCPL_ITEM_NAME_CHARSET #no link with PCPL items, but same value
+ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + INCLUDERS.keys()
+ZCE_NAME_CHARSET                = DATAITEM_NAME_CHARSET + "^."
 
 #general name parsing
 NO_NAME            = -1
@@ -49,6 +54,19 @@ class zci:
 		self.ctx          = ctx
 		self.pairs        = {} #map[ulng,ulng]
 		self.modulePrefix = modulePrefix
+
+	#ctx forwards
+	def get(self):
+		return self.ctx.get()
+
+	def forward(self, step):
+		return self.ctx.forward(step)
+
+	def inc(self):
+		return self.ctx.inc()
+
+	def reachedEnd(self):
+		return self.ctx.reachedEnd()
 
 
 
@@ -76,9 +94,6 @@ def pcplDat_new(configs, items):
 			raise ValueError("Invalid value \"" + v + "\" given to precompiler configuration \"" + c + "\".")
 	return pcplDat(formatted_configs, items)
 
-#includers
-INCLUDERS = { '(':')', '[':']', '{':'}' }
-
 
 
 
@@ -92,15 +107,49 @@ class program:
 		self.globalData = []
 		self.types      = []
 		self.functions  = []
+		self.linkedLibs = []
+
+
+#ztyp can be declared after zprm & zstc in Z.
+#However, here in Python, we must declare it before to allow dataItem definition and so, zstc.
+#Same thing for zfct.
+class ztyp:
+	def __init__(self, name, isPrm, data, parent=None):
+		self.name    = name
+		self.parent  = parent
+		self.isPrm   = isPrm
+		self.data    = data #ptr to be cashted into zprm or zstc
+		self.methods = []   #lst[zfct]
+
+class dataItem:
+	def __init__(self, ztyp, name, initialValue, constant=False):
+		self.ztyp         = ztyp
+		self.name         = name
+		self.initialValue = initialValue
+		self.constant     = constant
+
+class zprm:
+	def __init__(self, size):
+		self.size = size
+
+class zstc:
+	def __init__(self, zCtx, fields): #requires ZCtx for ptr size
+		self.fields = fields
+		self.size   = zCtx.SIZE_LNG # #ptr
+
+		#compute structure size (raw)
+		self.stcSize = 0
+		for f in fields.keys():
+			self.stcSize += fields[f].size
 
 #compiler data
 class cplDat:
 	def __init__(self, options):
-		self.options    = options
+		self.options = options
 
 		#z abstract elements
 		self.modulePrefixes = []
-		self.zcs            = []
+		self.ztypes         = []
 
 		#program concrete elements
 		self.dataResult = program()
@@ -130,10 +179,44 @@ class zctx:
 		self.subCtxs      = [] #subcontexts currently in use
 		self.subCtxs.append(initialCtx)
 
+		#check CPL options
+		self.checkCplOpt(pcpl_cfg, cpl_opt)
+
+		#real memory items <<<<<<<<<<<<<<<<<<<<<< to be stored into an enm
+		self.SIZE = {
+			'BYT' = 1, 'SHR' = 2,
+			'INT' = 4, 'LNG' = 4
+		}
+		if cpl_opt["ARCH64"]:
+			self.SIZE['LNG'] = 8
+
 		#data
 		self.ZCIs = None
 		self.pcpl = pcplDat_new(pcpl_cfg, pcpl_itm)
 		self.cpl  = cplDat(cpl_opt)
+
+
+
+	# CFG CHECK
+
+	#each cpl option must be defined
+	def checkCplOpt(self, cpl_opt):
+		if "ARCH64" not in cpl_opt:
+			self.error("Missing compilation option \"ARCH64\" in config file cpl_opt.cfg.")
+		if "INTERPRET_COMMON_STRUCTURES" not in cpl_opt:
+			self.error("Missing compilation option \"INTERPRET_COMMON_STRUCTURES\" in config file cpl_opt.cfg.")
+		if "MAX_INSTRUCTS_NOFUNCTION" not in cpl_opt:
+			self.error("Missing compilation option \"MAX_INSTRUCTS_NOFUNCTION\" in config file cpl_opt.cfg.")
+		if "CHECK_NULL_STC_BEFORE_METHOD" not in cpl_opt:
+			self.error("Missing compilation option \"CHECK_NULL_STC_BEFORE_METHOD\" in config file cpl_opt.cfg.")
+		if "OPERATORS_SUPPORTS_INHERITANCE" not in cpl_opt:
+			self.error("Missing compilation option \"OPERATORS_SUPPORTS_INHERITANCE\" in config file cpl_opt.cfg.")
+		if "METHODS_SUPPORTS_INHERITANCE" not in cpl_opt:
+			self.error("Missing compilation option \"METHODS_SUPPORTS_INHERITANCE\" in config file cpl_opt.cfg.")
+		if "EMPTY_DATA_ITEM_NULL" not in cpl_opt:
+			self.error("Missing compilation option \"EMPTY_DATA_ITEM_NULL\" in config file cpl_opt.cfg.")
+		if "LS_CNT_DIGITS" not in cpl_opt:
+			self.error("Missing compilation option \"LS_CNT_DIGITS\" in config file cpl_opt.cfg.")
 
 
 
@@ -237,18 +320,19 @@ class zctx:
 
 	#move ctx cursor just before the first non-blank character found
 	def jumpBlankZone(self, ZCI, missingFieldsIfError):
-		while not ZCI.ctx.inc():
-			if ZCI.ctx.get() not in BLANKS:
+		while not ZCI.inc():
+			if ZCI.get() not in BLANKS:
 				return
-		self.ZCIError(ZCI, "Expected something after blank zone : " + missingFieldsIfError)
+		if missingFieldsIfError is not None:
+			self.ZCIError(ZCI, "Expected something after blank zone : " + missingFieldsIfError)
 
 	#read a name according to the given charset (either blacklist or whitelist)
 	# IMPORTANT : Reading ctx from its CURRENT position and move it right AFTER the extracted result
 	#also, blacklist is prioritary : if null => use whitelist, else, use it (no matter whitelist value)
-	def readName(self, ZCI, missingFieldIfError, blacklist=None, whitelist=VAR_NAME_CHARSET):
+	def readName(self, ZCI, missingFieldIfError, blacklist=None, whitelist=DATAITEM_NAME_CHARSET):
 
 		#check initial character first
-		c = ZCI.ctx.get()
+		c = ZCI.get()
 		if blacklist is None:
 			error = c not in whitelist
 		else:
@@ -256,12 +340,14 @@ class zctx:
 
 		#missing name field
 		if error:
+			if missingFieldIfError is None:
+				return
 			self.ZCIError(ZCI, "Missing name : " + missingFieldIfError)
 
 		#read until BLANK or end
 		name = c
-		while not ZCI.ctx.inc():
-			c = ZCI.ctx.get()
+		while not ZCI.inc():
+			c = ZCI.get()
 			if blacklist is None:
 				if c not in whitelist:
 					break
@@ -271,6 +357,10 @@ class zctx:
 
 		#return result
 		return name
+
+	def optionnalBlanks(self, ZCI, missingFieldsIfError):
+		if ZCI.get() in BLANKS:
+			zCtx.jumpBlankZone(ZCI, missingFieldsIfError=missingFieldsIfError)
 
 
 

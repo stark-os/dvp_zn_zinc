@@ -41,6 +41,9 @@ class istr:
 	def copy(self):
 		return istr(self.s, self.index)
 
+	def reachedEnd(self):
+		return self.index == len(self.s)-1
+
 
 
 #parsing ctx object
@@ -53,7 +56,7 @@ class ParsingCtx:
 		self.dirname    = os.path.dirname(self.filepath)
 		self.filename   = os.path.basename(self.filepath)
 		self.lineNbr    = 1
-		self.columnNbr  = 0
+		self.colmNbr    = 0
 		self.icontent   = istr(content)
 		self.detectedLF = False
 
@@ -66,13 +69,13 @@ class ParsingCtx:
 		newCtx = ParsingCtx(self.filepath[:], self.icontent.s)
 		newCtx.icontent.index = self.icontent.index
 		newCtx.lineNbr        = self.lineNbr
-		newCtx.columnNbr      = self.columnNbr
+		newCtx.colmNbr        = self.colmNbr
 		newCtx.detectedLF     = self.detectedLF
 		return newCtx
 
 	#print: temporarily made like this
 	def toStr(self):
-		return self.filepath + ":" + str(self.lineNbr) + ":" + str(self.columnNbr)
+		return self.filepath + ":" + str(self.lineNbr) + ":" + str(self.colmNbr)
 
 
 
@@ -91,14 +94,14 @@ class ParsingCtx:
 		if self.detectedLF:
 			self.detectedLF = False
 			self.lineNbr   += 1
-			self.columnNbr  = 0
+			self.colmNbr    = 0
 
 		#LF behavior
 		if self.icontent.get() == '\n':
 			self.detectedLF = True
 
 		#regular behavior
-		self.columnNbr += 1
+		self.colmNbr += 1
 		return False
 
 	def forward(self, step):
@@ -109,7 +112,7 @@ class ParsingCtx:
 
 	def reset(self, newText=None):
 		self.lineNbr    = 1
-		self.columnNbr  = 0
+		self.colmNbr    = 0
 		self.detectedLF = False
 		if newText is not None:
 			self.icontent.s     = newText

@@ -21,9 +21,9 @@ def formatModuleName(zCtx, ZCI, moduleName):
 	checkedModuleName = ""
 	backShift         = len(moduleName)
 	for c in moduleName:
-		if c not in VAR_NAME_CHARSET:
+		if c not in DATAITEM_NAME_CHARSET:
 			ZCI.ctx.icontent.index -= backShift #target exact position of invalid character
-			ZCI.ctx.columnNbr      -= backShift
+			ZCI.ctx.colmNbr        -= backShift
 			zCtx.ZCIError(ZCI, "Character not allowed in module name.")
 		checkedModuleName += c
 
@@ -58,10 +58,10 @@ def c01_unmodulize(zCtx):
 
 		#found module declaration (DCL_MOD)
 		if ZCIText.startswith("mod") and ZCIText[3] in BLANKS:
-			ZCI.ctx.forward(4)
+			ZCI.forward(4)
 
-			#ZCI ctx will start from index -1 (istr initial position) but its columnNbr IS CORRECT => ctx.inc() will correspond to correct location => shift columnNbr to compensate
-			ZCI.ctx.columnNbr -= 1
+			#ZCI ctx will start from index -1 (istr initial position) but its colmNbr IS CORRECT => ctx.inc() will correspond to correct location => shift colmNbr to compensate
+			ZCI.ctx.colmNbr -= 1
 
 			#read next word
 			zCtx.jumpBlankZone(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
@@ -96,10 +96,9 @@ def c01_unmodulize(zCtx):
 				#avoid re-declaration
 				zCtx.cpl.modulePrefixes.append(modulePrefix)
 
-			#looking for starting point of module content #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< 1st IF CONCERNS OPTIONAL BLANK, CAN BE USEFUL !
-			if ZCI.ctx.get() in BLANKS:
-				zCtx.jumpBlankZone(ZCI, "Module content after name (braces includer).")
-			if ZCI.ctx.get() != '{':
+			#looking for starting point of module content
+			zCtx.optionnalBlanks(ZCI, "Module content after name (braces includer).")
+			if ZCI.get() != '{':
 				zCtx.ZCIError(ZCI, "Expected module content after name (braces includer).")
 
 			#get module content boundaries
@@ -110,13 +109,13 @@ def c01_unmodulize(zCtx):
 
 			#shift 1st character '{'
 			moduleContent_startIndex += 1
-			ZCI.ctx.inc()
+			ZCI.inc()
 
 			#extract ZCIs from content
 			moduleContent                = ZCI.ctx.copy()
 			moduleContent.icontent.s     = str_sub(ZCI.ctx.icontent.s, moduleContent_startIndex, moduleContent_stopIndex-1)
 			moduleContent.icontent.index = -1
-			moduleContent.columnNbr     -=  1 #shift to compensate the -1 set as index
+			moduleContent.colmNbr       -=  1 #shift to compensate the -1 set as index
 			moduleZCIs                   = extractZCIsFromCtx(zCtx, moduleContent, global_=True, subCtxs=ZCI.subCtxs, modulePrefix=modulePrefix)
 
 			#remove current ZCI in general ZCtx

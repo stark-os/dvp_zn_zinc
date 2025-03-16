@@ -38,14 +38,14 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePref
 
 		#as long as we have blanks, shift real beginning of ZCI
 		if c in BLANKS:
-			beginningIndex += 1
-			ZCI.ctx.columnNbr += 1
+			beginningIndex  += 1
+			ZCI.ctx.colmNbr += 1
 
 		#line feed found => ZCI does not start at current lineNbr, it may be next line (or further)
 		elif c == '\n':
-			beginningIndex   += 1
-			ZCI.ctx.lineNbr  += 1 #lineNbr/columnNbr were not totally accurate
-			ZCI.ctx.columnNbr = 1 # => we must count them again starting from where we were
+			beginningIndex  += 1
+			ZCI.ctx.lineNbr += 1 #lineNbr/colmNbr were not totally accurate
+			ZCI.ctx.colmNbr  = 1 # => we must count them again starting from where we were
 
 		#any other character => beginning of ZCI => stop stripping here
 		else:
@@ -62,13 +62,13 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePref
 
 	#strip END blanks
 	ZCI.ctx.icontent.s = str_stripEnd(ZCI.ctx.icontent.s, BLANKS)
-	ZCIText = ZCI.ctx.icontent.s
+	ZCIText            = ZCI.ctx.icontent.s
 
 
 
 	# 2) PROCESSING REGULAR/IMPORT ZCI
 
-	#reset ZCI ctx parsing (not lineNbr/columnNbr) for blank/name parsing
+	#reset ZCI ctx parsing (not lineNbr/colmNbr) for blank/name parsing
 	ZCI.ctx.icontent.index = -1
 	ZCI.ctx.detectedLF     = False
 
@@ -77,22 +77,25 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePref
 		return
 
 	#not long enough to be an import => regular ZCI
-	if len(ZCIText) < 5:
+	if len(ZCIText) < 4:
 		result.append(ZCI)
+		return
 
 	#import ZCI : process it NOW
 	if ZCIText.startswith("imp") and ZCIText[3] in BLANKS:
-		ZCI.ctx.forward(4)
 
 		#importations not allowed
 		if not allowImportsExpansion or len(modulePrefix) != 0:
 			zCtx.error("Invalid ZCS: Import ZCIs are only allowed in global scope outside any module.")
 
-		#read path
+		#jump required blank zone
+		ZCI.forward(3)
 		zCtx.jumpBlankZone(ZCI, "File path in import ZCI (EXT_IMP)")
 
-		#no path given
+		#importation path
 		path = zCtx.readName(ZCI, "File path in import ZCI (EXT_IMP).", blacklist=BLANKS)
+		if not ZCI.reachedEnd():
+			zCtx.ZCIError(ZCI, "Too much elements in import ZCI (EXT_IMP); should stop here.")
 
 		#process import : Will add every ZCI of the imported file instead of the current one
 		if zCtx.openNewSubCtx(path):
@@ -123,10 +126,10 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
 	skipLineFeed     = False
 	peerIndex        = 0
 
-	#prepare current ZCI result : Keep the same lineNbr/columnNbr/filename/... BUT changing the icontent inside.
+	#prepare current ZCI result : Keep the same lineNbr/colmNbr/filename/... BUT changing the icontent inside.
 	ZCI = zci(ctx.copy(), lst_ctx__copy(subCtxs)) # It will start as it was a totally new content but we keep the old file position for error indication.
 	ZCI.ctx.icontent.index = -1
-	ZCI.ctx.icontent.s     = "" # length=0 (can be weird cause we may have big lineNbr/columnNbr)
+	ZCI.ctx.icontent.s     = "" # length=0 (can be weird cause we may have big lineNbr/colmNbr)
 
 	#overwrite latest subCtx with a reference to the active one (it will change during parsing)
 	ZCI.subCtxs[-1] = ZCI.ctx
@@ -156,7 +159,7 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
 			if skipLineFeed:
 				if c == '\n': #really skipping line feed
 					skipLineFeed        = False
-					ZCI.ctx.icontent.s += '\n' #storing the line feed in all cases => necessary to get consistent BEGINNING lineNbr/columnNbr of ZCI when stripping it
+					ZCI.ctx.icontent.s += '\n' #storing the line feed in all cases => necessary to get consistent BEGINNING lineNbr/colmNbr of ZCI when stripping it
 					continue
 				else: #not actually skipping it, that was just a regular backslash
 					ZCI.ctx.icontent.s += '\\'
@@ -193,9 +196,9 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
 
 		#3) regular case
 		if ZCIUninitialized: #init current ZCI with its real position in file
-			ZCIUninitialized  = False
-			ZCI.ctx.lineNbr   = ctx.lineNbr
-			ZCI.ctx.columnNbr = ctx.columnNbr
+			ZCIUninitialized = False
+			ZCI.ctx.lineNbr  = ctx.lineNbr
+			ZCI.ctx.colmNbr  = ctx.colmNbr
 		ZCI.ctx.icontent.s += c
 
 	#last ZCI remaining
@@ -214,7 +217,7 @@ def p3_splitZCIsAndImport(zCtx):
 
 	#debug
 	if zCtx.debugMode:
-		debugOutput = "//columnNbr are -1 from reality (for parsing efficiency)\n[\n"
+		debugOutput = "//colmNbr are -1 from reality (for parsing efficiency)\n[\n"
 		for ZCI in ZCIs:
 			content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
 			debugOutput += "{module:\"" + ZCI.modulePrefix + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"

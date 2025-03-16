@@ -5,7 +5,8 @@
 # -------- IMPORTATIONS --------
 
 #internal
-from cpl.c01_unmodulize import *
+from cpl.c01_unmodulize     import *
+from cpl.c02_redirectGlobal import *
 
 
 
@@ -17,3 +18,4 @@ from cpl.c01_unmodulize import *
 #compilation
 def compile(zCtx):
 	c01_unmodulize(zCtx)
+	fcts = c02_redirectGlobal(zCtx)
