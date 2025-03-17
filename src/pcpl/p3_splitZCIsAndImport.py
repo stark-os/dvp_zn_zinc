@@ -32,36 +32,20 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePref
 
 	# 1) STRIPPING SIDES
 
-	#get REAL beginning of ZCI (prepare for stripping BEGINNING blanks)
-	beginningIndex = 0
-	for c in ZCI.ctx.icontent.s:
-
-		#as long as we have blanks, shift real beginning of ZCI
-		if c in BLANKS:
-			beginningIndex  += 1
-			ZCI.ctx.colmNbr += 1
-
-		#line feed found => ZCI does not start at current lineNbr, it may be next line (or further)
-		elif c == '\n':
-			beginningIndex  += 1
-			ZCI.ctx.lineNbr += 1 #lineNbr/colmNbr were not totally accurate
-			ZCI.ctx.colmNbr  = 1 # => we must count them again starting from where we were
-
-		#any other character => beginning of ZCI => stop stripping here
-		else:
-			break
-
 	#strip BEGINNING blanks
-	ZCI.ctx.icontent.s = ZCI.ctx.icontent.s[beginningIndex:]
+	beginningShift = str_getBeginningStripIndex(ZCI.ctx.icontent.s, charset=BLANKS_EXTENDED)
+	for a in range(beginningShift): #we must strip in 2-step to keep a consistent ctx (lineNbr & colmNbr)
+		ZCI.inc()
+	ZCI.ctx.icontent.s = str_sub(ZCI.ctx.icontent.s, start=beginningShift)
 
 	#shift ZCI pairs indexes with the new beginning
 	newPairs = {}
 	for p in ZCI.pairs.keys():
-		newPairs[p-beginningIndex] = ZCI.pairs[p] - beginningIndex
+		newPairs[p-beginningShift] = ZCI.pairs[p] - beginningShift
 	ZCI.pairs = newPairs
 
 	#strip END blanks
-	ZCI.ctx.icontent.s = str_stripEnd(ZCI.ctx.icontent.s, BLANKS)
+	ZCI.ctx.icontent.s = str_stripEnd(ZCI.ctx.icontent.s, BLANKS_EXTENDED)
 	ZCIText            = ZCI.ctx.icontent.s
 
 
@@ -217,7 +201,7 @@ def p3_splitZCIsAndImport(zCtx):
 
 	#debug
 	if zCtx.debugMode:
-		debugOutput = "//colmNbr are -1 from reality (for parsing efficiency)\n[\n"
+		debugOutput = "[\n"
 		for ZCI in ZCIs:
 			content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
 			debugOutput += "{module:\"" + ZCI.modulePrefix + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"

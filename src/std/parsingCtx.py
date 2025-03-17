@@ -110,6 +110,9 @@ class ParsingCtx:
 				return True
 		return False
 
+	def reachedEnd(self):
+		return self.icontent.reachedEnd()
+
 	def reset(self, newText=None):
 		self.lineNbr    = 1
 		self.colmNbr    = 0

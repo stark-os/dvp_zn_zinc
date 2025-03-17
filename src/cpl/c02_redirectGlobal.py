@@ -11,18 +11,137 @@ import os
 from std.string import *
 
 #internal
-#from pcpl.p3_splitZCIsAndImport import *
+from zctx import *
 
 
 
 
 
 
-# -------- TOOLS --------
+# -------- EXT_LNK --------
 
-#
-#def a():
-#	pass
+#external linking
+def processLnk(zCtx, ZCI):
+	zCtx.jumpBlankZone(ZCI, "File path in library linking ZCI (EXT_LNK)")
+
+	#library linking path
+	path = os.path.realpath( zCtx.readName(ZCI, "File path in library linking ZCI (EXT_LNK).", blacklist=BLANKS_EXTENDED) )
+	if not ZCI.reachedEnd():
+		zCtx.ZCIError(ZCI, "Too much elements in library linking ZCI (EXT_LNK); should stop here.")
+
+	#check existence
+	if not os.path.isfile(path):
+		zCtx.ZCIError(ZCI, "Shared & Dynamically Linked (SDL) library " + path + " not found.")
+
+	#add link
+	if path not in zCtx.cpl.dataResult.linkedLibs:
+		zCtx.cpl.dataResult.linkedLibs.append(path)
+
+
+
+
+
+
+# -------- DCL_TYP --------
+
+#general type declaration
+def processTypeCopyDcl(zCtx, ZCI):
+	zCtx.ZCIDebug(ZCI, "DETECTED TYPE COPY DCL HERE")
+
+	#too many thing to ZCI; must stop here<<<<<<<<<<<<<<<<<
+
+
+
+#type copy
+def processStcTypeDcl(zCtx, ZCI):
+	peerIndex = ZCI.ctx.getCorrespondingPeerIndex(peers=INCLUDERS)
+	if peerIndex < 0:
+		zCtx.ZCIInternal(ZCI, "Inconsistent use of includers inside type definition block but this should have been checked in step P3.")
+	ZCI.inc()
+
+	#skip beginning blanks
+	beginningShift = str_getBeginningStripIndex(
+		str_sub(ZCI.ctx.icontent.s, start=ZCI.ctx.icontent.index),
+		charset=BLANKS_EXTENDED
+	)
+	for a in range(beginningShift): #keep a consistent ctx (lineNbr & colmNbr)
+		ZCI.inc()
+	beginningIndex = ZCI.ctx.icontent.index
+
+	#read content in braces includer
+	fieldsText = str_stripEnd(
+		str_sub(ZCI.ctx.icontent.s, start=beginningIndex, stop=peerIndex-1),
+		charset=BLANKS_EXTENDED
+	)
+	fields = [""]
+	zCtx.ZCIDebug(ZCI, "STRUCTURE FIELDS")
+
+	#
+	ZCI.forward(peerIndex - beginningIndex + 1)
+
+	#too many thing to ZCI; must stop here<<<<<<<<<<<<<<<<<
+
+
+
+#structure
+def processTypeDcl(zCtx, ZCI):
+	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
+
+	#type name
+	name = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", whitelist=DATAITEM_NAME_CHARSET)
+
+	#explicit declination degree if any
+	dcnDeg = 0
+	if ZCI.get() == '[':
+		peerIndex = ZCI.ctx.getCorrespondingPeerIndex(peers=INCLUDERS)
+		if peerIndex < 0:
+			zCtx.ZCIInternal(ZCI, "Inconsistent use of includers inside type declination degree block but this should have been checked in step P3.")
+		ZCI.inc()
+
+		#skip beginning blanks
+		beginningShift = str_getBeginningStripIndex(
+			str_sub(ZCI.ctx.icontent.s, start=ZCI.ctx.icontent.index),
+			charset=BLANKS_EXTENDED
+		)
+		for a in range(beginningShift): #keep a consistent ctx (lineNbr & colmNbr)
+			ZCI.inc()
+
+		#read content given in brackets includer
+		beginningIndex = ZCI.ctx.icontent.index
+		dcnDegText = str_stripEnd(
+			str_sub(ZCI.ctx.icontent.s, start=beginningIndex, stop=peerIndex-1),
+			charset=BLANKS_EXTENDED
+		)
+
+		#parse dcnDeg
+		if not str_isConvertible_int(dcnDegText):
+			zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be an integer).")
+		dcnDeg = int(dcnDegText)
+		if dcnDeg < 0:
+			zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be positive).")
+		ZCI.forward(peerIndex - beginningIndex + 1)
+
+	#must be followed by blanks once more
+	if ZCI.get() not in BLANKS:
+		zCtx.ZCIError(ZCI, "Expected blank zone after type name in type declaration ZCI (DCL_TYP).")
+	zCtx.jumpBlankZone(ZCI, "Type content definition in type declaration ZCI (DCL_TYP).")
+
+	#process type content
+	if ZCI.get() == '{':
+		processStcTypeDcl(zCtx, ZCI)
+	else:
+		processTypeCopyDcl(zCtx, ZCI)
+
+
+
+
+
+
+# -------- DCL_ENM --------
+
+#enumerate declaration
+def processEnmDcl(zCtx, ZCI, global_=False):
+	pass
 
 
 
@@ -39,15 +158,12 @@ def c02_redirectGlobal(zCtx):
 
 	#analyse EVERY ZCI
 	for ZCI in zCtx.ZCIs:
-		initialLineNbr = ZCT.ctx.lineNbr
-		initialColmNbr = ZCT.ctx.colmNbr
+		initialLineNbr = ZCI.ctx.lineNbr
+		initialColmNbr = ZCI.ctx.colmNbr
 		ZCIText        = ZCI.ctx.icontent.s
 
 		#read 1st ZCI word
 		firstWord = zCtx.readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_CHARSET)
-
-
-
 
 
 
@@ -85,89 +201,35 @@ def c02_redirectGlobal(zCtx):
 
 
 
-
-
-
 		#CASE 2 - BEGINNING WITH KEYWORD AND ALLOWED
 
-		#greater than 3
-		else:
+		#trigrams requiring a following blank
+		if ZCIText[3] in BLANKS:
+			ZCI.ctx.lineNbr        = initialLineNbr #reset ctx as if we were right after trigram
+			ZCI.ctx.colmNbr        = initialColmNbr + 2
+			ZCI.ctx.icontent.index = 2
 
-			#trigrams requiring a following blank
-			if ZCIText[3] in BLANKS:
-				ZCI.ctx.lineNbr        = initialLineNbr #reset ctx as if we were right after trigram
-				ZCI.ctx.colmNbr        = initialColmNbr
-				ZCI.ctx.icontent.index = 2
+			#2.1 - library linking
+			if ZCIText.startswith("lnk"):
+				processLnk(zCtx, ZCI)
+				continue
 
+			#2.2 - type declaration DCL_TYP
+			if ZCIText.startswith("typ"):
+				processTypeDcl(zCtx, ZCI)
+				continue
 
-
-				#2.1 - library linking
-				if ZCIText.startswith("lnk"):
-					zCtx.jumpBlankZone(ZCI, "File path in library linking ZCI (EXT_LNK)")
-
-					#library linking path
-					path = os.path.realpath( zCtx.readName(ZCI, "File path in library linking ZCI (EXT_LNK).", blacklist=BLANKS) )
-					if not ZCI.reachedEnd():
-						zCtx.ZCIError(ZCI, "Too much elements in library linking ZCI (EXT_LNK); should stop here.")
-
-					#check existence
-					if not os.path.isfile(path):
-						zCtx.error("Shared & Dynamically Linked (SDL) library " + path + " not found.")
-
-					#add link
-					if path not in zCtx.cpl.dataResult.linkedLibs:
-						zCtx.cpl.dataResult.linkedLibs.append(path)
-					continue
+			#2.3 - ENM
+			if ZCIText.startswith("enm"):
+				processEnmDcl(zCtx, ZCI, global_=True)
+				continue
 
 
 
-				#2.2 - type declaration DCL_TYP
-				if ZCIText.startswith("typ"):
-					zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
+		#CASE 3 - BEGINNING WITH NAME
 
-					#type name
-					name = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", whitelist=)
-
-					#must be followed by blanks once more
-					if ZCI.get() not in BLANKS:
-						zCtx.ZCIError("Expected blank zone after type name in type declaration ZCI (DCL_TYP).")
-					zCtx.jumpBlankZone(ZCI, "Type content definition in type declaration ZCI (DCL_TYP).")
-
-					#type content definition : structure
-					#t = ztype()
-					if ZCI.get() == '{':
-						zCtx.debug("DETECTED STRUCTURE DCL HERE") #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-
-					#type content definition : copy
-					else:
-						zCtx.debug("DETECTED TYPE COPY DCL HERE") #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-
-					#if not ZCI.reachedEnd():
-					#	zCtx.ZCIError(ZCI, "Too much elements in type declaration ZCI (DCL_TYP); should stop here.")
-
-					#check existence
-					#if not os.path.isfile(path):
-					#	zCtx.error("Shared & Dynamically Linked (SDL) library " + path + " not found.")
-
-					#add it
-					#if path not in zCtx.cpl.dataResult.linkedLibs:
-					#	zCtx.cpl.dataResult.linkedLibs.append(path)
-					continue
-
-
-
-				#2.3 - ENM
-
-
-
-
-
-
-			#CASE 3 - BEGINNING WITH NAME
-
-			#other possibilities
-			else:
-				print("Undefined yet.")
+		#other possibilities
+		print("Undefined yet.")
 
 	#result
 	return functionZCIs

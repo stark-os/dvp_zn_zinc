@@ -23,12 +23,13 @@ import string
 PCPL_ITEM_NAME_CHARSET = string.ascii_letters + string.digits + '_'
 
 #general syntax
-BLANKS    = (" ", "\t")
-INCLUDERS = { '(':')', '[':']', '{':'}' }
+BLANKS          = (' ', '\t')
+BLANKS_EXTENDED = (' ', '\t', '\n')
+INCLUDERS       = { '(':')', '[':']', '{':'}' }
 
 #charsets
 DATAITEM_NAME_CHARSET           = PCPL_ITEM_NAME_CHARSET #no link with PCPL items, but same value
-ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + INCLUDERS.keys()
+ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + tuple(INCLUDERS.keys())
 ZCE_NAME_CHARSET                = DATAITEM_NAME_CHARSET + "^."
 
 #general name parsing
@@ -45,7 +46,7 @@ NOTHING_AFTER_NAME = -3
 
 #tools
 def unprefixizeModule(modulePrefix):
-	return "^" + modulePrefix[1:].replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1]
+	return "^" + str_sub(modulePrefix, start=1).replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1]
 
 #ZCI
 class zci:
@@ -114,12 +115,13 @@ class program:
 #However, here in Python, we must declare it before to allow dataItem definition and so, zstc.
 #Same thing for zfct.
 class ztyp:
-	def __init__(self, name, isPrm, data, parent=None):
+	def __init__(self, name, isPrm, data, dcnDeg, parent=None):
 		self.name    = name
 		self.parent  = parent
 		self.isPrm   = isPrm
-		self.data    = data #ptr to be cashted into zprm or zstc
-		self.methods = []   #lst[zfct]
+		self.data    = data    #ptr to be cashted into zprm or zstc
+		self.dcnDeg  = decnDeg #declination degree
+		self.methods = []      #lst[zfct]
 
 class dataItem:
 	def __init__(self, ztyp, name, initialValue, constant=False):
@@ -180,12 +182,12 @@ class zctx:
 		self.subCtxs.append(initialCtx)
 
 		#check CPL options
-		self.checkCplOpt(pcpl_cfg, cpl_opt)
+		self.checkCplOpt(cpl_opt)
 
 		#real memory items <<<<<<<<<<<<<<<<<<<<<< to be stored into an enm
 		self.SIZE = {
-			'BYT' = 1, 'SHR' = 2,
-			'INT' = 4, 'LNG' = 4
+			'BYT':1, 'SHR':2,
+			'INT':4, 'LNG':4
 		}
 		if cpl_opt["ARCH64"]:
 			self.SIZE['LNG'] = 8
@@ -309,7 +311,15 @@ class zctx:
 
 	# COMPILATION TOOLS
 
-	#errors after precompilation are closely related to ZCIs, no longer to global subCtxs
+	#output after precompilation is closely related to ZCIs, no longer to global subCtxs
+	def ZCIDebug(self, ZCI, msg):
+		self.overwriteSubCtxs(ZCI.subCtxs)
+		self.debug(msg)
+
+	def ZCIWarning(self, ZCI, msg):
+		self.overwriteSubCtxs(ZCI.subCtxs)
+		self.warning(msg)
+
 	def ZCIError(self, ZCI, msg):
 		self.overwriteSubCtxs(ZCI.subCtxs)
 		self.error(msg)
@@ -360,7 +370,7 @@ class zctx:
 
 	def optionnalBlanks(self, ZCI, missingFieldsIfError):
 		if ZCI.get() in BLANKS:
-			zCtx.jumpBlankZone(ZCI, missingFieldsIfError=missingFieldsIfError)
+			self.jumpBlankZone(ZCI, missingFieldsIfError=missingFieldsIfError)
 
 
 

@@ -2,6 +2,16 @@
 
 
 
+# -------- IMPORTATIONS --------
+
+#charsets
+import string
+
+
+
+
+
+
 # -------- TOOLS --------
 
 #TO BE ADDED TO STDZ : this is a tiny bit more optimized version of ==(str,str).
@@ -32,21 +42,6 @@ def str_subEqual( #that is tab_subequal in stdz actually
 			return False
 	return True
 
-def str_stripEnd(t, charset=" \t"):
-	len_t        = len(t)
-	result       = ""
-	currentIndex = len_t
-	stripping    = True
-	for i in range(len_t):
-		currentIndex -= 1
-		currentChr    = t[currentIndex]
-		if stripping:
-			if currentChr in charset:
-				continue
-			stripping = False
-		result = currentChr + result
-	return result
-
 def str_sub(s, start=None, stop=None):
 	if start is None:
 		start = 0
@@ -56,3 +51,37 @@ def str_sub(s, start=None, stop=None):
 
 def lst_sub(l, start=None, stop=None):
 	return str_sub(l, start=start, stop=stop)
+
+def str_isConvertible_int(s):
+	for c in s:
+		if c not in string.digits:
+			return False
+	return True
+
+
+
+#strip
+def str_getEndStripIndex(t, charset=" \t"):
+	endIndex = len(t)-1
+	for i in range(len(t)):
+		if t[endIndex] not in charset:
+			break
+		endIndex -= 1
+	return endIndex
+
+def str_stripEnd(t, charset=" \t"):
+	return str_sub(t, stop=str_getEndStripIndex(t, charset))
+
+def str_getBeginningStripIndex(t, charset=" \t"):
+	startIndex = 0
+	for i in range(len(t)):
+		if t[startIndex] not in charset:
+			break
+		startIndex += 1
+	return startIndex
+
+def str_stripBeginning(t, charset=" \t"):
+	return str_sub(t, start=str_getBeginningStripIndex(t, charset))
+
+def str_strip(t, charset=" \t"):
+	return str_stripEnd(str_stripBeginning(t, charset), charset)
