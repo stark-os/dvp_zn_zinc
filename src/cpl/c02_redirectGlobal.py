@@ -44,51 +44,21 @@ def processLnk(zCtx, ZCI):
 
 # -------- DCL_TYP --------
 
-#general type declaration
-def processTypeCopyDcl(zCtx, ZCI):
-	zCtx.ZCIDebug(ZCI, "DETECTED TYPE COPY DCL HERE")
-
-	#too many thing to ZCI; must stop here<<<<<<<<<<<<<<<<<
-
-
-
-#type copy
-def processStcTypeDcl(zCtx, ZCI):
-	peerIndex = ZCI.ctx.getCorrespondingPeerIndex(peers=INCLUDERS)
-	if peerIndex < 0:
-		zCtx.ZCIInternal(ZCI, "Inconsistent use of includers inside type definition block but this should have been checked in step P3.")
-	ZCI.inc()
-
-	#skip beginning blanks
-	beginningShift = str_getBeginningStripIndex(
-		str_sub(ZCI.ctx.icontent.s, start=ZCI.ctx.icontent.index),
-		charset=BLANKS_EXTENDED
-	)
-	for a in range(beginningShift): #keep a consistent ctx (lineNbr & colmNbr)
-		ZCI.inc()
-	beginningIndex = ZCI.ctx.icontent.index
-
-	#read content in braces includer
-	fieldsText = str_stripEnd(
-		str_sub(ZCI.ctx.icontent.s, start=beginningIndex, stop=peerIndex-1),
-		charset=BLANKS_EXTENDED
-	)
-	fields = [""]
-	zCtx.ZCIDebug(ZCI, "STRUCTURE FIELDS")
-
-	#
-	ZCI.forward(peerIndex - beginningIndex + 1)
-
-	#too many thing to ZCI; must stop here<<<<<<<<<<<<<<<<<
-
-
-
 #structure
 def processTypeDcl(zCtx, ZCI):
 	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
 
-	#type name
-	name = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", whitelist=DATAITEM_NAME_CHARSET)
+	#get full type name considered as "undeclinated"
+	rawName  = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).")
+	fullName = ZCI.modulePrefix + 'U' + rawName
+
+	#check already existing
+	for t in zCtx.cpl.ztypes:
+		if fullName == t.name:
+			modulePrefixText = ""
+			if len(ZCI.modulePrefix) != 0:
+				modulePrefixText = unprefixizeModule(ZCI.modulePrefix)
+			zCtx.ZCIError(ZCI, "Type " + modulePrefixText + rawName + " already exists, can't declare a new one with the same name (DCL_TYP).")
 
 	#explicit declination degree if any
 	dcnDeg = 0
@@ -128,9 +98,24 @@ def processTypeDcl(zCtx, ZCI):
 
 	#process type content
 	if ZCI.get() == '{':
-		processStcTypeDcl(zCtx, ZCI)
+		newZType = ztyp(
+			fullName, dcnDeg,
+			zCtx.SIZE['LNG'], True,
+			fields = readKeyValueFields(zCtx, ZCI, )
+		)
 	else:
-		processTypeCopyDcl(zCtx, ZCI)
+		parent   = zCtx.readZType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
+		newZType = ztyp(
+			fullName, dcnDeg,
+			parent.size, False,
+			parent = parent
+		)
+
+	#add new type
+	zCtx.cpl.ztypes.append(newZType)
+
+	#end of ZCI expected
+	zCtx.endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")
 
 
 
@@ -230,6 +215,9 @@ def c02_redirectGlobal(zCtx):
 
 		#other possibilities
 		print("Undefined yet.")
+
+	#debug output file
+	zCtx.cplStep_debugZCIS("02")
 
 	#result
 	return functionZCIs

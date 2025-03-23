@@ -197,7 +197,7 @@ def p1_CommentsPItemsText(zCtx):
 				continue
 
 			#valid content => fill variable name
-			if c in PCPL_ITEM_NAME_CHARSET:
+			if c in DEFAULT_NAME_CHARSET: # = PCPL name charset
 				pcplItem_name += c
 				continue
 

@@ -53,6 +53,11 @@ def lst_sub(l, start=None, stop=None):
 	return str_sub(l, start=start, stop=stop)
 
 def str_isConvertible_int(s):
+	if len(s) == 0:
+		return False
+	positiveS = s
+	if s[0] == '-':
+		positiveS = s[1:]
 	for c in s:
 		if c not in string.digits:
 			return False

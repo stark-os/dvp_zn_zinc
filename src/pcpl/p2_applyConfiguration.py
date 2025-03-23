@@ -59,7 +59,7 @@ def p2_applyConfiguration(zCtx):
 
 		#2) reading config name
 		if parsingState == IN_NAME:
-			if c not in PCPL_ITEM_NAME_CHARSET: #end of config name => turn into "before zone" mode (can be empty)
+			if c not in DEFAULT_NAME_CHARSET: #end of config name => turn into "before zone" mode (can be empty)
 
 				#unknown CFG name
 				if CFGName not in CFGKeys:

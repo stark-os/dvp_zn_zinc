@@ -7,9 +7,6 @@
 #std
 from std.path import *
 
-#parsing
-import std.dreamlands as dl
-
 #internal
 from zctx                       import *
 from pcpl.p1_CommentsPItemsText import *

@@ -15,13 +15,14 @@ from pcpl.p3_splitZCIsAndImport import *
 # -------- TOOLS --------
 
 #check & turn raw Module name into prefix
+# HERE, we consider our ZCI to be at position right after reading the given moduleName
 def formatModuleName(zCtx, ZCI, moduleName):
 
 	#charset check
 	checkedModuleName = ""
 	backShift         = len(moduleName)
 	for c in moduleName:
-		if c not in DATAITEM_NAME_CHARSET:
+		if c not in DEFAULT_NAME_CHARSET:
 			ZCI.ctx.icontent.index -= backShift #target exact position of invalid character
 			ZCI.ctx.colmNbr        -= backShift
 			zCtx.ZCIError(ZCI, "Character not allowed in module name.")
@@ -60,8 +61,12 @@ def c01_unmodulize(zCtx):
 		if ZCIText.startswith("mod") and ZCIText[3] in BLANKS:
 			ZCI.forward(4)
 
-			#ZCI ctx will start from index -1 (istr initial position) but its colmNbr IS CORRECT => ctx.inc() will correspond to correct location => shift colmNbr to compensate
+			#ZCI ctx starts from index -1 (istr initial position) but its colmNbr IS CORRECT => ctx.inc() will push it 1 step too far => shift it to compensate
 			ZCI.ctx.colmNbr -= 1
+
+
+
+			# I] MODULE NAME
 
 			#read next word
 			zCtx.jumpBlankZone(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
@@ -70,7 +75,7 @@ def c01_unmodulize(zCtx):
 			#combine with current module (we can be in another module => this allow submodularization)
 			modulePrefix = ZCI.modulePrefix + formatModuleName(zCtx, ZCI, moduleName)
 
-			#CASE 1 - ADD TO MODULE
+			# I.1) module addition
 			if moduleName == "add":
 
 				#read one more name
@@ -85,7 +90,7 @@ def c01_unmodulize(zCtx):
 					zCtx.debugModules()
 					zCtx.ZCIError(ZCI, "No module " + unprefixizeModule(modulePrefix) + " declared yet, can't add to it.")
 
-			#CASE 2 - NEW MODULE
+			# I.2) new module
 			else:
 
 				#already declared the same exact module
@@ -95,6 +100,10 @@ def c01_unmodulize(zCtx):
 
 				#avoid re-declaration
 				zCtx.cpl.modulePrefixes.append(modulePrefix)
+
+
+
+			# II] MODULE CONTENT
 
 			#looking for starting point of module content
 			zCtx.optionnalBlanks(ZCI, "Module content after name (braces includer).")
@@ -127,15 +136,10 @@ def c01_unmodulize(zCtx):
 			nextZCIs     = lst_sub(zCtx.ZCIs, start=z+1)
 			zCtx.ZCIs    = previousZCIs + moduleZCIs + nextZCIs
 
-			#for deep debugging, just in case
-			#debugOutput = "[\n"
-			#for ZCI in zCtx.ZCIs:
-			#	content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
-			#	debugOutput += "{module:\"" + ZCI.modulePrefix + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"
-			#debugOutput += "]"
-			#print(debugOutput)
-
 			_ZCIsLen = len(zCtx.ZCIs) # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only in python, not required in Z (.length field)
 
 		#next ZCI
 		z += 1
+
+	#debug output file
+	zCtx.cplStep_debugZCIS("01")
