@@ -86,14 +86,13 @@ def p2_applyConfiguration(zCtx):
 				zoneLineFeeds = ""
 				parsingState = IN_ZONE
 
-				#get index of its peer (end of zone). Here, we don't care about other includers,
-				peerIndex = zCtx.ctx.getCorrespondingPeerIndex(peers={'{':'}'}) #only braces are taken into account
+				#get pairs until end of zone. Here, we don't care about other includers, only braces are taken into account
+				currentPairs = zCtx.ctx.getPairsUntilCorrespondingPeer(allowedPairs={'{':'}'})
 
-				#error cases: -1 must never occur (c == '{'), neither -2 (only 1 includer type taken into account => cannot have inconsistency)
-				if peerIndex == -3:
+				#error cases, limited : only 1 includer type taken into account => cannot have inconsistency
+				if currentPairs == PARSING_CTX__PEER_NOT_FOUND:
 					zCtx.error("Missing end delimiter for precompiler configuration \"" + CFGName + "\" (corresponding '}' expected).")
-				if peerIndex < 0:
-					zCtx.internal("Negative peerIndex found in PCPL CFG parsing.")
+				peerIndex = currentPairs[zCtx.ctx.icontent.index]
 			continue
 
 

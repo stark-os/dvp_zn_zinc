@@ -107,18 +107,14 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
 	skipLineFeed     = False
 	peerIndex        = 0
 
-	#prepare current ZCI result : Keep the same lineNbr/colmNbr/filename/... BUT changing the icontent inside.
-	ZCI = zci(ctx.copy(), lst_ctx__copy(subCtxs)) # It will start as it was a totally new content but we keep the old file position for error indication.
+	#prepare current ZCI result : it must be independant from any other context (have its own lineNbr/colmNbr/... starting from where we are).
+	ZCI = zci(lst_ctx__copy(subCtxs, copyContent=True))
+	ZCI.updateCtx(ctx.copy())   #set current active ctx (that can be different from latest subCtx)
 	ZCI.ctx.icontent.index = -1
-	ZCI.ctx.icontent.s     = "" # length=0 (can be weird cause we may have big lineNbr/colmNbr)
-
-	#overwrite latest subCtx with a reference to the active one (it will change during parsing)
-	ZCI.subCtxs[-1] = ZCI.ctx
-
-	#prepare whole result
-	ZCIs = []
+	ZCI.ctx.icontent.s     = "" #really important to reset it completely, it must be a whole new string
 
 	#parsing byte per byte
+	ZCIs = []
 	while not ctx.inc():
 		c = ctx.get()
 
@@ -148,10 +144,11 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
 			#end of ZCI
 			if c == ';' or c == '\n':
 				stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, modulePrefix=modulePrefix)
-				ZCI                = zci(ctx.copy(), lst_ctx__copy(subCtxs)) #reset current ZCI result
-				ZCI.ctx.icontent.s = "" # length=0 : really important to reset length
-				ZCI.subCtxs[-1]    = ZCI.ctx #update latest subCtx as well
-				ZCIUninitialized   = True
+				ZCI                    = zci(lst_ctx__copy(subCtxs, copyContent=True)) #reset current ZCI result
+				ZCI.updateCtx(ctx.copy())                                              #set current active ctx (that can be different from latest subCtx)
+				ZCI.ctx.icontent.s     = ""                                            #really important to reset it completely, it must be a whole new string
+				ZCI.ctx.icontent.index = -1
+				ZCIUninitialized       = True
 				continue
 
 			#maybe having a multi-line ZCI
@@ -162,16 +159,27 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
 			#includer found
 			if c in INCLUDERS.keys():
 				ZCI_ctx_icontent_s_len = len(ZCI.ctx.icontent.s) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only in python (.length field)
-				if ZCI_ctx_icontent_s_len in ZCI.pairs:
+
+				#ZCI.ctx.icontent.s has not stored current character yet => its length corresponds to "current ZCI index"
+				if ZCI_ctx_icontent_s_len in ZCI.pairs.keys():
 					zCtx.internal("Processing the same ZCI includer twice.")
-				peerIndex = ctx.getCorrespondingPeerIndex(peers=INCLUDERS)
-				if peerIndex == -2:
+
+				#get every pairs until end of our includer
+				currentPairs = ctx.getPairsUntilCorrespondingPeer(allowedPairs=INCLUDERS)
+				if currentPairs == PARSING_CTX__INCONSISTENT_INCLUDER_PARSING:
 					zCtx.error("Invalid ZCS: Inconsistent use of includers inside block (opening/closing).")
-				if peerIndex == -3:
+				if currentPairs == PARSING_CTX__PEER_NOT_FOUND:
 					zCtx.error("Invalid ZCS: Missing closing includer '" + INCLUDERS[c] + "'.")
 
-				#add this pair to our ZCI so we can find them more easily if further compilation steps
-				ZCI.pairs[ZCI_ctx_icontent_s_len] = ZCI_ctx_icontent_s_len + (peerIndex - ctx.icontent.index)
+				#prepare to convert from global-ctx to ZCI-ctx indexing
+				globalCtx_to_ZCICtx_delta = ZCI_ctx_icontent_s_len - ctx.icontent.index
+
+				#add these pairs to our ZCI so we can find them more easily if further compilation steps
+				for p in currentPairs.keys():
+					ZCI.pairs[globalCtx_to_ZCICtx_delta + p] = globalCtx_to_ZCICtx_delta + currentPairs[p]
+
+				#set ending peer index to continue parsing ZCI content until reaching it
+				peerIndex = currentPairs[ctx.icontent.index] #we use global ctx here, that's a choice. The objective is to continue parsing until reaching closing peer.
 
 
 

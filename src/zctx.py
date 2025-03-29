@@ -6,6 +6,7 @@
 
 #std
 from std.string     import *
+from std.path       import *
 from std.list       import *
 from std.io         import *
 from std.parsingCtx import *
@@ -47,47 +48,21 @@ ROOT_TYPES = (
 
 #tools
 def unprefixizeModule(modulePrefix):
+	if len(modulePrefix) == 0:
+		return ""
 	return "^" + str_sub(modulePrefix, start=1).replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1]
-
-def splitModulePrefix(name):
-	if len(name) == 0:
-		return ""
-	if name[0] != 'M': #no module prefix
-		return ""
-
-	#get only module prefix from name
-	modulePrefix    = "M"
-	foundUnderscore = False
-	for c in name:
-
-		#previous character was an underscore => potential end of module prefix
-		if foundUnderscore:
-			foundUnderscore = False
-
-			#- double underscore => regular text, ignore it
-			#- end of module prefix, but another one follows => still in it
-			#else => definitely out of module prefix
-			if c != '_' and c != 'M':
-				break
-
-		#previous character was not an underscore => we are in module prefix, sure at 100%
-		elif c == '_':
-			foundUnderscore = True
-
-		#in module prefix
-		modulePrefix += c
-
-	#ERROR CASE CAN OCCUR : modulePrefix does not end with an null or odd number of underscore => modulePrefix is inconsistent in given name
-	#Actually, we don't really care about this in that tool, it is not being used in parsing but only for user output.
-	# => error case should never occur, and even if it does, it won't affect compilation process
-	return modulePrefix
 
 #ZCI
 class zci:
-	def __init__(self, ctx, subCtxs, modulePrefix=""):
-		self.subCtxs      = subCtxs
-		self.ctx          = ctx
-		self.pairs        = {} #map[ulng,ulng]
+	def __init__(self, subCtxs, modulePrefix="", pairs=None): #python: ", pairs={}" NEVER ! it will link every instance to the same element => You don't want that !
+		self.subCtxs = subCtxs
+		if lst_isEmpty(subCtxs):
+			self.ctx = None
+		else:
+			self.ctx = subCtxs[-1]
+		if pairs is None:
+			pairs = {}
+		self.pairs        = pairs #map[unt_l,unt_l]
 		self.modulePrefix = modulePrefix
 
 	#ctx forwards
@@ -102,6 +77,13 @@ class zci:
 
 	def reachedEnd(self):
 		return self.ctx.reachedEnd()
+
+	def updateCtx(self, newCtx):
+		self.ctx = newCtx
+
+		#replace the last subctx reference by our newCtx
+		lst_pop(self.subCtxs)
+		self.subCtxs.append(newCtx)
 
 
 
@@ -168,15 +150,15 @@ class program:
 #However, here in Python, we must declare it before to allow dataItem definition and so, zstc.
 #Same thing for zfct.
 class ztyp:
-	def __init__(self, name, dcnDeg, size, isStc, fields=[], parent=None, currentDcn=None):
+	def __init__(self, name, dcnDeg, size, isStc, fields=[], parent=None, dcns=None):
 		self.name    = name
 		self.parent  = parent
 		self.methods = []     #lst[zfct]
 		self.size    = size
 
 		#declination
-		self.dcnDeg = dcnDeg     #declination degree
-		self.dcn    = currentDcn #current declination, tab[ztyp]
+		self.dcnDeg = dcnDeg #declination degree
+		self.dcns   = dcns   #current declination, tab[ztyp]
 
 		#stc related
 		self.isStc   = isStc #<=> type "nature" (is primitive / structure)
@@ -224,11 +206,11 @@ class zctx:
 		self.debugMode = debugMode
 
 		#every imported context & the current one
-		initialCtx        = ParsingCtx(filepath, readFile(filepath))
-		self.ctx          = initialCtx
+		self.initialCtx   = ParsingCtx(filepath, readFile(filepath))
+		self.ctx          = self.initialCtx
 		self.imported     = [] #history of every filename imported
 		self.subCtxs      = [] #subcontexts currently in use
-		self.subCtxs.append(initialCtx)
+		self.subCtxs.append(self.initialCtx)
 
 		#check CPL options
 		self.checkCplOpt(cpl_opt)
@@ -272,7 +254,7 @@ class zctx:
 				self.error("Missing compilation option \"" + o + "\" in configuration file cpl_opt.cfg.")
 
 			#check value: ARCH type
-			if CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ARCH:
+			if CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ARCHT:
 				if cpl_opt[o] not in ("32", "64"):
 					self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (32 or 64 expected)")
 
@@ -312,28 +294,39 @@ class zctx:
 		return self.ctx.forward(step)
 
 	#output
-	def debug(self, msg, printSubCtxs=True):
+	def debug(self, msg, printSubCtxs=True, printLine=True):
 		if self.debugMode:
 			print("[ DEBUG ] " + msg)
 			if printSubCtxs:
 				for ctx in self.subCtxs:
 					print("    At " + ctx.toStr())
+			if printLine:
+				self.ctx.printLineIndicator()
 
-	def warning(self, msg):
+	def warning(self, msg, printSubCtxs=True, printLine=True):
 		print("[WARNING] " + msg)
-		for ctx in self.subCtxs:
-			print("    At " + ctx.toStr())
+		if printSubCtxs:
+			for ctx in self.subCtxs:
+				print("    At " + ctx.toStr())
+		if printLine:
+			self.ctx.printLineIndicator()
 
-	def error(self, msg):
+	def error(self, msg, printSubCtxs=True, printLine=True):
 		print("[ ERROR ] " + msg)
-		for ctx in self.subCtxs:
-			print("    At " + ctx.toStr())
+		if printSubCtxs:
+			for ctx in self.subCtxs:
+				print("    At " + ctx.toStr())
+		if printLine:
+			self.ctx.printLineIndicator()
 		exit(1)
 
-	def internal(self, msg):
+	def internal(self, msg, printSubCtxs=True, printLine=True):
 		print("[INT ERR] " + msg)
-		for ctx in self.subCtxs:
-			print("    At " + ctx.toStr())
+		if printSubCtxs:
+			for ctx in self.subCtxs:
+				print("    At " + ctx.toStr())
+		if printLine:
+			self.ctx.printLineIndicator()
 		exit(2)
 
 
@@ -389,21 +382,21 @@ class zctx:
 	# ZCI OUTPUT (cpl)
 
 	#output after precompilation is closely related to ZCIs, no longer to global subCtxs
-	def ZCIDebug(self, ZCI, msg):
+	def ZCIDebug(self, ZCI, msg, printSubCtxs=True, printLine=True):
 		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.debug(msg)
+		self.debug(msg, printSubCtxs=printSubCtxs, printLine=printLine)
 
-	def ZCIWarning(self, ZCI, msg):
+	def ZCIWarning(self, ZCI, msg, printSubCtxs=True, printLine=True):
 		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.warning(msg)
+		self.warning(msg, printSubCtxs=printSubCtxs, printLine=printLine)
 
-	def ZCIError(self, ZCI, msg):
+	def ZCIError(self, ZCI, msg, printSubCtxs=True, printLine=True):
 		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.error(msg)
+		self.error(msg, printSubCtxs=printSubCtxs, printLine=printLine)
 
-	def ZCIInternal(self, ZCI, msg):
+	def ZCIInternal(self, ZCI, msg, printSubCtxs=True, printLine=True):
 		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.internal(msg)
+		self.internal(msg, printSubCtxs=printSubCtxs, printLine=printLine)
 
 
 
@@ -553,6 +546,78 @@ class zctx:
 		if not ZCI.reachedEnd():
 			self.ZCIError(ZCI, "Too much elements in " + ZCIKindIfError + " Should stop here.")
 
+	def splitModulePrefix(self, ZCI, name):
+		if len(name) == 0:
+			return ""
+		if name[0] != 'M': #no module prefix
+			return ""
+
+		#get only module prefix from name
+		modulePrefix    = "M"
+		foundUnderscore = False
+		for c in name:
+
+			#previous character was an underscore => potential end of module prefix
+			if foundUnderscore:
+				foundUnderscore = False
+
+				#- double underscore => regular text, ignore it
+				#- end of module prefix, but another one follows => still in it
+				#else => definitely out of module prefix
+				if c != '_' and c != 'M':
+					break
+
+			#previous character was not an underscore => we are in module prefix, sure at 100%
+			elif c == '_':
+				foundUnderscore = True
+
+			#in module prefix
+			modulePrefix += c
+
+		#count ending underscores
+		uNbr = 0
+		modulePrefix_length = len(modulePrefix)
+		for c in range(modulePrefix_length):
+			if modulePrefix[modulePrefix_length-c-1] == '_':
+				uNbr += 1
+			else:
+				break
+
+		#error case : should never occur. It would mean we made s-thing wrong when transforming module notation into module prefix
+		if uNbr%2 == 0:
+			self.ZCIInternal(ZCI, "Invalid module prefix '" + modulePrefix + "' extracted from name '" + name + "' (ending with even number of underscores).")
+		return modulePrefix
+
+	#read content inside an includer and strip it from blanks & line feeds.
+	# Given ZCI must be at the beginning of that includer (openning peer) and will be forwarded right after it (after closing peer).
+	def getIncluderStrippedContent(self, ZCI, IncluderContentIfError):
+		peerIndex = ZCI.pairs[ZCI.ctx.icontent.index]
+		ZCI.inc()
+
+		#skip beginning blanks
+		beginningShift = str_getBeginningStripIndex(
+			str_sub(ZCI.ctx.icontent.s, start=ZCI.ctx.icontent.index),
+			charset=BLANKS_EXTENDED
+		)
+		for a in range(beginningShift): #keep a consistent ctx (lineNbr & colmNbr)
+			ZCI.inc()
+
+		#get ctx copy from the REAL beginning
+		contentCtx = ZCI.ctx.copy()
+
+		#strip ending blanks
+		beginningIndex = ZCI.ctx.icontent.index
+		content = str_stripEnd(
+			str_sub(ZCI.ctx.icontent.s, start=beginningIndex, stop=peerIndex-1),
+			charset=BLANKS_EXTENDED
+		)
+
+		#forward initial ZCI after ending peer
+		ZCI.forward(peerIndex - beginningIndex + 1)
+
+		#return content & its associated ctx for erroring/debugging
+		return (contentCtx, content) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< great example of "fly" use (can be solved using tab[atm] for the moment
+
 
 
 	# DEBUG
@@ -572,7 +637,7 @@ class zctx:
 				content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
 				debugOutput += "{module:\"" + ZCI.modulePrefix + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"
 			debugOutput += "]"
-			writeFile("debug/" + path_name(self.ctx.filename) + ".c" + cplStep + ".json", debugOutput)
+			writeFile("debug/" + path_name(self.initialCtx.filename) + ".c" + cplStep + ".json", debugOutput)
 
 
 
@@ -584,14 +649,14 @@ class zctx:
 		#read full type name
 		ztModulePrefix = ""
 		if ZCI.get() == '^':
-			ztRawName      = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefix=True, modulePrefix_asHeaderOnly=True) #full name but without declination prefix (so ~almost~ full)
-			ztModulePrefix = splitModulePrefix(ztFullName)                 #save its module prefix elsewhere
-			ztRawName      = str_sub(ztRawName, start=len(ztModulePrefix)) # + cut it from raw name
+			ztRawName      = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefix=True, modulePrefix_asHeaderOnly=True) #actually, this is more the "FullName" but without declination prefix (so ~almost~ full)
+			ztModulePrefix = self.splitModulePrefix(ZCI, ztRawName)        #save its module prefix elsewhere
+			ztRawName      = str_sub(ztRawName, start=len(ztModulePrefix)) # + cut it from the "almost full name" to get only the RAW name
 		else:
 			ztRawName = self.readName(ZCI, "Type name in " + ZCIKindIfError)
 		ztFullName = ztModulePrefix + 'U' + ztRawName
 
-		#check existence
+		#1 - check UNDECLINATED variant existence
 		ztInstance = None
 		for t in self.cpl.ztypes:
 			if ztFullName == t.name:
@@ -600,37 +665,63 @@ class zctx:
 		if ztInstance is None:
 			self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName + " does not exist.")
 
-		#fullfill declination's parameters if any
-		if ztInstance.dcnDeg != 0:
-			
-			if ZCI.get() == '[':
-				peerIndex = ZCI.ctx.getCorrespondingPeerIndex(peers=INCLUDERS)
-				if peerIndex < 0:
-					zCtx.ZCIInternal(ZCI, "Inconsistent use of includers inside type declination degree block but this should have been checked in step P3.")
-				ZCI.inc()
+		#2 - declination list given => solve them
+		if ZCI.get() == '[':
 
-				#skip beginning blanks
-				beginningShift = str_getBeginningStripIndex(
-					str_sub(ZCI.ctx.icontent.s, start=ZCI.ctx.icontent.index),
-					charset=BLANKS_EXTENDED
+			#undeclinable type
+			if ztInstance.dcnDeg == 0:
+				self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName + " is not declinable (null declination degree).")
+
+			#read declination types
+			dcnsTextCtx, dcnsText = self.getIncluderStrippedContent(ZCI, "type declination list")
+
+			#create an alternative ZCI especially to read declination types
+			dcnsZCI = zci(dcnsTextCtx, ZCI.subCtxs, modulePrefix=ZCI.modulePrefix, pairs=ZCI.pairs) #same exact copy but starts with dcnsCtx instead
+
+			#read declination types one by one
+			dcns = [] #lst[ztyp]
+			while True:
+				dcns.append(self.readZType(dcnsZCI))
+
+				#must be followed by coma or closing peer
+				optionnalBlanks(dcnsZCI, None)
+				if dcnsZCI.get() == ']':
+					break
+				elif dcnsZCI.get() != ',':
+					self.ZCIError(dcnsZCI, "Invalid element given in declination types sequence (expected coma separator ',').")
+				dcnsZCI.inc()
+				optionnalBlanks(dcnsZCI, None)
+
+			#check declination length
+			if len(dcns) < ztInstance.dcnDeg:
+				self.ZCIError(dcnsZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
+			elif len(dcns) > ztInstance.dcnDeg:
+				self.ZCIError(dcnsZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
+
+			#re-build full type name including declinations this time
+			ztFullName = ztModulePrefix + 'D' + ztRawName
+			for d in dcns:
+				ztFullName += '_' + d.name
+
+			#check for that declination in the currently declared ztypes
+			ztInstanceUndeclinated = ztInstance
+			ztInstance             = None
+			for t in self.cpl.ztypes:
+				if ztFullName == t.name:
+					ztInstance = t
+					break
+
+			#not found => create that declination (this new combination must exist)
+			if ztInstance is None:
+				self.cpl.ztypes.append(ztInstance)
+				ztInstance = ztyp(
+					ztFullName, len(dcns),
+					ztInstanceUndeclinated.size,
+					ztInstanceUndeclinated.isStc,
+					fields=ztInstanceUndeclinated.fields, #TODO : copy fields + replace elements affected by declination <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+					parent=ztInstanceUndeclinated,
+					dcns=dcns
 				)
-				for a in range(beginningShift): #keep a consistent ctx (lineNbr & colmNbr)
-					ZCI.inc()
-
-				#read content given in brackets includer
-				beginningIndex = ZCI.ctx.icontent.index
-				dcnDegText = str_stripEnd(
-					str_sub(ZCI.ctx.icontent.s, start=beginningIndex, stop=peerIndex-1),
-					charset=BLANKS_EXTENDED
-				)
-
-				#parse dcnDeg
-				if not str_isConvertible_int(dcnDegText):
-					zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be an integer).")
-				dcnDeg = int(dcnDegText)
-				if dcnDeg < 0:
-					zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be positive).")
-				ZCI.forward(peerIndex - beginningIndex + 1)
 
 		#final result
 		return ztInstance
@@ -638,10 +729,12 @@ class zctx:
 
 
 	#
-	def readKeyValueFields(zCtx, ZCI, typesRequired=False):
+	def readKeyValueFields(self, ZCI, typesRequired=False):
+		return []
+
 		peerIndex = ZCI.ctx.getCorrespondingPeerIndex(peers=INCLUDERS)
 		if peerIndex < 0:
-			zCtx.ZCIInternal(ZCI, "Inconsistent use of includers inside type definition block but this should have been checked in step P3.")
+			self.ZCIInternal(ZCI, "Inconsistent use of includers inside type definition block but this should have been checked in step P3.")
 		ZCI.inc()
 
 		#skip beginning blanks
@@ -673,7 +766,7 @@ class zctx:
 
 		#empty structure not allowed
 		if False: #len(fields) == 0:
-			zCtx.ZCIError(ZCI, "No field given in structure type declaration (DCL_TYP), at least one is required.")
+			self.ZCIError(ZCI, "No field given in structure type declaration (DCL_TYP), at least one is required.")
 
 		#fields
 		return fields

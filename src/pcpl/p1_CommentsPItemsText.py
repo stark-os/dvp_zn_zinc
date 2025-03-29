@@ -221,7 +221,7 @@ def p1_CommentsPItemsText(zCtx):
 
 			#multi-line comment detection
 			if c == '*':
-				commentBeginningCtx[0] = zCtx.ctx.copy(copyContent=False) #keep track of comment beginning
+				commentBeginningCtx[0] = zCtx.ctx.copy() #keep track of comment beginning
 				prevC                  = '_' #does'nt really matter what that prevC is defined with. It must only be != '*'
 				inMultiCom             = True
 				continue

@@ -63,33 +63,18 @@ def processTypeDcl(zCtx, ZCI):
 	#explicit declination degree if any
 	dcnDeg = 0
 	if ZCI.get() == '[':
-		peerIndex = ZCI.ctx.getCorrespondingPeerIndex(peers=INCLUDERS)
-		if peerIndex < 0:
-			zCtx.ZCIInternal(ZCI, "Inconsistent use of includers inside type declination degree block but this should have been checked in step P3.")
-		ZCI.inc()
+		dcnDegTextCtx, dcnDegText = zCtx.getIncluderStrippedContent(ZCI, "type declination degree block.")
 
-		#skip beginning blanks
-		beginningShift = str_getBeginningStripIndex(
-			str_sub(ZCI.ctx.icontent.s, start=ZCI.ctx.icontent.index),
-			charset=BLANKS_EXTENDED
-		)
-		for a in range(beginningShift): #keep a consistent ctx (lineNbr & colmNbr)
-			ZCI.inc()
-
-		#read content given in brackets includer
-		beginningIndex = ZCI.ctx.icontent.index
-		dcnDegText = str_stripEnd(
-			str_sub(ZCI.ctx.icontent.s, start=beginningIndex, stop=peerIndex-1),
-			charset=BLANKS_EXTENDED
-		)
-
-		#parse dcnDeg
+		#non-integer dcnDeg
 		if not str_isConvertible_int(dcnDegText):
+			ZCI.updateCtx(dcnDegTextCtx)
 			zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be an integer).")
+
+		#negative dcnDeg
 		dcnDeg = int(dcnDegText)
 		if dcnDeg < 0:
+			ZCI.updateCtx(dcnDegTextCtx)
 			zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be positive).")
-		ZCI.forward(peerIndex - beginningIndex + 1)
 
 	#must be followed by blanks once more
 	if ZCI.get() not in BLANKS:
@@ -100,14 +85,16 @@ def processTypeDcl(zCtx, ZCI):
 	if ZCI.get() == '{':
 		newZType = ztyp(
 			fullName, dcnDeg,
-			zCtx.SIZE['LNG'], True,
-			fields = readKeyValueFields(zCtx, ZCI, )
+			zCtx.SIZE['LNG'],
+			True,
+			fields = readKeyValueFields(zCtx, ZCI)
 		)
 	else:
 		parent   = zCtx.readZType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
 		newZType = ztyp(
 			fullName, dcnDeg,
-			parent.size, False,
+			parent.size,
+			parent.isStc,
 			parent = parent
 		)
 
@@ -217,7 +204,7 @@ def c02_redirectGlobal(zCtx):
 		print("Undefined yet.")
 
 	#debug output file
-	zCtx.cplStep_debugZCIS("02")
+	zCtx.cplStep_debugZCIs("02")
 
 	#result
 	return functionZCIs

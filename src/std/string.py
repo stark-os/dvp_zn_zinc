@@ -90,3 +90,13 @@ def str_stripBeginning(t, charset=" \t"):
 
 def str_strip(t, charset=" \t"):
 	return str_stripEnd(str_stripBeginning(t, charset), charset)
+
+def str_expandTabs(s, expansionLength):
+	result    = ""
+	expansion = ' ' * expansionLength
+	for c in s:
+		if c == '\t':
+			result += expansion
+		else:
+			result += c
+	return result

@@ -121,11 +121,11 @@ def c01_unmodulize(zCtx):
 			ZCI.inc()
 
 			#extract ZCIs from content
-			moduleContent                = ZCI.ctx.copy()
-			moduleContent.icontent.s     = str_sub(ZCI.ctx.icontent.s, moduleContent_startIndex, moduleContent_stopIndex-1)
-			moduleContent.icontent.index = -1
-			moduleContent.colmNbr       -=  1 #shift to compensate the -1 set as index
-			moduleZCIs                   = extractZCIsFromCtx(zCtx, moduleContent, global_=True, subCtxs=ZCI.subCtxs, modulePrefix=modulePrefix)
+			moduleContentCtx                = ZCI.ctx.copy()
+			moduleContentCtx.icontent.s     = str_sub(ZCI.ctx.icontent.s, moduleContent_startIndex, moduleContent_stopIndex-1)
+			moduleContentCtx.icontent.index = -1
+			moduleContentCtx.colmNbr       -=  1 #shift to compensate the -1 set as index
+			moduleZCIs                      = extractZCIsFromCtx(zCtx, moduleContentCtx, global_=True, subCtxs=ZCI.subCtxs, modulePrefix=modulePrefix)
 
 			#remove current ZCI in general ZCtx
 			zCtx.ZCIs = lst_remove(zCtx.ZCIs, z)
@@ -142,4 +142,4 @@ def c01_unmodulize(zCtx):
 		z += 1
 
 	#debug output file
-	zCtx.cplStep_debugZCIS("01")
+	zCtx.cplStep_debugZCIs("01")

@@ -7,6 +7,9 @@
 #system
 import os
 
+#strings
+from std.string import *
+
 #lists
 from std.list import *
 
@@ -46,6 +49,14 @@ class istr:
 
 
 
+#constants
+PARSING_CTX__INVALID_FIRST_OPENNING        = -1 #these are to be cashted into map[unt_l,unt_l]
+PARSING_CTX__INCONSISTENT_INCLUDER_PARSING = -2
+PARSING_CTX__PEER_NOT_FOUND                = -3
+
+#external actually but anyway
+Term__TAB_LENGTH = 4
+
 #parsing ctx object
 class ParsingCtx:
 	def __init__(self, filepath, content, resolveSymlinks=False):
@@ -61,12 +72,14 @@ class ParsingCtx:
 		self.detectedLF = False
 
 	#copy
-	def copy(self, copyContent=False):
-		if copyContent:
-			content = self.icontent.s[:]
+	def copy(self, copyFileContent=False):
+		if copyFileContent:
+			filePath = self.filepath[:]
+			content  = self.icontent.s[:]
 		else:
-			content = self.icontent.s
-		newCtx = ParsingCtx(self.filepath[:], content)
+			filePath = self.filepath
+			content  = self.icontent.s
+		newCtx = ParsingCtx(filePath, content)
 		newCtx.icontent.index = self.icontent.index
 		newCtx.lineNbr        = self.lineNbr
 		newCtx.colmNbr        = self.colmNbr
@@ -123,61 +136,109 @@ class ParsingCtx:
 
 
 
-	#includers
-	def getCorrespondingPeerIndex(self,
-		peers={
-			'(':')',
-			'[':']',
-			'{':'}',
-			'<':'>'
-		}
-	):
+	#output
+	def printLineIndicator(self):
+		content = self.icontent.s
 
-		#use a local copy of context to allow precise indication in errors without affecting the original
+		#set beginning & end of line
+		if self.icontent.index == -1: #invalid value (istr starting index)
+			begIndex = 0
+			endIndex = 0
+		else:
+			begIndex = self.icontent.index - (self.colmNbr-1)
+			endIndex = self.icontent.index
+
+		#that mean we are in the first line (cannot subtract colmNbr)
+		if begIndex > endIndex:
+			begIndex = 0
+
+		#read to get real end of line
+		while endIndex < len(content):
+			if content[endIndex] == '\n':
+				break
+			endIndex += 1
+
+		#print full line
+		rawConcernedLine = str_sub(content, begIndex, endIndex)
+		concernedLine    = str_expandTabs(rawConcernedLine, Term__TAB_LENGTH)
+		print(concernedLine)
+
+		#prepare position indicator
+		positionIndex     = (Term__TAB_LENGTH-1) * rawConcernedLine.count('\t') + self.colmNbr - 1
+		positionIndicator = ""
+		for i in range(positionIndex):
+			positionIndicator += '-'
+		positionIndicator += '^'
+
+		#print position indicator
+		print(positionIndicator)
+
+
+
+	#includers
+	def getPairsUntilCorrespondingPeer(self, allowedPairs={'(':')', '[':']', '{':'}', '<':'>'}):
+
+		#use local copy of context for precise error indication without affecting the original one
 		localCtx = self.copy()
 		c        = localCtx.get()
-		if c in peers.keys():
-			target = peers[c]
-		else:
-			return -1 #current position is not at a valid openning target
+		if c in allowedPairs.keys():
+			target = allowedPairs[c]
 
-		#read rest of the code taking into account every oppening subzone
-		subZones = []
+		#current position is not at a valid openning target
+		else:
+			return PARSING_CTX__INVALID_FIRST_OPENNING
+
+		#prepare main pair (that can contain some other subPairs)
+		resultPairs  = {} #map[unt_l,unt_l]
+		initialIndex = self.icontent.index
+
+		#read rest of the code taking into account every subPair
+		subOpenings = [] #lst[chr]
+		subIndexes  = [] #lst[unt_l]
 		while not localCtx.inc():
 			c = localCtx.get()
 
-			#openning subzone
-			if c in peers.keys():
-				subZones.append(c)
+			#openning subPair
+			if c in allowedPairs.keys():
+				subOpenings.append(c)
+				subIndexes.append(localCtx.icontent.index)
 
-			#closing subzone
-			elif c in peers.values():
+			#closing subPair
+			elif c in allowedPairs.values():
 
 				#no subzone remaining => looking for the targetted peer
-				if lst_isEmpty(subZones):
+				if lst_isEmpty(subOpenings):
+
+					#found it
 					if c == target:
-						return localCtx.icontent.index #found it
+						resultPairs[initialIndex] = localCtx.icontent.index #add main pair
+						return resultPairs
 
 					#inconsistency 1: closing too soon
-					print("getCorrespondingPeerIndex: Closing pair with '" + c + "' but expected '" + target + "' (at " + localCtx.toStr() + ").")
-					return -2 #inconsistent includer peering
+					print("getPairsUntilCorrespondingPeer: Closing pair with '" + c + "' but expected '" + target + "' (at " + localCtx.toStr() + ").")
+					return PARSING_CTX__INCONSISTENT_INCLUDER_PARSING
 
-				#closing latest subzone
-				subtarget = peers[lst_pop(subZones)]
-				if c == subtarget:
+				#closing latest subPair
+				latestOpening = lst_pop(subOpenings)
+				latestIndex   = lst_pop(subIndexes)
+				if c == allowedPairs[latestOpening]:
+					resultPairs[latestIndex] = localCtx.icontent.index
 					continue
 
 				#inconsistency 2: unexpected peer
-				print("getCorrespondingPeerIndex: Closing pair with '" + c + "' but expected '" + subtarget + "' (at " + localCtx.toStr() + ").")
-				return -2
+				print("getPairsUntilCorrespondingPeer: Closing pair with '" + c + "' but expected '" + allowedPairs[latestOpening] + "' (at " + localCtx.toStr() + ").")
+				return PARSING_CTX__INCONSISTENT_INCLUDER_PARSING
 
 		#peer not found
-		return -3
+		return PARSING_CTX__PEER_NOT_FOUND
 
 
 
-def lst_ctx__copy(l):
+def lst_ctx__copy(l, copyContent=True):
 	n = []
 	for e in l:
-		n.append(e.copy())
+		if copyContent:
+			n.append(e.copy())
+		else:
+			n.append(e) #pointing at the same element as in the original list
 	return n
