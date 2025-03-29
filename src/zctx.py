@@ -50,11 +50,13 @@ ROOT_TYPES = (
 def unprefixizeModule(modulePrefix):
 	if len(modulePrefix) == 0:
 		return ""
+	if modulePrefix[0] == 'G':
+		return ""
 	return "^" + str_sub(modulePrefix, start=1).replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1]
 
 #ZCI
 class zci:
-	def __init__(self, subCtxs, modulePrefix="", pairs=None): #python: ", pairs={}" NEVER ! it will link every instance to the same element => You don't want that !
+	def __init__(self, subCtxs, modulePrefix=None, pairs=None): #python: ", pairs={}" NEVER ! it will link every instance to the same element => You don't want that !
 		self.subCtxs = subCtxs
 		if lst_isEmpty(subCtxs):
 			self.ctx = None
@@ -63,6 +65,8 @@ class zci:
 		if pairs is None:
 			pairs = {}
 		self.pairs        = pairs #map[unt_l,unt_l]
+		if modulePrefix is None:
+			modulePrefix = ""
 		self.modulePrefix = modulePrefix
 
 	#ctx forwards
@@ -225,13 +229,13 @@ class zctx:
 
 		#init root types locally (to be given to cpl data)
 		rootTypes = [
-			ztyp("boo", 0, self.SIZE__BYT, False),
-			ztyp("byt", 0, self.SIZE__BYT, False), ztyp("ubyt", 0, self.SIZE__BYT, False), #integers
-			ztyp("shr", 0, self.SIZE__SHR, False), ztyp("ushr", 0, self.SIZE__SHR, False),
-			ztyp("int", 0, self.SIZE__INT, False), ztyp("uint", 0, self.SIZE__INT, False),
-			ztyp("lng", 0, self.SIZE__LNG, False), ztyp("ulng", 0, self.SIZE__LNG, False),
-			ztyp("flt", 0, self.SIZE__INT, False), ztyp("dbl",  0, self.SIZE__LNG, False),  #floating point
-			ztyp("ptr", 1, self.SIZE__LNG, False) #pointer
+			ztyp("GUboo", 0, self.SIZE__BYT, False),
+			ztyp("GUbyt", 0, self.SIZE__BYT, False), ztyp("GUubyt", 0, self.SIZE__BYT, False), #integers
+			ztyp("GUshr", 0, self.SIZE__SHR, False), ztyp("GUushr", 0, self.SIZE__SHR, False),
+			ztyp("GUint", 0, self.SIZE__INT, False), ztyp("GUuint", 0, self.SIZE__INT, False),
+			ztyp("GUlng", 0, self.SIZE__LNG, False), ztyp("GUulng", 0, self.SIZE__LNG, False),
+			ztyp("GUflt", 0, self.SIZE__INT, False), ztyp("GUdbl",  0, self.SIZE__LNG, False),  #floating point
+			ztyp("GUptr", 1, self.SIZE__LNG, False) #pointer
 		]
 
 		#data
@@ -403,9 +407,9 @@ class zctx:
 	# GENERAL PARSING TOOLS
 
 	#move ctx cursor just before the first non-blank character found
-	def jumpBlankZone(self, ZCI, missingFieldsIfError):
+	def jumpBlankZone(self, ZCI, missingFieldsIfError, targettedBlanks=BLANKS):
 		while not ZCI.inc():
-			if ZCI.get() not in BLANKS:
+			if ZCI.get() not in targettedBlanks:
 				return
 		if missingFieldsIfError is not None:
 			self.ZCIError(ZCI, "Expected something after blank zone : " + missingFieldsIfError)
@@ -538,11 +542,11 @@ class zctx:
 		#return result
 		return name
 
-	def optionnalBlanks(self, ZCI, missingFieldsIfError):
-		if ZCI.get() in BLANKS:
-			self.jumpBlankZone(ZCI, missingFieldsIfError=missingFieldsIfError)
+	def optionnalBlanks(self, ZCI, missingFieldsIfError, targettedBlanks=BLANKS):
+		if ZCI.get() in targettedBlanks:
+			self.jumpBlankZone(ZCI, missingFieldsIfError=missingFieldsIfError, targettedBlanks=targettedBlanks)
 
-	def endOfZCI(self, ZCIKindIfError):
+	def endOfZCI(self, ZCI, ZCIKindIfError):
 		if not ZCI.reachedEnd():
 			self.ZCIError(ZCI, "Too much elements in " + ZCIKindIfError + " Should stop here.")
 
@@ -645,16 +649,21 @@ class zctx:
 
 	#expecting a Z type
 	def readZType(self, ZCI, ZCIKindIfError):
-
-		#read full type name
 		ztModulePrefix = ""
+
+		#read raw type name : module-type
 		if ZCI.get() == '^':
 			ztRawName      = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefix=True, modulePrefix_asHeaderOnly=True) #actually, this is more the "FullName" but without declination prefix (so ~almost~ full)
 			ztModulePrefix = self.splitModulePrefix(ZCI, ztRawName)        #save its module prefix elsewhere
 			ztRawName      = str_sub(ztRawName, start=len(ztModulePrefix)) # + cut it from the "almost full name" to get only the RAW name
+
+		#read raw type name : global-type
 		else:
-			ztRawName = self.readName(ZCI, "Type name in " + ZCIKindIfError)
-		ztFullName = ztModulePrefix + 'U' + ztRawName
+			ztModulePrefix = "G"
+			ztRawName      = self.readName(ZCI, "Type name in " + ZCIKindIfError)
+
+		#build full type name
+		ztFullName = ztModulePrefix + 'U' + ztRawName.replace('_', "__")
 
 		#1 - check UNDECLINATED variant existence
 		ztInstance = None
@@ -676,21 +685,24 @@ class zctx:
 			dcnsTextCtx, dcnsText = self.getIncluderStrippedContent(ZCI, "type declination list")
 
 			#create an alternative ZCI especially to read declination types
-			dcnsZCI = zci(dcnsTextCtx, ZCI.subCtxs, modulePrefix=ZCI.modulePrefix, pairs=ZCI.pairs) #same exact copy but starts with dcnsCtx instead
+			dcnsZCI = zci(lst_ctx__copy(ZCI.subCtxs), modulePrefix=ZCI.modulePrefix, pairs=ZCI.pairs) #same exact copy but starts with dcnsCtx instead
+			dcnsZCI.updateCtx(dcnsTextCtx)
 
 			#read declination types one by one
 			dcns = [] #lst[ztyp]
 			while True:
-				dcns.append(self.readZType(dcnsZCI))
+				self.optionnalBlanks(dcnsZCI, None, targettedBlanks=BLANKS_EXTENDED)
+
+				#read & append next declination type (recursive call)
+				dcns.append(self.readZType(dcnsZCI, ZCIKindIfError))
 
 				#must be followed by coma or closing peer
-				optionnalBlanks(dcnsZCI, None)
+				self.optionnalBlanks(dcnsZCI, None, targettedBlanks=BLANKS_EXTENDED)
 				if dcnsZCI.get() == ']':
 					break
 				elif dcnsZCI.get() != ',':
-					self.ZCIError(dcnsZCI, "Invalid element given in declination types sequence (expected coma separator ',').")
+					self.ZCIError(dcnsZCI, "Invalid element given " + dcnsZCI.get() + " in declination types sequence (expected coma separator ',' or closing bracket ']').")
 				dcnsZCI.inc()
-				optionnalBlanks(dcnsZCI, None)
 
 			#check declination length
 			if len(dcns) < ztInstance.dcnDeg:
@@ -698,12 +710,12 @@ class zctx:
 			elif len(dcns) > ztInstance.dcnDeg:
 				self.ZCIError(dcnsZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
 
-			#re-build full type name including declinations this time
-			ztFullName = ztModulePrefix + 'D' + ztRawName
+			#re-build full type name including declinations this time (ztModulePrefix can be set to "G" by the way, same logic as undeclinated types)
+			ztFullName = ztModulePrefix + 'D' + ztRawName.replace('_', "__")
 			for d in dcns:
 				ztFullName += '_' + d.name
 
-			#check for that declination in the currently declared ztypes
+			#check for that declination in currently declared ztypes
 			ztInstanceUndeclinated = ztInstance
 			ztInstance             = None
 			for t in self.cpl.ztypes:
@@ -713,7 +725,6 @@ class zctx:
 
 			#not found => create that declination (this new combination must exist)
 			if ztInstance is None:
-				self.cpl.ztypes.append(ztInstance)
 				ztInstance = ztyp(
 					ztFullName, len(dcns),
 					ztInstanceUndeclinated.size,
@@ -722,35 +733,17 @@ class zctx:
 					parent=ztInstanceUndeclinated,
 					dcns=dcns
 				)
+				print("AUTO ADDING DECLINATION [" + ztInstance.name + "] from type [" + ztInstanceUndeclinated.name + "]")
+				self.cpl.ztypes.append(ztInstance)
 
 		#final result
 		return ztInstance
 
 
 
-	#
+	#expecting a braces includer zone with keys and values
 	def readKeyValueFields(self, ZCI, typesRequired=False):
-		return []
-
-		peerIndex = ZCI.ctx.getCorrespondingPeerIndex(peers=INCLUDERS)
-		if peerIndex < 0:
-			self.ZCIInternal(ZCI, "Inconsistent use of includers inside type definition block but this should have been checked in step P3.")
-		ZCI.inc()
-
-		#skip beginning blanks
-		beginningShift = str_getBeginningStripIndex(
-			str_sub(ZCI.ctx.icontent.s, start=ZCI.ctx.icontent.index),
-			charset=BLANKS_EXTENDED
-		)
-		for a in range(beginningShift): #keep a consistent ctx (lineNbr & colmNbr)
-			ZCI.inc()
-		beginningIndex = ZCI.ctx.icontent.index
-
-		#read content in braces includer
-		fieldsText = str_stripEnd(
-			str_sub(ZCI.ctx.icontent.s, start=beginningIndex, stop=peerIndex-1),
-			charset=BLANKS_EXTENDED
-		)
+		fieldsTextCtx, fieldsText = self.getIncluderStrippedContent(ZCI, "key-value fields")
 
 		#parse fields
 		fields = []

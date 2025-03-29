@@ -49,8 +49,11 @@ def processTypeDcl(zCtx, ZCI):
 	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
 
 	#get full type name considered as "undeclinated"
-	rawName  = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).")
-	fullName = ZCI.modulePrefix + 'U' + rawName
+	rawName = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).")
+	if len(ZCI.modulePrefix) == 0:
+		fullName = "GU" + rawName.replace('_', "__")
+	else:
+		fullName = ZCI.modulePrefix + 'U' + rawName.replace('_', "__")
 
 	#check already existing
 	for t in zCtx.cpl.ztypes:
@@ -85,9 +88,9 @@ def processTypeDcl(zCtx, ZCI):
 	if ZCI.get() == '{':
 		newZType = ztyp(
 			fullName, dcnDeg,
-			zCtx.SIZE['LNG'],
+			zCtx.SIZE__LNG,
 			True,
-			fields = readKeyValueFields(zCtx, ZCI)
+			fields = zCtx.readKeyValueFields(ZCI)
 		)
 	else:
 		parent   = zCtx.readZType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
@@ -100,6 +103,7 @@ def processTypeDcl(zCtx, ZCI):
 
 	#add new type
 	zCtx.cpl.ztypes.append(newZType)
+	print("EXPLICITELY ADDING TYPE [" + newZType.name + "] with dcnDeg [" + str(newZType.dcnDeg) + "]")
 
 	#end of ZCI expected
 	zCtx.endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")
@@ -201,7 +205,7 @@ def c02_redirectGlobal(zCtx):
 		#CASE 3 - BEGINNING WITH NAME
 
 		#other possibilities
-		print("Undefined yet.")
+		#print("Undefined yet.")
 
 	#debug output file
 	zCtx.cplStep_debugZCIs("02")
