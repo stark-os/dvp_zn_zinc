@@ -46,13 +46,87 @@ ROOT_TYPES = (
 	"ptr"
 )
 
+#Single Operators
+SYMBOL__SIN  = 1 #invert
+SYMBOL__SNO  = 2 #not
+
+#Decisionnal Operators
+SYMBOL__DAN = 3 #decisionnal and
+SYMBOL__DOR = 4 #decisionnal or
+
+#Arithmetic Operators
+SYMBOL__AMU = 5 #multiply
+SYMBOL__ADI = 6 #divide
+SYMBOL__AMO = 7 #modulo
+SYMBOL__APO = 8 #power
+
+#B-rithmetic Operators
+SYMBOL__BAD =  9 #add
+SYMBOL__BSU = 10 #subtract
+
+#Logical Operators
+SYMBOL__LAN = 11 #logical and
+SYMBOL__LOR = 12 #logical or
+SYMBOL__LXO = 13 #logical xor
+SYMBOL__LLS = 14 #left shift
+SYMBOL__LRS = 15 #right shift
+SYMBOL__LLB = 16 #left byte-shift
+SYMBOL__LRB = 17 #right byte-shift
+SYMBOL__LLR = 18 #left roll
+SYMBOL__LRR = 19 #right roll
+
+#Conditionnal Operators
+SYMBOL__CEQ = 20 #equals
+SYMBOL__CNE = 21 #not equals
+SYMBOL__CLT = 22 #lesser than
+SYMBOL__CGT = 23 #greater than
+SYMBOL__CLE = 24 #lesser or equal
+SYMBOL__CGE = 25 #greater or equal
+
+#Indexing Operators (without includers)
+SYMBOL__IAM = 30 #among
+SYMBOL__INA = 31 #not among
+
+#Fixed Operators
+SYMBOL__FSZ = 32 #size
+SYMBOL__FRF = 33 #reference
+SYMBOL__FCA = 34 #casht
+SYMBOL__FFA = 35 #field access
+
+#other
+SYMBOL__ASG       = 1 #assignment
+SYMBOL__NOT_FOUND = 0
+
+#lengths
+SYMBOL_LENGTHS = { #map[ubyt,ubyt]
+	SYMBOL__SIN: 1, SYMBOL__SNO: 1, SYMBOL__DAN: 2, SYMBOL__DOR: 2,
+	SYMBOL__AMU: 1, SYMBOL__ADI: 1, SYMBOL__AMO: 1, SYMBOL__APO: 2,
+	SYMBOL__BAD: 1, SYMBOL__BSU: 1, SYMBOL__LAN: 1, SYMBOL__LOR: 1,
+	SYMBOL__LXO: 1, SYMBOL__LLS: 2, SYMBOL__LRS: 2, SYMBOL__LLB: 3,
+	SYMBOL__LRB: 3, SYMBOL__LLR: 3, SYMBOL__LRR: 3, SYMBOL__CEQ: 2,
+	SYMBOL__CNE: 2, SYMBOL__CLT: 1, SYMBOL__CGT: 1, SYMBOL__CLE: 2,
+	SYMBOL__CGE: 2, SYMBOL__IAM: 2, SYMBOL__INA: 3, SYMBOL__FSZ: 1,
+	SYMBOL__FRF: 1, SYMBOL__FCA: 1, SYMBOL__FFA: 1, SYMBOL__ASG: 1,
+	SYMBOL__NOT_FOUND: 0
+}
+OPERATOR_NAMES = {
+	SYMBOL__SIN: "sin", SYMBOL__SNO: "sno", SYMBOL__DAN: "dan", SYMBOL__DOR: "dor",
+	SYMBOL__AMU: "amu", SYMBOL__ADI: "adi", SYMBOL__AMO: "amo", SYMBOL__APO: "apo",
+	SYMBOL__BAD: "bad", SYMBOL__BSU: "bsu", SYMBOL__LAN: "lan", SYMBOL__LOR: "lor",
+	SYMBOL__LXO: "lxo", SYMBOL__LLS: "lls", SYMBOL__LRS: "lrs", SYMBOL__LLB: "llb",
+	SYMBOL__LRB: "lrb", SYMBOL__LLR: "llr", SYMBOL__LRR: "lrr", SYMBOL__CEQ: "ceq",
+	SYMBOL__CNE: "cne", SYMBOL__CLT: "clt", SYMBOL__CGT: "cgt", SYMBOL__CLE: "cle",
+	SYMBOL__CGE: "cge", SYMBOL__IAM: "iam", SYMBOL__INA: "ina", SYMBOL__FSZ: "fsz",
+	SYMBOL__FRF: "frf", SYMBOL__FCA: "fca", SYMBOL__FFA: "ffa"
+}
+
 #tools
 def unprefixizeModule(modulePrefix):
 	if len(modulePrefix) == 0:
 		return ""
 	if modulePrefix[0] == 'G':
 		return ""
-	return "^" + str_sub(modulePrefix, start=1).replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1]
+	return "^" + str_sub(modulePrefix, start=1).replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1] + '.'
 
 #ZCI
 class zci:
@@ -64,7 +138,7 @@ class zci:
 			self.ctx = subCtxs[-1]
 		if pairs is None:
 			pairs = {}
-		self.pairs        = pairs #map[unt_l,unt_l]
+		self.pairs = pairs #map[unt_l,unt_l]
 		if modulePrefix is None:
 			modulePrefix = ""
 		self.modulePrefix = modulePrefix
@@ -154,15 +228,17 @@ class program:
 #However, here in Python, we must declare it before to allow dataItem definition and so, zstc.
 #Same thing for zfct.
 class ztyp:
-	def __init__(self, name, dcnDeg, size, isStc, fields=[], parent=None, dcns=None):
+	def __init__(self, name, dcnDeg, size, isStc, fields=None, parent=None, dcns=None):
+		if fields is None:
+			fields = []
 		self.name    = name
 		self.parent  = parent
 		self.methods = []     #lst[zfct]
 		self.size    = size
 
 		#declination
-		self.dcnDeg = dcnDeg #declination degree
-		self.dcns   = dcns   #current declination, tab[ztyp]
+		self.dcnDeg = dcnDeg #degree
+		self.dcns   = dcns   #precise details, atm (either tab[ztyp] or tab[ulng])
 
 		#stc related
 		self.isStc   = isStc #<=> type "nature" (is primitive / structure)
@@ -172,11 +248,17 @@ class ztyp:
 			for f in fields:
 				self.stcSize += f.zType.size
 
+class cstValue:
+	def __init__(self, zType, data):
+		self.zType = zType
+		self.data  = data  #ulng
+
 class dataItem:
-	def __init__(self, zType, name, initialValue, constant=False):
+	def __init__(self, zType, name, initialized, initialValue, constant=False):
 		self.zType        = zType
 		self.name         = name
-		self.initialValue = initialValue
+		self.initialized  = initialized
+		self.initialValue = initialValue #ulng
 		self.constant     = constant
 
 #compiler data
@@ -396,6 +478,8 @@ class zctx:
 
 	def ZCIError(self, ZCI, msg, printSubCtxs=True, printLine=True):
 		self.overwriteSubCtxs(ZCI.subCtxs)
+		#import traceback #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< can be useful
+		#traceback.print_stack()
 		self.error(msg, printSubCtxs=printSubCtxs, printLine=printLine)
 
 	def ZCIInternal(self, ZCI, msg, printSubCtxs=True, printLine=True):
@@ -407,12 +491,147 @@ class zctx:
 	# GENERAL PARSING TOOLS
 
 	#move ctx cursor just before the first non-blank character found
-	def jumpBlankZone(self, ZCI, missingFieldsIfError, targettedBlanks=BLANKS):
+	def jumpBlankZone(self, ZCI, missingFieldIfError, blanks=BLANKS):
 		while not ZCI.inc():
-			if ZCI.get() not in targettedBlanks:
+			if ZCI.get() not in blanks:
 				return
-		if missingFieldsIfError is not None:
-			self.ZCIError(ZCI, "Expected something after blank zone : " + missingFieldsIfError)
+		if missingFieldIfError is not None:
+			self.ZCIError(ZCI, "Expected something after blank zone : " + missingFieldIfError)
+
+	def optionnalBlanks(self, ZCI, missingFieldIfError, blanks=BLANKS):
+		if ZCI.get() in blanks:
+			self.jumpBlankZone(ZCI, missingFieldIfError, blanks=blanks)
+
+	def endOfZCI(self, ZCI, ZCIKindIfError):
+		if not ZCI.reachedEnd():
+			self.ZCIError(ZCI, "Too much elements in " + ZCIKindIfError + " Should stop here.")
+
+
+
+	# REAL ZCE PARSING TOOLS (bare metal syntax-related)
+
+	#try reading symbol (don't move ZCI ctx)
+	def readSymbol(self, ZCI):
+		tmpCtx = ZCI.ctx.copy()
+		c1 = tmpCtx.get()
+
+		#1-character symbol
+		if c1 == '~':
+			return SYMBOL__SIN
+		elif c1 == '/':
+			return SYMBOL__ADI
+		elif c1 == '+':
+			return SYMBOL__BAD
+		elif c1 == '%':
+			return SYMBOL__AMO
+		elif c1 == '^':
+			return SYMBOL__LXO
+		elif c1 == '#':
+			return SYMBOL__FSZ
+		elif c1 == '@':
+			return SYMBOL__FRF
+		elif c1 == '$':
+			return SYMBOL__FCA
+		elif c1 == '.':
+			return SYMBOL__FFA
+
+		#multi-character symbol: starting with '!'
+		elif c1 == '!':
+			tmpCtx.inc()
+			c2 = tmpCtx.get()
+			if c2 == '=':
+				return SYMBOL__CNE
+			elif c2 == 'i':
+				tmpCtx.inc()
+				if tmpCtx.get() == 'n':
+					return SYMBOL__INA
+			return SYMBOL__SNO
+
+		#multi-character symbol: starting with '*'
+		elif c1 == '*':
+			if tmpCtx.inc():
+				return SYMBOL__AMU
+			if tmpCtx.get() == '*':
+				return SYMBOL__APO
+			return SYMBOL__AMU
+
+		#multi-character symbol: starting with '&'
+		elif c1 == '&':
+			if tmpCtx.inc():
+				return SYMBOL__LAN #ending with lonely '&'
+			if tmpCtx.get() == '&':
+				return SYMBOL__DAN
+			return SYMBOL__LAN
+
+		#multi-character symbol: starting with '|'
+		elif c1 == '|':
+			tmpCtx.inc()
+			c2 = tmpCtx.get()
+			if c2 == '|':
+				return SYMBOL__DOR
+			elif c2 == '<':
+				if tmpCtx.inc():
+					return SYMBOL__LOR
+				if tmpCtx.get() == '<':
+					return SYMBOL__LLB
+			return SYMBOL__LOR
+
+		#multi-character symbol: starting with '-'
+		elif c1 == '-':
+			tmpCtx.inc()
+			if tmpCtx.get() == '>':
+				if tmpCtx.inc():
+					return SYMBOL__BSU
+				if tmpCtx.get() == '>':
+					return SYMBOL__LRR
+			return SYMBOL__BSU
+
+		#multi-character symbol: starting with '<'
+		elif c1 == '<':
+			if tmpCtx.inc():
+				return SYMBOL__CLT
+			c2 = tmpCtx.get()
+			if c2 == '=':
+				return SYMBOL__CLE
+			elif c2 == '<':
+				if tmpCtx.inc():
+					return SYMBOL__LLS
+				if tmpCtx.get() == '-':
+					return SYMBOL__LLR
+				return SYMBOL__LLS
+			return SYMBOL__CLT
+
+		#multi-character symbol: starting with '>'
+		elif c1 == '>':
+			if tmpCtx.inc():
+				return SYMBOL__CGT
+			c2 = tmpCtx.get()
+			if c2 == '=':
+				return SYMBOL__CGE
+			elif c2 == '>':
+				if tmpCtx.inc():
+					return SYMBOL__LRS
+				if tmpCtx.get() == '|':
+					return SYMBOL__LRB
+				return SYMBOL__LRS
+			return SYMBOL__CGT
+
+		#multi-character symbol: starting with '='
+		elif c1 == '=':
+			if tmpCtx.inc():
+				return SYMBOL__ASG
+			if tmpCtx.get() == '=':
+				return SYMBOL__CEQ
+			return SYMBOL__ASG
+
+		#multi-character symbol: starting with 'i'
+		elif c1 == 'i':
+			tmpCtx.inc()
+			if tmpCtx.get() == 'n':
+				return SYMBOL__IAM
+
+		#no match
+		return SYMBOL__NOT_FOUND
 
 	#read a name according to the given charset (either blacklist or whitelist)
 	# IMPORTANT : Reading ctx from its CURRENT position and move it right AFTER the extracted result
@@ -462,6 +681,7 @@ class zctx:
 					#end of current module name
 					if c == '.':
 						modules.append(currentModuleName)
+						currentModuleName = ""
 
 						#can't continue ? => ending ZCI text without giving the module element to target
 						if ZCI.inc():
@@ -470,7 +690,6 @@ class zctx:
 						#chaining with another module name (potentially) => continue in the same loop, else => break here, we reached our next "name" character
 						c = ZCI.get()
 						if c == '^':
-							currentModuleName = ""
 							continue
 						else:
 							break
@@ -529,7 +748,7 @@ class zctx:
 			#allowed character => add it
 			name += c
 
-			#no longer in first character (maybe, getting rid of the "if" and keeping only the assignation would be more optimized ?)
+			#no longer in first character (maybe, getting rid of the "if" and keeping only the assignment would be more optimized ?)
 			if firstCharacter:
 				firstCharacter = False
 
@@ -537,18 +756,10 @@ class zctx:
 		if len(name) == 0:
 			if missingFieldIfError is None:
 				return ""
-			self.ZCIError(ZCI, "Missing name : " + missingFieldIfError)
+			self.ZCIError(ZCI, "Missing or invalid name : " + missingFieldIfError)
 
 		#return result
 		return name
-
-	def optionnalBlanks(self, ZCI, missingFieldsIfError, targettedBlanks=BLANKS):
-		if ZCI.get() in targettedBlanks:
-			self.jumpBlankZone(ZCI, missingFieldsIfError=missingFieldsIfError, targettedBlanks=targettedBlanks)
-
-	def endOfZCI(self, ZCI, ZCIKindIfError):
-		if not ZCI.reachedEnd():
-			self.ZCIError(ZCI, "Too much elements in " + ZCIKindIfError + " Should stop here.")
 
 	def splitModulePrefix(self, ZCI, name):
 		if len(name) == 0:
@@ -559,7 +770,7 @@ class zctx:
 		#get only module prefix from name
 		modulePrefix    = "M"
 		foundUnderscore = False
-		for c in name:
+		for c in name[1:]:
 
 			#previous character was an underscore => potential end of module prefix
 			if foundUnderscore:
@@ -592,36 +803,6 @@ class zctx:
 			self.ZCIInternal(ZCI, "Invalid module prefix '" + modulePrefix + "' extracted from name '" + name + "' (ending with even number of underscores).")
 		return modulePrefix
 
-	#read content inside an includer and strip it from blanks & line feeds.
-	# Given ZCI must be at the beginning of that includer (openning peer) and will be forwarded right after it (after closing peer).
-	def getIncluderStrippedContent(self, ZCI, IncluderContentIfError):
-		peerIndex = ZCI.pairs[ZCI.ctx.icontent.index]
-		ZCI.inc()
-
-		#skip beginning blanks
-		beginningShift = str_getBeginningStripIndex(
-			str_sub(ZCI.ctx.icontent.s, start=ZCI.ctx.icontent.index),
-			charset=BLANKS_EXTENDED
-		)
-		for a in range(beginningShift): #keep a consistent ctx (lineNbr & colmNbr)
-			ZCI.inc()
-
-		#get ctx copy from the REAL beginning
-		contentCtx = ZCI.ctx.copy()
-
-		#strip ending blanks
-		beginningIndex = ZCI.ctx.icontent.index
-		content = str_stripEnd(
-			str_sub(ZCI.ctx.icontent.s, start=beginningIndex, stop=peerIndex-1),
-			charset=BLANKS_EXTENDED
-		)
-
-		#forward initial ZCI after ending peer
-		ZCI.forward(peerIndex - beginningIndex + 1)
-
-		#return content & its associated ctx for erroring/debugging
-		return (contentCtx, content) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< great example of "fly" use (can be solved using tab[atm] for the moment
-
 
 
 	# DEBUG
@@ -653,7 +834,7 @@ class zctx:
 
 		#read raw type name : module-type
 		if ZCI.get() == '^':
-			ztRawName      = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefix=True, modulePrefix_asHeaderOnly=True) #actually, this is more the "FullName" but without declination prefix (so ~almost~ full)
+			ztRawName      = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True) #actually, this is more the "FullName" but without declination prefix (so ~almost~ full)
 			ztModulePrefix = self.splitModulePrefix(ZCI, ztRawName)        #save its module prefix elsewhere
 			ztRawName      = str_sub(ztRawName, start=len(ztModulePrefix)) # + cut it from the "almost full name" to get only the RAW name
 
@@ -662,61 +843,60 @@ class zctx:
 			ztModulePrefix = "G"
 			ztRawName      = self.readName(ZCI, "Type name in " + ZCIKindIfError)
 
-		#build full type name
-		ztFullName = ztModulePrefix + 'U' + ztRawName.replace('_', "__")
+		#build full type name (forced "undeclinated" for the moment)
+		underscored_ztRawName = ztRawName.replace('_', "__")
+		ztFullName            = ztModulePrefix + 'U' + underscored_ztRawName
 
 		#1 - check UNDECLINATED variant existence
 		ztInstance = None
 		for t in self.cpl.ztypes:
 			if ztFullName == t.name:
-				ztInstance = t #not the definitive one, this is a first base (undeclinated only here)
+				ztInstance = t
 				break
 		if ztInstance is None:
 			self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName + " does not exist.")
 
 		#2 - declination list given => solve them
 		if ZCI.get() == '[':
+			initialIndex = ZCI.ctx.icontent.index
+			ZCI.inc()
 
 			#undeclinable type
 			if ztInstance.dcnDeg == 0:
 				self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName + " is not declinable (null declination degree).")
 
-			#read declination types
-			dcnsTextCtx, dcnsText = self.getIncluderStrippedContent(ZCI, "type declination list")
-
-			#create an alternative ZCI especially to read declination types
-			dcnsZCI = zci(lst_ctx__copy(ZCI.subCtxs), modulePrefix=ZCI.modulePrefix, pairs=ZCI.pairs) #same exact copy but starts with dcnsCtx instead
-			dcnsZCI.updateCtx(dcnsTextCtx)
-
 			#read declination types one by one
 			dcns = [] #lst[ztyp]
 			while True:
-				self.optionnalBlanks(dcnsZCI, None, targettedBlanks=BLANKS_EXTENDED)
+				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 				#read & append next declination type (recursive call)
-				dcns.append(self.readZType(dcnsZCI, ZCIKindIfError))
+				dcns.append(self.readZType(ZCI, ZCIKindIfError))
 
 				#must be followed by coma or closing peer
-				self.optionnalBlanks(dcnsZCI, None, targettedBlanks=BLANKS_EXTENDED)
-				if dcnsZCI.get() == ']':
+				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+				next = ZCI.get()
+				if next == ']':
+					if ZCI.ctx.icontent.index != ZCI.pairs[initialIndex]:
+						self.ZCIInternal(ZCI, "Ending declination type sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(ZCI.pairs[initialIndex]) + " in string \"" + ZCI.ctx.icontent.s + "\").")
 					break
-				elif dcnsZCI.get() != ',':
-					self.ZCIError(dcnsZCI, "Invalid element given " + dcnsZCI.get() + " in declination types sequence (expected coma separator ',' or closing bracket ']').")
-				dcnsZCI.inc()
+				elif next != ',':
+					self.ZCIError(ZCI, "Invalid element given " + next + " in declination types sequence (expected coma separator ',' or closing bracket ']').")
+				ZCI.inc()
 
 			#check declination length
 			if len(dcns) < ztInstance.dcnDeg:
-				self.ZCIError(dcnsZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
+				self.ZCIError(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
 			elif len(dcns) > ztInstance.dcnDeg:
-				self.ZCIError(dcnsZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
+				self.ZCIError(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
 
 			#re-build full type name including declinations this time (ztModulePrefix can be set to "G" by the way, same logic as undeclinated types)
-			ztFullName = ztModulePrefix + 'D' + ztRawName.replace('_', "__")
+			ztFullName = ztModulePrefix + 'D' + underscored_ztRawName
 			for d in dcns:
 				ztFullName += '_' + d.name
 
 			#check for that declination in currently declared ztypes
-			ztInstanceUndeclinated = ztInstance
+			ztUndeclinatedInstance = ztInstance
 			ztInstance             = None
 			for t in self.cpl.ztypes:
 				if ztFullName == t.name:
@@ -727,39 +907,74 @@ class zctx:
 			if ztInstance is None:
 				ztInstance = ztyp(
 					ztFullName, len(dcns),
-					ztInstanceUndeclinated.size,
-					ztInstanceUndeclinated.isStc,
-					fields=ztInstanceUndeclinated.fields, #TODO : copy fields + replace elements affected by declination <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-					parent=ztInstanceUndeclinated,
+					ztUndeclinatedInstance.size,
+					ztUndeclinatedInstance.isStc,
+					fields=ztUndeclinatedInstance.fields, #no need to create a copy, same reference is enough
+					parent=ztUndeclinatedInstance,
 					dcns=dcns
 				)
-				print("AUTO ADDING DECLINATION [" + ztInstance.name + "] from type [" + ztInstanceUndeclinated.name + "]")
+				print("AUTO ADDING DECLINATION [" + ztInstance.name + "] from type [" + ztUndeclinatedInstance.name + "]")
 				self.cpl.ztypes.append(ztInstance)
 
 		#final result
 		return ztInstance
 
+	#value analysis process (VAP)
+	def readValue(self, ZCI, ZCIKindIfError, cstOnly=False):
+		return self.readName(ZCI, ZCIKindIfError) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
 
+	#read dataitem sequence
+	# Given ZCI must be at an opening includer character.
+	def readDataItemSequence(self, ZCI, ZCIKindIfError, typesRequired=False, cstOnly=False):
+		initialIndex = ZCI.ctx.icontent.index
+		if ZCI.get() not in INCLUDERS.keys():
+			self.ZCIInternal(ZCI, "Must be at the beginning of an includer to read data item sequence.")
+		ZCI.inc()
 
-	#expecting a braces includer zone with keys and values
-	def readKeyValueFields(self, ZCI, typesRequired=False):
-		fieldsTextCtx, fieldsText = self.getIncluderStrippedContent(ZCI, "key-value fields")
+		#read sequence
+		dis = [] #lst[dataItem]
+		while True:
+				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
-		#parse fields
-		fields = []
-		currentField = dataItem(None, "", None)
-		for i in range(len(fieldsText)):
-			pass
+				#read type
+				zt = None
+				if typesRequired:
+					zt = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError)
 
-			#get name
-			#currentField.name = zCtx.readName("")
+				#read name
+				self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
+				n = self.readName(ZCI, "data item name")
 
-			#optionnal, =, optionnal
-			#initialValue = readValue(zCtx, ZCI, constant=True) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+				#default initial value: uninitialized
+				initialized  = False
+				initialValue = 0 #ulng
 
-		#empty structure not allowed
-		if False: #len(fields) == 0:
-			self.ZCIError(ZCI, "No field given in structure type declaration (DCL_TYP), at least one is required.")
+				#optionnal assignment symbol => initial value given
+				self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
+				sym = self.readSymbol(ZCI)
+				if sym != SYMBOL__NOT_FOUND: #found a symbol
+					if sym != SYMBOL__ASG:
+						self.ZCIError(ZCI, "Invalid symbol given here, can only have assignation.")
+					ZCI.forward(SYMBOL_LENGTHS[SYMBOL__ASG])
 
-		#fields
-		return fields
+					#read given initial value
+					initialized = True
+					self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
+					initialValue = self.readValue(ZCI, ZCIKindIfError, cstOnly=cstOnly)
+				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+
+				#store data item
+				dis.append(dataItem(zt, n, initialized, initialValue))
+
+				#must be followed by coma or closing peer
+				next = ZCI.get()
+				if next in INCLUDERS.values():
+					if ZCI.ctx.icontent.index != ZCI.pairs[initialIndex]:
+						self.ZCIInternal(ZCI, "Ending data item sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(ZCI.pairs[initialIndex]) + " in string \"" + ZCI.ctx.icontent.s + "\").")
+					break
+				elif next != ',':
+					self.ZCIError(ZCI, "Invalid element given " + next + " in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[ ZCI.pairs[initialIndex] ] + "').")
+				ZCI.inc()
+
+		#return result
+		return dis

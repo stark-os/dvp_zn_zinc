@@ -72,14 +72,12 @@ class ParsingCtx:
 		self.detectedLF = False
 
 	#copy
-	def copy(self, copyFileContent=False):
-		if copyFileContent:
-			filePath = self.filepath[:]
-			content  = self.icontent.s[:]
-		else:
-			filePath = self.filepath
+	def copy(self, filepath=None, content=None):
+		if filepath is None:
+			filepath = self.filepath
+		if content is None:
 			content  = self.icontent.s
-		newCtx = ParsingCtx(filePath, content)
+		newCtx = ParsingCtx(filepath, content)
 		newCtx.icontent.index = self.icontent.index
 		newCtx.lineNbr        = self.lineNbr
 		newCtx.colmNbr        = self.colmNbr

@@ -1,0 +1,56 @@
+>>>>>>>>>>>>>>>>>> IMPORTANT
+[ DEBUG ] ...
+    At /home/starkiant/Documents/Codage/Z/zcc/src/main.z:49:12
+    At /home/starkiant/Documents/Codage/Z/zcc/src/zcc/zcc.z:4:12
+    At /home/starkiant/Documents/Codage/Z/zcc/src/zcc/general.z:38:39
+    At /usr/share/stdz/out/src/default.z:1:13
+    At /usr/share/stdz/out/src/core/all.z:4:10
+    At /usr/share/stdz/out/src/core/error.z:47:7
+    At /usr/share/stdz/out/src/core/io.z:71:16 <<<<<<<<<<<<<<<<<<<<<<<<<< INCONSISTENT
+        unt_l length = 0l
+
+---------------------^
+
+
+
+
+
+
+
+
+- Test that several implicit module prefixes in a row are correctly replaced :
+    "mod ALPHA { a = ^ABC.^.^DEF.^.^GHI.b }"
+     => "a = ^ABC.^ALPHA.^DEF.^ALPHA.^GHI.b"
+     => "a = MABC_MALPHA_MDEF_MALPHA_MGHI_Eb"
+
+- For the moment, no declination indexing is taken into account in type declaration :
+  We will ONLY ALLOW that indexing in declination lists !
+  Otherwise, it would mean multiple declinations of a same type can have multiple sizes
+    => not a technical problem but may lead to confusion => don't allow this
+
+  ALLOWED:
+  typ a map[1,0]
+  a          b = ...
+  a[int,lng] c = ...
+
+  ALLOWED:
+  typ d[1] { tab[1] e, int f }
+  d      g = ...
+  d[int] h = ...
+
+  FORBIDDEN:
+  typ i[1] 0
+
+  FORBIDDEN:
+  typ j[1] { 0 k }
+
+- Several coma separators must be allowed : "(a, b,, c,)" <=> "(a, b, c,)"
+  Forbidden for the moment.
+
+- Methods not using their main object can be converted to regular functions.
+  Such methods are called "no-methods".
+  No need to add main object as 1st parameter.
+  Cpl opt REDUCE_NO_METHOD_TO_FUNCTION allows ZCC to make that kind of optimization.
+  In all cases, raise a warning if such function is detected :
+      "Method TOTO can be reduced as regular function (no-method detected)."
+  User must be aware of that kind of possible optimization whatever ZCC does with this.

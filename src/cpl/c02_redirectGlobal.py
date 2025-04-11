@@ -66,18 +66,27 @@ def processTypeDcl(zCtx, ZCI):
 	#explicit declination degree if any
 	dcnDeg = 0
 	if ZCI.get() == '[':
-		dcnDegTextCtx, dcnDegText = zCtx.getIncluderStrippedContent(ZCI, "type declination degree block.")
+		peerIndex = ZCI.pairs[ZCI.ctx.icontent.index]
+		ZCI.inc()
+
+		#skip beginning blanks
+		zCtx.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+
+		#strip ending blanks
+		beginningIndex = ZCI.ctx.icontent.index
+		dcnDegText = str_stripEnd( str_sub(ZCI.ctx.icontent.s, start=beginningIndex, stop=peerIndex-1), charset=BLANKS_EXTENDED)
 
 		#non-integer dcnDeg
 		if not str_isConvertible_int(dcnDegText):
-			ZCI.updateCtx(dcnDegTextCtx)
 			zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be an integer).")
 
 		#negative dcnDeg
 		dcnDeg = int(dcnDegText)
 		if dcnDeg < 0:
-			ZCI.updateCtx(dcnDegTextCtx)
 			zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be positive).")
+
+		#forward after includer
+		ZCI.forward(peerIndex - beginningIndex + 1)
 
 	#must be followed by blanks once more
 	if ZCI.get() not in BLANKS:
@@ -86,11 +95,14 @@ def processTypeDcl(zCtx, ZCI):
 
 	#process type content
 	if ZCI.get() == '{':
+		fields = zCtx.readDataItemSequence(ZCI, "type declaration ZCI (DCL_TYP).", typesRequired=True, cstOnly=True)
+		if len(fields) == 0:
+			zCtx.ZCIError(ZCI, "Must have at least 1 field in structure type.")
 		newZType = ztyp(
 			fullName, dcnDeg,
 			zCtx.SIZE__LNG,
 			True,
-			fields = zCtx.readKeyValueFields(ZCI)
+			fields = fields
 		)
 	else:
 		parent   = zCtx.readZType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
