@@ -45,6 +45,10 @@ def formatModuleName(zCtx, ZCI, moduleName):
 
 #compilation
 def c01_unmodulize(zCtx):
+	zCtx.debug("\n\n\n\n")
+	zCtx.debug("============================================================================")
+	zCtx.debug("======================== C01 UNMODULIZE : beginning ========================")
+	zCtx.debug("============================================================================\n\n\n\n")
 
 	#for each precompiled ZCI
 	z = 0
@@ -52,13 +56,17 @@ def c01_unmodulize(zCtx):
 	while z < _ZCIsLen:
 		ZCI     = zCtx.ZCIs[z]
 		ZCIText = ZCI.ctx.icontent.s
+		zCtx.deepDebug("Treating ZCI \"" + ZCIText + "\".")
 
 		#too short => skip it
 		if len(ZCIText) < 5:
+			zCtx.deepDebug("Too short => Skipping ZCI.")
+			z += 1
 			continue
 
 		#found module declaration (DCL_MOD)
 		if ZCIText.startswith("mod") and ZCIText[3] in BLANKS:
+			zCtx.ZCIDebug(ZCI, "Found module declaration.")
 			ZCI.forward(4)
 
 			#ZCI ctx starts from index -1 (istr initial position) but its colmNbr IS CORRECT => ctx.inc() will push it 1 step too far => shift it to compensate
@@ -77,6 +85,7 @@ def c01_unmodulize(zCtx):
 
 			# I.1) module addition
 			if moduleName == "add":
+				zCtx.debug("Detected addition to existing module.")
 
 				#read one more name
 				zCtx.jumpBlankZone(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD).")
@@ -85,13 +94,14 @@ def c01_unmodulize(zCtx):
 					zCtx.readName(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD).")
 				)
 
-				#adding to inexistent module
+				#adding to inexisting module
 				if modulePrefix not in zCtx.cpl.modulePrefixes:
 					zCtx.debugModules()
 					zCtx.ZCIError(ZCI, "No module " + unprefixizeModule(modulePrefix) + " declared yet, can't add to it.")
 
 			# I.2) new module
 			else:
+				zCtx.debug("Detected new module creation.")
 
 				#already declared the same exact module
 				if modulePrefix in zCtx.cpl.modulePrefixes:
@@ -100,6 +110,7 @@ def c01_unmodulize(zCtx):
 
 				#avoid re-declaration
 				zCtx.cpl.modulePrefixes.append(modulePrefix)
+			zCtx.ZCIDebug(ZCI, "Full module name read \"" + modulePrefix + "\" (based on prefix \"" + ZCI.modulePrefix + "\").")
 
 
 
@@ -121,6 +132,7 @@ def c01_unmodulize(zCtx):
 			ZCI.inc()
 
 			#extract ZCIs from content
+			zCtx.debug("Extracting ZCIs from module content.")
 			moduleContentCtx                = ZCI.ctx.copy()
 			moduleContentCtx.icontent.s     = str_sub(ZCI.ctx.icontent.s, moduleContent_startIndex, moduleContent_stopIndex-1)
 			moduleContentCtx.icontent.index = -1
@@ -128,6 +140,7 @@ def c01_unmodulize(zCtx):
 			moduleZCIs                      = extractZCIsFromCtx(zCtx, moduleContentCtx, global_=True, subCtxs=ZCI.subCtxs, modulePrefix=modulePrefix)
 
 			#remove current ZCI in general ZCtx
+			zCtx.debug("Replacing module declaration ZCI by global unmodularized ZCIs.")
 			zCtx.ZCIs = lst_remove(zCtx.ZCIs, z)
 			z -= 1
 
@@ -135,11 +148,16 @@ def c01_unmodulize(zCtx):
 			previousZCIs = lst_sub(zCtx.ZCIs, stop=z)
 			nextZCIs     = lst_sub(zCtx.ZCIs, start=z+1)
 			zCtx.ZCIs    = previousZCIs + moduleZCIs + nextZCIs
+			#zCtx.deepDebugPause()
 
 			_ZCIsLen = len(zCtx.ZCIs) # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only in python, not required in Z (.length field)
 
 		#next ZCI
 		z += 1
+	zCtx.debug("\n\n\n\n")
+	zCtx.debug("======================================================================")
+	zCtx.debug("======================== C01 UNMODULIZE : end ========================")
+	zCtx.debug("======================================================================\n\n\n\n")
 
 	#debug output file
 	zCtx.cplStep_debugZCIs("01")

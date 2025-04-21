@@ -33,7 +33,8 @@ from cpl.compile     import *
 # -------- DECLARATIONS --------
 
 #debug
-DEBUG_MODE = True
+DEBUG_MODE      = True
+DEEP_DEBUG_MODE = True
 
 #includers
 INCLUDER_PARENTHESES = 0
@@ -74,13 +75,14 @@ def main():
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
 		config.read(CXD + "/../cfg/pcpl_itm.cfg", comment_character='%', additionnalSpacesAllowed=False),
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
-		debugMode = DEBUG_MODE
+		debugMode = DEBUG_MODE #don't set deepDebugMode for precompilation steps (inconsistent ctx/text matching)
 	)
 	if DEBUG_MODE and not os.path.isdir("debug"):
 		os.mkdir("debug")
 
 	#precompile
 	zCtx.ZCIs = precompile(zCtx)
+	zCtx.deepDebugMode = DEEP_DEBUG_MODE #now, we have consistent ctx/text matching
 
 	#compile
 	compile(zCtx)

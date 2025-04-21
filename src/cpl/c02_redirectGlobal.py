@@ -22,6 +22,7 @@ from zctx import *
 
 #external linking
 def processLnk(zCtx, ZCI):
+	zCtx.ZCIDeepDebug(ZCI, "Processing SDL addition.")
 	zCtx.jumpBlankZone(ZCI, "File path in library linking ZCI (EXT_LNK)")
 
 	#library linking path
@@ -32,10 +33,12 @@ def processLnk(zCtx, ZCI):
 	#check existence
 	if not os.path.isfile(path):
 		zCtx.ZCIError(ZCI, "Shared & Dynamically Linked (SDL) library " + path + " not found.")
+	zCtx.debug("SDL file \"" + path + "\" found.")
 
 	#add link
 	if path not in zCtx.cpl.dataResult.linkedLibs:
 		zCtx.cpl.dataResult.linkedLibs.append(path)
+	zCtx.ZCIDebug(ZCI, "Added SDL \"" + path + "\" to linking list.")
 
 
 
@@ -46,6 +49,7 @@ def processLnk(zCtx, ZCI):
 
 #structure
 def processTypeDcl(zCtx, ZCI):
+	zCtx.ZCIDeepDebug(ZCI, "Processing type declaration.")
 	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
 
 	#get full type name considered as "undeclinated"
@@ -62,6 +66,7 @@ def processTypeDcl(zCtx, ZCI):
 			if len(ZCI.modulePrefix) != 0:
 				modulePrefixText = unprefixizeModule(ZCI.modulePrefix)
 			zCtx.ZCIError(ZCI, "Type " + modulePrefixText + rawName + " already exists, can't declare a new one with the same name (DCL_TYP).")
+	zCtx.deepDebug("New type does not exist yet.")
 
 	#explicit declination degree if any
 	dcnDeg = 0
@@ -87,6 +92,7 @@ def processTypeDcl(zCtx, ZCI):
 
 		#forward after includer
 		ZCI.forward(peerIndex - beginningIndex + 1)
+	zCtx.deepDebug("New type is declinable of degree " + str(dcnDeg))
 
 	#must be followed by blanks once more
 	if ZCI.get() not in BLANKS:
@@ -95,6 +101,7 @@ def processTypeDcl(zCtx, ZCI):
 
 	#process type content
 	if ZCI.get() == '{':
+		zCtx.deepDebug("Type declaration via new-structure syntax.")
 		fields = zCtx.readDataItemSequence(ZCI, "type declaration ZCI (DCL_TYP).", typesRequired=True, cstOnly=True)
 		if len(fields) == 0:
 			zCtx.ZCIError(ZCI, "Must have at least 1 field in structure type.")
@@ -105,6 +112,7 @@ def processTypeDcl(zCtx, ZCI):
 			fields = fields
 		)
 	else:
+		zCtx.deepDebug("Type declaration via type-copy syntax.")
 		parent   = zCtx.readZType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
 		newZType = ztyp(
 			fullName, dcnDeg,
@@ -115,10 +123,11 @@ def processTypeDcl(zCtx, ZCI):
 
 	#add new type
 	zCtx.cpl.ztypes.append(newZType)
-	print("EXPLICITELY ADDING TYPE [" + newZType.name + "] with dcnDeg [" + str(newZType.dcnDeg) + "]")
+	zCtx.ZCIDebug(ZCI, "Explicitely added type " + newZType.name)
 
 	#end of ZCI expected
 	zCtx.endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")
+	zCtx.deepDebug("Type declaration processed.")
 
 
 
@@ -129,6 +138,8 @@ def processTypeDcl(zCtx, ZCI):
 
 #enumerate declaration
 def processEnmDcl(zCtx, ZCI, global_=False):
+	zCtx.ZCIDeepDebug(ZCI, "Processing enumerate declaration.")
+	zCtx.deepDebug("Enumerate declaration processed.")
 	pass
 
 
@@ -140,6 +151,10 @@ def processEnmDcl(zCtx, ZCI, global_=False):
 
 #compilation
 def c02_redirectGlobal(zCtx):
+	zCtx.debug("\n\n\n\n")
+	zCtx.debug("=================================================================================")
+	zCtx.debug("======================== C02 REDIRECT GLOBAL : beginning ========================")
+	zCtx.debug("=================================================================================\n\n\n\n")
 
 	#remaining ZCIs for further steps
 	functionZCIs = []
@@ -149,6 +164,7 @@ def c02_redirectGlobal(zCtx):
 		initialLineNbr = ZCI.ctx.lineNbr
 		initialColmNbr = ZCI.ctx.colmNbr
 		ZCIText        = ZCI.ctx.icontent.s
+		zCtx.deepDebug("Treating ZCI \"" + ZCIText + "\".")
 
 		#read 1st ZCI word
 		firstWord = zCtx.readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_CHARSET)
@@ -217,7 +233,12 @@ def c02_redirectGlobal(zCtx):
 		#CASE 3 - BEGINNING WITH NAME
 
 		#other possibilities
-		#print("Undefined yet.")
+		#zCtx.ZCIError(ZCI, "Undefined yet.")
+
+	zCtx.debug("\n\n\n\n")
+	zCtx.debug("===========================================================================")
+	zCtx.debug("======================== C02 REDIRECT GLOBAL : end ========================")
+	zCtx.debug("===========================================================================\n\n\n\n")
 
 	#debug output file
 	zCtx.cplStep_debugZCIs("02")

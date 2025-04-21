@@ -261,6 +261,9 @@ class dataItem:
 		self.initialValue = initialValue #ulng
 		self.constant     = constant
 
+	def toStr(self):
+		return "{type:\"" + self.zType.name + "\",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + str(self.initialValue) + ",constant:" + str(self.constant) + "}"
+
 #compiler data
 class cplDat:
 	def __init__(self, options, rootTypes):
@@ -286,10 +289,11 @@ class zctx:
 	def __init__(self,
 		filepath, LLI,
 		pcpl_cfg, pcpl_itm,
-		cpl_opt,  debugMode
+		cpl_opt,  debugMode, deepDebugMode=False
 	):
-		self.LLI       = {}
-		self.debugMode = debugMode
+		self.LLI           = {}
+		self.debugMode     = debugMode
+		self.deepDebugMode = deepDebugMode
 
 		#every imported context & the current one
 		self.initialCtx   = ParsingCtx(filepath, readFile(filepath))
@@ -380,22 +384,18 @@ class zctx:
 		return self.ctx.forward(step)
 
 	#output
-	def debug(self, msg, printSubCtxs=True, printLine=True):
-		if self.debugMode:
-			print("[ DEBUG ] " + msg)
-			if printSubCtxs:
-				for ctx in self.subCtxs:
-					print("    At " + ctx.toStr())
-			if printLine:
-				self.ctx.printLineIndicator()
-
-	def warning(self, msg, printSubCtxs=True, printLine=True):
-		print("[WARNING] " + msg)
+	def internal(self, msg, printSubCtxs=True, printLine=True):
+		print("[INT ERR] " + msg)
 		if printSubCtxs:
 			for ctx in self.subCtxs:
 				print("    At " + ctx.toStr())
 		if printLine:
+			if self.ctx is None:
+				self.internal("No context to internal-output line from.", printSubCtxs=False, printLine=False)
 			self.ctx.printLineIndicator()
+		import traceback #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< can be useful
+		traceback.print_stack()
+		exit(2)
 
 	def error(self, msg, printSubCtxs=True, printLine=True):
 		print("[ ERROR ] " + msg)
@@ -403,17 +403,47 @@ class zctx:
 			for ctx in self.subCtxs:
 				print("    At " + ctx.toStr())
 		if printLine:
+			if self.ctx is None:
+				self.internal("No context to error-output line from.", printSubCtxs=False, printLine=False)
 			self.ctx.printLineIndicator()
 		exit(1)
 
-	def internal(self, msg, printSubCtxs=True, printLine=True):
-		print("[INT ERR] " + msg)
+	def warning(self, msg, printSubCtxs=True, printLine=True):
+		print("[WARNING] " + msg)
 		if printSubCtxs:
 			for ctx in self.subCtxs:
 				print("    At " + ctx.toStr())
 		if printLine:
+			if self.ctx is None:
+				self.internal("No context to warning-output line from.", printSubCtxs=False, printLine=False)
 			self.ctx.printLineIndicator()
-		exit(2)
+
+	def debug(self, msg, printSubCtxs=False, printLine=False):
+		if self.debugMode:
+			print("[ DEBUG ] " + msg)
+			if printSubCtxs:
+				for ctx in self.subCtxs:
+					print("    At " + ctx.toStr())
+			if printLine:
+				if self.ctx is None:
+					self.internal("No context to debug-output line from.", printSubCtxs=False, printLine=False)
+				self.ctx.printLineIndicator()
+
+	def deepDebug(self, msg, printSubCtxs=False, printLine=False):
+		if self.deepDebugMode:
+			print("[D-DEBUG] " + msg)
+			if printSubCtxs:
+				for ctx in self.subCtxs:
+					print("    At " + ctx.toStr())
+			if printLine:
+				if self.ctx is None:
+					self.internal("No context to deep-debug-output line from.", printSubCtxs=False, printLine=False)
+				self.ctx.printLineIndicator()
+
+	def deepDebugPause(self):
+		if self.deepDebugMode:
+			self.deepDebug("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~")
+			input()
 
 
 
@@ -428,19 +458,21 @@ class zctx:
 		if not filepath.startswith('/'):
 			filepath = self.ctx.dirname + '/' + filepath
 
+		#check already openned
+		realNewPath = os.path.realpath(filepath)
+		for c in self.imported:
+			if realNewPath == c:
+				self.deepDebug("Subctx \"" + realNewPath + "\" already openned once.")
+				return False
+
 		#open new subcontext
+		self.deepDebug("Opening subctx \"" + filepath + "\".")
 		try:
 			newCtx   = ParsingCtx(filepath, readFile(filepath))
 		except FileNotFoundError:
 			self.error("File " + filepath + " not found.")
 		except IsADirectoryError:
 			self.error("Element " + filepath + " is a directory (expected file).")
-
-		#check already openned
-		realNewPath = os.path.realpath(newCtx.filepath)
-		for c in self.imported:
-			if realNewPath == c:
-				return False
 
 		#not already openned => add it to importations
 		self.ctx = newCtx
@@ -449,10 +481,16 @@ class zctx:
 		return True
 
 	def closeCurrentCtx(self): #return True if no more context remains
+		self.deepDebug("Closing latest subctx.")
 		lst_pop(self.subCtxs)
+
+		#no more subcontext remaining
 		if lst_isEmpty(self.subCtxs):
 			self.ctx = None
+			self.deepDebug("No more subctx remaining.")
 			return True
+
+		#subcontexts remaining
 		self.ctx = lst_last(self.subCtxs)
 		return False
 
@@ -468,23 +506,29 @@ class zctx:
 	# ZCI OUTPUT (cpl)
 
 	#output after precompilation is closely related to ZCIs, no longer to global subCtxs
-	def ZCIDebug(self, ZCI, msg, printSubCtxs=True, printLine=True):
+	def ZCIInternal(self, ZCI, msg, printSubCtxs=True, printLine=True):
 		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.debug(msg, printSubCtxs=printSubCtxs, printLine=printLine)
-
-	def ZCIWarning(self, ZCI, msg, printSubCtxs=True, printLine=True):
-		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.warning(msg, printSubCtxs=printSubCtxs, printLine=printLine)
+		self.internal(msg, printSubCtxs, printLine)
 
 	def ZCIError(self, ZCI, msg, printSubCtxs=True, printLine=True):
 		self.overwriteSubCtxs(ZCI.subCtxs)
-		#import traceback #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< can be useful
-		#traceback.print_stack()
-		self.error(msg, printSubCtxs=printSubCtxs, printLine=printLine)
+		self.error(msg, printSubCtxs, printLine)
 
-	def ZCIInternal(self, ZCI, msg, printSubCtxs=True, printLine=True):
+	def ZCIWarning(self, ZCI, msg, printSubCtxs=True, printLine=True):
 		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.internal(msg, printSubCtxs=printSubCtxs, printLine=printLine)
+		self.warning(msg, printSubCtxs, printLine)
+
+	def ZCIDebug(self, ZCI, msg, printSubCtxs=True, printLine=True):
+		previousSubCtxs = self.subCtxs
+		self.overwriteSubCtxs(ZCI.subCtxs)
+		self.debug(msg, printSubCtxs, printLine)
+		self.overwriteSubCtxs(previousSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
+
+	def ZCIDeepDebug(self, ZCI, msg, printSubCtxs=True, printLine=True):
+		previousSubCtxs = self.subCtxs
+		self.overwriteSubCtxs(ZCI.subCtxs)
+		self.deepDebug(msg, printSubCtxs, printLine)
+		self.overwriteSubCtxs(previousSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
 
 
 
@@ -512,6 +556,7 @@ class zctx:
 
 	#try reading symbol (don't move ZCI ctx)
 	def readSymbol(self, ZCI):
+		self.ZCIDeepDebug(ZCI, "Reading symbol.")
 		tmpCtx = ZCI.ctx.copy()
 		c1 = tmpCtx.get()
 
@@ -647,6 +692,7 @@ class zctx:
 		parseModulePrefixes=False,
 		modulePrefix_asHeaderOnly=False #means "if any, it must BEGIN with it and be the only occurrence"
 	):
+		self.ZCIDeepDebug(ZCI, "Reading name.")
 
 		#read until given blacklist/whitelist no longer matches
 		name           = ""
@@ -751,6 +797,7 @@ class zctx:
 			#no longer in first character (maybe, getting rid of the "if" and keeping only the assignment would be more optimized ?)
 			if firstCharacter:
 				firstCharacter = False
+		self.ZCIDeepDebug(ZCI, "Ended reading name.")
 
 		#missing name field
 		if len(name) == 0:
@@ -812,7 +859,7 @@ class zctx:
 		unprefixedModules = ""
 		for mp in self.cpl.modulePrefixes:
 			unprefixedModules += "\n - " + unprefixizeModule(mp)
-		self.debug("Available modules are :" + unprefixedModules, printSubCtxs=False)
+		self.debug("Available modules are :" + unprefixedModules)
 
 	#cpl steps output
 	def cplStep_debugZCIs(self, cplStep):
@@ -830,6 +877,7 @@ class zctx:
 
 	#expecting a Z type
 	def readZType(self, ZCI, ZCIKindIfError):
+		self.ZCIDeepDebug(ZCI, "Reading Z type.")
 		ztModulePrefix = ""
 
 		#read raw type name : module-type
@@ -855,6 +903,7 @@ class zctx:
 				break
 		if ztInstance is None:
 			self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName + " does not exist.")
+		self.ZCIDeepDebug(ZCI, "Undeclinated Z type \"" + ztFullName + "\" targetted.")
 
 		#2 - declination list given => solve them
 		if ZCI.get() == '[':
@@ -866,6 +915,7 @@ class zctx:
 				self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName + " is not declinable (null declination degree).")
 
 			#read declination types one by one
+			self.deepDebug("Type is declinated, reading declination types.")
 			dcns = [] #lst[ztyp]
 			while True:
 				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
@@ -885,6 +935,7 @@ class zctx:
 				ZCI.inc()
 
 			#check declination length
+			self.ZCIDeepDebug(ZCI, "Found declination types " + str(dcns) + ".")
 			if len(dcns) < ztInstance.dcnDeg:
 				self.ZCIError(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
 			elif len(dcns) > ztInstance.dcnDeg:
@@ -913,19 +964,23 @@ class zctx:
 					parent=ztUndeclinatedInstance,
 					dcns=dcns
 				)
-				print("AUTO ADDING DECLINATION [" + ztInstance.name + "] from type [" + ztUndeclinatedInstance.name + "]")
+				self.ZCIDebug(ZCI, "First call of declination \"" + ztInstance.name + "\" from type \"" + ztUndeclinatedInstance.name + "\", adding it.")
 				self.cpl.ztypes.append(ztInstance)
 
 		#final result
+		self.ZCIDeepDebug(ZCI, "Ended reading Z type.")
 		return ztInstance
 
 	#value analysis process (VAP)
 	def readValue(self, ZCI, ZCIKindIfError, cstOnly=False):
+		self.ZCIDeepDebug(ZCI, "Reading value.")
+		self.ZCIDeepDebug(ZCI, "Ended reading value.")
 		return self.readName(ZCI, ZCIKindIfError) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
 
 	#read dataitem sequence
 	# Given ZCI must be at an opening includer character.
 	def readDataItemSequence(self, ZCI, ZCIKindIfError, typesRequired=False, cstOnly=False):
+		self.ZCIDeepDebug(ZCI, "Reading data item sequence.")
 		initialIndex = ZCI.ctx.icontent.index
 		if ZCI.get() not in INCLUDERS.keys():
 			self.ZCIInternal(ZCI, "Must be at the beginning of an includer to read data item sequence.")
@@ -965,6 +1020,7 @@ class zctx:
 
 				#store data item
 				dis.append(dataItem(zt, n, initialized, initialValue))
+				self.ZCIDeepDebug(ZCI, "Got data item " + dis[-1].toStr())
 
 				#must be followed by coma or closing peer
 				next = ZCI.get()
@@ -977,4 +1033,5 @@ class zctx:
 				ZCI.inc()
 
 		#return result
+		self.ZCIDeepDebug(ZCI, "Ended reading data item sequence.")
 		return dis
