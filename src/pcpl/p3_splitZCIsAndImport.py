@@ -156,7 +156,7 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
 				skipLineFeed = True
 				continue
 
-			#includer found
+			#openning includer found
 			if c in INCLUDERS.keys():
 				ZCI_ctx_icontent_s_len = len(ZCI.ctx.icontent.s) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only in python (.length field)
 
@@ -180,6 +180,12 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
 
 				#set ending peer index to continue parsing ZCI content until reaching it
 				peerIndex = currentPairs[ctx.icontent.index] #we use global ctx here, that's a choice. The objective is to continue parsing until reaching closing peer.
+
+
+
+			#ending includer found (alone)
+			elif c in INCLUDERS.values():
+				zCtx.error("Lonely ending includer found, missing its openning one before.")
 
 
 

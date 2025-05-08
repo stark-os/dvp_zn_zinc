@@ -245,8 +245,11 @@ class ztyp:
 		self.fields  = fields
 		self.stcSize = 0
 		if isStc:
-			for f in fields:
-				self.stcSize += f.zType.size
+			for f in fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
+				if f.zType is None: #null field means "field has the same type as his parent" => size (which is also #ptr)
+					self.stcSize += size
+				else:
+					self.stcSize += f.zType.size
 
 class cstValue:
 	def __init__(self, zType, data):
@@ -262,7 +265,10 @@ class dataItem:
 		self.constant     = constant
 
 	def toStr(self):
-		return "{type:\"" + self.zType.name + "\",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + str(self.initialValue) + ",constant:" + str(self.constant) + "}"
+		zTypeName = "null"
+		if self.zType is not None:
+			zTypeName = '"' + self.zType.name + '"'
+		return "{type:" + zTypeName + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + str(self.initialValue) + ",constant:" + str(self.constant) + "}"
 
 #compiler data
 class cplDat:
@@ -518,13 +524,13 @@ class zctx:
 		self.overwriteSubCtxs(ZCI.subCtxs)
 		self.warning(msg, printSubCtxs, printLine)
 
-	def ZCIDebug(self, ZCI, msg, printSubCtxs=True, printLine=True):
+	def ZCIDebug(self, ZCI, msg, printSubCtxs=False, printLine=True):
 		previousSubCtxs = self.subCtxs
 		self.overwriteSubCtxs(ZCI.subCtxs)
 		self.debug(msg, printSubCtxs, printLine)
 		self.overwriteSubCtxs(previousSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
 
-	def ZCIDeepDebug(self, ZCI, msg, printSubCtxs=True, printLine=True):
+	def ZCIDeepDebug(self, ZCI, msg, printSubCtxs=False, printLine=True):
 		previousSubCtxs = self.subCtxs
 		self.overwriteSubCtxs(ZCI.subCtxs)
 		self.deepDebug(msg, printSubCtxs, printLine)
@@ -689,10 +695,13 @@ class zctx:
 		ZCI,
 		missingFieldIfError, #null means "don't raise error if empty"
 		blacklist=None, whitelist=DEFAULT_NAME_CHARSET,
+		doubleUnderscores=False,
 		parseModulePrefixes=False,
 		modulePrefix_asHeaderOnly=False #means "if any, it must BEGIN with it and be the only occurrence"
 	):
 		self.ZCIDeepDebug(ZCI, "Reading name.")
+		if parseModulePrefixes:
+			doubleUnderscores = True #doesn't make sens to double underscores in module prefixes but not in the name => force it
 
 		#read until given blacklist/whitelist no longer matches
 		name           = ""
@@ -793,6 +802,8 @@ class zctx:
 
 			#allowed character => add it
 			name += c
+			if doubleUnderscores and c == '_':
+				name += '_'
 
 			#no longer in first character (maybe, getting rid of the "if" and keeping only the assignment would be more optimized ?)
 			if firstCharacter:
@@ -876,24 +887,22 @@ class zctx:
 	# ABSTRACT ZCEs PARSING TOOLS
 
 	#expecting a Z type
-	def readZType(self, ZCI, ZCIKindIfError):
+	def readZType(self, ZCI, ZCIKindIfError, nullIfNotExisting=False):
 		self.ZCIDeepDebug(ZCI, "Reading Z type.")
-		ztModulePrefix = ""
+		initialZCICtx = ZCI.ctx.copy()
 
-		#read raw type name : module-type
-		if ZCI.get() == '^':
-			ztRawName      = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True) #actually, this is more the "FullName" but without declination prefix (so ~almost~ full)
+		#read raw type name (actually, it also includes explicit module prefix if any... so not really "raw")
+		ztRawName = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True)
+
+		#module-realted / global
+		if initialZCICtx.get() == '^':
 			ztModulePrefix = self.splitModulePrefix(ZCI, ztRawName)        #save its module prefix elsewhere
-			ztRawName      = str_sub(ztRawName, start=len(ztModulePrefix)) # + cut it from the "almost full name" to get only the RAW name
-
-		#read raw type name : global-type
+			ztRawName      = str_sub(ztRawName, start=len(ztModulePrefix)) # + cut it from "rawName" to keep only the REAL RAW NAME
 		else:
 			ztModulePrefix = "G"
-			ztRawName      = self.readName(ZCI, "Type name in " + ZCIKindIfError)
 
 		#build full type name (forced "undeclinated" for the moment)
-		underscored_ztRawName = ztRawName.replace('_', "__")
-		ztFullName            = ztModulePrefix + 'U' + underscored_ztRawName
+		ztFullName = ztModulePrefix + 'U' + ztRawName
 
 		#1 - check UNDECLINATED variant existence
 		ztInstance = None
@@ -902,7 +911,13 @@ class zctx:
 				ztInstance = t
 				break
 		if ztInstance is None:
-			self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName + " does not exist.")
+			if nullIfNotExisting:
+				self.ZCIDeepDebug(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", printLine=False)
+				ZCI.ctx         = initialZCICtx
+				ZCI.subCtxs[-1] = initialZCICtx
+				self.ZCIDeepDebug(ZCI, "Restoring ZCI context to that position => Ended reading Z type.")
+				return None
+			self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName.replace("__", '_') + " does not exist.")
 		self.ZCIDeepDebug(ZCI, "Undeclinated Z type \"" + ztFullName + "\" targetted.")
 
 		#2 - declination list given => solve them
@@ -912,7 +927,7 @@ class zctx:
 
 			#undeclinable type
 			if ztInstance.dcnDeg == 0:
-				self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName + " is not declinable (null declination degree).")
+				self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName.replace("__", '_') + " is not declinable (null declination degree).")
 
 			#read declination types one by one
 			self.deepDebug("Type is declinated, reading declination types.")
@@ -934,15 +949,20 @@ class zctx:
 					self.ZCIError(ZCI, "Invalid element given " + next + " in declination types sequence (expected coma separator ',' or closing bracket ']').")
 				ZCI.inc()
 
+			#debug
+			self.ZCIDeepDebug(ZCI, "Found declination types [", printLine=False)
+			for d in range(len(dcns)):
+				self.ZCIDeepDebug(ZCI, "\t" + dcns[d].name + ",", printLine=False)
+			self.ZCIDeepDebug(ZCI, "].", printLine=False)
+
 			#check declination length
-			self.ZCIDeepDebug(ZCI, "Found declination types " + str(dcns) + ".")
 			if len(dcns) < ztInstance.dcnDeg:
 				self.ZCIError(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
 			elif len(dcns) > ztInstance.dcnDeg:
 				self.ZCIError(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
 
 			#re-build full type name including declinations this time (ztModulePrefix can be set to "G" by the way, same logic as undeclinated types)
-			ztFullName = ztModulePrefix + 'D' + underscored_ztRawName
+			ztFullName = ztModulePrefix + 'D' + ztRawName
 			for d in dcns:
 				ztFullName += '_' + d.name
 
@@ -979,8 +999,12 @@ class zctx:
 
 	#read dataitem sequence
 	# Given ZCI must be at an opening includer character.
-	def readDataItemSequence(self, ZCI, ZCIKindIfError, typesRequired=False, cstOnly=False):
+	def readDataItemSequence(self, ZCI, ZCIKindIfError, typesRequired=False, cstOnly=False, nullType_ifFoundGivenName=None):
 		self.ZCIDeepDebug(ZCI, "Reading data item sequence.")
+		if nullType_ifFoundGivenName is not None:
+			typesRequired = True
+
+		#initial conditions
 		initialIndex = ZCI.ctx.icontent.index
 		if ZCI.get() not in INCLUDERS.keys():
 			self.ZCIInternal(ZCI, "Must be at the beginning of an includer to read data item sequence.")
@@ -992,9 +1016,21 @@ class zctx:
 				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 				#read type
-				zt = None
-				if typesRequired:
-					zt = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError)
+				zt = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
+				if zt is None:
+
+					#second chance to allow null type
+					if nullType_ifFoundGivenName is not None:
+						rawName = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True)
+						if rawName == nullType_ifFoundGivenName:
+							self.ZCIDebug(ZCI, "Setting null type for that element because it matches given name \"" + nullType_ifFoundGivenName + "\".", printLine=False)
+						else:
+							self.ZCIDeepDebug(ZCI, "Doesn't match \"" + nullType_ifFoundGivenName + "\" neither, it would have been allowed.")
+							self.ZCIError(ZCI, "Unknown type found in data item declarator (required).")
+
+					#missing required type
+					elif typesRequired:
+						self.ZCIError(ZCI, "No type found in data item declarator (required).")
 
 				#read name
 				self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue

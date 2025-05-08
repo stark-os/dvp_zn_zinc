@@ -53,11 +53,11 @@ def processTypeDcl(zCtx, ZCI):
 	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
 
 	#get full type name considered as "undeclinated"
-	rawName = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).")
+	rawName = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True)
 	if len(ZCI.modulePrefix) == 0:
-		fullName = "GU" + rawName.replace('_', "__")
+		fullName = "GU" + rawName
 	else:
-		fullName = ZCI.modulePrefix + 'U' + rawName.replace('_', "__")
+		fullName = ZCI.modulePrefix + 'U' + rawName
 
 	#check already existing
 	for t in zCtx.cpl.ztypes:
@@ -65,7 +65,7 @@ def processTypeDcl(zCtx, ZCI):
 			modulePrefixText = ""
 			if len(ZCI.modulePrefix) != 0:
 				modulePrefixText = unprefixizeModule(ZCI.modulePrefix)
-			zCtx.ZCIError(ZCI, "Type " + modulePrefixText + rawName + " already exists, can't declare a new one with the same name (DCL_TYP).")
+			zCtx.ZCIError(ZCI, "Type " + modulePrefixText + rawName.replace("__", '_') + " already exists, can't declare a new one with the same name (DCL_TYP).")
 	zCtx.deepDebug("New type does not exist yet.")
 
 	#explicit declination degree if any
@@ -99,10 +99,14 @@ def processTypeDcl(zCtx, ZCI):
 		zCtx.ZCIError(ZCI, "Expected blank zone after type name in type declaration ZCI (DCL_TYP).")
 	zCtx.jumpBlankZone(ZCI, "Type content definition in type declaration ZCI (DCL_TYP).")
 
-	#process type content
+	#process type content: structure syntax
 	if ZCI.get() == '{':
-		zCtx.deepDebug("Type declaration via new-structure syntax.")
-		fields = zCtx.readDataItemSequence(ZCI, "type declaration ZCI (DCL_TYP).", typesRequired=True, cstOnly=True)
+		zCtx.deepDebug("Type declaration via structure syntax.", printLine=False)
+		fields = zCtx.readDataItemSequence(ZCI, "type declaration ZCI (DCL_TYP).",
+			typesRequired=True,
+			cstOnly=True,
+			nullType_ifFoundGivenName = ZCI.modulePrefix + rawName
+		)
 		if len(fields) == 0:
 			zCtx.ZCIError(ZCI, "Must have at least 1 field in structure type.")
 		newZType = ztyp(
@@ -111,8 +115,15 @@ def processTypeDcl(zCtx, ZCI):
 			True,
 			fields = fields
 		)
+
+		#fields having the same type as their parent => solve recursive type assignment (typ A{ A f1, ...})
+		for f in range(len(fields)):
+			if fields[f].zType == None:
+				fields[f].zType = newZType #that means a ztype can hold a field with himself as ztype (infinite loop of reference, cycle)
+
+	#process type content: type-copy syntax
 	else:
-		zCtx.deepDebug("Type declaration via type-copy syntax.")
+		zCtx.deepDebug("Type declaration via type-copy syntax.", printLine=False)
 		parent   = zCtx.readZType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
 		newZType = ztyp(
 			fullName, dcnDeg,
@@ -164,7 +175,7 @@ def c02_redirectGlobal(zCtx):
 		initialLineNbr = ZCI.ctx.lineNbr
 		initialColmNbr = ZCI.ctx.colmNbr
 		ZCIText        = ZCI.ctx.icontent.s
-		zCtx.deepDebug("Treating ZCI \"" + ZCIText + "\".")
+		zCtx.ZCIDeepDebug(ZCI, "Treating ZCI \"" + ZCIText + "\".", printSubCtxs=True)
 
 		#read 1st ZCI word
 		firstWord = zCtx.readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_CHARSET)
@@ -205,36 +216,41 @@ def c02_redirectGlobal(zCtx):
 
 
 
-		#CASE 2 - BEGINNING WITH KEYWORD AND ALLOWED
+		#CASE 3 - BEGINNING WITH KEYWORD AND ALLOWED
 
 		#trigrams requiring a following blank
-		if ZCIText[3] in BLANKS:
-			ZCI.ctx.lineNbr        = initialLineNbr #reset ctx as if we were right after trigram
-			ZCI.ctx.colmNbr        = initialColmNbr + 2
-			ZCI.ctx.icontent.index = 2
+		if len(ZCIText) > 3:
+			if ZCIText[3] in BLANKS:
+				ZCI.ctx.lineNbr        = initialLineNbr #reset ctx as if we were right after trigram
+				ZCI.ctx.colmNbr        = initialColmNbr + 2
+				ZCI.ctx.icontent.index = 2
 
-			#2.1 - library linking
-			if ZCIText.startswith("lnk"):
-				processLnk(zCtx, ZCI)
-				continue
+				#2.1 - library linking
+				if ZCIText.startswith("lnk"):
+					processLnk(zCtx, ZCI)
+					continue
 
-			#2.2 - type declaration DCL_TYP
-			if ZCIText.startswith("typ"):
-				processTypeDcl(zCtx, ZCI)
-				continue
+				#2.2 - type declaration DCL_TYP
+				if ZCIText.startswith("typ"):
+					processTypeDcl(zCtx, ZCI)
+					continue
 
-			#2.3 - ENM
-			if ZCIText.startswith("enm"):
-				processEnmDcl(zCtx, ZCI, global_=True)
-				continue
+				#2.3 - Enumerate declaration DCL_ENM
+				if ZCIText.startswith("enm"):
+					processEnmDcl(zCtx, ZCI, global_=True)
+					continue
 
 
 
-		#CASE 3 - BEGINNING WITH NAME
+		#CASE 3 - ASSIGNMENT OR FUNCTION
 
-		#other possibilities
-		#zCtx.ZCIError(ZCI, "Undefined yet.")
+		#assignment ASG_ASG /!\ DO NOT USE readType() HERE, THERE MIGHT BE UNSOLVED TYPES THAT MUST NOT BE  /!\
+		# #not treated yet => to be stored into zCtx
 
+		#function DCL_FCT
+		# #not treated yet => to be stored into zCtx
+
+	#debug
 	zCtx.debug("\n\n\n\n")
 	zCtx.debug("===========================================================================")
 	zCtx.debug("======================== C02 REDIRECT GLOBAL : end ========================")

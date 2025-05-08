@@ -81,7 +81,7 @@ def main():
 		os.mkdir("debug")
 
 	#precompile
-	zCtx.ZCIs = precompile(zCtx)
+	zCtx.ZCIs          = precompile(zCtx)
 	zCtx.deepDebugMode = DEEP_DEBUG_MODE #now, we have consistent ctx/text matching
 
 	#compile

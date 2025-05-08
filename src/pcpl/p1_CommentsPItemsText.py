@@ -212,7 +212,7 @@ def p1_CommentsPItemsText(zCtx):
 
 		#potential comment detection
 		if inPotentialComment:
-			inPotentialComment     = False
+			inPotentialComment = False
 
 			#single-line comment detection
 			if c == '/':
