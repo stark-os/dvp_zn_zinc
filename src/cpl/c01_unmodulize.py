@@ -22,7 +22,7 @@ def formatModuleName(zCtx, ZCI, moduleName):
 	checkedModuleName = ""
 	backShift         = len(moduleName)
 	for c in moduleName:
-		if c not in DEFAULT_NAME_CHARSET:
+		if c not in DEFAULT_NAME_CHARSET: #this "backshift" strategy for targetting something that has ALREADY been read only works because no tab or line feed is allowed in our charset.
 			ZCI.ctx.icontent.index -= backShift #target exact position of invalid character
 			ZCI.ctx.colmNbr        -= backShift
 			zCtx.ZCIError(ZCI, "Character not allowed in module name.")
@@ -49,28 +49,25 @@ def c01_unmodulize(zCtx):
 	zCtx.debug("============================================================================")
 	zCtx.debug("======================== C01 UNMODULIZE : beginning ========================")
 	zCtx.debug("============================================================================\n\n\n\n")
+	zCtx.deepDebugPause()
 
 	#for each precompiled ZCI
 	z = 0
 	_ZCIsLen = len(zCtx.ZCIs) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only exists here in python, won't be useful in Z (we got .length)
 	while z < _ZCIsLen:
-		ZCI     = zCtx.ZCIs[z]
-		ZCIText = ZCI.ctx.icontent.s
-		zCtx.deepDebug("Treating ZCI \"" + ZCIText + "\".")
+		ZCI = zCtx.ZCIs[z]
+		zCtx.ZCIDeepDebug(ZCI, "Treating ZCI " + ZCI.textFormat(), printSubCtxs=True)
 
 		#too short => skip it
-		if len(ZCIText) < 5:
+		if len(ZCI.text) < 5:
 			zCtx.deepDebug("Too short => Skipping ZCI.")
 			z += 1
 			continue
 
 		#found module declaration (DCL_MOD)
-		if ZCIText.startswith("mod") and ZCIText[3] in BLANKS:
+		if ZCI.text.startswith("mod") and ZCI.text[3] in BLANKS:
 			zCtx.ZCIDebug(ZCI, "Found module declaration.")
-			ZCI.forward(4)
-
-			#ZCI ctx starts from index -1 (istr initial position) but its colmNbr IS CORRECT => ctx.inc() will push it 1 step too far => shift it to compensate
-			ZCI.ctx.colmNbr -= 1
+			ZCI.forward(3)
 
 
 
@@ -80,7 +77,7 @@ def c01_unmodulize(zCtx):
 			zCtx.jumpBlankZone(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
 			moduleName = zCtx.readName(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
 
-			#combine with current module (we can be in another module => this allow submodularization)
+			#combine with current module (we can be in another module => this allows submodularization)
 			modulePrefix = ZCI.modulePrefix + formatModuleName(zCtx, ZCI, moduleName)
 
 			# I.1) module addition
@@ -110,6 +107,7 @@ def c01_unmodulize(zCtx):
 
 				#avoid re-declaration
 				zCtx.cpl.modulePrefixes.append(modulePrefix)
+				zCtx.debug("Added module \"" + modulePrefix + "\" to compiler context.")
 			zCtx.ZCIDebug(ZCI, "Full module name read \"" + modulePrefix + "\" (based on prefix \"" + ZCI.modulePrefix + "\").")
 
 
@@ -125,19 +123,20 @@ def c01_unmodulize(zCtx):
 			moduleContent_startIndex = ZCI.ctx.icontent.index
 			if moduleContent_startIndex not in ZCI.pairs.keys():
 				zCtx.ZCIInternal(ZCI, "Missing pair information for current includer.")
-			moduleContent_stopIndex  = ZCI.pairs[moduleContent_startIndex]
+			moduleContent_stopIndex = ZCI.pairs[moduleContent_startIndex]
 
 			#shift 1st character '{'
-			moduleContent_startIndex += 1
 			ZCI.inc()
 
 			#extract ZCIs from content
 			zCtx.debug("Extracting ZCIs from module content.")
-			moduleContentCtx                = ZCI.ctx.copy()
-			moduleContentCtx.icontent.s     = str_sub(ZCI.ctx.icontent.s, moduleContent_startIndex, moduleContent_stopIndex-1)
-			moduleContentCtx.icontent.index = -1
-			moduleContentCtx.colmNbr       -=  1 #shift to compensate the -1 set as index
-			moduleZCIs                      = extractZCIsFromCtx(zCtx, moduleContentCtx, global_=True, subCtxs=ZCI.subCtxs, modulePrefix=modulePrefix)
+			moduleZCIs = extractZCIsFromCtx(zCtx,
+				ZCI.ctx,
+				subCtxs = ZCI.subCtxs,
+				global_ = True,
+				modulePrefix = modulePrefix,
+				maximumIndexAllowed = moduleContent_stopIndex-1 #actually, we must skip the real moduleContent_stopIndex, it refers to the ending includer of module content (=> not interesting).
+			)
 
 			#remove current ZCI in general ZCtx
 			zCtx.debug("Replacing module declaration ZCI by global unmodularized ZCIs.")
@@ -148,7 +147,7 @@ def c01_unmodulize(zCtx):
 			previousZCIs = lst_sub(zCtx.ZCIs, stop=z)
 			nextZCIs     = lst_sub(zCtx.ZCIs, start=z+1)
 			zCtx.ZCIs    = previousZCIs + moduleZCIs + nextZCIs
-			#zCtx.deepDebugPause()
+			zCtx.deepDebugPause()
 
 			_ZCIsLen = len(zCtx.ZCIs) # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only in python, not required in Z (.length field)
 
@@ -160,6 +159,7 @@ def c01_unmodulize(zCtx):
 	zCtx.debug("======================================================================")
 	zCtx.debug("======================== C01 UNMODULIZE : end ========================")
 	zCtx.debug("======================================================================\n\n\n\n")
+	zCtx.deepDebugPause()
 
 	#debug output file
 	zCtx.cplStep_debugZCIs("01")

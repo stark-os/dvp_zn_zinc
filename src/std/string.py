@@ -42,11 +42,21 @@ def str_subEqual( #that is tab_subequal in stdz actually
 			return False
 	return True
 
+def negativeIndexing(index, length):
+	if index < 0:
+		return negativeIndexing(index+length, length)
+	return index
+
 def str_sub(s, start=None, stop=None):
+	l = len(s)
+	if l == 0:
+		return ""
 	if start is None:
 		start = 0
 	if stop is None:
-		stop = len(s)-1
+		stop = l-1
+	start = negativeIndexing(start, l)
+	stop  = negativeIndexing(stop,  l)
 	return s[start:stop+1]
 
 def lst_sub(l, start=None, stop=None):

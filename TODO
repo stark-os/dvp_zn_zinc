@@ -54,3 +54,10 @@
   In all cases, raise a warning if such function is detected :
       "Method TOTO can be reduced as regular function (no-method detected)."
   User must be aware of that kind of possible optimization whatever ZCC does with this.
+
+- Optimize inert arithmetic computations in compiled result.
+  add ... 0x00
+  sub ... 0x00
+  mul ... 0x01
+  div ... 0x01
+  Remove those statements

@@ -21,6 +21,9 @@ import string
 
 # -------- GENERAL --------
 
+#ZCC options
+deepDebug_stepByStep = False #should be a global VARIABLE dataitem
+
 #general syntax
 BLANKS          = (' ', '\t')
 BLANKS_EXTENDED = (' ', '\t', '\n')
@@ -45,6 +48,18 @@ ROOT_TYPES = (
 	"flt", "dbl",
 	"ptr"
 )
+RT__BOO  = 0 #enm #for indexing in zCtx.rootTypes
+RT__BYT  = 1
+RT__UBYT = 2
+RT__SHR  = 3
+RT__USHR = 4
+RT__INT  = 5
+RT__UINT = 6
+RT__LNG  = 7
+RT__ULNG = 8
+RT__FLT  = 9
+RT__DBL  = 10
+RT__PTR  = 11
 
 #Single Operators
 SYMBOL__SIN  = 1 #invert
@@ -130,20 +145,25 @@ def unprefixizeModule(modulePrefix):
 
 #ZCI
 class zci:
-	def __init__(self, subCtxs, modulePrefix=None, pairs=None): #python: ", pairs={}" NEVER ! it will link every instance to the same element => You don't want that !
-		self.subCtxs = subCtxs
-		if lst_isEmpty(subCtxs):
-			self.ctx = None
-		else:
-			self.ctx = subCtxs[-1]
-		if pairs is None:
-			pairs = {}
-		self.pairs = pairs #map[unt_l,unt_l]
+	def __init__(self, subCtxs, modulePrefix=None, pairs=None):
 		if modulePrefix is None:
 			modulePrefix = ""
+		if pairs is None:
+			pairs = {}
+		if lst_isEmpty(subCtxs):
+			print("[INTERNAL] Cannot instantiate a ZCI with no subCtxs.")
+			exit(1)
+		self.subCtxs      = subCtxs
+		self.ctx          = subCtxs[-1]
+		self.pairs        = pairs #map[unt_l,unt_l]
 		self.modulePrefix = modulePrefix
+		self.text         = ""
+		self.startIndex   = self.ctx.icontent.index #current position is where our ZCI starts
+		self.stopIndex    = self.startIndex
 
-	#ctx forwards
+
+
+	#forwarding
 	def get(self):
 		return self.ctx.get()
 
@@ -151,17 +171,39 @@ class zci:
 		return self.ctx.forward(step)
 
 	def inc(self):
-		return self.ctx.inc()
+		return self.ctx.inc() or self.ctx.icontent.index > self.stopIndex #additionnal stopping reason => end of ZCI
 
 	def reachedEnd(self):
-		return self.ctx.reachedEnd()
+		return self.ctx.icontent.index > self.stopIndex
 
-	def updateCtx(self, newCtx):
-		self.ctx = newCtx
 
-		#replace the last subctx reference by our newCtx
-		lst_pop(self.subCtxs)
-		self.subCtxs.append(newCtx)
+
+	#ctx related
+	def resetCtx(self, newCtx):
+		self.ctx         = newCtx
+		self.subCtxs[-1] = newCtx #a ZCI must have at least 1 subCtx
+
+	def tmpCtxCopy(self):
+		tmpCtxCopyZCI      = zci(lst_copy(self.subCtxs), modulePrefix=self.modulePrefix, pairs=self.pairs)
+		tmpCtxCopyZCI.text = self.text
+		tmpCtxCopyZCI.resetCtx(self.ctx.copy()) #we copy ctx & subctxs so that we can TEMPORARILY work on that ZCI without affecting it really
+		return tmpCtxCopyZCI
+
+
+
+	#debug output
+	def textFormat(self):
+		return '\"' + self.text.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n") + '\"'
+
+	def toStr(self):
+		return "{module:\"" + self.modulePrefix + "\",ctx:\"" + self.ctx.toStr() + "\",startIndex:" + str(self.startIndex) + ",stopIndex:" + str(self.stopIndex) + ",text:" + self.textFormat() + ",pairs:\"" + str(self.pairs).replace(' ', '') + "\"}"
+
+def dumpZCIs(ZCIs, filename):
+	output = "[\n"
+	for ZCI in ZCIs:
+		output += "\t" + ZCI.toStr() + ",\n"
+	output += "]"
+	writeFile(filename, output)
 
 
 
@@ -228,47 +270,47 @@ class program:
 #However, here in Python, we must declare it before to allow dataItem definition and so, zstc.
 #Same thing for zfct.
 class ztyp:
-	def __init__(self, name, dcnDeg, size, isStc, fields=None, parent=None, dcns=None):
-		if fields is None:
-			fields = []
+	def __init__(self, name, dcnDeg=0, dcns=None):
 		self.name    = name
-		self.parent  = parent
+		self.parent  = None
 		self.methods = []     #lst[zfct]
-		self.size    = size
+		self.size    = 0
 
 		#declination
-		self.dcnDeg = dcnDeg #degree
-		self.dcns   = dcns   #precise details, atm (either tab[ztyp] or tab[ulng])
+		self.dcnDeg = dcnDeg
+		self.dcns   = dcns   #tab[ztyp]
 
 		#stc related
-		self.isStc   = isStc #<=> type "nature" (is primitive / structure)
-		self.fields  = fields
+		self.isStc   = False #<=> type "nature" (is primitive / structure)
+		self.fields  = None
 		self.stcSize = 0
-		if isStc:
-			for f in fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
-				if f.zType is None: #null field means "field has the same type as his parent" => size (which is also #ptr)
-					self.stcSize += size
-				else:
-					self.stcSize += f.zType.size
+
+	def computeStcSize(self):
+		if self.isStc:
+			for f in self.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
+				self.stcSize += f.ztype.size
 
 class cstValue:
-	def __init__(self, zType, data):
-		self.zType = zType
+	def __init__(self, ztype, data):
+		self.ztype = ztype
 		self.data  = data  #ulng
 
+	def toStr(self):
+		return "{type:\"" + self.ztype.name + "\",data:" + str(self.data) + "}"
+
 class dataItem:
-	def __init__(self, zType, name, initialized, initialValue, constant=False):
-		self.zType        = zType
+	def __init__(self, ztype, name, initialized, initialValue, constant=False):
+		self.ztype        = ztype
 		self.name         = name
 		self.initialized  = initialized
-		self.initialValue = initialValue #ulng
+		self.initialValue = initialValue #cstValue
 		self.constant     = constant
 
 	def toStr(self):
-		zTypeName = "null"
-		if self.zType is not None:
-			zTypeName = '"' + self.zType.name + '"'
-		return "{type:" + zTypeName + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + str(self.initialValue) + ",constant:" + str(self.constant) + "}"
+		initialValueStr = "null"
+		if self.initialValue is not None:
+			initialValueStr = self.initialValue.toStr()
+		return "{type:" + self.ztype.name + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + initialValueStr + ",constant:" + str(self.constant) + "}"
 
 #compiler data
 class cplDat:
@@ -277,7 +319,7 @@ class cplDat:
 
 		#z abstract elements
 		self.modulePrefixes = []
-		self.ztypes         = rootTypes
+		self.ztypes         = lst_copy(rootTypes)
 
 		#program concrete elements
 		self.dataResult = program()
@@ -295,7 +337,7 @@ class zctx:
 	def __init__(self,
 		filepath, LLI,
 		pcpl_cfg, pcpl_itm,
-		cpl_opt,  debugMode, deepDebugMode=False
+		cpl_opt,  debugMode=False, deepDebugMode=False
 	):
 		self.LLI           = {}
 		self.debugMode     = debugMode
@@ -320,20 +362,50 @@ class zctx:
 			self.SIZE__LNG = 8
 
 		#init root types locally (to be given to cpl data)
-		rootTypes = [
-			ztyp("GUboo", 0, self.SIZE__BYT, False),
-			ztyp("GUbyt", 0, self.SIZE__BYT, False), ztyp("GUubyt", 0, self.SIZE__BYT, False), #integers
-			ztyp("GUshr", 0, self.SIZE__SHR, False), ztyp("GUushr", 0, self.SIZE__SHR, False),
-			ztyp("GUint", 0, self.SIZE__INT, False), ztyp("GUuint", 0, self.SIZE__INT, False),
-			ztyp("GUlng", 0, self.SIZE__LNG, False), ztyp("GUulng", 0, self.SIZE__LNG, False),
-			ztyp("GUflt", 0, self.SIZE__INT, False), ztyp("GUdbl",  0, self.SIZE__LNG, False),  #floating point
-			ztyp("GUptr", 1, self.SIZE__LNG, False) #pointer
-		]
+		self.rootTypes = [None,None,None, None,None,None, None,None,None, None,None,None] #can be already declared as a fixed-size table (length: 12)
+
+		#boolean
+		self.rootTypes[RT__BOO]      = ztyp("GUboo")
+		self.rootTypes[RT__BOO].size = self.SIZE__BYT
+
+		#bytes
+		self.rootTypes[RT__BYT]       = ztyp("GUbyt")
+		self.rootTypes[RT__BYT].size  = self.SIZE__BYT
+		self.rootTypes[RT__UBYT]      = ztyp("GUubyt")
+		self.rootTypes[RT__UBYT].size = self.SIZE__BYT
+
+		#shorts
+		self.rootTypes[RT__SHR]       = ztyp("GUshr")
+		self.rootTypes[RT__SHR].size  = self.SIZE__SHR
+		self.rootTypes[RT__USHR]      = ztyp("GUushr")
+		self.rootTypes[RT__USHR].size = self.SIZE__SHR
+
+		#integers
+		self.rootTypes[RT__INT]       = ztyp("GUint")
+		self.rootTypes[RT__INT].size  = self.SIZE__INT
+		self.rootTypes[RT__UINT]      = ztyp("GUuint")
+		self.rootTypes[RT__UINT].size = self.SIZE__INT
+
+		#longs
+		self.rootTypes[RT__LNG]       = ztyp("GUlng")
+		self.rootTypes[RT__LNG].size  = self.SIZE__LNG
+		self.rootTypes[RT__ULNG]      = ztyp("GUulng")
+		self.rootTypes[RT__ULNG].size = self.SIZE__LNG
+
+		#floating point
+		self.rootTypes[RT__FLT]      = ztyp("GUflt")
+		self.rootTypes[RT__FLT].size = self.SIZE__INT
+		self.rootTypes[RT__DBL]      = ztyp("GUdbl")
+		self.rootTypes[RT__DBL].size = self.SIZE__LNG
+
+		#pointer
+		self.rootTypes[RT__PTR]      = ztyp("GUptr", 1)
+		self.rootTypes[RT__PTR].size = self.SIZE__LNG
 
 		#data
 		self.ZCIs = None
 		self.pcpl = pcplDat_new(pcpl_cfg, pcpl_itm)
-		self.cpl  = cplDat(cpl_opt, rootTypes)
+		self.cpl  = cplDat(cpl_opt, self.rootTypes)
 
 
 
@@ -447,9 +519,10 @@ class zctx:
 				self.ctx.printLineIndicator()
 
 	def deepDebugPause(self):
-		if self.deepDebugMode:
-			self.deepDebug("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~")
+		if self.deepDebugMode and deepDebug_stepByStep:
+			print("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~", end="")
 			input()
+			print(Term__CUU1 + "                                       \r", end="")
 
 
 
@@ -468,7 +541,7 @@ class zctx:
 		realNewPath = os.path.realpath(filepath)
 		for c in self.imported:
 			if realNewPath == c:
-				self.deepDebug("Subctx \"" + realNewPath + "\" already openned once.")
+				self.deepDebug("Subctx \"" + realNewPath + "\" already openned once => skipping it.")
 				return False
 
 		#open new subcontext
@@ -497,6 +570,7 @@ class zctx:
 			return True
 
 		#subcontexts remaining
+		self.deepDebug("Back here:", printSubCtxs=True)
 		self.ctx = lst_last(self.subCtxs)
 		return False
 
@@ -563,8 +637,8 @@ class zctx:
 	#try reading symbol (don't move ZCI ctx)
 	def readSymbol(self, ZCI):
 		self.ZCIDeepDebug(ZCI, "Reading symbol.")
-		tmpCtx = ZCI.ctx.copy()
-		c1 = tmpCtx.get()
+		tmpZCI = ZCI.tmpCtxCopy()
+		c1 = tmpZCI.get()
 
 		#1-character symbol
 		if c1 == '~':
@@ -588,97 +662,97 @@ class zctx:
 
 		#multi-character symbol: starting with '!'
 		elif c1 == '!':
-			tmpCtx.inc()
-			c2 = tmpCtx.get()
+			tmpZCI.inc()
+			c2 = tmpZCI.get()
 			if c2 == '=':
 				return SYMBOL__CNE
 			elif c2 == 'i':
-				tmpCtx.inc()
-				if tmpCtx.get() == 'n':
+				tmpZCI.inc()
+				if tmpZCI.get() == 'n':
 					return SYMBOL__INA
 			return SYMBOL__SNO
 
 		#multi-character symbol: starting with '*'
 		elif c1 == '*':
-			if tmpCtx.inc():
+			if tmpZCI.inc():
 				return SYMBOL__AMU
-			if tmpCtx.get() == '*':
+			if tmpZCI.get() == '*':
 				return SYMBOL__APO
 			return SYMBOL__AMU
 
 		#multi-character symbol: starting with '&'
 		elif c1 == '&':
-			if tmpCtx.inc():
+			if tmpZCI.inc():
 				return SYMBOL__LAN #ending with lonely '&'
-			if tmpCtx.get() == '&':
+			if tmpZCI.get() == '&':
 				return SYMBOL__DAN
 			return SYMBOL__LAN
 
 		#multi-character symbol: starting with '|'
 		elif c1 == '|':
-			tmpCtx.inc()
-			c2 = tmpCtx.get()
+			tmpZCI.inc()
+			c2 = tmpZCI.get()
 			if c2 == '|':
 				return SYMBOL__DOR
 			elif c2 == '<':
-				if tmpCtx.inc():
+				if tmpZCI.inc():
 					return SYMBOL__LOR
-				if tmpCtx.get() == '<':
+				if tmpZCI.get() == '<':
 					return SYMBOL__LLB
 			return SYMBOL__LOR
 
 		#multi-character symbol: starting with '-'
 		elif c1 == '-':
-			tmpCtx.inc()
-			if tmpCtx.get() == '>':
-				if tmpCtx.inc():
+			tmpZCI.inc()
+			if tmpZCI.get() == '>':
+				if tmpZCI.inc():
 					return SYMBOL__BSU
-				if tmpCtx.get() == '>':
+				if tmpZCI.get() == '>':
 					return SYMBOL__LRR
 			return SYMBOL__BSU
 
 		#multi-character symbol: starting with '<'
 		elif c1 == '<':
-			if tmpCtx.inc():
+			if tmpZCI.inc():
 				return SYMBOL__CLT
-			c2 = tmpCtx.get()
+			c2 = tmpZCI.get()
 			if c2 == '=':
 				return SYMBOL__CLE
 			elif c2 == '<':
-				if tmpCtx.inc():
+				if tmpZCI.inc():
 					return SYMBOL__LLS
-				if tmpCtx.get() == '-':
+				if tmpZCI.get() == '-':
 					return SYMBOL__LLR
 				return SYMBOL__LLS
 			return SYMBOL__CLT
 
 		#multi-character symbol: starting with '>'
 		elif c1 == '>':
-			if tmpCtx.inc():
+			if tmpZCI.inc():
 				return SYMBOL__CGT
-			c2 = tmpCtx.get()
+			c2 = tmpZCI.get()
 			if c2 == '=':
 				return SYMBOL__CGE
 			elif c2 == '>':
-				if tmpCtx.inc():
+				if tmpZCI.inc():
 					return SYMBOL__LRS
-				if tmpCtx.get() == '|':
+				if tmpZCI.get() == '|':
 					return SYMBOL__LRB
 				return SYMBOL__LRS
 			return SYMBOL__CGT
 
 		#multi-character symbol: starting with '='
 		elif c1 == '=':
-			if tmpCtx.inc():
+			if tmpZCI.inc():
 				return SYMBOL__ASG
-			if tmpCtx.get() == '=':
+			if tmpZCI.get() == '=':
 				return SYMBOL__CEQ
 			return SYMBOL__ASG
 
 		#multi-character symbol: starting with 'i'
 		elif c1 == 'i':
-			tmpCtx.inc()
-			if tmpCtx.get() == 'n':
+			tmpZCI.inc()
+			if tmpZCI.get() == 'n':
 				return SYMBOL__IAM
 
 		#no match
@@ -875,12 +949,7 @@ class zctx:
 	#cpl steps output
 	def cplStep_debugZCIs(self, cplStep):
 		if self.debugMode:
-			debugOutput = "[\n"
-			for ZCI in self.ZCIs:
-				content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
-				debugOutput += "{module:\"" + ZCI.modulePrefix + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"
-			debugOutput += "]"
-			writeFile("debug/" + path_name(self.initialCtx.filename) + ".c" + cplStep + ".json", debugOutput)
+			dumpZCIs(self.ZCIs, "debug/" + path_name(self.initialCtx.filename) + ".c" + cplStep + ".json")
 
 
 
@@ -913,8 +982,7 @@ class zctx:
 		if ztInstance is None:
 			if nullIfNotExisting:
 				self.ZCIDeepDebug(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", printLine=False)
-				ZCI.ctx         = initialZCICtx
-				ZCI.subCtxs[-1] = initialZCICtx
+				ZCI.resetCtx(initialZCICtx)
 				self.ZCIDeepDebug(ZCI, "Restoring ZCI context to that position => Ended reading Z type.")
 				return None
 			self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName.replace("__", '_') + " does not exist.")
@@ -944,6 +1012,7 @@ class zctx:
 				if next == ']':
 					if ZCI.ctx.icontent.index != ZCI.pairs[initialIndex]:
 						self.ZCIInternal(ZCI, "Ending declination type sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(ZCI.pairs[initialIndex]) + " in string \"" + ZCI.ctx.icontent.s + "\").")
+					ZCI.inc()
 					break
 				elif next != ',':
 					self.ZCIError(ZCI, "Invalid element given " + next + " in declination types sequence (expected coma separator ',' or closing bracket ']').")
@@ -976,14 +1045,12 @@ class zctx:
 
 			#not found => create that declination (this new combination must exist)
 			if ztInstance is None:
-				ztInstance = ztyp(
-					ztFullName, len(dcns),
-					ztUndeclinatedInstance.size,
-					ztUndeclinatedInstance.isStc,
-					fields=ztUndeclinatedInstance.fields, #no need to create a copy, same reference is enough
-					parent=ztUndeclinatedInstance,
-					dcns=dcns
-				)
+				ztInstance        = ztyp(ztFullName, len(dcns))
+				ztInstance.size   = ztUndeclinatedInstance.size
+				ztInstance.isStc  = ztUndeclinatedInstance.isStc
+				ztInstance.parent = ztUndeclinatedInstance
+				ztInstance.fields = ztUndeclinatedInstance.fields #no need to create a copy, same reference is enough
+				ztInstance.dcns   = dcns
 				self.ZCIDebug(ZCI, "First call of declination \"" + ztInstance.name + "\" from type \"" + ztUndeclinatedInstance.name + "\", adding it.")
 				self.cpl.ztypes.append(ztInstance)
 
@@ -991,18 +1058,24 @@ class zctx:
 		self.ZCIDeepDebug(ZCI, "Ended reading Z type.")
 		return ztInstance
 
+
+
 	#value analysis process (VAP)
 	def readValue(self, ZCI, ZCIKindIfError, cstOnly=False):
 		self.ZCIDeepDebug(ZCI, "Reading value.")
+
+		#
+
 		self.ZCIDeepDebug(ZCI, "Ended reading value.")
-		return self.readName(ZCI, ZCIKindIfError) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+		n = self.readName(ZCI, ZCIKindIfError) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+		return cstValue(self.rootTypes[RT__ULNG], 0)
+
+
 
 	#read dataitem sequence
 	# Given ZCI must be at an opening includer character.
-	def readDataItemSequence(self, ZCI, ZCIKindIfError, typesRequired=False, cstOnly=False, nullType_ifFoundGivenName=None):
+	def readDataItemSequence(self, ZCI, ZCIKindIfError, cstValuesOnly=False):
 		self.ZCIDeepDebug(ZCI, "Reading data item sequence.")
-		if nullType_ifFoundGivenName is not None:
-			typesRequired = True
 
 		#initial conditions
 		initialIndex = ZCI.ctx.icontent.index
@@ -1015,54 +1088,50 @@ class zctx:
 		while True:
 				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
-				#read type
-				zt = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
-				if zt is None:
-
-					#second chance to allow null type
-					if nullType_ifFoundGivenName is not None:
-						rawName = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True)
-						if rawName == nullType_ifFoundGivenName:
-							self.ZCIDebug(ZCI, "Setting null type for that element because it matches given name \"" + nullType_ifFoundGivenName + "\".", printLine=False)
-						else:
-							self.ZCIDeepDebug(ZCI, "Doesn't match \"" + nullType_ifFoundGivenName + "\" neither, it would have been allowed.")
-							self.ZCIError(ZCI, "Unknown type found in data item declarator (required).")
-
-					#missing required type
-					elif typesRequired:
-						self.ZCIError(ZCI, "No type found in data item declarator (required).")
+				#read type (zt null => ctx will be reset as nothing happened)
+				ztype = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
 
 				#read name
 				self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
-				n = self.readName(ZCI, "data item name")
+				name = self.readName(ZCI, "data item name")
 
 				#default initial value: uninitialized
 				initialized  = False
-				initialValue = 0 #ulng
+				initialValue = None
 
 				#optionnal assignment symbol => initial value given
 				self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
 				sym = self.readSymbol(ZCI)
 				if sym != SYMBOL__NOT_FOUND: #found a symbol
 					if sym != SYMBOL__ASG:
-						self.ZCIError(ZCI, "Invalid symbol given here, can only have assignation.")
+						self.ZCIError(ZCI, "Invalid symbol given here, can only have assignment.")
 					ZCI.forward(SYMBOL_LENGTHS[SYMBOL__ASG])
 
 					#read given initial value
 					initialized = True
 					self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
-					initialValue = self.readValue(ZCI, ZCIKindIfError, cstOnly=cstOnly)
+					initialValue = self.readValue(ZCI, ZCIKindIfError, cstOnly=cstValuesOnly)
+
+					#solve ztype if missing using initialValue
+					if ztype is None:
+						ztype = initialValue.ztype
+						self.ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + ztype.name + "\".")
 				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
+				#missing ztype still not solved
+				if ztype is None:
+					self.ZCIError(ZCI, "Missing type to given element (required either explicitely or implicity).")
+
 				#store data item
-				dis.append(dataItem(zt, n, initialized, initialValue))
-				self.ZCIDeepDebug(ZCI, "Got data item " + dis[-1].toStr())
+				dis.append(dataItem(ztype, name, initialized, initialValue))
+				self.ZCIDeepDebug(ZCI, "Got data item " + lst_last(dis).toStr())
 
 				#must be followed by coma or closing peer
 				next = ZCI.get()
 				if next in INCLUDERS.values():
 					if ZCI.ctx.icontent.index != ZCI.pairs[initialIndex]:
 						self.ZCIInternal(ZCI, "Ending data item sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(ZCI.pairs[initialIndex]) + " in string \"" + ZCI.ctx.icontent.s + "\").")
+					ZCI.inc()
 					break
 				elif next != ',':
 					self.ZCIError(ZCI, "Invalid element given " + next + " in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[ ZCI.pairs[initialIndex] ] + "').")

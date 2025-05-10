@@ -20,3 +20,9 @@ def lst_pop(l):
 
 def lst_remove(l, index):
 	return l[:index] + l[index+1:]
+
+def lst_copy(l): #only copying refs
+	newL = []
+	for e in l:
+		newL.append(e)
+	return newL

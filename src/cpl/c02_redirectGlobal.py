@@ -22,7 +22,7 @@ from zctx import *
 
 #external linking
 def processLnk(zCtx, ZCI):
-	zCtx.ZCIDeepDebug(ZCI, "Processing SDL addition.")
+	zCtx.ZCIDebug(ZCI, "Processing SDL addition.", printSubCtxs=True)
 	zCtx.jumpBlankZone(ZCI, "File path in library linking ZCI (EXT_LNK)")
 
 	#library linking path
@@ -38,7 +38,9 @@ def processLnk(zCtx, ZCI):
 	#add link
 	if path not in zCtx.cpl.dataResult.linkedLibs:
 		zCtx.cpl.dataResult.linkedLibs.append(path)
-	zCtx.ZCIDebug(ZCI, "Added SDL \"" + path + "\" to linking list.")
+		zCtx.ZCIDebug(ZCI, "Added SDL \"" + path + "\" to linking list.")
+	else:
+		zCtx.ZCIDebug(ZCI, "SDL \"" + path + "\" already in linking list => skipping it.")
 
 
 
@@ -49,7 +51,7 @@ def processLnk(zCtx, ZCI):
 
 #structure
 def processTypeDcl(zCtx, ZCI):
-	zCtx.ZCIDeepDebug(ZCI, "Processing type declaration.")
+	zCtx.ZCIDebug(ZCI, "Processing type declaration.", printSubCtxs=True)
 	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
 
 	#get full type name considered as "undeclinated"
@@ -99,46 +101,39 @@ def processTypeDcl(zCtx, ZCI):
 		zCtx.ZCIError(ZCI, "Expected blank zone after type name in type declaration ZCI (DCL_TYP).")
 	zCtx.jumpBlankZone(ZCI, "Type content definition in type declaration ZCI (DCL_TYP).")
 
+	#add generic type for the moment (it is incomplete: we don't know if it is a structure, if it has a parent...)
+	newZType = ztyp(fullName, dcnDeg)
+	zCtx.cpl.ztypes.append(newZType)
+	zCtx.ZCIDebug(ZCI, "Explicitely added type " + newZType.name + " but there are still missing information about it (incomplete for the moment).")
+
 	#process type content: structure syntax
 	if ZCI.get() == '{':
-		zCtx.deepDebug("Type declaration via structure syntax.", printLine=False)
-		fields = zCtx.readDataItemSequence(ZCI, "type declaration ZCI (DCL_TYP).",
-			typesRequired=True,
-			cstOnly=True,
-			nullType_ifFoundGivenName = ZCI.modulePrefix + rawName
-		)
-		if len(fields) == 0:
-			zCtx.ZCIError(ZCI, "Must have at least 1 field in structure type.")
-		newZType = ztyp(
-			fullName, dcnDeg,
-			zCtx.SIZE__LNG,
-			True,
-			fields = fields
-		)
+		zCtx.debug("Type declaration is via structure syntax.", printLine=False)
+		newZType.size  = zCtx.SIZE__LNG
+		newZType.isStc = True
 
-		#fields having the same type as their parent => solve recursive type assignment (typ A{ A f1, ...})
-		for f in range(len(fields)):
-			if fields[f].zType == None:
-				fields[f].zType = newZType #that means a ztype can hold a field with himself as ztype (infinite loop of reference, cycle)
+		#reading fields
+		newZType.fields = zCtx.readDataItemSequence(ZCI, "type declaration ZCI (DCL_TYP).", cstValuesOnly=True)
+		if len(newZType.fields) == 0:
+			zCtx.ZCIError(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDataItemSequence cannot return 0-length list)
+
+		#update stcSize
+		newZType.computeStcSize()
 
 	#process type content: type-copy syntax
 	else:
-		zCtx.deepDebug("Type declaration via type-copy syntax.", printLine=False)
-		parent   = zCtx.readZType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
-		newZType = ztyp(
-			fullName, dcnDeg,
-			parent.size,
-			parent.isStc,
-			parent = parent
-		)
-
-	#add new type
-	zCtx.cpl.ztypes.append(newZType)
-	zCtx.ZCIDebug(ZCI, "Explicitely added type " + newZType.name)
+		zCtx.debug("Type declaration is via type-copy syntax.", printLine=False)
+		parent = zCtx.readZType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
+		if parent == newZType:
+			zCtx.ZCIError(ZCI, "Type cannot be declared as a copy of itself.") #seems obvious, but anyway
+		newZType.size   = parent.size
+		newZType.isStc  = parent.isStc
+		newZType.parent = parent
 
 	#end of ZCI expected
 	zCtx.endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")
-	zCtx.deepDebug("Type declaration processed.")
+	zCtx.debug("Type declaration " + newZType.name + " processed.")
+	zCtx.deepDebugPause()
 
 
 
@@ -149,8 +144,82 @@ def processTypeDcl(zCtx, ZCI):
 
 #enumerate declaration
 def processEnmDcl(zCtx, ZCI, global_=False):
-	zCtx.ZCIDeepDebug(ZCI, "Processing enumerate declaration.")
-	zCtx.deepDebug("Enumerate declaration processed.")
+	zCtx.ZCIDebug(ZCI, "Processing enumerate declaration.", printSubCtxs=True)
+
+'''
+	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
+
+	#get full type name considered as "undeclinated"
+	rawName = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True)
+	if len(ZCI.modulePrefix) == 0:
+		fullName = "GU" + rawName
+	else:
+		fullName = ZCI.modulePrefix + 'U' + rawName
+
+	#initial conditions
+		initialIndex = ZCI.ctx.icontent.index
+		if ZCI.get() not in INCLUDERS.keys():
+			self.ZCIInternal(ZCI, "Must be at the beginning of an includer to read data item sequence.")
+		ZCI.inc()
+
+		#read sequence
+		dis = [] #lst[dataItem]
+		while True:
+				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+
+				#read type (zt null => ctx will be reset as nothing happened)
+				ztype = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
+
+				#read name
+				self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
+				name = self.readName(ZCI, "data item name")
+
+				#default initial value: uninitialized
+				initialized  = False
+				initialValue = None
+
+				#optionnal assignment symbol => initial value given
+				self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
+				sym = self.readSymbol(ZCI)
+				if sym != SYMBOL__NOT_FOUND: #found a symbol
+					if sym != SYMBOL__ASG:
+						self.ZCIError(ZCI, "Invalid symbol given here, can only have assignment.")
+					ZCI.forward(SYMBOL_LENGTHS[SYMBOL__ASG])
+
+					#read given initial value
+					initialized = True
+					self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
+					initialValue = self.readValue(ZCI, ZCIKindIfError, cstOnly=cstValuesOnly)
+
+					#solve ztype if missing using initialValue
+					if ztype is None:
+						ztype = initialValue.ztype
+						self.ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + ztype.name + "\".")
+				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+
+				#missing ztype still not solved
+				if ztype is None:
+					self.ZCIError(ZCI, "Missing type to given element (required either explicitely or implicity).")
+
+				#store data item
+				dis.append(dataItem(ztype, name, initialized, initialValue))
+				self.ZCIDeepDebug(ZCI, "Got data item " + lst_last(dis).toStr())
+
+				#must be followed by coma or closing peer
+				next = ZCI.get()
+				if next in INCLUDERS.values():
+					if ZCI.ctx.icontent.index != ZCI.pairs[initialIndex]:
+						self.ZCIInternal(ZCI, "Ending data item sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(ZCI.pairs[initialIndex]) + " in string \"" + ZCI.ctx.icontent.s + "\").")
+					ZCI.inc()
+					break
+				elif next != ',':
+					self.ZCIError(ZCI, "Invalid element given " + next + " in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[ ZCI.pairs[initialIndex] ] + "').")
+				ZCI.inc()
+'''
+
+
+	zCtx.debug("Enumerate declaration processed.")
+	zCtx.deepDebugPause()
 	pass
 
 
@@ -167,15 +236,10 @@ def c02_redirectGlobal(zCtx):
 	zCtx.debug("======================== C02 REDIRECT GLOBAL : beginning ========================")
 	zCtx.debug("=================================================================================\n\n\n\n")
 
-	#remaining ZCIs for further steps
-	functionZCIs = []
-
 	#analyse EVERY ZCI
 	for ZCI in zCtx.ZCIs:
-		initialLineNbr = ZCI.ctx.lineNbr
-		initialColmNbr = ZCI.ctx.colmNbr
-		ZCIText        = ZCI.ctx.icontent.s
-		zCtx.ZCIDeepDebug(ZCI, "Treating ZCI \"" + ZCIText + "\".", printSubCtxs=True)
+		initialZCICtx = ZCI.ctx.copy()
+		zCtx.ZCIDeepDebug(ZCI, "Treating ZCI " + ZCI.textFormat(), printSubCtxs=True)
 
 		#read 1st ZCI word
 		firstWord = zCtx.readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_CHARSET)
@@ -216,27 +280,23 @@ def c02_redirectGlobal(zCtx):
 
 
 
-		#CASE 3 - BEGINNING WITH KEYWORD AND ALLOWED
+			#CASE 3 - BEGINNING WITH KEYWORD AND ALLOWED
 
-		#trigrams requiring a following blank
-		if len(ZCIText) > 3:
-			if ZCIText[3] in BLANKS:
-				ZCI.ctx.lineNbr        = initialLineNbr #reset ctx as if we were right after trigram
-				ZCI.ctx.colmNbr        = initialColmNbr + 2
-				ZCI.ctx.icontent.index = 2
+			#trigrams requiring a following blank
+			if ZCI.text[3] in BLANKS:
 
 				#2.1 - library linking
-				if ZCIText.startswith("lnk"):
+				if str_cmp("lnk", firstWord):
 					processLnk(zCtx, ZCI)
 					continue
 
 				#2.2 - type declaration DCL_TYP
-				if ZCIText.startswith("typ"):
+				if str_cmp("typ", firstWord):
 					processTypeDcl(zCtx, ZCI)
 					continue
 
 				#2.3 - Enumerate declaration DCL_ENM
-				if ZCIText.startswith("enm"):
+				if ZCI.text.startswith("enm"):
 					processEnmDcl(zCtx, ZCI, global_=True)
 					continue
 
@@ -258,6 +318,3 @@ def c02_redirectGlobal(zCtx):
 
 	#debug output file
 	zCtx.cplStep_debugZCIs("02")
-
-	#result
-	return functionZCIs

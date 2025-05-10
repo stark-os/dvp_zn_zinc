@@ -56,6 +56,7 @@ PARSING_CTX__PEER_NOT_FOUND                = -3
 
 #external actually but anyway
 Term__TAB_LENGTH = 4
+Term__CUU1       = "\x1b\x5b\x41"
 
 #parsing ctx object
 class ParsingCtx:

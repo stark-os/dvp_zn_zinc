@@ -33,8 +33,22 @@ from cpl.compile     import *
 # -------- DECLARATIONS --------
 
 #debug
-DEBUG_MODE      = True
-DEEP_DEBUG_MODE = True
+P3  = 0 #global enm
+C01 = 1
+C02 = 2
+C03 = 3
+DEBUG_MODES = { #these 2 are to be global VARIABLE dataitems (static)
+	P3 :False,
+	C01:False,
+	C02:True,
+	C03:True
+}
+DEEP_DEBUG_MODES = {
+	P3 :False,
+	C01:False,
+	C02:True,
+	C03:True
+}
 
 #includers
 INCLUDER_PARENTHESES = 0
@@ -75,17 +89,19 @@ def main():
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
 		config.read(CXD + "/../cfg/pcpl_itm.cfg", comment_character='%', additionnalSpacesAllowed=False),
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
-		debugMode = DEBUG_MODE #don't set deepDebugMode for precompilation steps (inconsistent ctx/text matching)
+		debugMode     = DEBUG_MODES[P3],
+		deepDebugMode = DEEP_DEBUG_MODES[P3]
 	)
-	if DEBUG_MODE and not os.path.isdir("debug"):
+	if (
+		True in ( list(DEBUG_MODES.values()) + list(DEEP_DEBUG_MODES.values()) )
+	) and not os.path.isdir("debug"):
 		os.mkdir("debug")
 
 	#precompile
-	zCtx.ZCIs          = precompile(zCtx)
-	zCtx.deepDebugMode = DEEP_DEBUG_MODE #now, we have consistent ctx/text matching
+	zCtx.ZCIs = precompile(zCtx)
 
 	#compile
-	compile(zCtx)
+	compile(zCtx, DEBUG_MODES, DEEP_DEBUG_MODES) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< debug paramaters should not be passed as parameters, they are global & variables (static)
 	writeFile(outputFilename, zCtx.cpl.textResult)
 
 #run main

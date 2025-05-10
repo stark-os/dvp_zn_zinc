@@ -4,6 +4,9 @@
 
 # -------- IMPORTATIONS --------
 
+#sys
+import sys
+
 #std
 from std.path import *
 
@@ -22,7 +25,9 @@ from pcpl.p3_splitZCIsAndImport import *
 
 #prepare a raw parsed ZCI into just the minimum required (useless blanks + expand imports if needed)
 #result can be several ZCIs so we directly add them to the result list given as parameter
-def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePrefix=""):
+def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePrefix=None):
+	if modulePrefix is None:
+		modulePrefix = ""
 	ZCI.modulePrefix = modulePrefix
 
 
@@ -30,51 +35,49 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePref
 	# 1) STRIPPING SIDES
 
 	#strip BEGINNING blanks
-	beginningShift = str_getBeginningStripIndex(ZCI.ctx.icontent.s, charset=BLANKS_EXTENDED)
-	for a in range(beginningShift): #we must strip in 2-step to keep a consistent ctx (lineNbr & colmNbr)
-		ZCI.inc()
-	ZCI.ctx.icontent.s = str_sub(ZCI.ctx.icontent.s, start=beginningShift)
-
-	#shift ZCI pairs indexes with the new beginning
-	newPairs = {}
-	for p in ZCI.pairs.keys():
-		newPairs[p-beginningShift] = ZCI.pairs[p] - beginningShift
-	ZCI.pairs = newPairs
+	beginningShift = str_getBeginningStripIndex(ZCI.text, charset=BLANKS_EXTENDED)
+	if beginningShift != 0:
+		ZCI.forward(beginningShift)
+		ZCI.text       = str_sub(ZCI.text, start=beginningShift)
+		ZCI.startIndex = ZCI.ctx.icontent.index
+		zCtx.ZCIDeepDebug(ZCI, "Stripped beginning blanks from ZCI " + ZCI.textFormat(), printSubCtxs=False, printLine=False)
 
 	#strip END blanks
-	ZCI.ctx.icontent.s = str_stripEnd(ZCI.ctx.icontent.s, BLANKS_EXTENDED)
-	ZCIText            = ZCI.ctx.icontent.s
+	endingIndex = str_getEndStripIndex(ZCI.text, charset=BLANKS_EXTENDED)
+	if endingIndex != -1 and endingIndex != len(ZCI.text)-1:
+		ZCITextLengthBefore = len(ZCI.text)
+		ZCI.text            = str_sub(ZCI.text, stop=endingIndex) #strip end of ZCI.text
+		ZCI.stopIndex      -= ZCITextLengthBefore - len(ZCI.text)      #shift stopIndex the same amount
+		zCtx.ZCIDeepDebug(ZCI, "Stripped end blanks from ZCI " + ZCI.textFormat(), printSubCtxs=False, printLine=False)
 
 
 
 	# 2) PROCESSING REGULAR/IMPORT ZCI
 
-	#reset ZCI ctx parsing (not lineNbr/colmNbr) for blank/name parsing
-	ZCI.ctx.icontent.index = -1
-	ZCI.ctx.detectedLF     = False
-
 	#empty ZCI => ignore it
-	if len(ZCIText) == 0:
+	if len(ZCI.text) == 0:
 		return
 
 	#not long enough to be an import => regular ZCI
-	if len(ZCIText) < 4:
+	if len(ZCI.text) < 4:
+		zCtx.ZCIDeepDebug(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
 		result.append(ZCI)
 		return
 
 	#import ZCI : process it NOW
-	if ZCIText.startswith("imp") and ZCIText[3] in BLANKS:
+	if ZCI.text.startswith("imp") and ZCI.text[3] in BLANKS:
+		zCtx.deepDebug("Detected as importation ZCI => processing it now.")
 
 		#importations not allowed
 		if not allowImportsExpansion or len(modulePrefix) != 0:
 			zCtx.error("Invalid ZCS: Import ZCIs are only allowed in global scope outside any module.")
 
 		#jump required blank zone
-		ZCI.forward(3)
-		zCtx.jumpBlankZone(ZCI, "File path in import ZCI (EXT_IMP)")
+		ZCI.forward(3)                                               #We can foward & jump here because we will not store that ZCI, it will only be used for expanding its importation.
+		zCtx.jumpBlankZone(ZCI, "File path in import ZCI (EXT_IMP)") # Else, we would rather keep our ZCI with a correct ctx starting at its beginning.
 
 		#importation path
-		path = zCtx.readName(ZCI, "File path in import ZCI (EXT_IMP).", blacklist=BLANKS)
+		path = zCtx.readName(ZCI, "File path in import ZCI (EXT_IMP).", blacklist=BLANKS_EXTENDED) #same note as before
 		if not ZCI.reachedEnd():
 			zCtx.ZCIError(ZCI, "Too much elements in import ZCI (EXT_IMP); should stop here.")
 
@@ -88,6 +91,7 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePref
 		return
 
 	#not an import => regular ZCI
+	zCtx.ZCIDeepDebug(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
 	result.append(ZCI)
 
 
@@ -97,107 +101,110 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePref
 
 # -------- EXECUTION --------
 
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Pythonic
+INT_MAX = sys.maxsize
+
 #split raw text into ZCI list (ZCS)
-def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
+def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=None, maximumIndexAllowed=INT_MAX):
+	zCtx.deepDebug("Extracting ZCIs inside given context.", printSubCtxs=True)
 	if subCtxs is None:
 		subCtxs = zCtx.subCtxs
 
 	#initial state
-	ZCIUninitialized = True
-	skipLineFeed     = False
-	peerIndex        = 0
-
-	#prepare current ZCI result : it must be independant from any other context (have its own lineNbr/colmNbr/... starting from where we are).
-	ZCI = zci(lst_ctx__copy(subCtxs, copyContent=True))
-	ZCI.updateCtx(ctx.copy())   #set current active ctx (that can be different from latest subCtx)
-	ZCI.ctx.icontent.index = -1
-	ZCI.ctx.icontent.s     = "" #really important to reset it completely, it must be a whole new string
+	ZCI          = None
+	skipLineFeed = False
+	peerIndex    = 0
 
 	#parsing byte per byte
 	ZCIs = []
 	while not ctx.inc():
+		if ctx.icontent.index > maximumIndexAllowed:
+			break
 		c = ctx.get()
 
-
-
-		#1) in includer
-		if peerIndex != 0:
-
-			#end of our includer => return to regular parsing
-			if peerIndex == ctx.icontent.index:
-				peerIndex = 0
+		#initialize next ZCI to that position in ctx
+		if ZCI is None:
+			skipLineFeed = False
+			ZCI = zci(lst_ctx__copy(subCtxs, copyContent=True))
 
 
 
-		#2) outside any includer
-		else:
+		#1: multi-line ZCI
+		if skipLineFeed:
+			if c == '\n': #really skipping line feed
+				skipLineFeed = False
+				continue
+			else: #not actually skipping it, that was just a regular backslash
+				ZCI.text += '\\'
+				#note that we don't reset skipLineFeed here, we will use it as flag in multi-line ZCI detection to say :
+				# "hey! We already had a backslash before so you can ignore the next backslash" (escape sequence)
 
-			#multi-line ZCI
-			if skipLineFeed:
-				if c == '\n': #really skipping line feed
-					skipLineFeed        = False
-					ZCI.ctx.icontent.s += '\n' #storing the line feed in all cases => necessary to get consistent BEGINNING lineNbr/colmNbr of ZCI when stripping it
-					continue
-				else: #not actually skipping it, that was just a regular backslash
-					ZCI.ctx.icontent.s += '\\'
 
-			#end of ZCI
-			if c == ';' or c == '\n':
+
+		#2: end of ZCI
+		if c == ';' or c == '\n':
+			if len(ZCI.text) != 0: #tiny optimization
+				ZCI.stopIndex = ctx.icontent.index - 1
+				zCtx.ZCIDeepDebug(ZCI, "Extracted raw ZCI text " + ZCI.textFormat())
 				stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, modulePrefix=modulePrefix)
-				ZCI                    = zci(lst_ctx__copy(subCtxs, copyContent=True)) #reset current ZCI result
-				ZCI.updateCtx(ctx.copy())                                              #set current active ctx (that can be different from latest subCtx)
-				ZCI.ctx.icontent.s     = ""                                            #really important to reset it completely, it must be a whole new string
-				ZCI.ctx.icontent.index = -1
-				ZCIUninitialized       = True
-				continue
 
-			#maybe having a multi-line ZCI
-			if c == '\\':
-				skipLineFeed = True
-				continue
-
-			#openning includer found
-			if c in INCLUDERS.keys():
-				ZCI_ctx_icontent_s_len = len(ZCI.ctx.icontent.s) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only in python (.length field)
-
-				#ZCI.ctx.icontent.s has not stored current character yet => its length corresponds to "current ZCI index"
-				if ZCI_ctx_icontent_s_len in ZCI.pairs.keys():
-					zCtx.internal("Processing the same ZCI includer twice.")
-
-				#get every pairs until end of our includer
-				currentPairs = ctx.getPairsUntilCorrespondingPeer(allowedPairs=INCLUDERS)
-				if currentPairs == PARSING_CTX__INCONSISTENT_INCLUDER_PARSING:
-					zCtx.error("Invalid ZCS: Inconsistent use of includers inside block (opening/closing).")
-				if currentPairs == PARSING_CTX__PEER_NOT_FOUND:
-					zCtx.error("Invalid ZCS: Missing closing includer '" + INCLUDERS[c] + "'.")
-
-				#prepare to convert from global-ctx to ZCI-ctx indexing
-				globalCtx_to_ZCICtx_delta = ZCI_ctx_icontent_s_len - ctx.icontent.index
-
-				#add these pairs to our ZCI so we can find them more easily if further compilation steps
-				for p in currentPairs.keys():
-					ZCI.pairs[globalCtx_to_ZCICtx_delta + p] = globalCtx_to_ZCICtx_delta + currentPairs[p]
-
-				#set ending peer index to continue parsing ZCI content until reaching it
-				peerIndex = currentPairs[ctx.icontent.index] #we use global ctx here, that's a choice. The objective is to continue parsing until reaching closing peer.
+			#next ZCI
+			ZCI = None
+			continue
 
 
 
-			#ending includer found (alone)
-			elif c in INCLUDERS.values():
-				zCtx.error("Lonely ending includer found, missing its openning one before.")
+		#3: maybe having a multi-line ZCI
+		if c == '\\' and not skipLineFeed:
+			skipLineFeed = True
+			continue
+		skipLineFeed = False
 
 
 
-		#3) regular case
-		if ZCIUninitialized: #init current ZCI with its real position in file
-			ZCIUninitialized = False
-			ZCI.ctx.lineNbr  = ctx.lineNbr
-			ZCI.ctx.colmNbr  = ctx.colmNbr
-		ZCI.ctx.icontent.s += c
+		#4: openning includer found
+		if c in INCLUDERS.keys():
+			if ctx.icontent.index in ZCI.pairs.keys(): #already in pairs
+				zCtx.internal("Processing the same ZCI includer twice.")
 
-	#last ZCI remaining
-	stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, modulePrefix=modulePrefix)
+			#get every pairs until end of our includer
+			currentPairs = ctx.getPairsUntilCorrespondingPeer(allowedPairs=INCLUDERS)
+			if currentPairs == PARSING_CTX__INCONSISTENT_INCLUDER_PARSING:
+				zCtx.error("Invalid ZCS: Inconsistent use of includers inside block (opening/closing).")
+			if currentPairs == PARSING_CTX__PEER_NOT_FOUND:
+				zCtx.error("Invalid ZCS: Missing closing includer '" + INCLUDERS[c] + "'.")
+
+			#add these pairs to our ZCI so we can find them more easily if further compilation steps
+			for p in currentPairs.keys():
+				ZCI.pairs[p] = currentPairs[p]
+
+			#includers boudaries
+			opening = ctx.icontent.index
+			closing = currentPairs[opening]
+
+			#store raw includer text into ZCI
+			ZCI.text += str_sub(ctx.icontent.s, opening, closing)
+
+			#step until end of includer
+			if ctx.forward(closing - opening):
+				zCtx.internal("Could not forward to the end of includer (openning at " + str(opening) + ", closing at " + str(closing) + ").")
+			continue
+
+
+
+		#5: ending includer found (alone)
+		if c in INCLUDERS.values():
+			zCtx.error("Lonely ending includer found, missing its opening one before.")
+
+
+
+		#6: any other regular character
+		ZCI.text += c
+
+	#also add last ZCI remaining
+	if ZCI is not None:
+		ZCI.stopIndex = ctx.icontent.index
+		stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, modulePrefix=modulePrefix)
 
 	#return result
 	return ZCIs
@@ -206,18 +213,27 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=""):
 
 #main
 def p3_splitZCIsAndImport(zCtx):
+	zCtx.deepDebug("\n\n\n\n")
+	zCtx.deepDebug("============================================================================")
+	zCtx.deepDebug("=================== P3 SPLIT ZCIs AND IMPORT : beginning ===================")
+	zCtx.deepDebug("============================================================================")
+	zCtx.deepDebug("FILE: " + zCtx.ctx.filepath + "\n\n\n\n")
+	zCtx.deepDebugPause()
 
 	#extract global scope ZCIs
 	ZCIs = extractZCIsFromCtx(zCtx, zCtx.ctx, global_=True)
 
 	#debug
+	zCtx.deepDebug("\n\n\n\n")
+	zCtx.deepDebug("======================================================================")
+	zCtx.deepDebug("=================== P3 SPLIT ZCIs AND IMPORT : end ===================")
+	zCtx.deepDebug("======================================================================")
+	zCtx.deepDebug("FILE: " + zCtx.ctx.filepath + "\n\n\n\n")
+	zCtx.deepDebugPause()
+
+	#debug
 	if zCtx.debugMode:
-		debugOutput = "[\n"
-		for ZCI in ZCIs:
-			content      = ZCI.ctx.icontent.s.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
-			debugOutput += "{module:\"" + ZCI.modulePrefix + "\",ctx:\"" + ZCI.ctx.toStr() + "\",content:\"" + content + "\",pairs:\"" + str(ZCI.pairs).replace(' ', '') + "\"},\n"
-		debugOutput += "]"
-		writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p3.json", debugOutput)
+		dumpZCIs(ZCIs, "debug/" + path_name(zCtx.ctx.filename) + ".p3.json")
 
 	#no need current context anymore (end of precompilation by the way)
 	zCtx.closeCurrentCtx()
