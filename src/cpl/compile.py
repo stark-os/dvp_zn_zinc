@@ -32,9 +32,9 @@ def compile(zCtx, DEBUG_MODES, DEEP_DEBUG_MODES):
 	#step c02
 	zCtx.debugMode     = DEBUG_MODES[C02]
 	zCtx.deepDebugMode = DEEP_DEBUG_MODES[C02]
-	c02_redirectGlobal(zCtx)
+	fZCIs = c02_redirectGlobal(zCtx)
 
 	#step c03
 	zCtx.debugMode     = DEBUG_MODES[C03]
 	zCtx.deepDebugMode = DEEP_DEBUG_MODES[C03]
-	#c02_redirectGlobal(zCtx)
+	c03_developFunctions(zCtx, fZCIs)

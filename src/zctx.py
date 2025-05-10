@@ -10,6 +10,7 @@ from std.path       import *
 from std.list       import *
 from std.io         import *
 from std.parsingCtx import *
+from std.int        import *
 
 #charsets
 import string
@@ -19,10 +20,32 @@ import string
 
 
 
-# -------- GENERAL --------
+# -------- STD Z --------
 
-#ZCC options
-deepDebug_stepByStep = False #should be a global VARIABLE dataitem
+#local-python version of atm
+ATM__BOO  = 0
+ATM__BYT  = 1
+ATM__UBYT = 2
+ATM__SHR  = 3
+ATM__USHR = 4
+ATM__INT  = 5
+ATM__UINT = 6
+ATM__LNG  = 7
+ATM__ULNG = 8
+ATM__CHR  = 9
+ATM__STR  = 10
+ATM__CALL = 11
+class atm:
+	def __init__(self, id, data):
+		self.id   = id
+		self.data = data
+
+
+
+
+
+
+# -------- GENERAL --------
 
 #general syntax
 BLANKS          = (' ', '\t')
@@ -32,6 +55,7 @@ INCLUDERS       = { '(':')', '[':']', '{':'}' }
 #charsets
 DEFAULT_NAME_CHARSET            = string.ascii_letters + string.digits + '_'
 ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + tuple(INCLUDERS.keys())
+FCT_NAME_CHARSET                = DEFAULT_NAME_CHARSET + ".[]=-+*/^%[:~!&|<>"
 
 #general name parsing
 NO_NAME            = -1
@@ -241,6 +265,9 @@ def pcplDat_new(configs, items):
 
 # -------- COMPILATION --------
 
+#option to be defined in src/main.z
+deepDebug_stepByStep = False #should be a global VARIABLE dataitem
+
 #cpl opt set
 CPL_OPT_VALUES__ARCHT = 0 #architecture type
 CPL_OPT_VALUES__ONOFF = 1
@@ -257,14 +284,6 @@ CPL_OPT_ALLOWED = {
 	"UNDECLINATED_IMPLICITSOURCE":    CPL_OPT_VALUES__RTYPE,
 	"LS_CNT_DIGITS":                  CPL_OPT_VALUES__DIGIT
 }
-
-#program structure
-class program:
-	def __init__(self):
-		self.globalData = []
-		self.types      = []
-		self.functions  = []
-		self.linkedLibs = []
 
 #ztyp can be declared after zprm & zstc in Z.
 #However, here in Python, we must declare it before to allow dataItem definition and so, zstc.
@@ -290,27 +309,97 @@ class ztyp:
 			for f in self.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
 				self.stcSize += f.ztype.size
 
-class cstValue:
-	def __init__(self, ztype, data):
-		self.ztype = ztype
-		self.data  = data  #ulng
+class value:
+	def __init__(self, ztype, data, constant=False):
+		self.ztype    = ztype
+		self.data     = data  #atm #can be either a root type (literal), str (name) or call.
+		self.constant = constant
 
 	def toStr(self):
-		return "{type:\"" + self.ztype.name + "\",data:" + str(self.data) + "}"
+		if self.data.id == ATM__BOO: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< I know, this seems weird in Python but it makes sens in Z (will have to be a swi btw)
+			dataStr = "false"
+			if self.data:
+				dataStr = "true"
+		elif self.data.id == ATM__BYT:
+			dataStr = 'S' + hexOnN(self.data, 2)
+		elif self.data.id == ATM__UBYT:
+			dataStr = 'U' + hexOnN(self.data, 2)
+		elif self.data.id == ATM__SHR:
+			dataStr = 'S' + hexOnN(self.data, 4)
+		elif self.data.id == ATM__USHR:
+			dataStr = 'U' + hexOnN(self.data, 4)
+		elif self.data.id == ATM__INT:
+			dataStr = 'S' + hexOnN(self.data, 8)
+		elif self.data.id == ATM__UINT:
+			dataStr = 'U' + hexOnN(self.data, 8)
+		elif self.data.id == ATM__LNG:
+			dataStr = 'S' + hexOnN(self.data, 16) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< no way to get arch type here... will stay in 64b for the moment (can be formatted again later)
+		elif self.data.id == ATM__ULNG:
+			dataStr = 'U' + hexOnN(self.data, 16)
+		elif self.data.id == ATM__CHR:
+			dataStr = '\'' + self.data + '\''
+		elif self.data.id == ATM__STR: #this case covers both literal string & name. In all cases, toStr() will output a double-quoted result.
+			dataStr = '\"' + self.data + '\"' #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< for the moment, it also covers the case of literal structures (stored under raw text)
+		elif self.data.id == ATM__CALL:
+			dataStr  = '\"' + self.data.name + '('
+			for p in self.data.params:
+				dataStr += p.toStr() + ',' #recursive call
+			dataStr += ")\""
+		else:
+			print("[INTERNAL] Invalid data stored inside value (can only be literal, name or call).")
+			exit(1)
+		return "{type:\"" + self.ztype.name + "\",constant:" + str(self.constant) + ",data:" + dataStr + "}"
+
+class call:
+	def __init__(self, name, params):
+		self.name   = name
+		self.params = params #lst[value]
 
 class dataItem:
 	def __init__(self, ztype, name, initialized, initialValue, constant=False):
 		self.ztype        = ztype
 		self.name         = name
 		self.initialized  = initialized
-		self.initialValue = initialValue #cstValue
+		self.initialValue = initialValue #value
 		self.constant     = constant
 
 	def toStr(self):
 		initialValueStr = "null"
 		if self.initialValue is not None:
 			initialValueStr = self.initialValue.toStr()
-		return "{type:" + self.ztype.name + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + initialValueStr + ",constant:" + str(self.constant) + "}"
+		ztypeStr = "null"
+		if self.ztype is None:
+			ztypeStr = '\"' + self.ztype.name + '\"'
+		return "{type:" + ztypeStr + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + initialValueStr + ",constant:" + str(self.constant) + "}"
+
+#scope
+class scp:
+	def __init__(self, parent=None):
+		self.exes      = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
+		self.dataItems = [] #lst[dataItem]
+		self.parent    = parent
+
+class asg:
+	def __init__(self, dst, src):
+		self.dst = dst #dataItem or str (name only) ?
+		self.src = src #value
+
+#statement kinds
+STM__IF_ = 0
+STM__FOR = 1
+STM__WHI = 2
+STM__SWI = 3
+
+class stm:
+	def __init__(self, kind, parentScope):
+		self.kind  = kind
+		self.scope = scp(parent=parentScope)
+
+class fct:
+	def __init__(self, name, params, parentScope):
+		self.name   = name
+		self.params = params #lst[dataItem]
+		self.scope  = scp(parent=parentScope)
 
 #compiler data
 class cplDat:
@@ -318,11 +407,14 @@ class cplDat:
 		self.options = options
 
 		#z abstract elements
-		self.modulePrefixes = []
-		self.ztypes         = lst_copy(rootTypes)
+		self.modulePrefixes = [] #lst[str]
+		self.ztypes         = lst_copy(rootTypes) #lst[ztyp]
+		self.globalScope    = scp()
+		self.functions      = [] #lst[fct]
+		self.linkedLibs     = [] #lst[]
 
 		#program concrete elements
-		self.dataResult = program()
+		#self.dataResult = program() <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
 		self.textResult = ""
 
 
@@ -1061,21 +1153,69 @@ class zctx:
 
 
 	#value analysis process (VAP)
-	def readValue(self, ZCI, ZCIKindIfError, cstOnly=False):
+	def readValue(self, ZCI, ZCIKindIfError, scope, cstOnly=False):
 		self.ZCIDeepDebug(ZCI, "Reading value.")
 
 		#
 
 		self.ZCIDeepDebug(ZCI, "Ended reading value.")
 		n = self.readName(ZCI, ZCIKindIfError) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-		return cstValue(self.rootTypes[RT__ULNG], 0)
+		return value(self.rootTypes[RT__ULNG], 0)
 
 
+
+	#data items
+	def checkAlreadyDeclaredDataItemOrField(self, ZCI, dis, di):
+		for other in dis:
+			if other.name == di.name:
+				self.ZCIError(ZCI, "Data item or field with name \"" + di.name + "\" already declared.")
+
+	def readDataItem(self, ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUnsolvedType=False):
+		self.ZCIDeepDebug(ZCI, "Reading data item.")
+
+		#read type (if any. Else, continue as nothing happened)
+		ztype = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
+
+		#read name
+		self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
+		name = self.readName(ZCI, "data item name")
+
+		#default initial value: uninitialized
+		initialized  = False
+		initialValue = None
+
+		#optionnal assignment symbol => initial value given
+		self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
+		sym = self.readSymbol(ZCI)
+		if sym != SYMBOL__NOT_FOUND: #found a symbol
+			if sym != SYMBOL__ASG:
+				self.ZCIError(ZCI, "Invalid symbol given here, can only have assignment.")
+			ZCI.forward(SYMBOL_LENGTHS[SYMBOL__ASG])
+
+			#read given initial value
+			initialized = True
+			self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
+			initialValue = self.readValue(ZCI, ZCIKindIfError, scope, cstOnly=cstInitialValueOnly)
+
+			#solve ztype if missing using initialValue
+			if ztype is None:
+				ztype = initialValue.ztype
+				self.ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + ztype.name + "\".")
+		self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+
+		#missing ztype still not solved
+		if allowUnsolvedType:
+			if ztype is None:
+				self.ZCIError(ZCI, "Missing type to given element (required either explicitely or implicity).")
+
+		#result
+		self.ZCIDeepDebug(ZCI, "Ended reading data item.")
+		return dataItem(ztype, name, initialized, initialValue)
 
 	#read dataitem sequence
 	# Given ZCI must be at an opening includer character.
-	def readDataItemSequence(self, ZCI, ZCIKindIfError, cstValuesOnly=False):
-		self.ZCIDeepDebug(ZCI, "Reading data item sequence.")
+	def readDataItemSequence(self, ZCI, ZCIKindIfError, scope, cstValuesOnly=False, allowUnsolvedTypes=False):
+		self.ZCIDeepDebug(ZCI, "Reading sequence of data item(s).")
 
 		#initial conditions
 		initialIndex = ZCI.ctx.icontent.index
@@ -1084,47 +1224,16 @@ class zctx:
 		ZCI.inc()
 
 		#read sequence
-		dis = [] #lst[dataItem]
+		dis = []   #lst[dataItem]
+		foundSelfKw = False
 		while True:
 				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
-				#read type (zt null => ctx will be reset as nothing happened)
-				ztype = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
-
-				#read name
-				self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
-				name = self.readName(ZCI, "data item name")
-
-				#default initial value: uninitialized
-				initialized  = False
-				initialValue = None
-
-				#optionnal assignment symbol => initial value given
-				self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
-				sym = self.readSymbol(ZCI)
-				if sym != SYMBOL__NOT_FOUND: #found a symbol
-					if sym != SYMBOL__ASG:
-						self.ZCIError(ZCI, "Invalid symbol given here, can only have assignment.")
-					ZCI.forward(SYMBOL_LENGTHS[SYMBOL__ASG])
-
-					#read given initial value
-					initialized = True
-					self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
-					initialValue = self.readValue(ZCI, ZCIKindIfError, cstOnly=cstValuesOnly)
-
-					#solve ztype if missing using initialValue
-					if ztype is None:
-						ztype = initialValue.ztype
-						self.ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + ztype.name + "\".")
-				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
-
-				#missing ztype still not solved
-				if ztype is None:
-					self.ZCIError(ZCI, "Missing type to given element (required either explicitely or implicity).")
-
-				#store data item
-				dis.append(dataItem(ztype, name, initialized, initialValue))
-				self.ZCIDeepDebug(ZCI, "Got data item " + lst_last(dis).toStr())
+				#read & store data item
+				di = self.readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=cstValuesOnly, allowUnsolvedType=allowUnsolvedTypes)
+				self.checkAlreadyDeclaredDataItemOrField(ZCI, dis, di)
+				dis.append(di)
+				self.ZCIDeepDebug(ZCI, "Got data item " + di.toStr())
 
 				#must be followed by coma or closing peer
 				next = ZCI.get()
@@ -1138,5 +1247,5 @@ class zctx:
 				ZCI.inc()
 
 		#return result
-		self.ZCIDeepDebug(ZCI, "Ended reading data item sequence.")
+		self.ZCIDeepDebug(ZCI, "Ended reading sequence of data item(s).")
 		return dis

@@ -36,8 +36,8 @@ def processLnk(zCtx, ZCI):
 	zCtx.debug("SDL file \"" + path + "\" found.")
 
 	#add link
-	if path not in zCtx.cpl.dataResult.linkedLibs:
-		zCtx.cpl.dataResult.linkedLibs.append(path)
+	if path not in zCtx.cpl.linkedLibs:
+		zCtx.cpl.linkedLibs.append(path)
 		zCtx.ZCIDebug(ZCI, "Added SDL \"" + path + "\" to linking list.")
 	else:
 		zCtx.ZCIDebug(ZCI, "SDL \"" + path + "\" already in linking list => skipping it.")
@@ -49,7 +49,7 @@ def processLnk(zCtx, ZCI):
 
 # -------- DCL_TYP --------
 
-#structure
+#type declaration
 def processTypeDcl(zCtx, ZCI):
 	zCtx.ZCIDebug(ZCI, "Processing type declaration.", printSubCtxs=True)
 	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
@@ -113,7 +113,11 @@ def processTypeDcl(zCtx, ZCI):
 		newZType.isStc = True
 
 		#reading fields
-		newZType.fields = zCtx.readDataItemSequence(ZCI, "type declaration ZCI (DCL_TYP).", cstValuesOnly=True)
+		newZType.fields = zCtx.readDataItemSequence(
+			ZCI, "type declaration ZCI (DCL_TYP).",
+			zCtx.cpl.globalScope,
+			cstValuesOnly = True
+		)
 		if len(newZType.fields) == 0:
 			zCtx.ZCIError(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDataItemSequence cannot return 0-length list)
 
@@ -151,70 +155,6 @@ def processEnmDcl(zCtx, ZCI, global_=False):
 
 	#get full type name considered as "undeclinated"
 	rawName = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True)
-	if len(ZCI.modulePrefix) == 0:
-		fullName = "GU" + rawName
-	else:
-		fullName = ZCI.modulePrefix + 'U' + rawName
-
-	#initial conditions
-		initialIndex = ZCI.ctx.icontent.index
-		if ZCI.get() not in INCLUDERS.keys():
-			self.ZCIInternal(ZCI, "Must be at the beginning of an includer to read data item sequence.")
-		ZCI.inc()
-
-		#read sequence
-		dis = [] #lst[dataItem]
-		while True:
-				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
-
-				#read type (zt null => ctx will be reset as nothing happened)
-				ztype = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
-
-				#read name
-				self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
-				name = self.readName(ZCI, "data item name")
-
-				#default initial value: uninitialized
-				initialized  = False
-				initialValue = None
-
-				#optionnal assignment symbol => initial value given
-				self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
-				sym = self.readSymbol(ZCI)
-				if sym != SYMBOL__NOT_FOUND: #found a symbol
-					if sym != SYMBOL__ASG:
-						self.ZCIError(ZCI, "Invalid symbol given here, can only have assignment.")
-					ZCI.forward(SYMBOL_LENGTHS[SYMBOL__ASG])
-
-					#read given initial value
-					initialized = True
-					self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
-					initialValue = self.readValue(ZCI, ZCIKindIfError, cstOnly=cstValuesOnly)
-
-					#solve ztype if missing using initialValue
-					if ztype is None:
-						ztype = initialValue.ztype
-						self.ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + ztype.name + "\".")
-				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
-
-				#missing ztype still not solved
-				if ztype is None:
-					self.ZCIError(ZCI, "Missing type to given element (required either explicitely or implicity).")
-
-				#store data item
-				dis.append(dataItem(ztype, name, initialized, initialValue))
-				self.ZCIDeepDebug(ZCI, "Got data item " + lst_last(dis).toStr())
-
-				#must be followed by coma or closing peer
-				next = ZCI.get()
-				if next in INCLUDERS.values():
-					if ZCI.ctx.icontent.index != ZCI.pairs[initialIndex]:
-						self.ZCIInternal(ZCI, "Ending data item sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(ZCI.pairs[initialIndex]) + " in string \"" + ZCI.ctx.icontent.s + "\").")
-					ZCI.inc()
-					break
-				elif next != ',':
-					self.ZCIError(ZCI, "Invalid element given " + next + " in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[ ZCI.pairs[initialIndex] ] + "').")
-				ZCI.inc()
 '''
 
 
@@ -235,6 +175,9 @@ def c02_redirectGlobal(zCtx):
 	zCtx.debug("=================================================================================")
 	zCtx.debug("======================== C02 REDIRECT GLOBAL : beginning ========================")
 	zCtx.debug("=================================================================================\n\n\n\n")
+
+	#prepare result for next step
+	fZCIs = [] #lst[zci]
 
 	#analyse EVERY ZCI
 	for ZCI in zCtx.ZCIs:
@@ -318,3 +261,6 @@ def c02_redirectGlobal(zCtx):
 
 	#debug output file
 	zCtx.cplStep_debugZCIs("02")
+
+	#return function declaration ZCIs
+	return fZCIs
