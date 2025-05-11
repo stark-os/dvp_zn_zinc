@@ -50,6 +50,7 @@ def processLnk(zCtx, ZCI):
 # -------- DCL_TYP --------
 
 #type declaration
+
 def processTypeDcl(zCtx, ZCI):
 	zCtx.ZCIDebug(ZCI, "Processing type declaration.", printSubCtxs=True)
 	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
@@ -109,16 +110,16 @@ def processTypeDcl(zCtx, ZCI):
 	#process type content: structure syntax
 	if ZCI.get() == '{':
 		zCtx.debug("Type declaration is via structure syntax.", printLine=False)
-		newZType.size  = zCtx.SIZE__LNG
-		newZType.isStc = True
+		newZType.commonDcnData.size  = zCtx.SIZE__LNG
+		newZType.commonDcnData.isStc = True
 
 		#reading fields
-		newZType.fields = zCtx.readDataItemSequence(
+		newZType.commonDcnData.fields = zCtx.readDataItemSequence(
 			ZCI, "type declaration ZCI (DCL_TYP).",
 			zCtx.cpl.globalScope,
 			cstValuesOnly = True
 		)
-		if len(newZType.fields) == 0:
+		if len(newZType.commonDcnData.fields) == 0:
 			zCtx.ZCIError(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDataItemSequence cannot return 0-length list)
 
 		#update stcSize
@@ -128,11 +129,11 @@ def processTypeDcl(zCtx, ZCI):
 	else:
 		zCtx.debug("Type declaration is via type-copy syntax.", printLine=False)
 		parent = zCtx.readZType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
-		if parent == newZType:
-			zCtx.ZCIError(ZCI, "Type cannot be declared as a copy of itself.") #seems obvious, but anyway
-		newZType.size   = parent.size
-		newZType.isStc  = parent.isStc
-		newZType.parent = parent
+		if parent.commonDcnData == newZType.commonDcnData:
+			zCtx.ZCIError(ZCI, "Type cannot be declared as a copy of itself or one of its declination.") #seems obvious, but anyway
+		newZType.commonDcnData.size   = parent.commonDcnData.size
+		newZType.commonDcnData.isStc  = parent.commonDcnData.isStc
+		newZType.commonDcnData.parent = parent
 
 	#end of ZCI expected
 	zCtx.endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")
@@ -150,13 +151,7 @@ def processTypeDcl(zCtx, ZCI):
 def processEnmDcl(zCtx, ZCI, global_=False):
 	zCtx.ZCIDebug(ZCI, "Processing enumerate declaration.", printSubCtxs=True)
 
-'''
-	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
-
-	#get full type name considered as "undeclinated"
-	rawName = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True)
-'''
-
+	# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO 1ST
 
 	zCtx.debug("Enumerate declaration processed.")
 	zCtx.deepDebugPause()
@@ -247,11 +242,11 @@ def c02_redirectGlobal(zCtx):
 
 		#CASE 3 - ASSIGNMENT OR FUNCTION
 
-		#assignment ASG_ASG /!\ DO NOT USE readType() HERE, THERE MIGHT BE UNSOLVED TYPES THAT MUST NOT BE  /!\
-		# #not treated yet => to be stored into zCtx
-
 		#function DCL_FCT
-		# #not treated yet => to be stored into zCtx
+		# #not treated yet => to be stored into zCtx <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO 2nd
+
+		#assignment ASG_ASG /!\ DO NOT USE readType() HERE, THERE MIGHT BE UNSOLVED TYPES THAT MUST NOT BE  /!\
+		# #not treated yet => to be stored into zCtx <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO 3rd
 
 	#debug
 	zCtx.debug("\n\n\n\n")

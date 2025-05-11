@@ -34,12 +34,12 @@ def readFctDcl(zCtx, ZCI):
 	elif dotCnt == 1:
 		dotIndex = rawName.index('.')
 		
-		#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< CONTINUE HERE
+		#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO 4th
 
 		#look for method type
-		targettedType = None
-		for t in zCtx.cpl.ztypes:
-			if t.name == 
+		#targettedType = None
+		#for t in zCtx.cpl.ztypes:
+		#	if t.name == 
 
 		fullName = ZCI.modulePrefix + 'T' + targettedType.name + '_' + rawName
 
@@ -88,8 +88,8 @@ def c03_developFunctions(zCtx, fZCIs):
 	zCtx.debug("=================================================================================\n\n\n\n")
 
 	#analyse EVERY ZCI
-	for fZCI in fZCIs:
-		zCtx.cpl.functions.append(zCtx.readFctDcl(fZCI))
+	#for fZCI in fZCIs:
+	#	zCtx.cpl.functions.append(zCtx.readFctDcl(fZCI)) <<<<<<<<<<<<<<<<<<<<<<<<<<< disabled for the moment
 
 	#debug
 	zCtx.debug("\n\n\n\n")

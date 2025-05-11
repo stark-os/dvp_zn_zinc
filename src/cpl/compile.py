@@ -5,8 +5,9 @@
 # -------- IMPORTATIONS --------
 
 #internal
-from cpl.c01_unmodulize     import *
-from cpl.c02_redirectGlobal import *
+from cpl.c01_unmodulize       import *
+from cpl.c02_redirectGlobal   import *
+from cpl.c03_developFunctions import *
 
 
 

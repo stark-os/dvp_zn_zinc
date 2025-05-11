@@ -288,26 +288,30 @@ CPL_OPT_ALLOWED = {
 #ztyp can be declared after zprm & zstc in Z.
 #However, here in Python, we must declare it before to allow dataItem definition and so, zstc.
 #Same thing for zfct.
-class ztyp:
-	def __init__(self, name, dcnDeg=0, dcns=None):
-		self.name    = name
-		self.parent  = None
-		self.methods = []     #lst[zfct]
-		self.size    = 0
-
-		#declination
+class ztyp_commonDcnData: #common ztype data among every declination
+	def __init__(self, dcnDeg):
+		self.parent = None
+		self.size   = 0
 		self.dcnDeg = dcnDeg
-		self.dcns   = dcns   #tab[ztyp]
 
 		#stc related
 		self.isStc   = False #<=> type "nature" (is primitive / structure)
 		self.fields  = None
 		self.stcSize = 0
 
+class ztyp:
+	def __init__(self, name, dcnDeg=0, dcns=None, commonDcnData=None):
+		if commonDcnData is None:
+			commonDcnData = ztyp_commonDcnData(dcnDeg) #create a new commonDcnData by default (new type => new commonDcnData)
+		self.name          = name
+		self.methods       = []   #lst[zfct]
+		self.dcns          = dcns #tab[ztyp]
+		self.commonDcnData = commonDcnData #ztyp_commonDcnData
+
 	def computeStcSize(self):
-		if self.isStc:
-			for f in self.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
-				self.stcSize += f.ztype.size
+		if self.commonDcnData.isStc:
+			for f in self.commonDcnData.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
+				self.commonDcnData.stcSize += f.ztype.commonDcnData.size
 
 class value:
 	def __init__(self, ztype, data, constant=False):
@@ -1086,7 +1090,7 @@ class zctx:
 			ZCI.inc()
 
 			#undeclinable type
-			if ztInstance.dcnDeg == 0:
+			if ztInstance.commonDcnData.dcnDeg == 0:
 				self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName.replace("__", '_') + " is not declinable (null declination degree).")
 
 			#read declination types one by one
@@ -1095,7 +1099,7 @@ class zctx:
 			while True:
 				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
-				#read & append next declination type (recursive call)
+				#read & append next declination type (recursive call). Don't check if already exitsing in dcns, we can have the same type twice, thrice and so on...
 				dcns.append(self.readZType(ZCI, ZCIKindIfError))
 
 				#must be followed by coma or closing peer
@@ -1117,10 +1121,10 @@ class zctx:
 			self.ZCIDeepDebug(ZCI, "].", printLine=False)
 
 			#check declination length
-			if len(dcns) < ztInstance.dcnDeg:
-				self.ZCIError(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
-			elif len(dcns) > ztInstance.dcnDeg:
-				self.ZCIError(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.dcnDeg) + " required).")
+			if len(dcns) < ztInstance.commonDcnData.dcnDeg:
+				self.ZCIError(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.commonDcnData.dcnDeg) + " required).")
+			elif len(dcns) > ztInstance.commonDcnData.dcnDeg:
+				self.ZCIError(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.commonDcnData.dcnDeg) + " required).")
 
 			#re-build full type name including declinations this time (ztModulePrefix can be set to "G" by the way, same logic as undeclinated types)
 			ztFullName = ztModulePrefix + 'D' + ztRawName
@@ -1137,12 +1141,8 @@ class zctx:
 
 			#not found => create that declination (this new combination must exist)
 			if ztInstance is None:
-				ztInstance        = ztyp(ztFullName, len(dcns))
-				ztInstance.size   = ztUndeclinatedInstance.size
-				ztInstance.isStc  = ztUndeclinatedInstance.isStc
-				ztInstance.parent = ztUndeclinatedInstance
-				ztInstance.fields = ztUndeclinatedInstance.fields #no need to create a copy, same reference is enough
-				ztInstance.dcns   = dcns
+				ztInstance      = ztyp(ztFullName, commonDcnData = ztUndeclinatedInstance.commonDcnData) #share the same commonDcnData (affecting the undeclinated instance will affect every declination)
+				ztInstance.dcns = dcns
 				self.ZCIDebug(ZCI, "First call of declination \"" + ztInstance.name + "\" from type \"" + ztUndeclinatedInstance.name + "\", adding it.")
 				self.cpl.ztypes.append(ztInstance)
 
