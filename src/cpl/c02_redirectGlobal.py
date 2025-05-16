@@ -27,8 +27,7 @@ def processLnk(zCtx, ZCI):
 
 	#library linking path
 	path = os.path.realpath( zCtx.readName(ZCI, "File path in library linking ZCI (EXT_LNK).", blacklist=BLANKS_EXTENDED) )
-	if not ZCI.reachedEnd():
-		zCtx.ZCIError(ZCI, "Too much elements in library linking ZCI (EXT_LNK); should stop here.")
+	zCtx.endOfZCI(ZCI, "library linking ZCI (EXT_LNK).")
 
 	#check existence
 	if not os.path.isfile(path):
@@ -78,7 +77,7 @@ def processTypeDcl(zCtx, ZCI):
 		ZCI.inc()
 
 		#skip beginning blanks
-		zCtx.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+		zCtx.optionnalBlanks(ZCI, "declination degree in type declaration ZCI (DCL_TYP)", blanks=BLANKS_EXTENDED)
 
 		#strip ending blanks
 		beginningIndex = ZCI.ctx.icontent.index
@@ -110,8 +109,8 @@ def processTypeDcl(zCtx, ZCI):
 	#process type content: structure syntax
 	if ZCI.get() == '{':
 		zCtx.debug("Type declaration is via structure syntax.", printLine=False)
-		newZType.commonDcnData.size  = zCtx.SIZE__LNG
-		newZType.commonDcnData.isStc = True
+		newZType.commonDcnData.size   = zCtx.SIZE__LNG
+		newZType.commonDcnData.nature = NATURE__STRUCTURE
 
 		#reading fields
 		newZType.commonDcnData.fields = zCtx.readDataItemSequence(
@@ -132,7 +131,7 @@ def processTypeDcl(zCtx, ZCI):
 		if parent.commonDcnData == newZType.commonDcnData:
 			zCtx.ZCIError(ZCI, "Type cannot be declared as a copy of itself or one of its declination.") #seems obvious, but anyway
 		newZType.commonDcnData.size   = parent.commonDcnData.size
-		newZType.commonDcnData.isStc  = parent.commonDcnData.isStc
+		newZType.commonDcnData.nature = parent.commonDcnData.nature
 		newZType.commonDcnData.parent = parent
 
 	#end of ZCI expected
@@ -148,11 +147,58 @@ def processTypeDcl(zCtx, ZCI):
 # -------- DCL_ENM --------
 
 #enumerate declaration
-def processEnmDcl(zCtx, ZCI, global_=False):
+def processEnmDcl(zCtx, ZCI, scope):
 	zCtx.ZCIDebug(ZCI, "Processing enumerate declaration.", printSubCtxs=True)
+	zCtx.jumpBlankZone(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM)")
 
-	# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO 1ST
+	#get full enm name
+	rawName = zCtx.readName(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM).", doubleUnderscores=True)
+	if len(ZCI.modulePrefix) == 0:
+		fullName = "GE" + rawName #!WARNING: 'E' stands for "element" and not "enumerate" (no distinction with other data items)
+	else:
+		fullName = ZCI.modulePrefix + 'E' + rawName
 
+	#must be followed by braces includer
+	zCtx.optionnalBlanks(ZCI, "fields inside braces includer in enumerate declaration ZCI (DCL_ENM).", blanks=BLANKS_EXTENDED)
+	if ZCI.get() != '{':
+		zCtx.ZCIError(ZCI, "Missing fields inside braces includer in enumerate declaration ZCI (DCL_ENM).")
+
+	#read fields
+	fields = zCtx.readDataItemSequence(
+		ZCI, "enumerate declaration ZCI (DCL_ENM).",
+		scope,
+		cstValuesOnly      = True,
+		allowUnsolvedTypes = True
+	)
+	for di in fields:
+		if di.ztype != None: #no type must be found (neither explicit type given or initial value)
+			zCtx.ZCIError(ZCI, "No explicit type or value is allowed in enumerate declaration (DCL_ENM).")
+
+	#compute which type will be used
+	zCtx.deepDebug("Enumerate length: " + str(len(fields)))
+	if len(fields) <= 0x1_00:
+		zCtx.deepDebug("Enumerate length indexing can be contained in BYT => using that type for them.")
+		zt = zCtx.rootTypes[RT__BYT]
+	elif len(fields) <= 0x1_00_00:
+		zCtx.deepDebug("Enumerate length indexing can be contained in SHR => using that type for them.")
+		zt = zCtx.rootTypes[RT__SHR]
+	elif len(fields) <= 0x1_00_00_00_00:
+		zCtx.deepDebug("Enumerate length indexing can be contained in INT => using that type for them.")
+		zt = zCtx.rootTypes[RT__INT]
+	else:
+		zCtx.ZCIError(ZCI, "Too much fields in enumerate (congrats for reaching that error, how did you managed to get it ?).")
+
+	#fullfill fields
+	for f in range(len(fields)):
+		fields[f].ztype = zt
+		fields[f].value = value(zt, atm(ATM__ULNG, f), constant=True) #value stored as it was a ulng literal to be cashted into type zt
+
+	#create enumerate
+	zCtx.checkAlreadyDeclaredDataItemOrField(ZCI, scope.dataItems, fullName)
+	scope.dataItems.append( dataItem(zt, fullName, True, None, constant=True, fields=fields) )
+
+	#end of ZCI expected
+	zCtx.endOfZCI(ZCI, "enumerate declaration ZCI (DCL_ENM).")
 	zCtx.debug("Enumerate declaration processed.")
 	zCtx.deepDebugPause()
 	pass
@@ -235,7 +281,7 @@ def c02_redirectGlobal(zCtx):
 
 				#2.3 - Enumerate declaration DCL_ENM
 				if ZCI.text.startswith("enm"):
-					processEnmDcl(zCtx, ZCI, global_=True)
+					processEnmDcl(zCtx, ZCI, zCtx.cpl.globalScope)
 					continue
 
 

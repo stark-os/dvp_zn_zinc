@@ -34,11 +34,21 @@ ATM__LNG  = 7
 ATM__ULNG = 8
 ATM__CHR  = 9
 ATM__STR  = 10
-ATM__CALL = 11
+ATM__CALL     = 11
+ATM__ZCI      = 12
+ATM__VALUE    = 13
+ATM__DATAITEM = 14
+ATM__ZTYP     = 15
+ATM__ZTYP_COMMONDATA = 16
+ATM__SCP = 17
+ATM__ASG = 18
+ATM__STM = 19
+ATM__FCT = 20
+ATM__ATM = 99
 class atm:
 	def __init__(self, id, data):
-		self.id   = id
-		self.data = data
+		self.id   = id   #ulng
+		self.data = data #ulng
 
 
 
@@ -285,9 +295,9 @@ CPL_OPT_ALLOWED = {
 	"LS_CNT_DIGITS":                  CPL_OPT_VALUES__DIGIT
 }
 
-#ztyp can be declared after zprm & zstc in Z.
-#However, here in Python, we must declare it before to allow dataItem definition and so, zstc.
-#Same thing for zfct.
+NATURE__PRIMITIVE = 0
+NATURE__STRUCTURE = 1
+NATURE__ENUMERATE = 2
 class ztyp_commonDcnData: #common ztype data among every declination
 	def __init__(self, dcnDeg):
 		self.parent = None
@@ -295,8 +305,8 @@ class ztyp_commonDcnData: #common ztype data among every declination
 		self.dcnDeg = dcnDeg
 
 		#stc related
-		self.isStc   = False #<=> type "nature" (is primitive / structure)
-		self.fields  = None
+		self.nature  = NATURE__PRIMITIVE
+		self.fields  = None #lst[dataItem]
 		self.stcSize = 0
 
 class ztyp:
@@ -309,7 +319,7 @@ class ztyp:
 		self.commonDcnData = commonDcnData #ztyp_commonDcnData
 
 	def computeStcSize(self):
-		if self.commonDcnData.isStc:
+		if self.commonDcnData.nature != NATURE__PRIMITIVE:
 			for f in self.commonDcnData.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
 				self.commonDcnData.stcSize += f.ztype.commonDcnData.size
 
@@ -325,28 +335,28 @@ class value:
 			if self.data:
 				dataStr = "true"
 		elif self.data.id == ATM__BYT:
-			dataStr = 'S' + hexOnN(self.data, 2)
+			dataStr = 'S' + hexOnN(self.data.data, 2)
 		elif self.data.id == ATM__UBYT:
-			dataStr = 'U' + hexOnN(self.data, 2)
+			dataStr = 'U' + hexOnN(self.data.data, 2)
 		elif self.data.id == ATM__SHR:
-			dataStr = 'S' + hexOnN(self.data, 4)
+			dataStr = 'S' + hexOnN(self.data.data, 4)
 		elif self.data.id == ATM__USHR:
-			dataStr = 'U' + hexOnN(self.data, 4)
+			dataStr = 'U' + hexOnN(self.data.data, 4)
 		elif self.data.id == ATM__INT:
-			dataStr = 'S' + hexOnN(self.data, 8)
+			dataStr = 'S' + hexOnN(self.data.data, 8)
 		elif self.data.id == ATM__UINT:
-			dataStr = 'U' + hexOnN(self.data, 8)
+			dataStr = 'U' + hexOnN(self.data.data, 8)
 		elif self.data.id == ATM__LNG:
-			dataStr = 'S' + hexOnN(self.data, 16) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< no way to get arch type here... will stay in 64b for the moment (can be formatted again later)
+			dataStr = 'S' + hexOnN(self.data.data, 16) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< no way to get arch type here... will stay in 64b for the moment (can be formatted again later)
 		elif self.data.id == ATM__ULNG:
-			dataStr = 'U' + hexOnN(self.data, 16)
+			dataStr = 'U' + hexOnN(self.data.data, 16)
 		elif self.data.id == ATM__CHR:
-			dataStr = '\'' + self.data + '\''
+			dataStr = '\'' + self.data.data + '\''
 		elif self.data.id == ATM__STR: #this case covers both literal string & name. In all cases, toStr() will output a double-quoted result.
-			dataStr = '\"' + self.data + '\"' #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< for the moment, it also covers the case of literal structures (stored under raw text)
+			dataStr = '\"' + self.data.data + '\"' #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< for the moment, it also covers the case of literal structures (stored under raw text)
 		elif self.data.id == ATM__CALL:
-			dataStr  = '\"' + self.data.name + '('
-			for p in self.data.params:
+			dataStr  = '\"' + self.data.data.name + '('
+			for p in self.data.data.params:
 				dataStr += p.toStr() + ',' #recursive call
 			dataStr += ")\""
 		else:
@@ -360,21 +370,28 @@ class call:
 		self.params = params #lst[value]
 
 class dataItem:
-	def __init__(self, ztype, name, initialized, initialValue, constant=False):
+	def __init__(self, ztype, name, initialized, initialValue, constant=False, fields=None):
 		self.ztype        = ztype
 		self.name         = name
 		self.initialized  = initialized
 		self.initialValue = initialValue #value
 		self.constant     = constant
+		self.fields       = fields #lst[dataItem]
 
 	def toStr(self):
 		initialValueStr = "null"
 		if self.initialValue is not None:
 			initialValueStr = self.initialValue.toStr()
 		ztypeStr = "null"
-		if self.ztype is None:
+		if self.ztype is not None:
 			ztypeStr = '\"' + self.ztype.name + '\"'
-		return "{type:" + ztypeStr + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + initialValueStr + ",constant:" + str(self.constant) + "}"
+		fieldsText = "null"
+		if self.fields is not None:
+			fieldsText = "[\n"
+			for f in self.fields:
+				fieldsText += "\t" + f.toStr() + ",\n"
+			fieldsText += "]"
+		return "{type:" + ztypeStr + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + initialValueStr + ",constant:" + str(self.constant) + ",fields:" + fieldsText + "}"
 
 #scope
 class scp:
@@ -711,12 +728,12 @@ class zctx:
 	# GENERAL PARSING TOOLS
 
 	#move ctx cursor just before the first non-blank character found
-	def jumpBlankZone(self, ZCI, missingFieldIfError, blanks=BLANKS):
+	def jumpBlankZone(self, ZCI, missingFieldIfError, blanks=BLANKS): #!WARNING: we MUST be on a blank character before calling that function
 		while not ZCI.inc():
 			if ZCI.get() not in blanks:
 				return
 		if missingFieldIfError is not None:
-			self.ZCIError(ZCI, "Expected something after blank zone : " + missingFieldIfError)
+			self.ZCIError(ZCI, "Expected something after blank zone: " + missingFieldIfError)
 
 	def optionnalBlanks(self, ZCI, missingFieldIfError, blanks=BLANKS):
 		if ZCI.get() in blanks:
@@ -1158,9 +1175,10 @@ class zctx:
 
 		#
 
+		#
 		self.ZCIDeepDebug(ZCI, "Ended reading value.")
 		n = self.readName(ZCI, ZCIKindIfError) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-		return value(self.rootTypes[RT__ULNG], 0)
+		return value(self.rootTypes[RT__ULNG], atm(ATM__ULNG, 0))
 
 
 
@@ -1175,14 +1193,19 @@ class zctx:
 
 		#read type (if any. Else, continue as nothing happened)
 		ztype = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
+		if ztype is not None:
+			self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 
 		#read name
-		self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 		name = self.readName(ZCI, "data item name")
 
 		#default initial value: uninitialized
 		initialized  = False
 		initialValue = None
+
+		#special behavior in global scope
+		if scope == self.cpl.globalScope:
+			cstInitialValueOnly = True #force cst values
 
 		#optionnal assignment symbol => initial value given
 		self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
@@ -1204,7 +1227,7 @@ class zctx:
 		self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 		#missing ztype still not solved
-		if allowUnsolvedType:
+		if not allowUnsolvedType:
 			if ztype is None:
 				self.ZCIError(ZCI, "Missing type to given element (required either explicitely or implicity).")
 
