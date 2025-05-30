@@ -201,7 +201,6 @@ def processEnmDcl(zCtx, ZCI, scope):
 	zCtx.endOfZCI(ZCI, "enumerate declaration ZCI (DCL_ENM).")
 	zCtx.debug("Enumerate declaration processed.")
 	zCtx.deepDebugPause()
-	pass
 
 
 

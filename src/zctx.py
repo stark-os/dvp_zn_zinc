@@ -44,6 +44,8 @@ ATM__SCP = 17
 ATM__ASG = 18
 ATM__STM = 19
 ATM__FCT = 20
+ATM__OPSEQ  = 21
+ATM__POCALL = 22
 ATM__ATM = 99
 class atm:
 	def __init__(self, id, data):
@@ -63,9 +65,10 @@ BLANKS_EXTENDED = (' ', '\t', '\n')
 INCLUDERS       = { '(':')', '[':']', '{':'}' }
 
 #charsets
-DEFAULT_NAME_CHARSET            = string.ascii_letters + string.digits + '_'
+DEFAULT_NAME_CHARSET            = tuple(string.ascii_letters + string.digits + '_')
 ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + tuple(INCLUDERS.keys())
-FCT_NAME_CHARSET                = DEFAULT_NAME_CHARSET + ".[]=-+*/^%[:~!&|<>"
+FCT_NAME_CHARSET                = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
+VALUE_CHARSET                   = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_CHARSET
 
 #general name parsing
 NO_NAME            = -1
@@ -98,20 +101,24 @@ RT__PTR  = 11
 #Single Operators
 SYMBOL__SIN  = 1 #invert
 SYMBOL__SNO  = 2 #not
+SO = (SYMBOL__SIN, SYMBOL__SNO)
 
 #Decisionnal Operators
 SYMBOL__DAN = 3 #decisionnal and
 SYMBOL__DOR = 4 #decisionnal or
+DO = (SYMBOL__DAN, SYMBOL__DOR)
 
 #Arithmetic Operators
 SYMBOL__AMU = 5 #multiply
 SYMBOL__ADI = 6 #divide
 SYMBOL__AMO = 7 #modulo
 SYMBOL__APO = 8 #power
+AO = (SYMBOL__AMU, SYMBOL__ADI, SYMBOL__AMO, SYMBOL__APO)
 
 #B-rithmetic Operators
 SYMBOL__BAD =  9 #add
 SYMBOL__BSU = 10 #subtract
+BO = (SYMBOL__BAD, SYMBOL__BSU)
 
 #Logical Operators
 SYMBOL__LAN = 11 #logical and
@@ -123,6 +130,12 @@ SYMBOL__LLB = 16 #left byte-shift
 SYMBOL__LRB = 17 #right byte-shift
 SYMBOL__LLR = 18 #left roll
 SYMBOL__LRR = 19 #right roll
+LO = (
+	SYMBOL__LAN, SYMBOL__LOR, SYMBOL__LXO,
+	SYMBOL__LLS, SYMBOL__LRS,
+	SYMBOL__LLB, SYMBOL__LRB,
+	SYMBOL__LLR, SYMBOL__LRR
+)
 
 #Conditionnal Operators
 SYMBOL__CEQ = 20 #equals
@@ -131,16 +144,26 @@ SYMBOL__CLT = 22 #lesser than
 SYMBOL__CGT = 23 #greater than
 SYMBOL__CLE = 24 #lesser or equal
 SYMBOL__CGE = 25 #greater or equal
+CO = (
+	SYMBOL__CEQ, SYMBOL__CNE,
+	SYMBOL__CLT, SYMBOL__CGT,
+	SYMBOL__CLE, SYMBOL__CGE
+)
 
 #Indexing Operators (without includers)
 SYMBOL__IAM = 30 #among
 SYMBOL__INA = 31 #not among
+IO = (SYMBOL__IAM, SYMBOL__INA)
 
 #Fixed Operators
 SYMBOL__FSZ = 32 #size
 SYMBOL__FRF = 33 #reference
 SYMBOL__FCA = 34 #casht
 SYMBOL__FFA = 35 #field access
+FO_WITHOUT_FFA = (SYMBOL__FSZ, SYMBOL__FRF, SYMBOL__FCA)
+
+#mono-operand operators
+MONO_OPERAND = SO + (SYMBOL__FSZ, SYMBOL__FRF)
 
 #other
 SYMBOL__ASG       = 1 #assignment
@@ -195,6 +218,12 @@ class zci:
 		self.startIndex   = self.ctx.icontent.index #current position is where our ZCI starts
 		self.stopIndex    = self.startIndex
 
+	def updateText(self):
+		startIndex = self.startIndex
+		if startIndex == -1:
+			startIndex = 0
+		self.text = str_sub(self.ctx.icontent.s, startIndex, self.stopIndex)
+
 
 
 	#forwarding
@@ -217,11 +246,15 @@ class zci:
 		self.ctx         = newCtx
 		self.subCtxs[-1] = newCtx #a ZCI must have at least 1 subCtx
 
-	def tmpCtxCopy(self):
-		tmpCtxCopyZCI      = zci(lst_copy(self.subCtxs), modulePrefix=self.modulePrefix, pairs=self.pairs)
-		tmpCtxCopyZCI.text = self.text
-		tmpCtxCopyZCI.resetCtx(self.ctx.copy()) #we copy ctx & subctxs so that we can TEMPORARILY work on that ZCI without affecting it really
-		return tmpCtxCopyZCI
+	def copy(self, ctxCopy=None): #this copy mainly affects ZCI ctx rather than the other fields
+		if ctxCopy is None:
+			ctxCopy = self.ctx.copy()
+		copy            = zci(lst_copy(self.subCtxs), modulePrefix=self.modulePrefix, pairs=self.pairs)
+		copy.startIndex = self.startIndex
+		copy.stopIndex  = self.stopIndex
+		copy.text = self.text
+		copy.resetCtx(ctxCopy) #we copy ctx & subctxs so that we can TEMPORARILY work on that ZCI without affecting it really
+		return copy
 
 
 
@@ -369,6 +402,42 @@ class call:
 		self.name   = name
 		self.params = params #lst[value]
 
+#"potential operator call" Same things as a call except we store only 2 params and under atm types.
+#                          We expect to have only zci or POCall types for these atoms.
+#                          This allows us to work with operator calls while parameters are not analyzed yet during progressive priorizing.
+class POCall:
+	def __init__(self, firstParam, secondParam):
+		self.name        = None        #str, makes no sens to give a correct value on stc creation because we will set it depending on whether a next operand exists (so we don't know at creation time)
+		self.firstParam  = firstParam  #atm
+		self.secondParam = secondParam #atm
+
+	def toStr(self, depth=0):
+		depthSpacing = '\t' * depth
+
+		#name
+		nameStr = "null"
+		if self.name is not None:
+			nameStr = '"' + name + '"'
+
+		#1st param
+		firstParamText = "null"
+		if self.firstParam is not None:
+			if self.firstParam.id == ATM__ZCI:
+				firstParamText = self.firstParam.data.textFormat()
+			elif self.firstParam.id == ATM__POCALL:
+				firstParamText = self.firstParam.data.toStr(depth+1)
+
+		#2nd param
+		secondParamText = "null"
+		if self.secondParam is not None:
+			if self.secondParam.id == ATM__ZCI:
+				secondParamText = self.secondParam.data.textFormat()
+			elif self.secondParam.id == ATM__POCALL:
+				secondParamText = self.secondParam.data.toStr(depth+1)
+
+		#final string
+		return "{\n" + depthSpacing + "\tname:" + nameStr + ",\n" + depthSpacing + "\tfirstParam:" + firstParamText + ",\n" + depthSpacing + "\tsecondParam:" + secondParamText + "\n" + depthSpacing + "}"
+
 class dataItem:
 	def __init__(self, ztype, name, initialized, initialValue, constant=False, fields=None):
 		self.ztype        = ztype
@@ -421,6 +490,20 @@ class fct:
 		self.name   = name
 		self.params = params #lst[dataItem]
 		self.scope  = scp(parent=parentScope)
+
+class opSeq:
+	def __init__(self, operands, operators):
+		self.operands  = operands  #lst[zci]
+		self.operators = operators #lst (lst[ubyt] cause enm will be stored)
+
+	def toStr(self):
+		operandsText = ""
+		for a in self.operands:
+			operandsText += a.textFormat() + ','
+		operatorsText = ""
+		for o in self.operators:
+			operatorsText += OPERATOR_NAMES[o] + ','
+		return "{operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
 
 #compiler data
 class cplDat:
@@ -750,7 +833,7 @@ class zctx:
 	#try reading symbol (don't move ZCI ctx)
 	def readSymbol(self, ZCI):
 		self.ZCIDeepDebug(ZCI, "Reading symbol.")
-		tmpZCI = ZCI.tmpCtxCopy()
+		tmpZCI = ZCI.copy()
 		c1 = tmpZCI.get()
 
 		#1-character symbol
@@ -779,10 +862,8 @@ class zctx:
 			c2 = tmpZCI.get()
 			if c2 == '=':
 				return SYMBOL__CNE
-			elif c2 == 'i':
-				tmpZCI.inc()
-				if tmpZCI.get() == 'n':
-					return SYMBOL__INA
+			elif c2 == '?':
+				return SYMBOL__INA
 			return SYMBOL__SNO
 
 		#multi-character symbol: starting with '*'
@@ -862,11 +943,9 @@ class zctx:
 				return SYMBOL__CEQ
 			return SYMBOL__ASG
 
-		#multi-character symbol: starting with 'i'
-		elif c1 == 'i':
-			tmpZCI.inc()
-			if tmpZCI.get() == 'n':
-				return SYMBOL__IAM
+		#multi-character symbol: starting with '?'
+		elif c1 == '?':
+			return SYMBOL__IAM
 
 		#no match
 		return SYMBOL__NOT_FOUND
@@ -1169,16 +1248,277 @@ class zctx:
 
 
 
+	#ODP
+	def ODP_readAndSplitByOperators(self, ZCI, allowedOperators):
+		allowedOperatorsText = ""
+
+		#deep debug
+		if self.deepDebugMode:
+			allowedOperatorsText = "["
+			for o in allowedOperators:
+				allowedOperatorsText += OPERATOR_NAMES[o] + ','
+			allowedOperatorsText += "]"
+			self.ZCIDeepDebug(ZCI, "ODP-1: Reading & splitting ZCI content " + ZCI.textFormat() + " by operators " + allowedOperatorsText)
+
+		#split by operator symbols
+		operands          = [] #lst[zci]
+		operators         = [] #lst (certainly ubyt but prefer using only undeclinated for enm storage)
+		operandInitialCtx = ZCI.ctx.copy()
+		while not ZCI.reachedEnd() and ZCI.get() in VALUE_CHARSET:
+			self.ZCIDeepDebug(ZCI, "HEEEEEEEEEEEEEEEEEEEEEEEEEEEEHO" + ZCI.toStr(), printLine=True)
+
+
+
+			#checking for symbol
+			operator = self.readSymbol(ZCI)
+
+			#checking for symbol - CASE 1: found something that is not even in possible symbols, that can be anything (and especially an includer)
+			if operator == SYMBOL__NOT_FOUND:
+				if ZCI.ctx.icontent.index in ZCI.pairs.keys():
+					ZCI.forward(ZCI.pairs[ZCI.ctx.icontent.index] - ZCI.ctx.icontent.index) #includer? It also belongs to the operand no matter what's inside => skip parsing its content
+
+			#checking for symbol - CASE 2: '^'
+			elif operator == SYMBOL__LXO:
+				if ZCI.ctx.icontent.index >= ZCI.stopIndex-1:
+					ZCI.inc()
+					self.ZCIError(ZCI, "Missing second operand to logical XOR operator (LXO, \"^\"), reached end of ZCI.")
+
+				#look at the following character to determine whether it is a module prefix or a regular LXO operator
+				nextChr = ZCI.ctx.icontent.s[ZCI.ctx.icontent.index+1]
+				if nextChr == '.' or nextChr in DEFAULT_NAME_CHARSET:
+					self.ZCIDeepDebug(ZCI, "ODP-1: '^' symbol detected as module prefix and not as LXO operator.")
+					operator = SYMBOL__NOT_FOUND #not an operator actually => consider it as "no symbol found"
+
+			#checking for symbol - CASE 4: allowed for splitting
+			if operator not in allowedOperators:
+				ZCI.inc()
+				continue
+
+
+
+			#empty operand
+			operandIsEmpty = (ZCI.ctx.icontent.index == operandInitialCtx.icontent.index)
+			if operator in MONO_OPERAND:
+				if not operandIsEmpty:
+					self.ZCIError(ZCI, "Got too much operands for single operator " + OPERATOR_NAMES[operator] + " (only 1 allowed after symbol).")
+			else:
+				if operandIsEmpty:
+					self.ZCIError(ZCI, "Missing first operand to operator " + OPERATOR_NAMES[operator])
+
+			#create operand as a unique ZCI.
+			# This is actually a value to be analyzed in further steps.
+			# However, to parse it easilly, we store it as a fragment of the original ZCI (which is, here, a copy of the original but doesn't matter).
+			operand            = ZCI.copy(ctxCopy=operandInitialCtx)
+			operand.startIndex = operandInitialCtx.icontent.index #initial context must be at operand beginning index
+			operand.stopIndex  = ZCI.ctx.icontent.index           #we are just before operator index, so at operand end index
+			operand.updateText()
+
+			#store operand & operator
+			operators.append(operator)
+			operands.append(operand)
+			self.ZCIDeepDebug(ZCI, "ODP-1: New operator " + OPERATOR_NAMES[operator] + " found, current operating sequence is " + opSeq(operands, operators).toStr())
+
+			#moving after symbol
+			ZCI.forward(SYMBOL_LENGTHS[operator])
+
+			#prepare next operand
+			operandInitialCtx = ZCI.ctx.copy()
+
+		#no operator found at all => not an operating sequence => return as it was an operating sequence with no operator and only one operand
+		if len(operators) == 0:
+			self.ZCIDeepDebug(ZCI, "ODP-1: No operator found at all => Finished with null operating sequence.")
+			ZCI.stopIndex = ZCI.ctx.icontent.index - 1
+			return opSeq([ZCI], None)
+
+		#last operand cannot be empty
+		if ZCI.ctx.icontent.index == operandInitialCtx.icontent.index:
+			lastOperator = operators[-1]
+			if lastOperator in MONO_OPERAND:
+				self.ZCIError(ZCI, "Missing first (and only) operand to single operator " + OPERATOR_NAMES[lastOperator])
+			else:
+				self.ZCIError(ZCI, "Missing second operand to operator " + OPERATOR_NAMES[lastOperator])
+
+		#create last operand
+		operand            = ZCI.copy(ctxCopy=operandInitialCtx)
+		operand.startIndex = operandInitialCtx.icontent.index
+		operand.stopIndex  = ZCI.ctx.icontent.index
+		operand.updateText()
+
+		#add last operand
+		operands.append(operand)
+		self.ZCIDeepDebug(ZCI, "ODP-1: Last operand added, final operating sequence is " + opSeq(operands, operators).toStr())
+
+		#deep debug
+		self.ZCIDeepDebug(ZCI, "ODP-1: Finished reading & splitting ZCI content " + ZCI.textFormat() + " by operators " + allowedOperatorsText)
+		return opSeq(operands, operators)
+
+
+
+	#transform an operating sequence into a single POCall (destroying the given opSeq!)
+	def progressivePriorizing(self, currentOpSeq): #WARNING! DO NOT USE WITH SO !!!
+		if len(currentOpSeq.operands) == 0:
+			self.internal("Got no operand in operating sequence when running progressive priorizing.")
+
+		#deep debug: before
+		self.deepDebug("ODP-2: Applying progressive priorizing on operating sequence " + currentOpSeq.toStr())
+
+		#first element (we must keep track of it)
+		result = POCall(
+			atm(ATM__ZCI, currentOpSeq.operands.pop()),
+			None
+		)
+		current = result
+
+		#for each remaining operand, make function calls (Potential Operator Call)
+		while len(currentOpSeq.operands) != 0:
+			current.name        = OPERATOR_NAMES[currentOpSeq.operators.pop()]
+			current.secondParam = atm(
+				ATM__POCALL,
+				POCall(
+					atm(ATM__ZCI, currentOpSeq.operands.pop()),
+					None
+				)
+			)
+			current = current.secondParam.data
+
+		#deep debug: after
+		self.deepDebug("ODP-2: Progressive priorizing resulted into the following POCall " + result.toStr())
+		return result
+
+	#progressive priorizing equivalent for mono operand operators
+	#def monoOperandOpSeqConcatenation(self, currentOpSeq):
+		#if len(currentOpSeq.operands) == 0:
+		#	self.internal("Got no operand in operating sequence when running mono-operand operating sequence concatenation.")
+
+		#associate each operand to its operator
+		#
+		#for o in currentOpSeq:
+		#	result.name = 
+
+
+
+	#group priorizing
+	# This function is higly important! It applies group priorization on every value that can be found in a POCall.
+	def ODP_applyGroupPriorization(self, currentPOCall, operatorsAllowed):
+
+		#1st parameter
+		if currentPOCall.firstParam is not None:
+
+			#leaf => apply here
+			if currentPOCall.firstParam.id == ATM__ZCI:
+				currentOpSeq = self.ODP_readAndSplitByOperators(currentPOCall.firstParam.data, operatorsAllowed)
+
+				#no operator found => only update ZCI length
+				if currentOpSeq.operators is None:
+					currentPOCall.firstParam.data.stopIndex = currentOpSeq.operands[0].stopIndex
+					currentPOCall.firstParam.data.updateText()
+
+				#operator found => replace atom by a sub-POCall
+				else:
+					currentPOCall.firstParam = atm(
+						ATM__POCALL,
+						self.progressivePriorizing(currentOpSeq)
+					)
+
+			#tree => check deeper
+			elif currentPOCall.firstParam.id == ATM__POCALL:
+				self.ODP_applyGroupPriorization(currentPOCall.firstParam.data, operatorsAllowed)
+
+		#2nd parameter
+		if currentPOCall.secondParam is not None:
+
+			#leaf => apply here
+			if currentPOCall.secondParam.id == ATM__ZCI:
+				currentOpSeq = self.ODP_readAndSplitByOperators(currentPOCall.secondParam.data, operatorsAllowed)
+
+				#no operator found => only update ZCI length
+				if currentOpSeq.operators is None:
+					currentPOCall.secondParam.data.stopIndex = currentOpSeq.operands[0].stopIndex
+					currentPOCall.secondParam.data.updateText()
+
+				#operator found => replace atom by a sub-POCall
+				else:
+					currentPOCall.secondParam = atm(
+						ATM__POCALL,
+						self.progressivePriorizing(currentOpSeq)
+					)
+
+			#tree => check deeper
+			elif currentPOCall.secondParam.id == ATM__POCALL:
+				self.ODP_applyGroupPriorization(currentPOCall.secondParam.data, operatorsAllowed)
+
+
+
+	#entry point for Operation Decomposition Process (ODP)
+	def ODP(self, originalZCI):
+		ZCI            = originalZCI.copy()
+		ZCI.startIndex = ZCI.ctx.icontent.index
+		ZCI.updateText()
+		result         = POCall( atm(ATM__ZCI, ZCI), None) #formatting raw input value under POCall format
+
+		#deep debug
+		self.deepDebug("Beginning ODP on ZCI " + ZCI.textFormat())
+
+		#1st group priorization (lowest): CO
+		self.deepDebug("ODP-0: Applying 1st group priorization.")
+		self.ODP_applyGroupPriorization(result, CO)
+		self.deepDebug("ODP-0: Applied 1st group priorization, resulted into " + result.toStr())
+
+		#2nd group priorization: BO
+		self.deepDebug("ODP-0: Applying 2nd group priorization")
+		self.ODP_applyGroupPriorization(result, BO)
+		self.deepDebug("ODP-0: Applied 2nd group priorization, resulted into " + result.toStr())
+
+		#3rd group priorization: AO + LO
+		self.deepDebug("ODP-0: Applying 3rd group priorization")
+		self.ODP_applyGroupPriorization(result, AO + LO)
+		self.deepDebug("ODP-0: Applied 3rd group priorization, resulted into " + result.toStr())
+
+		#4th group priorization: DO
+		self.deepDebug("ODP-0: Applying 4th group priorization")
+		self.ODP_applyGroupPriorization(result, DO)
+		self.deepDebug("ODP-0: Applied 4th group priorization, resulted into " + result.toStr())
+
+		#5th group priorization: SO
+		#self.deepDebug("ODP-0: Applying 5th group priorization")
+		#self.ODP_applyGroupPriorization(result, SO)
+		#self.deepDebug("ODP-0: Applied 5th group priorization, resulted into " + result.toStr())
+
+		#6th group priorization (highest): IO + FO appart from FFA
+		#self.deepDebug("ODP-0: Applying 6th group priorization")
+		#self.ODP_applyGroupPriorization(result, IO + FO) #special case !!!!
+		#self.deepDebug("ODP-0: Applied 6th group priorization, resulted into " + result.toStr())
+		self.deepDebug("Ended ODP on ZCI " + ZCI.textFormat())
+		return result
+
+
+
+	#2nd analysis
+	def apply2ndAnalysis(self, ZCI):
+		#self.ZCIDeepDebug(ZCI, "2nd analysis: Reading ZCI fragment " + ZCI.textFormat() + " to apply second analysis on it.")
+		result = None
+		#self.ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in value " + result.toStr())
+		return result
+
+	def apply2ndAnalysisOnPOCallResult(self, POCallResult):
+		return value(self.rootTypes[RT__ULNG], atm(ATM__ULNG, 0))
+
+
+
 	#value analysis process (VAP)
 	def readValue(self, ZCI, ZCIKindIfError, scope, cstOnly=False):
 		self.ZCIDeepDebug(ZCI, "Reading value.")
 
-		#
+		#1st analysis: ODP
+		POCallResult = self.ODP(ZCI)
 
-		#
+		#apply 2nd analysis recursively in ODP result
+		result = self.apply2ndAnalysisOnPOCallResult(POCallResult)
+
+		#temporarily
+		n = self.readName(ZCI, ZCIKindIfError)
 		self.ZCIDeepDebug(ZCI, "Ended reading value.")
-		n = self.readName(ZCI, ZCIKindIfError) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-		return value(self.rootTypes[RT__ULNG], atm(ATM__ULNG, 0))
+		return result
 
 
 
