@@ -59,17 +59,6 @@ class atm:
 
 # -------- GENERAL --------
 
-#general syntax
-BLANKS          = (' ', '\t')
-BLANKS_EXTENDED = (' ', '\t', '\n')
-INCLUDERS       = { '(':')', '[':']', '{':'}' }
-
-#charsets
-DEFAULT_NAME_CHARSET            = tuple(string.ascii_letters + string.digits + '_')
-ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + tuple(INCLUDERS.keys())
-FCT_NAME_CHARSET                = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
-VALUE_CHARSET                   = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_CHARSET
-
 #general name parsing
 NO_NAME            = -1
 BLANK_AFTER_NAME   = -2
@@ -153,14 +142,13 @@ CO = (
 #Indexing Operators (without includers)
 SYMBOL__IAM = 30 #among
 SYMBOL__INA = 31 #not among
-IO = (SYMBOL__IAM, SYMBOL__INA)
+IO_AMONG = (SYMBOL__IAM, SYMBOL__INA)
 
 #Fixed Operators
 SYMBOL__FSZ = 32 #size
 SYMBOL__FRF = 33 #reference
 SYMBOL__FCA = 34 #casht
 SYMBOL__FFA = 35 #field access
-FO_WITHOUT_FFA = (SYMBOL__FSZ, SYMBOL__FRF, SYMBOL__FCA)
 
 #mono-operand operators
 MONO_OPERAND = SO + (SYMBOL__FSZ, SYMBOL__FRF)
@@ -191,6 +179,21 @@ OPERATOR_NAMES = {
 	SYMBOL__CGE: "cge", SYMBOL__IAM: "iam", SYMBOL__INA: "ina", SYMBOL__FSZ: "fsz",
 	SYMBOL__FRF: "frf", SYMBOL__FCA: "fca", SYMBOL__FFA: "ffa"
 }
+FO_NAMES = (
+	OPERATOR_NAMES[SYMBOL__FSZ], OPERATOR_NAMES[SYMBOL__FRF],
+	OPERATOR_NAMES[SYMBOL__FCA], OPERATOR_NAMES[SYMBOL__FFA]
+)
+
+#general syntax
+BLANKS          = (' ', '\t')
+BLANKS_EXTENDED = (' ', '\t', '\n')
+INCLUDERS       = { '(':')', '[':']', '{':'}' }
+
+#charsets
+DEFAULT_NAME_CHARSET            = tuple(string.ascii_letters + string.digits + '_')
+ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + tuple(INCLUDERS.keys())
+FCT_NAME_CHARSET                = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
+VALUE_CHARSET                   = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_CHARSET + ('@', '#', '$') #additionnal FO
 
 #tools
 def unprefixizeModule(modulePrefix):
@@ -202,21 +205,14 @@ def unprefixizeModule(modulePrefix):
 
 #ZCI
 class zci:
-	def __init__(self, subCtxs, modulePrefix=None, pairs=None):
-		if modulePrefix is None:
-			modulePrefix = ""
-		if pairs is None:
-			pairs = {}
-		if lst_isEmpty(subCtxs):
-			print("[INTERNAL] Cannot instantiate a ZCI with no subCtxs.")
-			exit(1)
-		self.subCtxs      = subCtxs
-		self.ctx          = subCtxs[-1]
-		self.pairs        = pairs #map[unt_l,unt_l]
-		self.modulePrefix = modulePrefix
+	def __init__(self):
+		self.subCtxs      = None
+		self.ctx          = None
+		self.pairs        = None
+		self.modulePrefix = None
+		self.startIndex   = None
+		self.stopIndex    = None
 		self.text         = ""
-		self.startIndex   = self.ctx.icontent.index #current position is where our ZCI starts
-		self.stopIndex    = self.startIndex
 
 	def updateText(self):
 		startIndex = self.startIndex
@@ -249,12 +245,31 @@ class zci:
 	def copy(self, ctxCopy=None): #this copy mainly affects ZCI ctx rather than the other fields
 		if ctxCopy is None:
 			ctxCopy = self.ctx.copy()
-		copy            = zci(lst_copy(self.subCtxs), modulePrefix=self.modulePrefix, pairs=self.pairs)
+		copy            = newZCI(lst_copy(self.subCtxs), modulePrefix=self.modulePrefix, pairs=self.pairs)
 		copy.startIndex = self.startIndex
 		copy.stopIndex  = self.stopIndex
 		copy.text = self.text
 		copy.resetCtx(ctxCopy) #we copy ctx & subctxs so that we can TEMPORARILY work on that ZCI without affecting it really
 		return copy
+
+	#WARNING! Must be used with ctx.icontent.index at startIndex position !
+	#ctx will be forwarded if necessary (beginning strip).
+	def strip(self):
+		self.updateText()
+
+		#strip beginning
+		beginningShift = str_getBeginningStripIndex(self.text, charset=BLANKS_EXTENDED)
+		if beginningShift != 0:
+			self.forward(beginningShift)
+			self.text       = str_sub(self.text, start=beginningShift)
+			self.startIndex = self.ctx.icontent.index
+
+		#strip end
+		endingIndex = str_getEndStripIndex(self.text, charset=BLANKS_EXTENDED)
+		if endingIndex != -1 and endingIndex != len(self.text)-1:
+			textLengthBefore = len(self.text)
+			self.text        = str_sub(self.text, stop=endingIndex) #strip end of self.text
+			self.stopIndex  -= textLengthBefore - len(self.text)    #shift stopIndex the same amount
 
 
 
@@ -263,7 +278,24 @@ class zci:
 		return '\"' + self.text.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n") + '\"'
 
 	def toStr(self):
-		return "{module:\"" + self.modulePrefix + "\",ctx:\"" + self.ctx.toStr() + "\",startIndex:" + str(self.startIndex) + ",stopIndex:" + str(self.stopIndex) + ",text:" + self.textFormat() + ",pairs:\"" + str(self.pairs).replace(' ', '') + "\"}"
+		return "{module:\"" + self.modulePrefix + "\",ctx:\"" + self.ctx.toStr() + "\",ctx.icontent.index:" + str(self.ctx.icontent.index) + ",startIndex:" + str(self.startIndex) + ",stopIndex:" + str(self.stopIndex) + ",text:" + self.textFormat() + ",pairs:\"" + str(self.pairs).replace(' ', '') + "\"}"
+
+def newZCI(subCtxs, modulePrefix=None, pairs=None):
+	if modulePrefix is None:
+		modulePrefix = ""
+	if pairs is None:
+		pairs = {}
+	if lst_isEmpty(subCtxs):
+		print("[INTERNAL] Cannot instantiate a ZCI with no subCtxs.")
+		exit(1)
+	result = zci()
+	result.subCtxs      = subCtxs
+	result.ctx          = subCtxs[-1]
+	result.pairs        = pairs
+	result.modulePrefix = modulePrefix
+	result.startIndex   = result.ctx.icontent.index #current position is where our ZCI starts
+	result.stopIndex    = result.startIndex
+	return result
 
 def dumpZCIs(ZCIs, filename):
 	output = "[\n"
@@ -285,11 +317,10 @@ PCPL_ITEM_NAME_CHARSET = DEFAULT_NAME_CHARSET #no link, but same value
 #pcpl data
 class pcplDat:
 	def __init__(self, configs, items):
-		self.items      = items
-		self.configs    = configs
+		self.items   = items
+		self.configs = configs
 
-#format configs
-def pcplDat_new(configs, items):
+def newPcplDat(configs, items):
 	formatted_configs = {}
 	for c in configs.keys():
 		v = configs[c]
@@ -343,18 +374,26 @@ class ztyp_commonDcnData: #common ztype data among every declination
 		self.stcSize = 0
 
 class ztyp:
-	def __init__(self, name, dcnDeg=0, dcns=None, commonDcnData=None):
-		if commonDcnData is None:
-			commonDcnData = ztyp_commonDcnData(dcnDeg) #create a new commonDcnData by default (new type => new commonDcnData)
-		self.name          = name
-		self.methods       = []   #lst[zfct]
-		self.dcns          = dcns #tab[ztyp]
-		self.commonDcnData = commonDcnData #ztyp_commonDcnData
+	def __init__(self):
+		self.name          = None
+		self.methods       = None #lst[zfct]
+		self.dcns          = None #tab[ztyp]
+		self.commonDcnData = None #ztyp_commonDcnData
 
 	def computeStcSize(self):
 		if self.commonDcnData.nature != NATURE__PRIMITIVE:
 			for f in self.commonDcnData.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
 				self.commonDcnData.stcSize += f.ztype.commonDcnData.size
+
+def newZTyp(name, dcnDeg=0, dcns=None, commonDcnData=None):
+	if commonDcnData is None:
+		commonDcnData = ztyp_commonDcnData(dcnDeg) #create a new commonDcnData by default (new type => new commonDcnData)
+	result = ztyp()
+	result.name          = name
+	result.methods       = []   #lst[zfct]
+	result.dcns          = dcns #tab[ztyp]
+	result.commonDcnData = commonDcnData #ztyp_commonDcnData
+	return result
 
 class value:
 	def __init__(self, ztype, data, constant=False):
@@ -362,7 +401,7 @@ class value:
 		self.data     = data  #atm #can be either a root type (literal), str (name) or call.
 		self.constant = constant
 
-	def toStr(self):
+	def toStr(self, depth=0):
 		if self.data.id == ATM__BOO: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< I know, this seems weird in Python but it makes sens in Z (will have to be a swi btw)
 			dataStr = "false"
 			if self.data:
@@ -388,10 +427,11 @@ class value:
 		elif self.data.id == ATM__STR: #this case covers both literal string & name. In all cases, toStr() will output a double-quoted result.
 			dataStr = '\"' + self.data.data + '\"' #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< for the moment, it also covers the case of literal structures (stored under raw text)
 		elif self.data.id == ATM__CALL:
-			dataStr  = '\"' + self.data.data.name + '('
+			depthSpace = '\t' * depth
+			dataStr  = "\"call " + self.data.data.name + "(\n"
 			for p in self.data.data.params:
-				dataStr += p.toStr() + ',' #recursive call
-			dataStr += ")\""
+				dataStr += depthSpace + '\t' + p.toStr(depth+1) + ',\n' #recursive call
+			dataStr += depthSpace + ')'
 		else:
 			print("[INTERNAL] Invalid data stored inside value (can only be literal, name or call).")
 			exit(1)
@@ -406,10 +446,11 @@ class call:
 #                          We expect to have only zci or POCall types for these atoms.
 #                          This allows us to work with operator calls while parameters are not analyzed yet during progressive priorizing.
 class POCall:
-	def __init__(self, firstParam, secondParam):
-		self.name        = None        #str, makes no sens to give a correct value on stc creation because we will set it depending on whether a next operand exists (so we don't know at creation time)
-		self.firstParam  = firstParam  #atm
-		self.secondParam = secondParam #atm
+	def __init__(self, firstOperand, secondOperand):
+		self.name          = None          #str, makes no sens to give a correct value on stc creation because we will set it depending on whether a next operand exists (so we don't know at creation time)
+		self.operatorIndex = 0             #same thing
+		self.firstOperand  = firstOperand  #atm
+		self.secondOperand = secondOperand #atm
 
 	def toStr(self, depth=0):
 		depthSpacing = '\t' * depth
@@ -417,26 +458,31 @@ class POCall:
 		#name
 		nameStr = "null"
 		if self.name is not None:
-			nameStr = '"' + name + '"'
+			nameStr = '"' + self.name + '"'
 
-		#1st param
-		firstParamText = "null"
-		if self.firstParam is not None:
-			if self.firstParam.id == ATM__ZCI:
-				firstParamText = self.firstParam.data.textFormat()
-			elif self.firstParam.id == ATM__POCALL:
-				firstParamText = self.firstParam.data.toStr(depth+1)
+		#1st operand
+		firstOperandText = "null"
+		if self.firstOperand is not None:
+			if self.firstOperand.id == ATM__ZCI:
+				firstOperandText = self.firstOperand.data.textFormat()
+			elif self.firstOperand.id == ATM__POCALL:
+				firstOperandText = self.firstOperand.data.toStr(depth+1)
 
-		#2nd param
-		secondParamText = "null"
-		if self.secondParam is not None:
-			if self.secondParam.id == ATM__ZCI:
-				secondParamText = self.secondParam.data.textFormat()
-			elif self.secondParam.id == ATM__POCALL:
-				secondParamText = self.secondParam.data.toStr(depth+1)
+		#2nd operand
+		secondOperandText = "null"
+		if self.secondOperand is not None:
+			if self.secondOperand.id == ATM__ZCI:
+				secondOperandText = self.secondOperand.data.textFormat()
+			elif self.secondOperand.id == ATM__POCALL:
+				secondOperandText = self.secondOperand.data.toStr(depth+1)
 
 		#final string
-		return "{\n" + depthSpacing + "\tname:" + nameStr + ",\n" + depthSpacing + "\tfirstParam:" + firstParamText + ",\n" + depthSpacing + "\tsecondParam:" + secondParamText + "\n" + depthSpacing + "}"
+		return "{\n" + depthSpacing + "\tname:" + nameStr + ",\n" + depthSpacing + "\tfirstOperand:" + firstOperandText + ",\n" + depthSpacing + "\tsecondOperand:" + secondOperandText + "\n" + depthSpacing + "}"
+
+class ODPResult:
+	def __init__(self, maxStopIndex, mainPOCall):
+		self.maxStopIndex = maxStopIndex
+		self.mainPOCall   = mainPOCall
 
 class dataItem:
 	def __init__(self, ztype, name, initialized, initialValue, constant=False, fields=None):
@@ -464,10 +510,17 @@ class dataItem:
 
 #scope
 class scp:
-	def __init__(self, parent=None):
-		self.exes      = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
-		self.dataItems = [] #lst[dataItem]
-		self.parent    = parent
+	def __init__(self):
+		self.exes      = None #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
+		self.dataItems = None #lst[dataItem]
+		self.parent    = None #scp
+
+def newScp(parent=None):
+	result = scp()
+	result.exes      = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
+	result.dataItems = [] #lst[dataItem]
+	result.parent    = parent
+	return result
 
 class asg:
 	def __init__(self, dst, src):
@@ -481,20 +534,29 @@ STM__WHI = 2
 STM__SWI = 3
 
 class stm:
-	def __init__(self, kind, parentScope):
-		self.kind  = kind
-		self.scope = scp(parent=parentScope)
+	def __init__(self):
+		self.kind  = None
+		self.scope = None
+
+def newStm(kind, parentScope):
+	result       = stm()
+	result.kind  = kind
+	result.scope = newScp(parent=parentScope)
+	return result
 
 class fct:
-	def __init__(self, name, params, parentScope):
-		self.name   = name
-		self.params = params #lst[dataItem]
-		self.scope  = scp(parent=parentScope)
+	def __init__(self):
+		self.name    = None
+		self.retType = None #ztyp
+		self.params  = None #lst[dataItem]
+		self.scope   = None
 
 class opSeq:
-	def __init__(self, operands, operators):
-		self.operands  = operands  #lst[zci]
-		self.operators = operators #lst (lst[ubyt] cause enm will be stored)
+	def __init__(self, stopIndex, operands, operators, operatorIndexes):
+		self.stopIndex       = stopIndex
+		self.operands        = operands  #lst[zci]
+		self.operators       = operators #lst (lst[ubyt] cause enm will be stored)
+		self.operatorIndexes = operatorIndexes
 
 	def toStr(self):
 		operandsText = ""
@@ -503,23 +565,38 @@ class opSeq:
 		operatorsText = ""
 		for o in self.operators:
 			operatorsText += OPERATOR_NAMES[o] + ','
-		return "{operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
+		return "{stopIndex:" + str(self.stopIndex) + ",operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
 
 #compiler data
 class cplDat:
-	def __init__(self, options, rootTypes):
-		self.options = options
+	def __init__(self):
+		self.options = None
 
 		#z abstract elements
-		self.modulePrefixes = [] #lst[str]
-		self.ztypes         = lst_copy(rootTypes) #lst[ztyp]
-		self.globalScope    = scp()
-		self.functions      = [] #lst[fct]
-		self.linkedLibs     = [] #lst[]
+		self.modulePrefixes = None #lst[str]
+		self.ztypes         = None #lst[ztyp]
+		self.globalScope    = None
+		self.functions      = None #lst[fct]
+		self.linkedLibs     = None #lst[]
 
 		#program concrete elements
-		#self.dataResult = program() <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
-		self.textResult = ""
+		#self.dataResult = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
+		self.textResult  = ""
+
+def newCplDat(options, rootTypes):
+	result = cplDat()
+	result.options = options
+
+	#z abstract elements
+	result.modulePrefixes = [] #lst[str]
+	result.ztypes         = lst_copy(rootTypes) #lst[ztyp]
+	result.globalScope    = newScp()
+	result.functions      = [] #lst[fct]
+	result.linkedLibs     = [] #lst[]
+
+	#program concrete elements
+	#result.dataResult = program() <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
+	return result
 
 
 
@@ -529,79 +606,145 @@ class cplDat:
 # -------- CONTEXTS --------
 
 #z code context
+def newZCtx(
+	filepath, LLI,
+	pcpl_cfg, pcpl_itm,
+	cpl_opt,  debugMode=False, deepDebugMode=False
+):
+	result = zctx()
+	result.LLI           = {}
+	result.debugMode     = debugMode
+	result.deepDebugMode = deepDebugMode
+
+	#every imported context & the current one
+	result.initialCtx   = ParsingCtx(filepath, readFile(filepath))
+	result.ctx          = result.initialCtx
+	result.imported     = [] #history of every filename imported
+	result.subCtxs      = [] #subcontexts currently in use
+	result.subCtxs.append(result.initialCtx)
+
+	#check CPL options
+	result.checkCplOpt(cpl_opt)
+
+	#real memory items (64bits adjustment)
+	if cpl_opt["ARCH"] == "64":
+		result.SIZE__LNG = 8
+
+	#init root types locally (to be given to cpl data)
+	result.rootTypes = [None,None,None, None,None,None, None,None,None, None,None,None] #can be already declared as a fixed-size table (length: 12)
+
+	#boolean
+	result.rootTypes[RT__BOO]      = newZTyp("GUboo")
+	result.rootTypes[RT__BOO].size = result.SIZE__BYT
+
+	#bytes
+	result.rootTypes[RT__BYT]       = newZTyp("GUbyt")
+	result.rootTypes[RT__BYT].size  = result.SIZE__BYT
+	result.rootTypes[RT__UBYT]      = newZTyp("GUubyt")
+	result.rootTypes[RT__UBYT].size = result.SIZE__BYT
+
+	#shorts
+	result.rootTypes[RT__SHR]       = newZTyp("GUshr")
+	result.rootTypes[RT__SHR].size  = result.SIZE__SHR
+	result.rootTypes[RT__USHR]      = newZTyp("GUushr")
+	result.rootTypes[RT__USHR].size = result.SIZE__SHR
+
+	#integers
+	result.rootTypes[RT__INT]       = newZTyp("GUint")
+	result.rootTypes[RT__INT].size  = result.SIZE__INT
+	result.rootTypes[RT__UINT]      = newZTyp("GUuint")
+	result.rootTypes[RT__UINT].size = result.SIZE__INT
+
+	#longs
+	result.rootTypes[RT__LNG]       = newZTyp("GUlng")
+	result.rootTypes[RT__LNG].size  = result.SIZE__LNG
+	result.rootTypes[RT__ULNG]      = newZTyp("GUulng")
+	result.rootTypes[RT__ULNG].size = result.SIZE__LNG
+
+	#floating point
+	result.rootTypes[RT__FLT]      = newZTyp("GUflt")
+	result.rootTypes[RT__FLT].size = result.SIZE__INT
+	result.rootTypes[RT__DBL]      = newZTyp("GUdbl")
+	result.rootTypes[RT__DBL].size = result.SIZE__LNG
+
+	#pointer
+	result.rootTypes[RT__PTR]      = newZTyp("GUptr", 1)
+	result.rootTypes[RT__PTR].size = result.SIZE__LNG
+
+	#data
+	result.ZCIs = None
+	result.pcpl = newPcplDat(pcpl_cfg, pcpl_itm)
+	result.cpl  = newCplDat(cpl_opt, result.rootTypes)
+
+	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TEMPORARY FOR VAP TESTING
+	result.cpl.functions = [
+		result.newFct("sin", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None)]),
+		result.newFct("sno", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None)]),
+		result.newFct("dan", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("dor", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("amu", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("adi", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("amo", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("apo", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("bad", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("bsu", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("lan", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("lor", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("lxo", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("lls", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("lrs", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("llb", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("lrb", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("llr", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("lrr", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("ceq", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("cne", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("clt", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("cgt", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("cle", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("cge", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("iam", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("ina", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("fsz", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None)]),
+		result.newFct("frf", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None)]),
+		result.newFct("fca", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
+		result.newFct("ffa", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)])
+	]
+	return result
+
 class zctx:
-	def __init__(self,
-		filepath, LLI,
-		pcpl_cfg, pcpl_itm,
-		cpl_opt,  debugMode=False, deepDebugMode=False
-	):
-		self.LLI           = {}
-		self.debugMode     = debugMode
-		self.deepDebugMode = deepDebugMode
+	def __init__(self):
+		self.LLI           = None
+		self.debugMode     = None
+		self.deepDebugMode = None
 
 		#every imported context & the current one
-		self.initialCtx   = ParsingCtx(filepath, readFile(filepath))
-		self.ctx          = self.initialCtx
-		self.imported     = [] #history of every filename imported
-		self.subCtxs      = [] #subcontexts currently in use
-		self.subCtxs.append(self.initialCtx)
-
-		#check CPL options
-		self.checkCplOpt(cpl_opt)
+		self.initialCtx   = None
+		self.ctx          = None
+		self.imported     = None
+		self.subCtxs      = None
 
 		#real memory items <<<<<<<<<<<<<<<<<<<<<< to be stored into an enm
 		self.SIZE__BYT = 1
 		self.SIZE__SHR = 2
 		self.SIZE__INT = 4
 		self.SIZE__LNG = 4
-		if cpl_opt["ARCH"] == "64":
-			self.SIZE__LNG = 8
 
 		#init root types locally (to be given to cpl data)
-		self.rootTypes = [None,None,None, None,None,None, None,None,None, None,None,None] #can be already declared as a fixed-size table (length: 12)
-
-		#boolean
-		self.rootTypes[RT__BOO]      = ztyp("GUboo")
-		self.rootTypes[RT__BOO].size = self.SIZE__BYT
-
-		#bytes
-		self.rootTypes[RT__BYT]       = ztyp("GUbyt")
-		self.rootTypes[RT__BYT].size  = self.SIZE__BYT
-		self.rootTypes[RT__UBYT]      = ztyp("GUubyt")
-		self.rootTypes[RT__UBYT].size = self.SIZE__BYT
-
-		#shorts
-		self.rootTypes[RT__SHR]       = ztyp("GUshr")
-		self.rootTypes[RT__SHR].size  = self.SIZE__SHR
-		self.rootTypes[RT__USHR]      = ztyp("GUushr")
-		self.rootTypes[RT__USHR].size = self.SIZE__SHR
-
-		#integers
-		self.rootTypes[RT__INT]       = ztyp("GUint")
-		self.rootTypes[RT__INT].size  = self.SIZE__INT
-		self.rootTypes[RT__UINT]      = ztyp("GUuint")
-		self.rootTypes[RT__UINT].size = self.SIZE__INT
-
-		#longs
-		self.rootTypes[RT__LNG]       = ztyp("GUlng")
-		self.rootTypes[RT__LNG].size  = self.SIZE__LNG
-		self.rootTypes[RT__ULNG]      = ztyp("GUulng")
-		self.rootTypes[RT__ULNG].size = self.SIZE__LNG
-
-		#floating point
-		self.rootTypes[RT__FLT]      = ztyp("GUflt")
-		self.rootTypes[RT__FLT].size = self.SIZE__INT
-		self.rootTypes[RT__DBL]      = ztyp("GUdbl")
-		self.rootTypes[RT__DBL].size = self.SIZE__LNG
-
-		#pointer
-		self.rootTypes[RT__PTR]      = ztyp("GUptr", 1)
-		self.rootTypes[RT__PTR].size = self.SIZE__LNG
+		self.rootTypes = None
 
 		#data
 		self.ZCIs = None
-		self.pcpl = pcplDat_new(pcpl_cfg, pcpl_itm)
-		self.cpl  = cplDat(cpl_opt, self.rootTypes)
+		self.pcpl = None
+		self.cpl  = None
+
+	def newFct(self, name, retType, params):
+		result = fct()
+		result.name    = name
+		result.retType = retType
+		result.params  = params
+		result.scope   = newScp(parent=self.cpl.globalScope) #create its own independant scope which holds a link to the parent one (that must be "global" btw)
+		return result
 
 
 
@@ -876,6 +1019,7 @@ class zctx:
 
 		#multi-character symbol: starting with '&'
 		elif c1 == '&':
+			self.ZCIDeepDebug(tmpZCI, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> " + tmpZCI.toStr())
 			if tmpZCI.inc():
 				return SYMBOL__LAN #ending with lonely '&'
 			if tmpZCI.get() == '&':
@@ -1237,7 +1381,7 @@ class zctx:
 
 			#not found => create that declination (this new combination must exist)
 			if ztInstance is None:
-				ztInstance      = ztyp(ztFullName, commonDcnData = ztUndeclinatedInstance.commonDcnData) #share the same commonDcnData (affecting the undeclinated instance will affect every declination)
+				ztInstance      = newZTyp(ztFullName, commonDcnData = ztUndeclinatedInstance.commonDcnData) #share the same commonDcnData (affecting the undeclinated instance will affect every declination)
 				ztInstance.dcns = dcns
 				self.ZCIDebug(ZCI, "First call of declination \"" + ztInstance.name + "\" from type \"" + ztUndeclinatedInstance.name + "\", adding it.")
 				self.cpl.ztypes.append(ztInstance)
@@ -1250,7 +1394,8 @@ class zctx:
 
 	#ODP
 	def ODP_readAndSplitByOperators(self, ZCI, allowedOperators):
-		allowedOperatorsText = ""
+		maxStopIndex         = 0
+		allowedOperatorsText = "" #only for deep debug
 
 		#deep debug
 		if self.deepDebugMode:
@@ -1263,23 +1408,25 @@ class zctx:
 		#split by operator symbols
 		operands          = [] #lst[zci]
 		operators         = [] #lst (certainly ubyt but prefer using only undeclinated for enm storage)
+		operatorIndexes   = []
 		operandInitialCtx = ZCI.ctx.copy()
 		while not ZCI.reachedEnd() and ZCI.get() in VALUE_CHARSET:
-			self.ZCIDeepDebug(ZCI, "HEEEEEEEEEEEEEEEEEEEEEEEEEEEEHO" + ZCI.toStr(), printLine=True)
 
 
 
 			#checking for symbol
 			operator = self.readSymbol(ZCI)
 
-			#checking for symbol - CASE 1: found something that is not even in possible symbols, that can be anything (and especially an includer)
+			#CASE 1: not a symbol (that can be anything and especially an includer)
 			if operator == SYMBOL__NOT_FOUND:
 				if ZCI.ctx.icontent.index in ZCI.pairs.keys():
 					ZCI.forward(ZCI.pairs[ZCI.ctx.icontent.index] - ZCI.ctx.icontent.index) #includer? It also belongs to the operand no matter what's inside => skip parsing its content
+				ZCI.inc()
+				continue
 
-			#checking for symbol - CASE 2: '^'
+			#CASE 2: '^'
 			elif operator == SYMBOL__LXO:
-				if ZCI.ctx.icontent.index >= ZCI.stopIndex-1:
+				if ZCI.ctx.icontent.index >= ZCI.stopIndex:
 					ZCI.inc()
 					self.ZCIError(ZCI, "Missing second operand to logical XOR operator (LXO, \"^\"), reached end of ZCI.")
 
@@ -1287,14 +1434,23 @@ class zctx:
 				nextChr = ZCI.ctx.icontent.s[ZCI.ctx.icontent.index+1]
 				if nextChr == '.' or nextChr in DEFAULT_NAME_CHARSET:
 					self.ZCIDeepDebug(ZCI, "ODP-1: '^' symbol detected as module prefix and not as LXO operator.")
-					operator = SYMBOL__NOT_FOUND #not an operator actually => consider it as "no symbol found"
+					ZCI.inc() #not an operator actually => skipping it
+					continue
 
-			#checking for symbol - CASE 4: allowed for splitting
+			#CASE 3: it is a symbol but not allowed
 			if operator not in allowedOperators:
-				ZCI.inc()
+				ZCI.forward(SYMBOL_LENGTHS[operator])
 				continue
 
 
+
+			#create operand as a unique ZCI.
+			# This is actually a value to be analyzed in further steps.
+			# However, to parse it easilly, we store it as a fragment of the original ZCI (which is, here, a copy of the original but doesn't matter).
+			operand            = ZCI.copy(ctxCopy=operandInitialCtx)
+			operand.startIndex = operandInitialCtx.icontent.index #initial context must be at operand beginning index
+			operand.stopIndex  = ZCI.ctx.icontent.index-1         #we are just before operator index, so at operand end index
+			operand.strip()
 
 			#empty operand
 			operandIsEmpty = (ZCI.ctx.icontent.index == operandInitialCtx.icontent.index)
@@ -1305,18 +1461,11 @@ class zctx:
 				if operandIsEmpty:
 					self.ZCIError(ZCI, "Missing first operand to operator " + OPERATOR_NAMES[operator])
 
-			#create operand as a unique ZCI.
-			# This is actually a value to be analyzed in further steps.
-			# However, to parse it easilly, we store it as a fragment of the original ZCI (which is, here, a copy of the original but doesn't matter).
-			operand            = ZCI.copy(ctxCopy=operandInitialCtx)
-			operand.startIndex = operandInitialCtx.icontent.index #initial context must be at operand beginning index
-			operand.stopIndex  = ZCI.ctx.icontent.index           #we are just before operator index, so at operand end index
-			operand.updateText()
-
 			#store operand & operator
-			operators.append(operator)
 			operands.append(operand)
-			self.ZCIDeepDebug(ZCI, "ODP-1: New operator " + OPERATOR_NAMES[operator] + " found, current operating sequence is " + opSeq(operands, operators).toStr())
+			operators.append(operator)
+			operatorIndexes.append(ZCI.ctx.icontent.index)
+			self.ZCIDeepDebug(ZCI, "ODP-1: New operator " + OPERATOR_NAMES[operator] + " found, current operating sequence is " + opSeq(ZCI.ctx.icontent.index, operands, operators, operatorIndexes).toStr())
 
 			#moving after symbol
 			ZCI.forward(SYMBOL_LENGTHS[operator])
@@ -1324,11 +1473,13 @@ class zctx:
 			#prepare next operand
 			operandInitialCtx = ZCI.ctx.copy()
 
+		#set maxStopIndex
+		maxStopIndex = ZCI.ctx.icontent.index - 1
+
 		#no operator found at all => not an operating sequence => return as it was an operating sequence with no operator and only one operand
 		if len(operators) == 0:
 			self.ZCIDeepDebug(ZCI, "ODP-1: No operator found at all => Finished with null operating sequence.")
-			ZCI.stopIndex = ZCI.ctx.icontent.index - 1
-			return opSeq([ZCI], None)
+			return opSeq(maxStopIndex, None, None, None)
 
 		#last operand cannot be empty
 		if ZCI.ctx.icontent.index == operandInitialCtx.icontent.index:
@@ -1341,111 +1492,157 @@ class zctx:
 		#create last operand
 		operand            = ZCI.copy(ctxCopy=operandInitialCtx)
 		operand.startIndex = operandInitialCtx.icontent.index
-		operand.stopIndex  = ZCI.ctx.icontent.index
-		operand.updateText()
+		operand.stopIndex  = ZCI.ctx.icontent.index - 1
+		operand.strip()
 
 		#add last operand
 		operands.append(operand)
-		self.ZCIDeepDebug(ZCI, "ODP-1: Last operand added, final operating sequence is " + opSeq(operands, operators).toStr())
+		self.ZCIDeepDebug(ZCI, "ODP-1: Last operand added, final operating sequence is " + opSeq(maxStopIndex, operands, operators, operatorIndexes).toStr())
 
 		#deep debug
 		self.ZCIDeepDebug(ZCI, "ODP-1: Finished reading & splitting ZCI content " + ZCI.textFormat() + " by operators " + allowedOperatorsText)
-		return opSeq(operands, operators)
+		return opSeq(maxStopIndex, operands, operators, operatorIndexes)
+
+
+
+	#progressive priorizing equivalent for mono operand operators
+	def monoOperandOpSeqConcatenation(self, currentOpSeq):
+		lastOperand = currentOpSeq.operands.pop()
+
+		#check other operands (not necessary, internal consistency check only)
+		for a in currentOpSeq.operands:
+			if a.stopIndex - a.startIndex >= 0:
+				self.internal("Non-empty operand found in mono-operand operating sequence (last element excepted).")
+
+		#deep debug: before
+		self.deepDebug("ODP-2: Applying mono-operand operating sequence concatenation on " + currentOpSeq.toStr())
+
+		#associate each operand to its operator
+		result = POCall(
+			None,
+			atm(ATM__ZCI, lastOperand)
+		)
+		current = result
+		while len(currentOpSeq.operators) != 0:
+			current.name          = OPERATOR_NAMES[currentOpSeq.operators.pop(0)]
+			current.operatorIndex = currentOpSeq.operatorIndexes.pop(0)
+			current.secondOperand = atm(
+				ATM__POCALL,
+				POCall(
+					None,
+					current.secondOperand
+				)
+			)
+			current = current.secondOperand.data
+
+		#deep debug: after
+		self.deepDebug("ODP-2: Mono-operand operating sequence concatenation resulted into the following POCall " + result.toStr())
+		return result
 
 
 
 	#transform an operating sequence into a single POCall (destroying the given opSeq!)
-	def progressivePriorizing(self, currentOpSeq): #WARNING! DO NOT USE WITH SO !!!
+	def progressivePriorizing(self, currentOpSeq, monoOperand): #WARNING! DO NOT USE WITH SO !!!
 		if len(currentOpSeq.operands) == 0:
 			self.internal("Got no operand in operating sequence when running progressive priorizing.")
+
+		#mono-operand operating sequence => redirect to the adapted equivalent
+		if monoOperand:
+			return self.monoOperandOpSeqConcatenation(currentOpSeq)
 
 		#deep debug: before
 		self.deepDebug("ODP-2: Applying progressive priorizing on operating sequence " + currentOpSeq.toStr())
 
 		#first element (we must keep track of it)
 		result = POCall(
-			atm(ATM__ZCI, currentOpSeq.operands.pop()),
-			None
+			None,
+			atm(ATM__ZCI, currentOpSeq.operands.pop())
 		)
 		current = result
 
 		#for each remaining operand, make function calls (Potential Operator Call)
 		while len(currentOpSeq.operands) != 0:
-			current.name        = OPERATOR_NAMES[currentOpSeq.operators.pop()]
-			current.secondParam = atm(
+			current.name          = OPERATOR_NAMES[currentOpSeq.operators.pop()]
+			current.operatorIndex = currentOpSeq.operatorIndexes.pop()
+			current.firstOperand = atm(
 				ATM__POCALL,
 				POCall(
-					atm(ATM__ZCI, currentOpSeq.operands.pop()),
-					None
+					None,
+					atm(ATM__ZCI, currentOpSeq.operands.pop())
 				)
 			)
-			current = current.secondParam.data
+			current = current.firstOperand.data
 
 		#deep debug: after
 		self.deepDebug("ODP-2: Progressive priorizing resulted into the following POCall " + result.toStr())
 		return result
 
-	#progressive priorizing equivalent for mono operand operators
-	#def monoOperandOpSeqConcatenation(self, currentOpSeq):
-		#if len(currentOpSeq.operands) == 0:
-		#	self.internal("Got no operand in operating sequence when running mono-operand operating sequence concatenation.")
-
-		#associate each operand to its operator
-		#
-		#for o in currentOpSeq:
-		#	result.name = 
-
 
 
 	#group priorizing
 	# This function is higly important! It applies group priorization on every value that can be found in a POCall.
-	def ODP_applyGroupPriorization(self, currentPOCall, operatorsAllowed):
+	def ODP_applyGroupPriorization(self, maxStopIndex, currentPOCall, operatorsAllowed, monoOperand=False):
 
-		#1st parameter
-		if currentPOCall.firstParam is not None:
-
-			#leaf => apply here
-			if currentPOCall.firstParam.id == ATM__ZCI:
-				currentOpSeq = self.ODP_readAndSplitByOperators(currentPOCall.firstParam.data, operatorsAllowed)
-
-				#no operator found => only update ZCI length
-				if currentOpSeq.operators is None:
-					currentPOCall.firstParam.data.stopIndex = currentOpSeq.operands[0].stopIndex
-					currentPOCall.firstParam.data.updateText()
-
-				#operator found => replace atom by a sub-POCall
-				else:
-					currentPOCall.firstParam = atm(
-						ATM__POCALL,
-						self.progressivePriorizing(currentOpSeq)
-					)
-
-			#tree => check deeper
-			elif currentPOCall.firstParam.id == ATM__POCALL:
-				self.ODP_applyGroupPriorization(currentPOCall.firstParam.data, operatorsAllowed)
-
-		#2nd parameter
-		if currentPOCall.secondParam is not None:
+		#1st operand
+		if currentPOCall.firstOperand is not None:
 
 			#leaf => apply here
-			if currentPOCall.secondParam.id == ATM__ZCI:
-				currentOpSeq = self.ODP_readAndSplitByOperators(currentPOCall.secondParam.data, operatorsAllowed)
+			if currentPOCall.firstOperand.id == ATM__ZCI:
+				originalCtx  = currentPOCall.secondOperand.data.ctx.copy()
+				currentOpSeq = self.ODP_readAndSplitByOperators(currentPOCall.firstOperand.data, operatorsAllowed)
 
-				#no operator found => only update ZCI length
+				#no operator found => restore original ctx, update ZCI length (even if no op has been found, we know where ODP should stop so we can cut directly => optimization)
 				if currentOpSeq.operators is None:
-					currentPOCall.secondParam.data.stopIndex = currentOpSeq.operands[0].stopIndex
-					currentPOCall.secondParam.data.updateText()
+					currentPOCall.firstOperand.data.resetCtx(originalCtx)
+					currentPOCall.firstOperand.data.stopIndex = currentOpSeq.stopIndex
+					currentPOCall.firstOperand.data.strip()
 
-				#operator found => replace atom by a sub-POCall
+				#operator found => progressive priorizing
 				else:
-					currentPOCall.secondParam = atm(
+					currentPOCall.firstOperand = atm(
 						ATM__POCALL,
-						self.progressivePriorizing(currentOpSeq)
+						self.progressivePriorizing(currentOpSeq, monoOperand)
 					)
 
+				#update maxStopIndex
+				if maxStopIndex < currentOpSeq.stopIndex:
+					maxStopIndex = currentOpSeq.stopIndex
+
 			#tree => check deeper
-			elif currentPOCall.secondParam.id == ATM__POCALL:
-				self.ODP_applyGroupPriorization(currentPOCall.secondParam.data, operatorsAllowed)
+			elif currentPOCall.firstOperand.id == ATM__POCALL:
+				maxStopIndex = self.ODP_applyGroupPriorization(maxStopIndex, currentPOCall.firstOperand.data, operatorsAllowed, monoOperand=monoOperand)
+
+		#2nd operand
+		if currentPOCall.secondOperand is not None:
+
+			#leaf => apply here
+			if currentPOCall.secondOperand.id == ATM__ZCI:
+				originalCtx  = currentPOCall.secondOperand.data.ctx.copy()
+				currentOpSeq = self.ODP_readAndSplitByOperators(currentPOCall.secondOperand.data, operatorsAllowed)
+
+				#no operator found => restore origin ctx, update ZCI length (even if no op has been found, we know where ODP should stop so we can cut directly => optimization)
+				if currentOpSeq.operators is None:
+					currentPOCall.secondOperand.data.resetCtx(originalCtx)
+					currentPOCall.secondOperand.data.stopIndex = currentOpSeq.stopIndex
+					currentPOCall.secondOperand.data.strip()
+
+				#operator found => progressive priorizing
+				else:
+					currentPOCall.secondOperand = atm(
+						ATM__POCALL,
+						self.progressivePriorizing(currentOpSeq, monoOperand)
+					)
+
+				#update maxStopIndex
+				if maxStopIndex < currentOpSeq.stopIndex:
+					maxStopIndex = currentOpSeq.stopIndex
+
+			#tree => check deeper
+			elif currentPOCall.secondOperand.id == ATM__POCALL:
+				maxStopIndex = self.ODP_applyGroupPriorization(maxStopIndex, currentPOCall.secondOperand.data, operatorsAllowed, monoOperand=monoOperand)
+
+		#return it to know until where ODP has been (so we know where to continue reading after that Value)
+		return maxStopIndex
 
 
 
@@ -1454,54 +1651,127 @@ class zctx:
 		ZCI            = originalZCI.copy()
 		ZCI.startIndex = ZCI.ctx.icontent.index
 		ZCI.updateText()
-		result         = POCall( atm(ATM__ZCI, ZCI), None) #formatting raw input value under POCall format
+
+		#prepare result
+		result = ODPRODPResultesult = ODPResult(
+			0,
+			POCall( None, atm(ATM__ZCI, ZCI) ) #formatting raw input value under POCall format
+		)
 
 		#deep debug
 		self.deepDebug("Beginning ODP on ZCI " + ZCI.textFormat())
 
 		#1st group priorization (lowest): CO
 		self.deepDebug("ODP-0: Applying 1st group priorization.")
-		self.ODP_applyGroupPriorization(result, CO)
-		self.deepDebug("ODP-0: Applied 1st group priorization, resulted into " + result.toStr())
+		result.maxStopIndex = self.ODP_applyGroupPriorization(result.maxStopIndex, result.mainPOCall, CO)
+		self.deepDebug("ODP-0: Applied 1st group priorization, resulted into " + result.mainPOCall.toStr())
 
 		#2nd group priorization: BO
 		self.deepDebug("ODP-0: Applying 2nd group priorization")
-		self.ODP_applyGroupPriorization(result, BO)
-		self.deepDebug("ODP-0: Applied 2nd group priorization, resulted into " + result.toStr())
+		result.maxStopIndex = self.ODP_applyGroupPriorization(result.maxStopIndex, result.mainPOCall, BO)
+		self.deepDebug("ODP-0: Applied 2nd group priorization, resulted into " + result.mainPOCall.toStr())
 
 		#3rd group priorization: AO + LO
 		self.deepDebug("ODP-0: Applying 3rd group priorization")
-		self.ODP_applyGroupPriorization(result, AO + LO)
-		self.deepDebug("ODP-0: Applied 3rd group priorization, resulted into " + result.toStr())
+		result.maxStopIndex = self.ODP_applyGroupPriorization(result.maxStopIndex, result.mainPOCall, AO + LO)
+		self.deepDebug("ODP-0: Applied 3rd group priorization, resulted into " + result.mainPOCall.toStr())
 
 		#4th group priorization: DO
 		self.deepDebug("ODP-0: Applying 4th group priorization")
-		self.ODP_applyGroupPriorization(result, DO)
-		self.deepDebug("ODP-0: Applied 4th group priorization, resulted into " + result.toStr())
+		result.maxStopIndex = self.ODP_applyGroupPriorization(result.maxStopIndex, result.mainPOCall, DO)
+		self.deepDebug("ODP-0: Applied 4th group priorization, resulted into " + result.mainPOCall.toStr())
 
-		#5th group priorization: SO
-		#self.deepDebug("ODP-0: Applying 5th group priorization")
-		#self.ODP_applyGroupPriorization(result, SO)
-		#self.deepDebug("ODP-0: Applied 5th group priorization, resulted into " + result.toStr())
-
-		#6th group priorization (highest): IO + FO appart from FFA
-		#self.deepDebug("ODP-0: Applying 6th group priorization")
-		#self.ODP_applyGroupPriorization(result, IO + FO) #special case !!!!
-		#self.deepDebug("ODP-0: Applied 6th group priorization, resulted into " + result.toStr())
+		#5th group priorization: SO (highest treated in ODP)
+		self.deepDebug("ODP-0: Applying 5th group priorization (SO)")
+		result.maxStopIndex = self.ODP_applyGroupPriorization(result.maxStopIndex, result.mainPOCall, SO, monoOperand=True)
+		self.deepDebug("ODP-0: Applied 5th group priorization, resulted into " + result.mainPOCall.toStr())
 		self.deepDebug("Ended ODP on ZCI " + ZCI.textFormat())
 		return result
 
 
 
 	#2nd analysis
-	def apply2ndAnalysis(self, ZCI):
-		#self.ZCIDeepDebug(ZCI, "2nd analysis: Reading ZCI fragment " + ZCI.textFormat() + " to apply second analysis on it.")
-		result = None
-		#self.ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in value " + result.toStr())
+	def secondAnalysis(self, ZCI):
+		self.ZCIDeepDebug(ZCI, "2nd analysis: Reading ZCI fragment " + ZCI.textFormat() + " to apply second analysis on it.")
+		result = value(self.rootTypes[RT__PTR], atm(ATM__STR, ZCI.text)) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+		self.ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in value " + result.toStr())
 		return result
 
-	def apply2ndAnalysisOnPOCallResult(self, POCallResult):
-		return value(self.rootTypes[RT__ULNG], atm(ATM__ULNG, 0))
+	def applySecondAnalysis(self, currentPOCall, originalZCI):
+
+		#process 1st operand
+		firstOperandValue = None
+		if currentPOCall.firstOperand is not None:
+
+			#recursively solving children before
+			if currentPOCall.firstOperand.id == ATM__POCALL:
+				firstOperandValue = self.applySecondAnalysis(currentPOCall.firstOperand.data, originalZCI)
+
+			#considering it can only be a ZCI atm (internal error case could have added)
+			else:
+				firstOperandValue = self.secondAnalysis(currentPOCall.firstOperand.data)
+
+		#process 2nd operand
+		secondOperandValue = None
+		if currentPOCall.secondOperand is not None:
+
+			#recursively solving children before
+			if currentPOCall.secondOperand.id == ATM__POCALL:
+				secondOperandValue = self.applySecondAnalysis(currentPOCall.secondOperand.data, originalZCI)
+
+			#considering it can only be a ZCI atm (internal error case could have added)
+			else:
+				secondOperandValue = self.secondAnalysis(currentPOCall.secondOperand.data)
+
+
+
+		#1ST CASE: SINGLE VALUE UNIT (NON-CALL)
+
+		#null name => mono-operand mandatorily
+		if currentPOCall.name is None:
+			target = None
+			if currentPOCall.firstOperand is None:
+				target = secondOperandValue
+			elif currentPOCall.secondOperand is None:
+				target = firstOperandValue
+
+			#should never occur
+			if target is None:
+				self.internal("Found null-name POCall with 2 null or 2 non-null operands (inconsistent result from ODP).")
+			return target
+
+
+
+		#2ND CASE: OPERATOR CALL
+
+		#set operator parameters
+		params = []
+		if firstOperandValue is not None:
+			params.append(firstOperandValue)
+		if secondOperandValue is not None:
+			params.append(secondOperandValue)
+
+		#solve name
+		operatorFullName = currentPOCall.name[:] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TO COMPLETE with full name constitution
+		#operatorFullName = 'O' + currentPOCall.name
+		#for p in params:
+		#	operatorFullName += '_' + p.ztype.name
+
+		#check for matching operator function
+		matchingFunction = None
+		for f in self.cpl.functions:
+			if f.name == operatorFullName:
+				matchingFunction = f
+				break
+		if matchingFunction is None:
+			originalZCI.forward(currentPOCall.operatorIndex - originalZCI.ctx.icontent.index)
+			self.ZCIError(originalZCI, "No operator \"" + f.name + "\" declared yet.")
+
+		#result
+		return value(
+			matchingFunction.retType,
+			atm(ATM__CALL, call(operatorFullName, params))
+		)
 
 
 
@@ -1510,15 +1780,13 @@ class zctx:
 		self.ZCIDeepDebug(ZCI, "Reading value.")
 
 		#1st analysis: ODP
-		POCallResult = self.ODP(ZCI)
+		firstAnalysisResult = self.ODP(ZCI)
+		ZCI.forward( firstAnalysisResult.maxStopIndex - ZCI.ctx.icontent.index +1)
 
 		#apply 2nd analysis recursively in ODP result
-		result = self.apply2ndAnalysisOnPOCallResult(POCallResult)
-
-		#temporarily
-		n = self.readName(ZCI, ZCIKindIfError)
-		self.ZCIDeepDebug(ZCI, "Ended reading value.")
-		return result
+		secondAnalysisResult = self.applySecondAnalysis(firstAnalysisResult.mainPOCall, ZCI) #here, ZCI is given for error messages only
+		self.ZCIDeepDebug(ZCI, "Ended reading value with result :" + secondAnalysisResult.toStr())
+		return secondAnalysisResult
 
 
 
@@ -1606,7 +1874,7 @@ class zctx:
 					ZCI.inc()
 					break
 				elif next != ',':
-					self.ZCIError(ZCI, "Invalid element given " + next + " in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[ ZCI.pairs[initialIndex] ] + "').")
+					self.ZCIError(ZCI, "Invalid element " + next + " given in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[ ZCI.pairs[initialIndex] ] + "').")
 				ZCI.inc()
 
 		#return result

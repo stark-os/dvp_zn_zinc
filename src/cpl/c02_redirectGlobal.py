@@ -102,7 +102,7 @@ def processTypeDcl(zCtx, ZCI):
 	zCtx.jumpBlankZone(ZCI, "Type content definition in type declaration ZCI (DCL_TYP).")
 
 	#add generic type for the moment (it is incomplete: we don't know if it is a structure, if it has a parent...)
-	newZType = ztyp(fullName, dcnDeg)
+	newZType = newZTyp(fullName, dcnDeg)
 	zCtx.cpl.ztypes.append(newZType)
 	zCtx.ZCIDebug(ZCI, "Explicitely added type " + newZType.name + " but there are still missing information about it (incomplete for the moment).")
 

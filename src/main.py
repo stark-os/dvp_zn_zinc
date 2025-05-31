@@ -83,7 +83,7 @@ def main():
 	#z code context
 	config.COMMENT_CHARACTER         = '%'
 	config.ADDITIONAL_SPACES_ALLOWED = False
-	zCtx = zctx(
+	zCtx = newZCtx(
 		filepath,
 		LLI_requirements,
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),

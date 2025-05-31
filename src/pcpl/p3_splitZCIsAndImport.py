@@ -30,29 +30,13 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePref
 		modulePrefix = ""
 	ZCI.modulePrefix = modulePrefix
 
-
-
-	# 1) STRIPPING SIDES
-
-	#strip BEGINNING blanks
-	beginningShift = str_getBeginningStripIndex(ZCI.text, charset=BLANKS_EXTENDED)
-	if beginningShift != 0:
-		ZCI.forward(beginningShift)
-		ZCI.text       = str_sub(ZCI.text, start=beginningShift)
-		ZCI.startIndex = ZCI.ctx.icontent.index
-		zCtx.ZCIDeepDebug(ZCI, "Stripped beginning blanks from ZCI " + ZCI.textFormat(), printSubCtxs=False, printLine=False)
-
-	#strip END blanks
-	endingIndex = str_getEndStripIndex(ZCI.text, charset=BLANKS_EXTENDED)
-	if endingIndex != -1 and endingIndex != len(ZCI.text)-1:
-		ZCITextLengthBefore = len(ZCI.text)
-		ZCI.text            = str_sub(ZCI.text, stop=endingIndex) #strip end of ZCI.text
-		ZCI.stopIndex      -= ZCITextLengthBefore - len(ZCI.text)      #shift stopIndex the same amount
-		zCtx.ZCIDeepDebug(ZCI, "Stripped end blanks from ZCI " + ZCI.textFormat(), printSubCtxs=False, printLine=False)
+	#strip sides
+	ZCI.strip()
+	zCtx.ZCIDeepDebug(ZCI, "Stripped blanks from ZCI " + ZCI.textFormat(), printSubCtxs=False, printLine=False)
 
 
 
-	# 2) PROCESSING REGULAR/IMPORT ZCI
+	# PROCESSING REGULAR/IMPORT ZCI
 
 	#empty ZCI => ignore it
 	if len(ZCI.text) == 0:
@@ -125,7 +109,7 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=None
 		#initialize next ZCI to that position in ctx
 		if ZCI is None:
 			skipLineFeed = False
-			ZCI = zci(lst_ctx__copy(subCtxs, copyContent=True))
+			ZCI = newZCI(lst_ctx__copy(subCtxs, copyContent=True))
 
 
 
