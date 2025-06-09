@@ -17,9 +17,6 @@ from zctx import *
 
 # -------- TOOLS --------
 
-#prefix
-BN_PREFIX = '`'
-
 #escaped letters
 BN_ALERT     = "07"
 BN_BACKSPACE = "08"

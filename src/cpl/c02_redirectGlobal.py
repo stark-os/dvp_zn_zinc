@@ -62,12 +62,11 @@ def processTypeDcl(zCtx, ZCI):
 		fullName = ZCI.modulePrefix + 'U' + rawName
 
 	#check already existing
-	for t in zCtx.cpl.ztypes:
-		if fullName == t.name:
-			modulePrefixText = ""
-			if len(ZCI.modulePrefix) != 0:
-				modulePrefixText = unprefixizeModule(ZCI.modulePrefix)
-			zCtx.ZCIError(ZCI, "Type " + modulePrefixText + rawName.replace("__", '_') + " already exists, can't declare a new one with the same name (DCL_TYP).")
+	if self.getType(fullName) is not None:
+		modulePrefixText = ""
+		if len(ZCI.modulePrefix) != 0:
+			modulePrefixText = unprefixizeModule(ZCI.modulePrefix)
+		zCtx.ZCIError(ZCI, "Type " + modulePrefixText + rawName.replace("__", '_') + " already exists, can't declare a new one with the same name (DCL_TYP).")
 	zCtx.deepDebug("New type does not exist yet.")
 
 	#explicit declination degree if any
@@ -102,41 +101,41 @@ def processTypeDcl(zCtx, ZCI):
 	zCtx.jumpBlankZone(ZCI, "Type content definition in type declaration ZCI (DCL_TYP).")
 
 	#add generic type for the moment (it is incomplete: we don't know if it is a structure, if it has a parent...)
-	newZType = newZTyp(fullName, dcnDeg)
-	zCtx.cpl.ztypes.append(newZType)
-	zCtx.ZCIDebug(ZCI, "Explicitely added type " + newZType.name + " but there are still missing information about it (incomplete for the moment).")
+	newType = newTyp(fullName, dcnDeg)
+	zCtx.cpl.types.append(newType)
+	zCtx.ZCIDebug(ZCI, "Explicitely added type " + newType.name + " but there are still missing information about it (incomplete for the moment).")
 
 	#process type content: structure syntax
 	if ZCI.get() == '{':
 		zCtx.debug("Type declaration is via structure syntax.", printLine=False)
-		newZType.commonDcnData.size   = zCtx.SIZE__LNG
-		newZType.commonDcnData.nature = NATURE__STRUCTURE
+		newType.commonDcnData.size   = zCtx.SIZE__LNG
+		newType.commonDcnData.nature = NATURE__STRUCTURE
 
 		#reading fields
-		newZType.commonDcnData.fields = zCtx.readDataItemSequence(
+		newType.commonDcnData.fields = zCtx.readDataItemSequence(
 			ZCI, "type declaration ZCI (DCL_TYP).",
 			zCtx.cpl.globalScope,
 			cstValuesOnly = True
 		)
-		if len(newZType.commonDcnData.fields) == 0:
+		if len(newType.commonDcnData.fields) == 0:
 			zCtx.ZCIError(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDataItemSequence cannot return 0-length list)
 
 		#update stcSize
-		newZType.computeStcSize()
+		newType.computeStcSize()
 
 	#process type content: type-copy syntax
 	else:
 		zCtx.debug("Type declaration is via type-copy syntax.", printLine=False)
-		parent = zCtx.readZType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
-		if parent.commonDcnData == newZType.commonDcnData:
+		parent = zCtx.readType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
+		if parent.commonDcnData == newType.commonDcnData:
 			zCtx.ZCIError(ZCI, "Type cannot be declared as a copy of itself or one of its declination.") #seems obvious, but anyway
-		newZType.commonDcnData.size   = parent.commonDcnData.size
-		newZType.commonDcnData.nature = parent.commonDcnData.nature
-		newZType.commonDcnData.parent = parent
+		newType.commonDcnData.size   = parent.commonDcnData.size
+		newType.commonDcnData.nature = parent.commonDcnData.nature
+		newType.commonDcnData.parent = parent
 
 	#end of ZCI expected
 	zCtx.endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")
-	zCtx.debug("Type declaration " + newZType.name + " processed.")
+	zCtx.debug("Type declaration " + newType.name + " processed.")
 	zCtx.deepDebugPause()
 
 
@@ -171,31 +170,31 @@ def processEnmDcl(zCtx, ZCI, scope):
 		allowUnsolvedTypes = True
 	)
 	for di in fields:
-		if di.ztype != None: #no type must be found (neither explicit type given or initial value)
+		if di.Type != None: #no type must be found (neither explicit type given or initial value)
 			zCtx.ZCIError(ZCI, "No explicit type or value is allowed in enumerate declaration (DCL_ENM).")
 
 	#compute which type will be used
 	zCtx.deepDebug("Enumerate length: " + str(len(fields)))
 	if len(fields) <= 0x1_00:
 		zCtx.deepDebug("Enumerate length indexing can be contained in BYT => using that type for them.")
-		zt = zCtx.rootTypes[RT__BYT]
+		t = zCtx.rootTypes[RT__BYT]
 	elif len(fields) <= 0x1_00_00:
 		zCtx.deepDebug("Enumerate length indexing can be contained in SHR => using that type for them.")
-		zt = zCtx.rootTypes[RT__SHR]
+		t = zCtx.rootTypes[RT__SHR]
 	elif len(fields) <= 0x1_00_00_00_00:
 		zCtx.deepDebug("Enumerate length indexing can be contained in INT => using that type for them.")
-		zt = zCtx.rootTypes[RT__INT]
+		t = zCtx.rootTypes[RT__INT]
 	else:
 		zCtx.ZCIError(ZCI, "Too much fields in enumerate (congrats for reaching that error, how did you managed to get it ?).")
 
 	#fullfill fields
 	for f in range(len(fields)):
-		fields[f].ztype = zt
-		fields[f].value = value(zt, atm(ATM__ULNG, f), constant=True) #value stored as it was a ulng literal to be cashted into type zt
+		fields[f].Type = t
+		fields[f].value = value(t, atm(ATM__ULNG, f), constant=True) #value stored as it was a ulng literal to be cashted into type t
 
 	#create enumerate
 	zCtx.checkAlreadyDeclaredDataItemOrField(ZCI, scope.dataItems, fullName)
-	scope.dataItems.append( dataItem(zt, fullName, True, None, constant=True, fields=fields) )
+	scope.dataItems.append( dataItem(t, fullName, True, None, constant=True, fields=fields) )
 
 	#end of ZCI expected
 	zCtx.endOfZCI(ZCI, "enumerate declaration ZCI (DCL_ENM).")

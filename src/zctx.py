@@ -38,14 +38,15 @@ ATM__CALL     = 11
 ATM__ZCI      = 12
 ATM__VALUE    = 13
 ATM__DATAITEM = 14
-ATM__ZTYP     = 15
-ATM__ZTYP_COMMONDATA = 16
+ATM__TYP      = 15
+ATM__TYP_COMMONDATA = 16
 ATM__SCP = 17
 ATM__ASG = 18
 ATM__STM = 19
 ATM__FCT = 20
 ATM__OPSEQ  = 21
 ATM__POCALL = 22
+ATM__LST = 23
 ATM__ATM = 99
 class atm:
 	def __init__(self, id, data):
@@ -86,6 +87,16 @@ RT__ULNG = 8
 RT__FLT  = 9
 RT__DBL  = 10
 RT__PTR  = 11
+
+#common data structures (shortcut notations)
+TYPE_FULLNAME_TAB  = "GUtab"
+TYPE_FULLNAME_LST  = "GUlst"
+TYPE_FULLNAME_FLY  = "GUfly"
+TYPE_FULLNAME_FMAP = "GUfmap"
+TYPE_FULLNAME_MMAP = "GUmmap"
+
+#byte notations
+BN_PREFIX = '`'
 
 #Single Operators
 SYMBOL__SIN  = 1 #invert
@@ -362,7 +373,7 @@ CPL_OPT_ALLOWED = {
 NATURE__PRIMITIVE = 0
 NATURE__STRUCTURE = 1
 NATURE__ENUMERATE = 2
-class ztyp_commonDcnData: #common ztype data among every declination
+class typ_commonDcnData: #common type data among every declination
 	def __init__(self, dcnDeg):
 		self.parent = None
 		self.size   = 0
@@ -373,31 +384,36 @@ class ztyp_commonDcnData: #common ztype data among every declination
 		self.fields  = None #lst[dataItem]
 		self.stcSize = 0
 
-class ztyp:
+class typ:
 	def __init__(self):
 		self.name          = None
-		self.methods       = None #lst[zfct]
-		self.dcns          = None #tab[ztyp]
-		self.commonDcnData = None #ztyp_commonDcnData
+		self.methods       = None #lst[fct]
+		self.dcns          = None #tab[typ]
+		self.commonDcnData = None #typ_commonDcnData
 
 	def computeStcSize(self):
 		if self.commonDcnData.nature != NATURE__PRIMITIVE:
 			for f in self.commonDcnData.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
-				self.commonDcnData.stcSize += f.ztype.commonDcnData.size
+				self.commonDcnData.stcSize += f.type.commonDcnData.size
 
-def newZTyp(name, dcnDeg=0, dcns=None, commonDcnData=None):
+def newTyp(name, dcnDeg=0, dcns=None, commonDcnData=None):
 	if commonDcnData is None:
-		commonDcnData = ztyp_commonDcnData(dcnDeg) #create a new commonDcnData by default (new type => new commonDcnData)
-	result = ztyp()
+		commonDcnData = typ_commonDcnData(dcnDeg) #create a new commonDcnData by default (new type => new commonDcnData)
+	result = typ()
 	result.name          = name
-	result.methods       = []   #lst[zfct]
-	result.dcns          = dcns #tab[ztyp]
-	result.commonDcnData = commonDcnData #ztyp_commonDcnData
+	result.methods       = []   #lst[fct]
+	result.dcns          = dcns #tab[typ]
+	result.commonDcnData = commonDcnData #typ_commonDcnData
 	return result
 
+class tab:
+	def __init__(self, length, data):
+	self.length = len(data) #don't really care about this in Python
+	self.data   = data
+
 class value:
-	def __init__(self, ztype, data, constant=False):
-		self.ztype    = ztype
+	def __init__(self, Type, data, constant=False):
+		self.type     = Type
 		self.data     = data  #atm #can be either a root type (literal), str (name) or call.
 		self.constant = constant
 
@@ -406,6 +422,8 @@ class value:
 			dataStr = "false"
 			if self.data:
 				dataStr = "true"
+
+		#numerical
 		elif self.data.id == ATM__BYT:
 			dataStr = 'S' + hexOnN(self.data.data, 2)
 		elif self.data.id == ATM__UBYT:
@@ -426,16 +444,27 @@ class value:
 			dataStr = '\'' + self.data.data + '\''
 		elif self.data.id == ATM__STR: #this case covers both literal string & name. In all cases, toStr() will output a double-quoted result.
 			dataStr = '\"' + self.data.data + '\"' #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< for the moment, it also covers the case of literal structures (stored under raw text)
+
+		#common data structures (all stored as lst)
+		elif self.data.id == ATM__LST:
+			dataStr = '['
+			for e in self.data.data:
+				dataStr += e.toStr() + ','
+			dataStr += ']'
+
+		#calls
 		elif self.data.id == ATM__CALL:
 			depthSpace = '\t' * depth
 			dataStr  = "\"call " + self.data.data.name + "(\n"
 			for p in self.data.data.params:
 				dataStr += depthSpace + '\t' + p.toStr(depth+1) + ',\n' #recursive call
 			dataStr += depthSpace + ')'
+
+		#invalid
 		else:
 			print("[INTERNAL] Invalid data stored inside value (can only be literal, name or call).")
 			exit(1)
-		return "{type:\"" + self.ztype.name + "\",constant:" + str(self.constant) + ",data:" + dataStr + "}"
+		return "{type:\"" + self.Type.name + "\",constant:" + str(self.constant) + ",data:" + dataStr + "}"
 
 class call:
 	def __init__(self, name, params):
@@ -485,8 +514,8 @@ class ODPResult:
 		self.mainPOCall   = mainPOCall
 
 class dataItem:
-	def __init__(self, ztype, name, initialized, initialValue, constant=False, fields=None):
-		self.ztype        = ztype
+	def __init__(self, Type, name, initialized, initialValue, constant=False, fields=None):
+		self.Type         = Type
 		self.name         = name
 		self.initialized  = initialized
 		self.initialValue = initialValue #value
@@ -497,16 +526,16 @@ class dataItem:
 		initialValueStr = "null"
 		if self.initialValue is not None:
 			initialValueStr = self.initialValue.toStr()
-		ztypeStr = "null"
-		if self.ztype is not None:
-			ztypeStr = '\"' + self.ztype.name + '\"'
+		typeStr = "null"
+		if self.Type is not None:
+			typeStr = '\"' + self.Type.name + '\"'
 		fieldsText = "null"
 		if self.fields is not None:
 			fieldsText = "[\n"
 			for f in self.fields:
 				fieldsText += "\t" + f.toStr() + ",\n"
 			fieldsText += "]"
-		return "{type:" + ztypeStr + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + initialValueStr + ",constant:" + str(self.constant) + ",fields:" + fieldsText + "}"
+		return "{type:" + typeStr + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + initialValueStr + ",constant:" + str(self.constant) + ",fields:" + fieldsText + "}"
 
 #scope
 class scp:
@@ -547,7 +576,7 @@ def newStm(kind, parentScope):
 class fct:
 	def __init__(self):
 		self.name    = None
-		self.retType = None #ztyp
+		self.retType = None #typ
 		self.params  = None #lst[dataItem]
 		self.scope   = None
 
@@ -567,6 +596,13 @@ class opSeq:
 			operatorsText += OPERATOR_NAMES[o] + ','
 		return "{stopIndex:" + str(self.stopIndex) + ",operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
 
+#type for holding some VAP 2nd analysis information
+class VAP2:
+	def __init__(self, ZCIKindIfError, scope, cstOnly):
+		self.ZCIKindIfError = ZCIKindIfError
+		self.scope          = scope
+		self.cstOnly        = cstOnly
+
 #compiler data
 class cplDat:
 	def __init__(self):
@@ -574,7 +610,7 @@ class cplDat:
 
 		#z abstract elements
 		self.modulePrefixes = None #lst[str]
-		self.ztypes         = None #lst[ztyp]
+		self.types          = None #lst[typ]
 		self.globalScope    = None
 		self.functions      = None #lst[fct]
 		self.linkedLibs     = None #lst[]
@@ -589,7 +625,7 @@ def newCplDat(options, rootTypes):
 
 	#z abstract elements
 	result.modulePrefixes = [] #lst[str]
-	result.ztypes         = lst_copy(rootTypes) #lst[ztyp]
+	result.types          = lst_copy(rootTypes) #lst[typ]
 	result.globalScope    = newScp()
 	result.functions      = [] #lst[fct]
 	result.linkedLibs     = [] #lst[]
@@ -634,41 +670,41 @@ def newZCtx(
 	result.rootTypes = [None,None,None, None,None,None, None,None,None, None,None,None] #can be already declared as a fixed-size table (length: 12)
 
 	#boolean
-	result.rootTypes[RT__BOO]      = newZTyp("GUboo")
+	result.rootTypes[RT__BOO]      = newTyp("GUboo")
 	result.rootTypes[RT__BOO].size = result.SIZE__BYT
 
 	#bytes
-	result.rootTypes[RT__BYT]       = newZTyp("GUbyt")
+	result.rootTypes[RT__BYT]       = newTyp("GUbyt")
 	result.rootTypes[RT__BYT].size  = result.SIZE__BYT
-	result.rootTypes[RT__UBYT]      = newZTyp("GUubyt")
+	result.rootTypes[RT__UBYT]      = newTyp("GUubyt")
 	result.rootTypes[RT__UBYT].size = result.SIZE__BYT
 
 	#shorts
-	result.rootTypes[RT__SHR]       = newZTyp("GUshr")
+	result.rootTypes[RT__SHR]       = newTyp("GUshr")
 	result.rootTypes[RT__SHR].size  = result.SIZE__SHR
-	result.rootTypes[RT__USHR]      = newZTyp("GUushr")
+	result.rootTypes[RT__USHR]      = newTyp("GUushr")
 	result.rootTypes[RT__USHR].size = result.SIZE__SHR
 
 	#integers
-	result.rootTypes[RT__INT]       = newZTyp("GUint")
+	result.rootTypes[RT__INT]       = newTyp("GUint")
 	result.rootTypes[RT__INT].size  = result.SIZE__INT
-	result.rootTypes[RT__UINT]      = newZTyp("GUuint")
+	result.rootTypes[RT__UINT]      = newTyp("GUuint")
 	result.rootTypes[RT__UINT].size = result.SIZE__INT
 
 	#longs
-	result.rootTypes[RT__LNG]       = newZTyp("GUlng")
+	result.rootTypes[RT__LNG]       = newTyp("GUlng")
 	result.rootTypes[RT__LNG].size  = result.SIZE__LNG
-	result.rootTypes[RT__ULNG]      = newZTyp("GUulng")
+	result.rootTypes[RT__ULNG]      = newTyp("GUulng")
 	result.rootTypes[RT__ULNG].size = result.SIZE__LNG
 
 	#floating point
-	result.rootTypes[RT__FLT]      = newZTyp("GUflt")
+	result.rootTypes[RT__FLT]      = newTyp("GUflt")
 	result.rootTypes[RT__FLT].size = result.SIZE__INT
-	result.rootTypes[RT__DBL]      = newZTyp("GUdbl")
+	result.rootTypes[RT__DBL]      = newTyp("GUdbl")
 	result.rootTypes[RT__DBL].size = result.SIZE__LNG
 
 	#pointer
-	result.rootTypes[RT__PTR]      = newZTyp("GUptr", 1)
+	result.rootTypes[RT__PTR]      = newTyp("GUptr", 1)
 	result.rootTypes[RT__PTR].size = result.SIZE__LNG
 
 	#data
@@ -745,6 +781,12 @@ class zctx:
 		result.params  = params
 		result.scope   = newScp(parent=self.cpl.globalScope) #create its own independant scope which holds a link to the parent one (that must be "global" btw)
 		return result
+
+	def getType(self, name):
+		for t in self.cpl.types:
+			if t.name == name:
+				return t
+		return None
 
 
 
@@ -971,7 +1013,30 @@ class zctx:
 
 
 
+
+
+
 	# REAL ZCE PARSING TOOLS (bare metal syntax-related)
+
+	#read hexadecimal byte
+	def readHexByte(self, ZCI):
+
+		#read & check 1st digit
+		h1 = ZCI.get()
+		if h1 not in HEX_DIGITS_LOWERCASE:
+			self.ZCIError(ZCI, "Invalid first hexadecimal digit '" + h1 + "' given in byte notation.")
+
+		#read & check 2nd digit
+		if ZCI.inc():
+			self.ZCIError(ZCI, "Missing second hexadecimal digit in byte notation.")
+		h0 = ZCI.get()
+		if h0 not in HEX_DIGITS_LOWERCASE:
+			self.ZCIError(ZCI, "Invalid second hexadecimal digit '" + h0 + "' given in byte notation.")
+
+		#return byte
+		return hex_toByt(h1, h0)
+
+
 
 	#try reading symbol (don't move ZCI ctx)
 	def readSymbol(self, ZCI):
@@ -1292,62 +1357,59 @@ class zctx:
 	# ABSTRACT ZCEs PARSING TOOLS
 
 	#expecting a Z type
-	def readZType(self, ZCI, ZCIKindIfError, nullIfNotExisting=False):
-		self.ZCIDeepDebug(ZCI, "Reading Z type.")
+	def readType(self, ZCI, ZCIKindIfError, nullIfNotExisting=False):
+		self.ZCIDeepDebug(ZCI, "Reading type.")
 		initialZCICtx = ZCI.ctx.copy()
 
 		#read raw type name (actually, it also includes explicit module prefix if any... so not really "raw")
-		ztRawName = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True)
+		tRawName = self.readName(ZCI, "Type name in " + ZCIKindIfError, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True)
 
 		#module-realted / global
 		if initialZCICtx.get() == '^':
-			ztModulePrefix = self.splitModulePrefix(ZCI, ztRawName)        #save its module prefix elsewhere
-			ztRawName      = str_sub(ztRawName, start=len(ztModulePrefix)) # + cut it from "rawName" to keep only the REAL RAW NAME
+			tModulePrefix = self.splitModulePrefix(ZCI, tRawName)        #save its module prefix elsewhere
+			tRawName      = str_sub(tRawName, start=len(tModulePrefix)) # + cut it from "rawName" to keep only the REAL RAW NAME
 		else:
-			ztModulePrefix = "G"
+			tModulePrefix = "G"
 
 		#build full type name (forced "undeclinated" for the moment)
-		ztFullName = ztModulePrefix + 'U' + ztRawName
+		tFullName = tModulePrefix + 'U' + tRawName
 
 		#1 - check UNDECLINATED variant existence
-		ztInstance = None
-		for t in self.cpl.ztypes:
-			if ztFullName == t.name:
-				ztInstance = t
-				break
-		if ztInstance is None:
+		tInstance = self.getType(tFullName)
+		if tInstance is None:
 			if nullIfNotExisting:
-				self.ZCIDeepDebug(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", printLine=False)
+				self.ZCIDeepDebug(ZCI, "Type " + unprefixizeModule(tModulePrefix) + tRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", printLine=False)
 				ZCI.resetCtx(initialZCICtx)
 				self.ZCIDeepDebug(ZCI, "Restoring ZCI context to that position => Ended reading Z type.")
 				return None
-			self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName.replace("__", '_') + " does not exist.")
-		self.ZCIDeepDebug(ZCI, "Undeclinated Z type \"" + ztFullName + "\" targetted.")
+			self.ZCIError(ZCI, "Type " + unprefixizeModule(tModulePrefix) + tRawName.replace("__", '_') + " does not exist.")
+		self.ZCIDeepDebug(ZCI, "Undeclinated type \"" + tFullName + "\" targetted.")
 
 		#2 - declination list given => solve them
 		if ZCI.get() == '[':
 			initialIndex = ZCI.ctx.icontent.index
+			peerIndex    = ZCI.pairs[initialIndex]
 			ZCI.inc()
 
 			#undeclinable type
-			if ztInstance.commonDcnData.dcnDeg == 0:
-				self.ZCIError(ZCI, "Type " + unprefixizeModule(ztModulePrefix) + ztRawName.replace("__", '_') + " is not declinable (null declination degree).")
+			if tInstance.commonDcnData.dcnDeg == 0:
+				self.ZCIError(ZCI, "Type " + unprefixizeModule(tModulePrefix) + tRawName.replace("__", '_') + " is not declinable (null declination degree).")
 
 			#read declination types one by one
 			self.deepDebug("Type is declinated, reading declination types.")
-			dcns = [] #lst[ztyp]
+			dcns = [] #lst[typ]
 			while True:
 				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 				#read & append next declination type (recursive call). Don't check if already exitsing in dcns, we can have the same type twice, thrice and so on...
-				dcns.append(self.readZType(ZCI, ZCIKindIfError))
+				dcns.append(self.readType(ZCI, ZCIKindIfError))
 
 				#must be followed by coma or closing peer
 				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 				next = ZCI.get()
 				if next == ']':
-					if ZCI.ctx.icontent.index != ZCI.pairs[initialIndex]:
-						self.ZCIInternal(ZCI, "Ending declination type sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(ZCI.pairs[initialIndex]) + " in string \"" + ZCI.ctx.icontent.s + "\").")
+					if ZCI.ctx.icontent.index != peerIndex:
+						self.ZCIInternal(ZCI, "Ending declination type sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(peerIndex) + ").")
 					ZCI.inc()
 					break
 				elif next != ',':
@@ -1361,34 +1423,30 @@ class zctx:
 			self.ZCIDeepDebug(ZCI, "].", printLine=False)
 
 			#check declination length
-			if len(dcns) < ztInstance.commonDcnData.dcnDeg:
-				self.ZCIError(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.commonDcnData.dcnDeg) + " required).")
-			elif len(dcns) > ztInstance.commonDcnData.dcnDeg:
-				self.ZCIError(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(ztInstance.commonDcnData.dcnDeg) + " required).")
+			if len(dcns) < tInstance.commonDcnData.dcnDeg:
+				self.ZCIError(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(tInstance.commonDcnData.dcnDeg) + " required).")
+			elif len(dcns) > tInstance.commonDcnData.dcnDeg:
+				self.ZCIError(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(tInstance.commonDcnData.dcnDeg) + " required).")
 
-			#re-build full type name including declinations this time (ztModulePrefix can be set to "G" by the way, same logic as undeclinated types)
-			ztFullName = ztModulePrefix + 'D' + ztRawName
+			#re-build full type name including declinations this time (tModulePrefix can be set to "G" by the way, same logic as undeclinated types)
+			tFullName = tModulePrefix + 'D' + tRawName
 			for d in dcns:
-				ztFullName += '_' + d.name
+				tFullName += '_' + d.name
 
-			#check for that declination in currently declared ztypes
-			ztUndeclinatedInstance = ztInstance
-			ztInstance             = None
-			for t in self.cpl.ztypes:
-				if ztFullName == t.name:
-					ztInstance = t
-					break
+			#check for that declination in currently declared types
+			tUndeclinatedInstance = tInstance
+			tInstance             = self.getType(tFullName)
 
 			#not found => create that declination (this new combination must exist)
-			if ztInstance is None:
-				ztInstance      = newZTyp(ztFullName, commonDcnData = ztUndeclinatedInstance.commonDcnData) #share the same commonDcnData (affecting the undeclinated instance will affect every declination)
-				ztInstance.dcns = dcns
-				self.ZCIDebug(ZCI, "First call of declination \"" + ztInstance.name + "\" from type \"" + ztUndeclinatedInstance.name + "\", adding it.")
-				self.cpl.ztypes.append(ztInstance)
+			if tInstance is None:
+				tInstance      = newTyp(tFullName, commonDcnData = tUndeclinatedInstance.commonDcnData) #share the same commonDcnData (affecting the undeclinated instance will affect every declination)
+				tInstance.dcns = dcns
+				self.ZCIDebug(ZCI, "First call of declination \"" + tInstance.name + "\" from type \"" + tUndeclinatedInstance.name + "\", adding it.")
+				self.cpl.types.append(tInstance)
 
 		#final result
-		self.ZCIDeepDebug(ZCI, "Ended reading Z type.")
-		return ztInstance
+		self.ZCIDeepDebug(ZCI, "Ended reading type.")
+		return tInstance
 
 
 
@@ -1691,13 +1749,187 @@ class zctx:
 
 
 	#2nd analysis
-	def secondAnalysis(self, ZCI):
+	def unknownValueErrorIn2ndAnalysis(self, ZCI):
+		self.ZCIError(ZCI, "Unknown value given (not respecting any format supported by VAP in 2nd analysis).")
+
+	def atomicSecondAnalysis(self, ZCI, vap2info):
 		self.ZCIDeepDebug(ZCI, "2nd analysis: Reading ZCI fragment " + ZCI.textFormat() + " to apply second analysis on it.")
-		result = value(self.rootTypes[RT__PTR], atm(ATM__STR, ZCI.text)) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-		self.ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in value " + result.toStr())
+		result = None
+		c = ZCI.get()
+
+
+
+		# I] LITERAL: COMMON DATA STRUCTURES
+
+		#map starter symbol
+		targettingMap = False
+		if c == ':':
+			if ZCI.inc():
+				self.unknownValueErrorIn2ndAnalysis(ZCI)
+			targettingMap = True
+
+		#starting with includer
+		if c in ('(', '[', '{'):
+			#Seems similar to check in the whole INCLUDERS.keys() but this is not related to these actually.
+			#We are specificly targetting these 3 and not because they are includer keys but because we have specific pattern associated to them.
+			keyValue_initializerType = None #for maps only
+			if c == '(':
+				if targettingMap:
+					targettedType            = self.getType(TYPE_FULLNAME_FMAP)
+					keyValue_initializerType = self.getType(TYPE_FULLNAME_TAB) #require 2 tab for fmap initialization
+				else:
+					targettedType = self.getType(TYPE_FULLNAME_TAB)
+			elif c == '[':
+				if targettingMap:
+					targettedType            = self.getType(TYPE_FULLNAME_MMAP)
+					keyValue_initializerType = self.getType(TYPE_FULLNAME_LST) #require 2 lst for mmap initialization
+				else:
+					targettedType = self.getType(TYPE_FULLNAME_LST)
+			elif c == '{':
+				if targettingMap:
+					self.ZCIError(ZCI, "Associative notation cannot be set to braces includer (\":{...}\" is linked to nothing).")
+				targettedType = self.getType(TYPE_FULLNAME_FLY)
+
+			#init limits
+			peerIndex    = ZCI.pairs[ZCI.ctx.icontent.index]
+			targettedEnd = ZCI.ctx.icontent.s[peerIndex]
+			ZCI.inc()
+
+			#read subvalues as long as we have some (separated by comas)
+			subValues        = [] #lst[value]
+			subValues_second = [] #for maps
+			while True:
+
+				#read subvalue
+				self.optionnalBlanks(ZCI, None, BLANKS_EXTENDED)
+				subValues.append( self.readValue(ZCI, vap2info.ZCIKindIfError, vap2info.scope, vap2info.cstOnly) )
+
+				#read second subValue (for maps only)
+				if targettingMap:
+
+					#colon separator required
+					self.optionnalBlanks(ZCI, None, BLANKS_EXTENDED)
+					next = ZCI.get()
+					if next != ':':
+						self.ZCIError(ZCI, "Invalid element " + next + " given in associative sequence (expected colon separator ':').")
+					ZCI.inc()
+
+					#read a second subvalue (require a couple for association)
+					self.optionnalBlanks(ZCI, None, BLANKS_EXTENDED)
+					subValues_second.append( self.readValue(ZCI, vap2info.ZCIKindIfError, vap2info.scope, vap2info.cstOnly) )
+
+				#look for end separator
+				self.optionnalBlanks(ZCI, None, BLANKS_EXTENDED)
+				next = ZCI.get()
+				if next == targettedEnd:
+					if ZCI.ctx.icontent.index != peerIndex:
+						self.ZCIInternal(ZCI, "Ending value sequence inside includer with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(peerIndex) + ").")
+					ZCI.inc()
+					break
+				if next != ',':
+					self.ZCIError(ZCI, "Invalid element " + next + " given in value sequence between includers (expected coma separator ',' or closing includer '" + targettedEnd + "').")
+				ZCI.inc()
+
+			#table with only one element => explicit priorization
+			if targettedEnd == ')' and not targettingMap and len(subValues) == 1:
+				result = subValues[0]
+				self.ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in EXPLICIT PRIORIZATION " + result.toStr())
+				return result
+
+			#finishing result: maps
+			if targettingMap:
+
+				#set keys et values for map initialization
+				keys   = value(keyValue_initializerType, atm(ATM__LST, subValues))
+				values = value(keyValue_initializerType, atm(ATM__LST, subValues_second))
+				result = value(
+					targettedType,
+					atm(ATM__LST, [keys, values])
+				)
+
+			#finishing result: tab, lst & fly
+			else:
+				result = value(targettedType, atm(ATM__LST, subValues))
+
+			#return result
+			self.ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION " + result.toStr())
+			return result
+
+		#having found a colon but wasn't a map => no pattern matches such a thing
+		if targettingMap:
+			self.unknownValueErrorIn2ndAnalysis(ZCI)
+
+
+
+		# II] LITERAL: BYTE NOTATIONS
+
+		#prefix found
+		if c == BN_PREFIX:
+			if ZCI.inc():
+				self.ZCIError(ZCI, "Missing content after byte notation.")
+
+			#multi-byte sequence
+			if ZCI.get() == BN_PREFIX:
+				if ZCI.inc():
+					self.ZCIError(ZCI, "Missing content after multiple-bytes notation.")
+
+				#prepare sequence
+				sequence = [] #lst[value]
+				while ZCI.get() in HEX_DIGITS_LOWERCASE:
+					sequence.append(
+						value(self.rootTypes[RT__BYT], atm(ATM__BYT, self.readHexByte(ZCI)) )
+					)
+					if ZCI.inc():
+						break
+
+				#missing characters
+				if len(sequence) == 0:
+					self.ZCIError(ZCI, "Missing valid hexadecimal characters in multi-bytes notation.")
+
+				#finish result
+				result = value(self.rootTypes[RT__PTR], atm(ATM_LST, sequence))
+				self.ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in MULTI-BYTE NOTATION " + result.toStr())
+				return result
+
+			#single-byte sequence
+			result = value(
+				self.rootTypes[RT__BYT],
+				atm(ATM__BYT, self.readHexByte(ZCI))
+			)
+			ZCI.inc()
+			self.ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in SINGLE-BYTE NOTATION " + result.toStr())
+			return result
+
+
+
+		# III] .
+
+		#
+		#
+
+
+
+		#unknown value format
+		self.unknownValueErrorIn2ndAnalysis(ZCI)
+
+
+
+	def secondAnalysis(self, ZCI, vap2info):
+		result = None
+		while not ZCI.reachedEnd():
+
+			#read atomic value
+			atomicResult = self.atomicSecondAnalysis(ZCI, vap2info)
+
+			#followed by something that might deserve more attention
+			if ...:
+				
+
 		return result
 
-	def applySecondAnalysis(self, currentPOCall, originalZCI):
+
+
+	def applySecondAnalysis(self, currentPOCall, originalZCI, vap2info):
 
 		#process 1st operand
 		firstOperandValue = None
@@ -1705,11 +1937,11 @@ class zctx:
 
 			#recursively solving children before
 			if currentPOCall.firstOperand.id == ATM__POCALL:
-				firstOperandValue = self.applySecondAnalysis(currentPOCall.firstOperand.data, originalZCI)
+				firstOperandValue = self.applySecondAnalysis(currentPOCall.firstOperand.data, originalZCI, vap2info)
 
 			#considering it can only be a ZCI atm (internal error case could have added)
 			else:
-				firstOperandValue = self.secondAnalysis(currentPOCall.firstOperand.data)
+				firstOperandValue = self.secondAnalysis(currentPOCall.firstOperand.data, vap2info)
 
 		#process 2nd operand
 		secondOperandValue = None
@@ -1717,11 +1949,11 @@ class zctx:
 
 			#recursively solving children before
 			if currentPOCall.secondOperand.id == ATM__POCALL:
-				secondOperandValue = self.applySecondAnalysis(currentPOCall.secondOperand.data, originalZCI)
+				secondOperandValue = self.applySecondAnalysis(currentPOCall.secondOperand.data, originalZCI, vap2info)
 
 			#considering it can only be a ZCI atm (internal error case could have added)
 			else:
-				secondOperandValue = self.secondAnalysis(currentPOCall.secondOperand.data)
+				secondOperandValue = self.secondAnalysis(currentPOCall.secondOperand.data, vap2info)
 
 
 
@@ -1755,7 +1987,7 @@ class zctx:
 		operatorFullName = currentPOCall.name[:] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TO COMPLETE with full name constitution
 		#operatorFullName = 'O' + currentPOCall.name
 		#for p in params:
-		#	operatorFullName += '_' + p.ztype.name
+		#	operatorFullName += '_' + p.type.name
 
 		#check for matching operator function
 		matchingFunction = None
@@ -1784,7 +2016,7 @@ class zctx:
 		ZCI.forward( firstAnalysisResult.maxStopIndex - ZCI.ctx.icontent.index +1)
 
 		#apply 2nd analysis recursively in ODP result
-		secondAnalysisResult = self.applySecondAnalysis(firstAnalysisResult.mainPOCall, ZCI) #here, ZCI is given for error messages only
+		secondAnalysisResult = self.applySecondAnalysis(firstAnalysisResult.mainPOCall, ZCI, vap2(ZCIKindIfError, scope, cstOnly)) #here, ZCI is given for error messages only
 		self.ZCIDeepDebug(ZCI, "Ended reading value with result :" + secondAnalysisResult.toStr())
 		return secondAnalysisResult
 
@@ -1800,8 +2032,8 @@ class zctx:
 		self.ZCIDeepDebug(ZCI, "Reading data item.")
 
 		#read type (if any. Else, continue as nothing happened)
-		ztype = self.readZType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
-		if ztype is not None:
+		Type = self.readType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
+		if Type is not None:
 			self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 
 		#read name
@@ -1828,20 +2060,20 @@ class zctx:
 			self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
 			initialValue = self.readValue(ZCI, ZCIKindIfError, scope, cstOnly=cstInitialValueOnly)
 
-			#solve ztype if missing using initialValue
-			if ztype is None:
-				ztype = initialValue.ztype
-				self.ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + ztype.name + "\".")
+			#solve type if missing using initialValue
+			if Type is None:
+				Type = initialValue.Type
+				self.ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + Type.name + "\".")
 		self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
-		#missing ztype still not solved
+		#missing Type still not solved
 		if not allowUnsolvedType:
-			if ztype is None:
+			if Type is None:
 				self.ZCIError(ZCI, "Missing type to given element (required either explicitely or implicity).")
 
 		#result
 		self.ZCIDeepDebug(ZCI, "Ended reading data item.")
-		return dataItem(ztype, name, initialized, initialValue)
+		return dataItem(Type, name, initialized, initialValue)
 
 	#read dataitem sequence
 	# Given ZCI must be at an opening includer character.
@@ -1850,6 +2082,7 @@ class zctx:
 
 		#initial conditions
 		initialIndex = ZCI.ctx.icontent.index
+		peerIndex    = ZCI.pairs[initialIndex]
 		if ZCI.get() not in INCLUDERS.keys():
 			self.ZCIInternal(ZCI, "Must be at the beginning of an includer to read data item sequence.")
 		ZCI.inc()
@@ -1869,12 +2102,12 @@ class zctx:
 				#must be followed by coma or closing peer
 				next = ZCI.get()
 				if next in INCLUDERS.values():
-					if ZCI.ctx.icontent.index != ZCI.pairs[initialIndex]:
-						self.ZCIInternal(ZCI, "Ending data item sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(ZCI.pairs[initialIndex]) + " in string \"" + ZCI.ctx.icontent.s + "\").")
+					if ZCI.ctx.icontent.index != peerIndex:
+						self.ZCIInternal(ZCI, "Ending data item sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(peerIndex) + ").")
 					ZCI.inc()
 					break
-				elif next != ',':
-					self.ZCIError(ZCI, "Invalid element " + next + " given in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[ ZCI.pairs[initialIndex] ] + "').")
+				if next != ',':
+					self.ZCIError(ZCI, "Invalid element " + next + " given in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[peerIndex] + "').")
 				ZCI.inc()
 
 		#return result

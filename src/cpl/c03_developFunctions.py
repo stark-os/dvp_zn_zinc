@@ -20,7 +20,7 @@ def readFctDcl(zCtx, ZCI):
 	zCtx.jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT)")
 
 	#return type
-	retType = zCtx.readZType(ZCI, "return type in function declaration ZCI (DCL_FCT)")
+	retType = zCtx.readType(ZCI, "return type in function declaration ZCI (DCL_FCT)")
 
 	#function name
 	rawName = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True, whitelist=FCT_NAME_CHARSET, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True)
@@ -38,7 +38,7 @@ def readFctDcl(zCtx, ZCI):
 
 		#look for method type
 		#targettedType = None
-		#for t in zCtx.cpl.ztypes:
+		#for t in zCtx.cpl.types:
 		#	if t.name == 
 
 		fullName = ZCI.modulePrefix + 'T' + targettedType.name + '_' + rawName
@@ -66,8 +66,8 @@ def readFctDcl(zCtx, ZCI):
 				value(self.rootTypes[RT__BOO], True, constant=True)
 			)
 
-		#if it is not "self", we must have a valid ztype
-		elif params[p].ztype is None:
+		#if it is not "self", we must have a valid type
+		elif params[p].Type is None:
 			self.ZCIError(ZCI, "Missing type or default value to function parameter \"" + params[p].name + "\".")
 
 	#result

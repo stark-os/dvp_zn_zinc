@@ -14,6 +14,9 @@ import string
 
 # -------- TOOLS --------
 
+#hex
+HEX_DIGITS_LOWERCASE = string.hexdigits[:-6]
+
 #TO BE ADDED TO STDZ : this is a tiny bit more optimized version of ==(str,str).
 #                      We don't compare lengths, assuming that they have been checked before.
 #                      By the way, it must be called in ==(str,str) instead.
