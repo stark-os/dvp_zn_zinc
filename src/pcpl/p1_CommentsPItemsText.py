@@ -119,7 +119,7 @@ def p1_CommentsPItemsText(zCtx):
 				escaping = False
 
 			#escaping or not => set character
-			output += BN_fromChr(zCtx, c, escaping=escaping)
+			output += '(' + BN_PREFIX + BN_fromChr(zCtx, c, escaping=escaping) + "$chr)" #parentheses should not be mandatory because casht must be prioritary in any way (safety)
 
 			#check character length
 			if isChrSet:
