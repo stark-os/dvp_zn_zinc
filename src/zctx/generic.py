@@ -1,0 +1,65 @@
+# -------- TEXT TOOLS --------
+
+#unprefixing module prefixes especially
+def unprefixizeModule(modulePrefix):
+	if len(modulePrefix) == 0:
+		return ""
+	if modulePrefix[0] == 'G':
+		return ""
+	return "^" + str_sub(modulePrefix, start=1).replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1] + '.'
+
+def extractModulePrefix(name):
+	if len(name) == 0:
+		return ""
+	if name[0] != 'M': #no module prefix
+		return ""
+
+	#get only module prefix from name
+	modulePrefix    = "M"
+	foundUnderscore = False
+	for c in name[1:]:
+
+		#previous character was an underscore => potential end of module prefix
+		if foundUnderscore:
+			foundUnderscore = False
+
+			#- double underscore => regular text, ignore it
+			#- end of module prefix, but another one follows => still in it
+			#else => definitely out of module prefix
+			if c != '_' and c != 'M':
+				break
+
+		#previous character was not an underscore => we are in module prefix, sure at 100%
+		elif c == '_':
+			foundUnderscore = True
+
+		#in module prefix
+		modulePrefix += c
+
+	#count ending underscores
+	uNbr = 0
+	modulePrefix_length = len(modulePrefix)
+	for c in range(modulePrefix_length):
+		if modulePrefix[modulePrefix_length-c-1] == '_':
+			uNbr += 1
+		else:
+			break
+
+	#error case : should never occur. It would mean we made s-thing wrong when transforming module notation into module prefix
+	if uNbr%2 == 0:
+		print("[INTERNAL] Invalid module prefix '" + modulePrefix + "' extracted from name '" + name + "' (ending with even number of underscores).")
+		exit(1)
+	return modulePrefix
+
+#unprefixing anything <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< MAYBE MAKE IT EFFICIENT ENOUGH SO THAT WE CAN GET RID OF UNPREFIXIZEMODULE & EXTRACTMODULEPREFIX ?
+def unprefixizeAnyName(name): #GE<name> => <name>, M<mod>_E<name> => ^<mod>.<name>, ...
+	prefix = extractModulePrefix(name)
+	return unprefixizeModule(prefix) + str_sub(name, len(prefix)).replace("__", '_')
+
+#def extractAnyPrefix()
+#	return
+
+
+
+
+

@@ -57,7 +57,6 @@ class atm:
 
 
 
-
 # -------- GENERAL --------
 
 #general name parsing
@@ -206,13 +205,111 @@ ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + tuple(INCLUDERS.keys())
 FCT_NAME_CHARSET                = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
 VALUE_CHARSET                   = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_CHARSET + ('@', '#', '$') #additionnal FO
 
-#tools
+#option to be defined in src/main.z
+deepDebug_stepByStep = False #should be a global VARIABLE dataitem
+
+#cpl opt set
+CPL_OPT_VALUES__ARCHT = 0 #architecture type
+CPL_OPT_VALUES__ONOFF = 1
+CPL_OPT_VALUES__DIGIT = 2
+CPL_OPT_VALUES__RTYPE = 3 #root type
+CPL_OPT_ALLOWED = {
+	"ARCH":                           CPL_OPT_VALUES__ARCHT,
+	"INTERPRET_COMMON_STRUCTURES":    CPL_OPT_VALUES__ONOFF,
+	"MAX_INSTRUCTS_NOFUNCTION":       CPL_OPT_VALUES__DIGIT,
+	"CHECK_NULL_STC_BEFORE_METHOD":   CPL_OPT_VALUES__ONOFF,
+	"OPERATORS_SUPPORTS_INHERITANCE": CPL_OPT_VALUES__ONOFF,
+	"METHODS_SUPPORTS_INHERITANCE":   CPL_OPT_VALUES__ONOFF,
+	"EMPTY_DATA_ITEM_NULL":           CPL_OPT_VALUES__ONOFF,
+	"UNDECLINATED_IMPLICITSOURCE":    CPL_OPT_VALUES__RTYPE,
+	"LS_CNT_DIGITS":                  CPL_OPT_VALUES__DIGIT
+}
+
+#data item nature
+NATURE__PRIMITIVE = 0
+NATURE__STRUCTURE = 1
+NATURE__ENUMERATE = 2
+
+#statement kinds
+STM__IF_ = 0
+STM__FOR = 1
+STM__WHI = 2
+STM__SWI = 3
+
+#pcpl items
+PCPL_ITEM_NAME_CHARSET = DEFAULT_NAME_CHARSET #no link, but same value
+
+
+
+
+
+
+# -------- TEXT TOOLS --------
+
+#unprefixing module prefixes especially
 def unprefixizeModule(modulePrefix):
 	if len(modulePrefix) == 0:
 		return ""
 	if modulePrefix[0] == 'G':
 		return ""
 	return "^" + str_sub(modulePrefix, start=1).replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1] + '.'
+
+def extractModulePrefix(name):
+	if len(name) == 0:
+		return ""
+	if name[0] != 'M': #no module prefix
+		return ""
+
+	#get only module prefix from name
+	modulePrefix    = "M"
+	foundUnderscore = False
+	for c in name[1:]:
+
+		#previous character was an underscore => potential end of module prefix
+		if foundUnderscore:
+			foundUnderscore = False
+
+			#- double underscore => regular text, ignore it
+			#- end of module prefix, but another one follows => still in it
+			#else => definitely out of module prefix
+			if c != '_' and c != 'M':
+				break
+
+		#previous character was not an underscore => we are in module prefix, sure at 100%
+		elif c == '_':
+			foundUnderscore = True
+
+		#in module prefix
+		modulePrefix += c
+
+	#count ending underscores
+	uNbr = 0
+	modulePrefix_length = len(modulePrefix)
+	for c in range(modulePrefix_length):
+		if modulePrefix[modulePrefix_length-c-1] == '_':
+			uNbr += 1
+		else:
+			break
+
+	#error case : should never occur. It would mean we made s-thing wrong when transforming module notation into module prefix
+	if uNbr%2 == 0:
+		print("[INTERNAL] Invalid module prefix '" + modulePrefix + "' extracted from name '" + name + "' (ending with even number of underscores).")
+		exit(1)
+	return modulePrefix
+
+#unprefixing anything <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< MAYBE MAKE IT EFFICIENT ENOUGH SO THAT WE CAN GET RID OF UNPREFIXIZEMODULE & EXTRACTMODULEPREFIX ?
+def unprefixizeAnyName(name): #GE<name> => <name>, M<mod>_E<name> => ^<mod>.<name>, ...
+	prefix = extractModulePrefix(name)
+	return unprefixizeModule(prefix) + str_sub(name, len(prefix)).replace("__", '_')
+
+#def extractAnyPrefix()
+#	return
+
+
+
+
+
+# -------- SEMANTIC --------
 
 #ZCI
 class zci:
@@ -317,62 +414,7 @@ def dumpZCIs(ZCIs, filename):
 
 
 
-
-
-
-# -------- PRECOMPILATION --------
-
-#pcpl items
-PCPL_ITEM_NAME_CHARSET = DEFAULT_NAME_CHARSET #no link, but same value
-
-#pcpl data
-class pcplDat:
-	def __init__(self, configs, items):
-		self.items   = items
-		self.configs = configs
-
-def newPcplDat(configs, items):
-	formatted_configs = {}
-	for c in configs.keys():
-		v = configs[c]
-		if v == "ON":
-			formatted_configs[c] = True
-		elif v == "OFF":
-			formatted_configs[c] = False
-		else:
-			raise ValueError("Invalid value \"" + v + "\" given to precompiler configuration \"" + c + "\".")
-	return pcplDat(formatted_configs, items)
-
-
-
-
-
-
-# -------- COMPILATION --------
-
-#option to be defined in src/main.z
-deepDebug_stepByStep = False #should be a global VARIABLE dataitem
-
-#cpl opt set
-CPL_OPT_VALUES__ARCHT = 0 #architecture type
-CPL_OPT_VALUES__ONOFF = 1
-CPL_OPT_VALUES__DIGIT = 2
-CPL_OPT_VALUES__RTYPE = 3 #root type
-CPL_OPT_ALLOWED = {
-	"ARCH":                           CPL_OPT_VALUES__ARCHT,
-	"INTERPRET_COMMON_STRUCTURES":    CPL_OPT_VALUES__ONOFF,
-	"MAX_INSTRUCTS_NOFUNCTION":       CPL_OPT_VALUES__DIGIT,
-	"CHECK_NULL_STC_BEFORE_METHOD":   CPL_OPT_VALUES__ONOFF,
-	"OPERATORS_SUPPORTS_INHERITANCE": CPL_OPT_VALUES__ONOFF,
-	"METHODS_SUPPORTS_INHERITANCE":   CPL_OPT_VALUES__ONOFF,
-	"EMPTY_DATA_ITEM_NULL":           CPL_OPT_VALUES__ONOFF,
-	"UNDECLINATED_IMPLICITSOURCE":    CPL_OPT_VALUES__RTYPE,
-	"LS_CNT_DIGITS":                  CPL_OPT_VALUES__DIGIT
-}
-
-NATURE__PRIMITIVE = 0
-NATURE__STRUCTURE = 1
-NATURE__ENUMERATE = 2
+#types
 class typ_commonDcnData: #common type data among every declination
 	def __init__(self, dcnDeg):
 		self.parent = None
@@ -406,11 +448,28 @@ def newTyp(name, dcnDeg=0, dcns=None, commonDcnData=None):
 	result.commonDcnData = commonDcnData #typ_commonDcnData
 	return result
 
-class tab:
-	def __init__(self, length, data):
-	self.length = len(data) #don't really care about this in Python
-	self.data   = data
+#scope
+class scp:
+	def __init__(self):
+		self.exes      = None #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
+		self.dataItems = None #lst[dataItem]
+		self.parent    = None #scp
 
+def newScp(parent=None):
+	result = scp()
+	result.exes      = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
+	result.dataItems = [] #lst[dataItem]
+	result.parent    = parent
+	return result
+
+
+
+
+
+
+# -------- VAP RELATED --------
+
+#value
 class value:
 	def __init__(self, Type, data, constant=False):
 		self.type     = Type
@@ -466,6 +525,9 @@ class value:
 			exit(1)
 		return "{type:\"" + self.Type.name + "\",constant:" + str(self.constant) + ",data:" + dataStr + "}"
 
+
+
+#calls
 class call:
 	def __init__(self, name, params):
 		self.name   = name
@@ -513,6 +575,34 @@ class ODPResult:
 		self.maxStopIndex = maxStopIndex
 		self.mainPOCall   = mainPOCall
 
+class opSeq:
+	def __init__(self, stopIndex, operands, operators, operatorIndexes):
+		self.stopIndex       = stopIndex
+		self.operands        = operands  #lst[zci]
+		self.operators       = operators #lst (lst[ubyt] cause enm will be stored)
+		self.operatorIndexes = operatorIndexes
+
+	def toStr(self):
+		operandsText = ""
+		for a in self.operands:
+			operandsText += a.textFormat() + ','
+		operatorsText = ""
+		for o in self.operators:
+			operatorsText += OPERATOR_NAMES[o] + ','
+		return "{stopIndex:" + str(self.stopIndex) + ",operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
+
+
+
+#type for holding some VAP 2nd analysis information
+class VAP2:
+	def __init__(self, ZCIKindIfError, scope, cstOnly):
+		self.ZCIKindIfError = ZCIKindIfError
+		self.scope          = scope
+		self.cstOnly        = cstOnly
+
+
+
+#dataItem
 class dataItem:
 	def __init__(self, Type, name, initialized, initialValue, constant=False, fields=None):
 		self.Type         = Type
@@ -537,31 +627,22 @@ class dataItem:
 			fieldsText += "]"
 		return "{type:" + typeStr + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + initialValueStr + ",constant:" + str(self.constant) + ",fields:" + fieldsText + "}"
 
-#scope
-class scp:
-	def __init__(self):
-		self.exes      = None #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
-		self.dataItems = None #lst[dataItem]
-		self.parent    = None #scp
 
-def newScp(parent=None):
-	result = scp()
-	result.exes      = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
-	result.dataItems = [] #lst[dataItem]
-	result.parent    = parent
-	return result
 
+
+
+
+# -------- EXES --------
+
+#assignment
 class asg:
 	def __init__(self, dst, src):
 		self.dst = dst #dataItem or str (name only) ?
 		self.src = src #value
 
-#statement kinds
-STM__IF_ = 0
-STM__FOR = 1
-STM__WHI = 2
-STM__SWI = 3
 
+
+#statements
 class stm:
 	def __init__(self):
 		self.kind  = None
@@ -573,6 +654,9 @@ def newStm(kind, parentScope):
 	result.scope = newScp(parent=parentScope)
 	return result
 
+
+
+#functions
 class fct:
 	def __init__(self):
 		self.name    = None
@@ -580,28 +664,35 @@ class fct:
 		self.params  = None #lst[dataItem]
 		self.scope   = None
 
-class opSeq:
-	def __init__(self, stopIndex, operands, operators, operatorIndexes):
-		self.stopIndex       = stopIndex
-		self.operands        = operands  #lst[zci]
-		self.operators       = operators #lst (lst[ubyt] cause enm will be stored)
-		self.operatorIndexes = operatorIndexes
 
-	def toStr(self):
-		operandsText = ""
-		for a in self.operands:
-			operandsText += a.textFormat() + ','
-		operatorsText = ""
-		for o in self.operators:
-			operatorsText += OPERATOR_NAMES[o] + ','
-		return "{stopIndex:" + str(self.stopIndex) + ",operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
 
-#type for holding some VAP 2nd analysis information
-class VAP2:
-	def __init__(self, ZCIKindIfError, scope, cstOnly):
-		self.ZCIKindIfError = ZCIKindIfError
-		self.scope          = scope
-		self.cstOnly        = cstOnly
+
+# -------- PRECOMPILATION --------
+
+#pcpl data
+class pcplDat:
+	def __init__(self, configs, items):
+		self.items   = items
+		self.configs = configs
+
+def newPcplDat(configs, items):
+	formatted_configs = {}
+	for c in configs.keys():
+		v = configs[c]
+		if v == "ON":
+			formatted_configs[c] = True
+		elif v == "OFF":
+			formatted_configs[c] = False
+		else:
+			raise ValueError("Invalid value \"" + v + "\" given to precompiler configuration \"" + c + "\".")
+	return pcplDat(formatted_configs, items)
+
+
+
+
+
+
+# -------- COMPILATION --------
 
 #compiler data
 class cplDat:
@@ -636,10 +727,12 @@ def newCplDat(options, rootTypes):
 
 
 
+#imp zctx
 
 
 
-# -------- CONTEXTS --------
+
+# -------- Z CONTEXT --------
 
 #z code context
 def newZCtx(
@@ -790,57 +883,64 @@ class zctx:
 
 
 
-	# CFG CHECK
+#look for data item in given scope
+def getDataItem(name, scope):
 
-	#each cpl option must be defined
-	def checkCplOpt(self, cpl_opt):
+	#look for dataItem in current scope first
+	for di in scope.dataItems:
+		if name == di.name:
+			return di
 
-		#check each required option
-		for o in CPL_OPT_ALLOWED.keys():
+	#look for dataItem in parent scope
+	if scope.parent is not None:
+		return getDataItem(name, scope.parent)
 
-			#option must be defined
-			if o not in cpl_opt:
-				self.error("Missing compilation option \"" + o + "\" in configuration file cpl_opt.cfg.")
-
-			#check value: ARCH type
-			if CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ARCHT:
-				if cpl_opt[o] not in ("32", "64"):
-					self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (32 or 64 expected)")
-
-			#check value: ON / OFF
-			elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ONOFF:
-				if cpl_opt[o] not in ("ON", "OFF"):
-					self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (ON or OFF expected)")
-
-			#check value: integer
-			elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__DIGIT:
-				if not str_isConvertible_int(cpl_opt[o]):
-					self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (integer expected)")
-
-			#check value: root type
-			elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__RTYPE:
-				if cpl_opt[o] not in ROOT_TYPES:
-					self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (root type expected among " + ", ".join(ROOT_TYPES) + ")")
-
-		#check for additionnal options (not allowed)
-		if len(cpl_opt) > len(CPL_OPT_ALLOWED):
-			for o in cpl_opt.keys():
-				if o not in CPL_OPT_ALLOWED.keys():
-					self.error("Unknown compilation option \"" + o + "\".")
+	#not found even after scanning global scope => unknown
+	return None
 
 
 
-	# PARSING
 
-	#parsing shortcut relays
-	def get(self):
-		return self.ctx.get()
 
-	def inc(self):
-		return self.ctx.inc()
 
-	def forward(self, step):
-		return self.ctx.forward(step)
+
+#each cpl option must be defined
+def checkCplOpt(self, cpl_opt):
+
+	#check each required option
+	for o in CPL_OPT_ALLOWED.keys():
+
+		#option must be defined
+		if o not in cpl_opt:
+			self.error("Missing compilation option \"" + o + "\" in configuration file cpl_opt.cfg.")
+
+		#check value: ARCH type
+		if CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ARCHT:
+			if cpl_opt[o] not in ("32", "64"):
+				self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (32 or 64 expected)")
+
+		#check value: ON / OFF
+		elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ONOFF:
+			if cpl_opt[o] not in ("ON", "OFF"):
+				self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (ON or OFF expected)")
+
+		#check value: integer
+		elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__DIGIT:
+			if not str_isConvertible_int(cpl_opt[o]):
+				self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (integer expected)")
+
+		#check value: root type
+		elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__RTYPE:
+			if cpl_opt[o] not in ROOT_TYPES:
+				self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (root type expected among " + ", ".join(ROOT_TYPES) + ")")
+
+	#check for additionnal options (not allowed)
+	if len(cpl_opt) > len(CPL_OPT_ALLOWED):
+		for o in cpl_opt.keys():
+			if o not in CPL_OPT_ALLOWED.keys():
+				self.error("Unknown compilation option \"" + o + "\".")
+
+
 
 	#output
 	def internal(self, msg, printSubCtxs=True, printLine=True):
@@ -904,6 +1004,27 @@ class zctx:
 			print("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~", end="")
 			input()
 			print(Term__CUU1 + "                                       \r", end="")
+
+
+
+#imp parsing
+
+
+
+
+
+
+	# PARSING
+
+	#parsing shortcut relays
+	def get(self):
+		return self.ctx.get()
+
+	def inc(self):
+		return self.ctx.inc()
+
+	def forward(self, step):
+		return self.ctx.forward(step)
 
 
 
@@ -990,6 +1111,20 @@ class zctx:
 		self.overwriteSubCtxs(ZCI.subCtxs)
 		self.deepDebug(msg, printSubCtxs, printLine)
 		self.overwriteSubCtxs(previousSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
+# DEBUG
+
+	#modules
+	def debugModules(self):
+		unprefixedModules = ""
+		for mp in self.cpl.modulePrefixes:
+			unprefixedModules += "\n - " + unprefixizeModule(mp)
+		self.debug("Available modules are :" + unprefixedModules)
+
+	#cpl steps output
+	def cplStep_debugZCIs(self, cplStep):
+		if self.debugMode:
+			dumpZCIs(self.ZCIs, "debug/" + path_name(self.initialCtx.filename) + ".c" + cplStep + ".json")
+
 
 
 
@@ -1159,6 +1294,8 @@ class zctx:
 		#no match
 		return SYMBOL__NOT_FOUND
 
+
+
 	#read a name according to the given charset (either blacklist or whitelist)
 	# IMPORTANT : Reading ctx from its CURRENT position and move it right AFTER the extracted result
 	#also, blacklist is prioritary : if null => use whitelist, else, use it (no matter whitelist value)
@@ -1294,63 +1431,30 @@ class zctx:
 		#return result
 		return name
 
-	def splitModulePrefix(self, ZCI, name):
-		if len(name) == 0:
-			return ""
-		if name[0] != 'M': #no module prefix
-			return ""
 
-		#get only module prefix from name
-		modulePrefix    = "M"
-		foundUnderscore = False
-		for c in name[1:]:
 
-			#previous character was an underscore => potential end of module prefix
-			if foundUnderscore:
-				foundUnderscore = False
+	def tryReadDataItemIncludingFields(self, ZCI, scope):
+		di = getDataItem(
+			self.readName(ZCI, "Any data item name", parseModulePrefixes=True, modulePrefix_asHeaderOnly=True),
+			scope
+		)
 
-				#- double underscore => regular text, ignore it
-				#- end of module prefix, but another one follows => still in it
-				#else => definitely out of module prefix
-				if c != '_' and c != 'M':
+		#we may find some additionnal fields
+		while ZCI.get() == '.':
+			fieldName = self.readName(ZCI, "Field from data item " + unprefixizeModule() + "." + di.name)
+
+			#found a field with that name in our dataItem
+			fieldFound = None
+			for f in di.fields:
+				if f.name == fieldName:
+					fieldFound = f
 					break
+			if fieldFound is None:
+				self.ZCIError(ZCI, "Data item " + di.name + " has no field " + fieldName)
 
-			#previous character was not an underscore => we are in module prefix, sure at 100%
-			elif c == '_':
-				foundUnderscore = True
+		#return result
+		return di
 
-			#in module prefix
-			modulePrefix += c
-
-		#count ending underscores
-		uNbr = 0
-		modulePrefix_length = len(modulePrefix)
-		for c in range(modulePrefix_length):
-			if modulePrefix[modulePrefix_length-c-1] == '_':
-				uNbr += 1
-			else:
-				break
-
-		#error case : should never occur. It would mean we made s-thing wrong when transforming module notation into module prefix
-		if uNbr%2 == 0:
-			self.ZCIInternal(ZCI, "Invalid module prefix '" + modulePrefix + "' extracted from name '" + name + "' (ending with even number of underscores).")
-		return modulePrefix
-
-
-
-	# DEBUG
-
-	#modules
-	def debugModules(self):
-		unprefixedModules = ""
-		for mp in self.cpl.modulePrefixes:
-			unprefixedModules += "\n - " + unprefixizeModule(mp)
-		self.debug("Available modules are :" + unprefixedModules)
-
-	#cpl steps output
-	def cplStep_debugZCIs(self, cplStep):
-		if self.debugMode:
-			dumpZCIs(self.ZCIs, "debug/" + path_name(self.initialCtx.filename) + ".c" + cplStep + ".json")
 
 
 
@@ -1366,7 +1470,7 @@ class zctx:
 
 		#module-realted / global
 		if initialZCICtx.get() == '^':
-			tModulePrefix = self.splitModulePrefix(ZCI, tRawName)        #save its module prefix elsewhere
+			tModulePrefix = self.splitModulePrefix(tRawName)            #save its module prefix elsewhere
 			tRawName      = str_sub(tRawName, start=len(tModulePrefix)) # + cut it from "rawName" to keep only the REAL RAW NAME
 		else:
 			tModulePrefix = "G"
@@ -1447,6 +1551,7 @@ class zctx:
 		#final result
 		self.ZCIDeepDebug(ZCI, "Ended reading type.")
 		return tInstance
+
 
 
 
@@ -1752,7 +1857,7 @@ class zctx:
 	def unknownValueErrorIn2ndAnalysis(self, ZCI):
 		self.ZCIError(ZCI, "Unknown value given (not respecting any format supported by VAP in 2nd analysis).")
 
-	def atomicSecondAnalysis(self, ZCI, vap2info):
+	def secondAnalysis(self, ZCI, vap2info):
 		self.ZCIDeepDebug(ZCI, "2nd analysis: Reading ZCI fragment " + ZCI.textFormat() + " to apply second analysis on it.")
 		result = None
 		c = ZCI.get()
@@ -1914,18 +2019,55 @@ class zctx:
 
 
 
-	def secondAnalysis(self, ZCI, vap2info):
-		result = None
-		while not ZCI.reachedEnd():
+	def secondAnalysisIncludingFOs(self, ZCI, vap2info):
 
-			#read atomic value
-			atomicResult = self.atomicSecondAnalysis(ZCI, vap2info)
+		#mono-operand FOs: size (FSZ)
+		if ZCI.get() == '#':
+			self.ZCIDeepDebug(ZCI, "2nd analysis: Processing FSZ operator.")
+			Type = None
 
-			#followed by something that might deserve more attention
-			if ...:
-				
+			#try to get type directly
+			Type = self.readType(ZCI, vap2info.ZCIKindIfError, nullIfNotExisting=True)
 
-		return result
+			#rather try to get it through a data item name given
+			if Type is None:
+				di = getDataItem(
+					self.readName(ZCI, "raw type or data item name for size operator (#)"),
+					vap2info.scope
+				)
+				if di is None:
+					self.ZCIError(ZCI, "Unable to get raw type or data item name for size operator (#).")
+				Type = di.Type
+
+			#process FO & return result
+			#result = value(self.rootTypes[RT__LONG], atm(ATM_CALL, result)) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TO CONTINUE
+			#size = Type.size
+			#if reslt
+			self.ZCIDeepDebug("2nd analysis: FSZ resulted into fsz(" + Type.name + ") = " + str(Type.size))
+			return result
+
+		#mono-operand FOs: reference (FRF)
+		if ZCI.get() == '@':
+			return None
+
+		#second analysis: read value but don't care if there are still things to analyze ()
+		result = self.SecondAnalysis(ZCI, vap2info) #after this, ZCI index is right AFTER the value read
+		self.optionnalBlanks(ZCI, None)
+
+		#that was it
+		if ZCI.reachedEnd():
+			return result
+
+		#2-operands FOs: casht (FCA)
+		if ZCI.get() == '$':
+			return None
+
+		#2-operands FOs: field access (FFA)
+		if ZCI.get() == '.':
+			return None
+
+		#too much content in VALUE ZCE
+		self.ZCIError(ZCI, "Too much elements in VALUE ZCE (2nd analysis parsing).")
 
 
 
@@ -1941,7 +2083,7 @@ class zctx:
 
 			#considering it can only be a ZCI atm (internal error case could have added)
 			else:
-				firstOperandValue = self.secondAnalysis(currentPOCall.firstOperand.data, vap2info)
+				firstOperandValue = self.secondAnalysisIncludingFOs(currentPOCall.firstOperand.data, vap2info)
 
 		#process 2nd operand
 		secondOperandValue = None
@@ -1949,11 +2091,11 @@ class zctx:
 
 			#recursively solving children before
 			if currentPOCall.secondOperand.id == ATM__POCALL:
-				secondOperandValue = self.applySecondAnalysis(currentPOCall.secondOperand.data, originalZCI, vap2info)
+				secondOperandValue = self.secondAnalysisIncludingFOs(currentPOCall.secondOperand.data, originalZCI, vap2info)
 
 			#considering it can only be a ZCI atm (internal error case could have added)
 			else:
-				secondOperandValue = self.secondAnalysis(currentPOCall.secondOperand.data, vap2info)
+				secondOperandValue = self.processFOAndSecondAnalysis(currentPOCall.secondOperand.data, vap2info)
 
 
 
@@ -2022,6 +2164,8 @@ class zctx:
 
 
 
+
+
 	#data items
 	def checkAlreadyDeclaredDataItemOrField(self, ZCI, dis, di):
 		for other in dis:
@@ -2037,7 +2181,7 @@ class zctx:
 			self.jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 
 		#read name
-		name = self.readName(ZCI, "data item name")
+		name = self.readName(ZCI, "data item name", parseModulePrefixes=True, modulePrefix_asHeaderOnly=True)
 
 		#default initial value: uninitialized
 		initialized  = False
@@ -2113,3 +2257,6 @@ class zctx:
 		#return result
 		self.ZCIDeepDebug(ZCI, "Ended reading sequence of data item(s).")
 		return dis
+
+
+
