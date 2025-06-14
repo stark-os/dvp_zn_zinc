@@ -149,21 +149,6 @@ class zctx:
 
 
 
-#look for data item in given scope
-def getDataItem(name, scope):
-
-	#look for dataItem in current scope first
-	for di in scope.dataItems:
-		if name == di.name:
-			return di
-
-	#look for dataItem in parent scope
-	if scope.parent is not None:
-		return getDataItem(name, scope.parent)
-
-	#not found even after scanning global scope => unknown
-	return None
-
 
 
 

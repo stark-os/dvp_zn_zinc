@@ -61,5 +61,29 @@ def unprefixizeAnyName(name): #GE<name> => <name>, M<mod>_E<name> => ^<mod>.<nam
 
 
 
+#look for data item in given scope. WARNING! Name must be given without any prefix + module prefixes not supported !
+def getDataItem(name, scope):
+	fullName = 'L' + name
+
+	#look for dataItem in current scope first (considering it local)
+	for di in scope.dataItems:
+		if fullName == di.name:
+			return di
+
+	#not found and no parent scope => considering it global => look for it in global elements
+	if scope.parent is None:
+		fullName = "GE" + name
+		for di in scope.dataItems:
+			if fullName == di.name:
+				return di
+
+	#not found but having a parent scope => look for it in its parent
+	else:
+		return getDataItem(name, scope.parent)
+
+	#not found even after scanning global scope => unknown
+	return None
+
+
 
 

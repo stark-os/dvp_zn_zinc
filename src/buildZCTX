@@ -1,16 +1,20 @@
 #!/bin/bash
 
-cat zctx/std.py            >  zctx.py
-cat zctx/defs.py           >> zctx.py
-cat zctx/generic.py        >> zctx.py
-cat zctx/ZCEs.py           >> zctx.py
-cat zctx/p-cpl1.py         >> zctx.py
-cat zctx/zctx.py           >> zctx.py
-cat zctx/p-cpl2.py         >> zctx.py
-cat zctx/output1.py        >> zctx.py
-cat zctx/parsing.py        >> zctx.py
-cat zctx/output2.py        >> zctx.py
-cat zctx/read/generic.py   >> zctx.py
-cat zctx/read/type.py      >> zctx.py
-cat zctx/read/value.py     >> zctx.py
-cat zctx/read/dataItem.py  >> zctx.py
+CXD=$(dirname $(realpath $0))
+
+chmod a+w                          $CXD/zctx.py
+cat $CXD/zctx/std.py            >  $CXD/zctx.py
+cat $CXD/zctx/defs.py           >> $CXD/zctx.py
+cat $CXD/zctx/independant.py    >> $CXD/zctx.py
+cat $CXD/zctx/ZCEs.py           >> $CXD/zctx.py
+cat $CXD/zctx/p-cpl1.py         >> $CXD/zctx.py
+cat $CXD/zctx/zctx.py           >> $CXD/zctx.py
+cat $CXD/zctx/p-cpl2.py         >> $CXD/zctx.py
+cat $CXD/zctx/output1.py        >> $CXD/zctx.py
+cat $CXD/zctx/parsing.py        >> $CXD/zctx.py
+cat $CXD/zctx/output2.py        >> $CXD/zctx.py
+cat $CXD/zctx/read/generic.py   >> $CXD/zctx.py
+cat $CXD/zctx/read/type.py      >> $CXD/zctx.py
+cat $CXD/zctx/read/value.py     >> $CXD/zctx.py
+cat $CXD/zctx/read/dataItem.py  >> $CXD/zctx.py
+chmod a-w                          $CXD/zctx.py

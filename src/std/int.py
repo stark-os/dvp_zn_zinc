@@ -49,4 +49,4 @@ def halfHex_toByt(h):
 		return 15
 
 def hex_toByt(h1, h0):
-	return (halfHex_toByt(h1) << 2) | halfHex_toByt(h0)
+	return (halfHex_toByt(h1) << 4) + halfHex_toByt(h0)

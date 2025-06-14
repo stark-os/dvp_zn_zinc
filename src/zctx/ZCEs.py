@@ -161,7 +161,7 @@ def newScp(parent=None):
 #value
 class value:
 	def __init__(self, Type, data, constant=False):
-		self.type     = Type
+		self.Type     = Type
 		self.data     = data  #atm #can be either a root type (literal), str (name) or call.
 		self.constant = constant
 
@@ -283,7 +283,7 @@ class opSeq:
 
 
 #type for holding some VAP 2nd analysis information
-class VAP2:
+class vap2:
 	def __init__(self, ZCIKindIfError, scope, cstOnly):
 		self.ZCIKindIfError = ZCIKindIfError
 		self.scope          = scope

@@ -144,7 +144,7 @@ INCLUDERS       = { '(':')', '[':']', '{':'}' }
 DEFAULT_NAME_CHARSET            = tuple(string.ascii_letters + string.digits + '_')
 ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + tuple(INCLUDERS.keys())
 FCT_NAME_CHARSET                = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
-VALUE_CHARSET                   = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_CHARSET + ('@', '#', '$') #additionnal FO
+VALUE_CHARSET                   = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_CHARSET + ('@', '#', '$', '`') #additionnal FO + byte notation prefix
 
 #option to be defined in src/main.z
 deepDebug_stepByStep = False #should be a global VARIABLE dataitem

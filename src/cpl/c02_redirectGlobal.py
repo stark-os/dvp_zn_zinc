@@ -62,7 +62,7 @@ def processTypeDcl(zCtx, ZCI):
 		fullName = ZCI.modulePrefix + 'U' + rawName
 
 	#check already existing
-	if self.getType(fullName) is not None:
+	if zCtx.getType(fullName) is not None:
 		modulePrefixText = ""
 		if len(ZCI.modulePrefix) != 0:
 			modulePrefixText = unprefixizeModule(ZCI.modulePrefix)
@@ -150,12 +150,18 @@ def processEnmDcl(zCtx, ZCI, scope):
 	zCtx.ZCIDebug(ZCI, "Processing enumerate declaration.", printSubCtxs=True)
 	zCtx.jumpBlankZone(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM)")
 
-	#get full enm name
-	rawName = zCtx.readName(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM).", doubleUnderscores=True)
-	if len(ZCI.modulePrefix) == 0:
-		fullName = "GE" + rawName #!WARNING: 'E' stands for "element" and not "enumerate" (no distinction with other data items)
+	#set scope prefix
+	if scope == zCtx.cpl.globalScope:
+		if len(ZCI.modulePrefix) == 0:
+			scopePrefix = ZCI.modulePrefix + 'E' #global "element" (not "enumerate", there is no distinction with other data items)
+		else:
+			scopePrefix = "GE"
 	else:
-		fullName = ZCI.modulePrefix + 'E' + rawName
+		scopePrefix = 'L' #"local" element
+
+	#get full enm name
+	rawName  = zCtx.readName(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM).", doubleUnderscores=True)
+	fullName = scopePrefix + rawName
 
 	#must be followed by braces includer
 	zCtx.optionnalBlanks(ZCI, "fields inside braces includer in enumerate declaration ZCI (DCL_ENM).", blanks=BLANKS_EXTENDED)

@@ -308,7 +308,7 @@
 
 
 
-		# I] LITERAL: COMMON DATA STRUCTURES
+		# I] LITERAL: COMMON DATA STRUCTURE SHORTCUT
 
 		#map starter symbol
 		targettingMap = False
@@ -347,10 +347,12 @@
 			#read subvalues as long as we have some (separated by comas)
 			subValues        = [] #lst[value]
 			subValues_second = [] #for maps
+			self.ZCIDeepDebug(ZCI, "Start reading sub values sequence.", printLine=False)
 			while True:
 
 				#read subvalue
 				self.optionnalBlanks(ZCI, None, BLANKS_EXTENDED)
+				self.ZCIDeepDebug(ZCI, "=> Reading " + str(len(subValues)+1) + "th sub value.", printLine=False)
 				subValues.append( self.readValue(ZCI, vap2info.ZCIKindIfError, vap2info.scope, vap2info.cstOnly) )
 
 				#read second subValue (for maps only)
@@ -378,6 +380,9 @@
 				if next != ',':
 					self.ZCIError(ZCI, "Invalid element " + next + " given in value sequence between includers (expected coma separator ',' or closing includer '" + targettedEnd + "').")
 				ZCI.inc()
+
+			#debug
+			self.ZCIDeepDebug(ZCI, "Stop reading sub values sequence.")
 
 			#table with only one element => explicit priorization
 			if targettedEnd == ')' and not targettingMap and len(subValues) == 1:
@@ -419,6 +424,7 @@
 
 			#multi-byte sequence
 			if ZCI.get() == BN_PREFIX:
+				self.ZCIDeepDebug(ZCI, "Reading hexadecimal value in multi-bytes notation.")
 				if ZCI.inc():
 					self.ZCIError(ZCI, "Missing content after multiple-bytes notation.")
 
@@ -441,6 +447,7 @@
 				return result
 
 			#single-byte sequence
+			self.ZCIDeepDebug(ZCI, "Reading hexadecimal value in single-byte notation.")
 			result = value(
 				self.rootTypes[RT__BYT],
 				atm(ATM__BYT, self.readHexByte(ZCI))
@@ -451,7 +458,7 @@
 
 
 
-		# III] .
+		# III] LITERAL: .
 
 		#
 		#
@@ -464,58 +471,87 @@
 
 
 	def secondAnalysisIncludingFOs(self, ZCI, vap2info):
+		starter = ZCI.get()
 
-		#mono-operand FOs: size (FSZ)
-		if ZCI.get() == '#':
+
+
+		# 1) PROCESSING FOs: MONO-OPERAND
+
+		#size (FSZ)
+		if starter == '#':
 			self.ZCIDeepDebug(ZCI, "2nd analysis: Processing FSZ operator.")
-			Type = None
+			ZCI.inc()
+			Type = self.readType(ZCI, vap2info.ZCIKindIfError)
 
-			#try to get type directly
-			Type = self.readType(ZCI, vap2info.ZCIKindIfError, nullIfNotExisting=True)
+			#get size
+			if Type.commonDcnData.nature != NATURE__PRIMITIVE:
+				size = Type.commonDcnData.stcSize
+			else:
+				size = Type.size
 
-			#rather try to get it through a data item name given
-			if Type is None:
-				di = getDataItem(
-					self.readName(ZCI, "raw type or data item name for size operator (#)"),
-					vap2info.scope
-				)
-				if di is None:
-					self.ZCIError(ZCI, "Unable to get raw type or data item name for size operator (#).")
-				Type = di.Type
+			#result
+			self.ZCIDeepDebug("2nd analysis: FSZ resulted into fsz(" + unprefixize(Type.name) + ") = " + str(size))
+			return value(self.rootTypes[RT__LONG], atm(ATM__LNG, size))
 
-			#process FO & return result
-			result = value(self.rootTypes[RT__LONG], atm(ATM_CALL, result))
-			size = Type.size
-			if reslt
-			self.ZCIDeepDebug("2nd analysis: FSZ resulted into fsz(" + Type.name + ") = " + str(Type.size))
-			return result
+		#reference (FRF)
+		if starter == '@':
+			self.ZCIDeepDebug(ZCI, "2nd analysis: Processing FRF operator.")
+			ZCI.inc()
 
-		#mono-operand FOs: reference (FRF)
-		if ZCI.get() == '@':
-			return 
+			#target data item
+			di = self.tryReadDataItemIncludingFields(ZCI, vap2info.scope)
+			if di is None:
+				self.ZCIError(ZCI, "Missing or invalid data item given for reference operator '@' (FRF).")
 
-		#second analysis: read value but don't care if there are still things to analyze ()
-		result = self.SecondAnalysis(ZCI, vap2info) #after this, ZCI index is right AFTER the value read
+			#result
+			self.ZCIDeepDebug("2nd analysis: FRF resulted into call to frf()") #<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+			return value(self.rootTypes[RT__LONG], atm(ATM__PTR, 0))           #<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+		# 2) SECOND ANALYSIS WITHOUT END-CHECK
+
+		#read value but don't care if there are still things to analyze
+		result = self.secondAnalysis(ZCI, vap2info) #after this, ZCI index is right AFTER the value read
 		self.optionnalBlanks(ZCI, None)
 
-		#that was it
+		#nothing left to analyze
 		if ZCI.reachedEnd():
 			return result
 
-		#2-operands FOs: casht (FCA)
-		if ZCI.get() == '$':
-			return 
 
-		#2-operands FOs: field access (FFA)
-		if ZCI.get() == '.':
-			return 
+
+		# 3) PROCESSING FOs: 2-OPERANDS
+
+		#casht (FCA)
+		if ZCI.get() == '$':
+			ZCI.inc()
+			self.optionnalBlanks(ZCI, None)
+
+			#read explicit type
+			self.ZCIDeepDebug(ZCI, "2nd analysis: Processing FCA operator on value " + result.toStr())
+			Type = self.readType(ZCI, vap2info.ZCIKindIfError)
+
+			#overwrite result type
+			result.Type = Type
+			self.ZCIDeepDebug("2nd analysis: FCA operator applied type " + unprefixize(Type.name) + " on value " + result.toStr())
+
+		#field access (FFA)
+		#else:
+			#result = self.readFields(ZCI, ): #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+			#return 
 
 		#too much content in VALUE ZCE
-		self.ZCIError(ZCI, "Too much elements in VALUE ZCE (2nd analysis parsing).")
+		if not ZCI.reachedEnd():
+			self.ZCIError(ZCI, "Too much elements in VALUE ZCE (2nd analysis parsing).")
+
+		#success
+		return result
 
 
 
-	def applySecondAnalysis(self, currentPOCall, originalZCI, vap2info):
+	#RECURSIVE entry point for 2nd analysis (applying it on the whole ODP result)
+	def applySecondAnalysis(self, currentPOCall, originalZCI, vap2info): #originalZCI only used for error accuracy
 
 		#process 1st operand
 		firstOperandValue = None
@@ -525,9 +561,13 @@
 			if currentPOCall.firstOperand.id == ATM__POCALL:
 				firstOperandValue = self.applySecondAnalysis(currentPOCall.firstOperand.data, originalZCI, vap2info)
 
-			#considering it can only be a ZCI atm (internal error case could have added)
-			else:
+			#UNITARY entry point for 2nd analysis
+			elif currentPOCall.firstOperand.id == ATM__ZCI:
 				firstOperandValue = self.secondAnalysisIncludingFOs(currentPOCall.firstOperand.data, vap2info)
+
+			#should never happen
+			else:
+				self.internal("Found a non-POCall & non-ZCI atom in ODP result.")
 
 		#process 2nd operand
 		secondOperandValue = None
@@ -537,9 +577,13 @@
 			if currentPOCall.secondOperand.id == ATM__POCALL:
 				secondOperandValue = self.secondAnalysisIncludingFOs(currentPOCall.secondOperand.data, originalZCI, vap2info)
 
-			#considering it can only be a ZCI atm (internal error case could have added)
+			#UNITARY entry point for 2nd analysis
+			elif currentPOCall.secondOperand.id == ATM__ZCI:
+				secondOperandValue = self.secondAnalysisIncludingFOs(currentPOCall.secondOperand.data, vap2info)
+
+			#should never happen
 			else:
-				secondOperandValue = self.processFOAndSecondAnalysis(currentPOCall.secondOperand.data, vap2info)
+				self.internal("Found a non-POCall & non-ZCI atom in ODP result.")
 
 
 
@@ -583,7 +627,7 @@
 				break
 		if matchingFunction is None:
 			originalZCI.forward(currentPOCall.operatorIndex - originalZCI.ctx.icontent.index)
-			self.ZCIError(originalZCI, "No operator \"" + f.name + "\" declared yet.")
+			self.ZCIError(originalZCI, "No operator \"" + unprefixize(f.name) + "\" declared yet.")
 
 		#result
 		return value(

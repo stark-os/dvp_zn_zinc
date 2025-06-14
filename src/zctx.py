@@ -203,7 +203,7 @@ INCLUDERS       = { '(':')', '[':']', '{':'}' }
 DEFAULT_NAME_CHARSET            = tuple(string.ascii_letters + string.digits + '_')
 ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + tuple(INCLUDERS.keys())
 FCT_NAME_CHARSET                = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
-VALUE_CHARSET                   = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_CHARSET + ('@', '#', '$') #additionnal FO
+VALUE_CHARSET                   = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_CHARSET + ('@', '#', '$', '`') #additionnal FO + byte notation prefix
 
 #option to be defined in src/main.z
 deepDebug_stepByStep = False #should be a global VARIABLE dataitem
@@ -305,6 +305,30 @@ def unprefixizeAnyName(name): #GE<name> => <name>, M<mod>_E<name> => ^<mod>.<nam
 #def extractAnyPrefix()
 #	return
 
+
+
+#look for data item in given scope. WARNING! Name must be given without any prefix + module prefixes not supported !
+def getDataItem(name, scope):
+	fullName = 'L' + name
+
+	#look for dataItem in current scope first (considering it local)
+	for di in scope.dataItems:
+		if fullName == di.name:
+			return di
+
+	#not found and no parent scope => considering it global => look for it in global elements
+	if scope.parent is None:
+		fullName = "GE" + name
+		for di in scope.dataItems:
+			if fullName == di.name:
+				return di
+
+	#not found but having a parent scope => look for it in its parent
+	else:
+		return getDataItem(name, scope.parent)
+
+	#not found even after scanning global scope => unknown
+	return None
 
 
 
@@ -472,7 +496,7 @@ def newScp(parent=None):
 #value
 class value:
 	def __init__(self, Type, data, constant=False):
-		self.type     = Type
+		self.Type     = Type
 		self.data     = data  #atm #can be either a root type (literal), str (name) or call.
 		self.constant = constant
 
@@ -594,7 +618,7 @@ class opSeq:
 
 
 #type for holding some VAP 2nd analysis information
-class VAP2:
+class vap2:
 	def __init__(self, ZCIKindIfError, scope, cstOnly):
 		self.ZCIKindIfError = ZCIKindIfError
 		self.scope          = scope
@@ -883,62 +907,47 @@ class zctx:
 
 
 
-#look for data item in given scope
-def getDataItem(name, scope):
-
-	#look for dataItem in current scope first
-	for di in scope.dataItems:
-		if name == di.name:
-			return di
-
-	#look for dataItem in parent scope
-	if scope.parent is not None:
-		return getDataItem(name, scope.parent)
-
-	#not found even after scanning global scope => unknown
-	return None
 
 
 
 
 
 
+	#each cpl option must be defined
+	def checkCplOpt(self, cpl_opt):
 
-#each cpl option must be defined
-def checkCplOpt(self, cpl_opt):
+		#check each required option
+		for o in CPL_OPT_ALLOWED.keys():
 
-	#check each required option
-	for o in CPL_OPT_ALLOWED.keys():
+			#option must be defined
+			if o not in cpl_opt:
+				self.error("Missing compilation option \"" + o + "\" in configuration file cpl_opt.cfg.")
 
-		#option must be defined
-		if o not in cpl_opt:
-			self.error("Missing compilation option \"" + o + "\" in configuration file cpl_opt.cfg.")
+			#check value: ARCH type
+			if CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ARCHT:
+				if cpl_opt[o] not in ("32", "64"):
+					self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (32 or 64 expected)")
 
-		#check value: ARCH type
-		if CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ARCHT:
-			if cpl_opt[o] not in ("32", "64"):
-				self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (32 or 64 expected)")
+			#check value: ON / OFF
+			elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ONOFF:
+				if cpl_opt[o] not in ("ON", "OFF"):
+					self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (ON or OFF expected)")
 
-		#check value: ON / OFF
-		elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ONOFF:
-			if cpl_opt[o] not in ("ON", "OFF"):
-				self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (ON or OFF expected)")
+			#check value: integer
+			elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__DIGIT:
+				if not str_isConvertible_int(cpl_opt[o]):
+					self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (integer expected)")
 
-		#check value: integer
-		elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__DIGIT:
-			if not str_isConvertible_int(cpl_opt[o]):
-				self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (integer expected)")
+			#check value: root type
+			elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__RTYPE:
+				if cpl_opt[o] not in ROOT_TYPES:
+					self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (root type expected among " + ", ".join(ROOT_TYPES) + ")")
 
-		#check value: root type
-		elif CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__RTYPE:
-			if cpl_opt[o] not in ROOT_TYPES:
-				self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (root type expected among " + ", ".join(ROOT_TYPES) + ")")
-
-	#check for additionnal options (not allowed)
-	if len(cpl_opt) > len(CPL_OPT_ALLOWED):
-		for o in cpl_opt.keys():
-			if o not in CPL_OPT_ALLOWED.keys():
-				self.error("Unknown compilation option \"" + o + "\".")
+		#check for additionnal options (not allowed)
+		if len(cpl_opt) > len(CPL_OPT_ALLOWED):
+			for o in cpl_opt.keys():
+				if o not in CPL_OPT_ALLOWED.keys():
+					self.error("Unknown compilation option \"" + o + "\".")
 
 
 
@@ -1111,7 +1120,10 @@ def checkCplOpt(self, cpl_opt):
 		self.overwriteSubCtxs(ZCI.subCtxs)
 		self.deepDebug(msg, printSubCtxs, printLine)
 		self.overwriteSubCtxs(previousSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
-# DEBUG
+
+
+
+	# DEBUG
 
 	#modules
 	def debugModules(self):
@@ -1433,15 +1445,13 @@ def checkCplOpt(self, cpl_opt):
 
 
 
-	def tryReadDataItemIncludingFields(self, ZCI, scope):
-		di = getDataItem(
-			self.readName(ZCI, "Any data item name", parseModulePrefixes=True, modulePrefix_asHeaderOnly=True),
-			scope
-		)
+	def lookForFieldsAccessInDataItem(self, ZCI, di): #basically FFA application
+		if di is None:
+			return None
 
-		#we may find some additionnal fields
+		#as long as we try to access fields
 		while ZCI.get() == '.':
-			fieldName = self.readName(ZCI, "Field from data item " + unprefixizeModule() + "." + di.name)
+			fieldName = self.readName(ZCI, "Field from data item " + unprefixize(di.name))
 
 			#found a field with that name in our dataItem
 			fieldFound = None
@@ -1452,8 +1462,36 @@ def checkCplOpt(self, cpl_opt):
 			if fieldFound is None:
 				self.ZCIError(ZCI, "Data item " + di.name + " has no field " + fieldName)
 
-		#return result
+			#update result (field access)
+			di = fieldFound
+
+		#return result (whenever it has changed or not)
 		return di
+
+
+
+	#WARNING! This function is not to be used as part of ODP (symbol '^' should never refer to XOR operator)
+	#         Technically, we should only use it in 2nd analysis.
+	def tryReadDataItemIncludingFields(self, ZCI, scope):
+		starter = ZCI.get()
+
+		#read name (will have module prefix if any)
+		name = self.readName(ZCI, "Any data item name", parseModulePrefixes=True, modulePrefix_asHeaderOnly=True),
+		di   = None #just declare
+
+		#case 1: having a module prefix => looking directly in global scope
+		if starter == '^':
+			for ldi in self.cpl.globalScope.dataItems:
+				if name == ldi.name: #name should exactly correspond (full name given from readName in case of module prefix)
+					di = ldi
+					break
+
+		#case 2: no module prefix => getting through every local elements until non-module global ones
+		else:
+			di = getDataItem(name, scope)
+
+		#field access if any
+		return self.lookForFieldsAccessInDataItem(ZCI, di)
 
 
 
@@ -1864,7 +1902,7 @@ def checkCplOpt(self, cpl_opt):
 
 
 
-		# I] LITERAL: COMMON DATA STRUCTURES
+		# I] LITERAL: COMMON DATA STRUCTURE SHORTCUT
 
 		#map starter symbol
 		targettingMap = False
@@ -1903,10 +1941,12 @@ def checkCplOpt(self, cpl_opt):
 			#read subvalues as long as we have some (separated by comas)
 			subValues        = [] #lst[value]
 			subValues_second = [] #for maps
+			self.ZCIDeepDebug(ZCI, "Start reading sub values sequence.", printLine=False)
 			while True:
 
 				#read subvalue
 				self.optionnalBlanks(ZCI, None, BLANKS_EXTENDED)
+				self.ZCIDeepDebug(ZCI, "=> Reading " + str(len(subValues)+1) + "th sub value.", printLine=False)
 				subValues.append( self.readValue(ZCI, vap2info.ZCIKindIfError, vap2info.scope, vap2info.cstOnly) )
 
 				#read second subValue (for maps only)
@@ -1934,6 +1974,9 @@ def checkCplOpt(self, cpl_opt):
 				if next != ',':
 					self.ZCIError(ZCI, "Invalid element " + next + " given in value sequence between includers (expected coma separator ',' or closing includer '" + targettedEnd + "').")
 				ZCI.inc()
+
+			#debug
+			self.ZCIDeepDebug(ZCI, "Stop reading sub values sequence.")
 
 			#table with only one element => explicit priorization
 			if targettedEnd == ')' and not targettingMap and len(subValues) == 1:
@@ -1975,6 +2018,7 @@ def checkCplOpt(self, cpl_opt):
 
 			#multi-byte sequence
 			if ZCI.get() == BN_PREFIX:
+				self.ZCIDeepDebug(ZCI, "Reading hexadecimal value in multi-bytes notation.")
 				if ZCI.inc():
 					self.ZCIError(ZCI, "Missing content after multiple-bytes notation.")
 
@@ -1997,6 +2041,7 @@ def checkCplOpt(self, cpl_opt):
 				return result
 
 			#single-byte sequence
+			self.ZCIDeepDebug(ZCI, "Reading hexadecimal value in single-byte notation.")
 			result = value(
 				self.rootTypes[RT__BYT],
 				atm(ATM__BYT, self.readHexByte(ZCI))
@@ -2007,7 +2052,7 @@ def checkCplOpt(self, cpl_opt):
 
 
 
-		# III] .
+		# III] LITERAL: .
 
 		#
 		#
@@ -2020,58 +2065,87 @@ def checkCplOpt(self, cpl_opt):
 
 
 	def secondAnalysisIncludingFOs(self, ZCI, vap2info):
+		starter = ZCI.get()
 
-		#mono-operand FOs: size (FSZ)
-		if ZCI.get() == '#':
+
+
+		# 1) PROCESSING FOs: MONO-OPERAND
+
+		#size (FSZ)
+		if starter == '#':
 			self.ZCIDeepDebug(ZCI, "2nd analysis: Processing FSZ operator.")
-			Type = None
+			ZCI.inc()
+			Type = self.readType(ZCI, vap2info.ZCIKindIfError)
 
-			#try to get type directly
-			Type = self.readType(ZCI, vap2info.ZCIKindIfError, nullIfNotExisting=True)
+			#get size
+			if Type.commonDcnData.nature != NATURE__PRIMITIVE:
+				size = Type.commonDcnData.stcSize
+			else:
+				size = Type.size
 
-			#rather try to get it through a data item name given
-			if Type is None:
-				di = getDataItem(
-					self.readName(ZCI, "raw type or data item name for size operator (#)"),
-					vap2info.scope
-				)
-				if di is None:
-					self.ZCIError(ZCI, "Unable to get raw type or data item name for size operator (#).")
-				Type = di.Type
+			#result
+			self.ZCIDeepDebug("2nd analysis: FSZ resulted into fsz(" + unprefixize(Type.name) + ") = " + str(size))
+			return value(self.rootTypes[RT__LONG], atm(ATM__LNG, size))
 
-			#process FO & return result
-			#result = value(self.rootTypes[RT__LONG], atm(ATM_CALL, result)) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TO CONTINUE
-			#size = Type.size
-			#if reslt
-			self.ZCIDeepDebug("2nd analysis: FSZ resulted into fsz(" + Type.name + ") = " + str(Type.size))
-			return result
+		#reference (FRF)
+		if starter == '@':
+			self.ZCIDeepDebug(ZCI, "2nd analysis: Processing FRF operator.")
+			ZCI.inc()
 
-		#mono-operand FOs: reference (FRF)
-		if ZCI.get() == '@':
-			return None
+			#target data item
+			di = self.tryReadDataItemIncludingFields(ZCI, vap2info.scope)
+			if di is None:
+				self.ZCIError(ZCI, "Missing or invalid data item given for reference operator '@' (FRF).")
 
-		#second analysis: read value but don't care if there are still things to analyze ()
-		result = self.SecondAnalysis(ZCI, vap2info) #after this, ZCI index is right AFTER the value read
+			#result
+			self.ZCIDeepDebug("2nd analysis: FRF resulted into call to frf()") #<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+			return value(self.rootTypes[RT__LONG], atm(ATM__PTR, 0))           #<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+		# 2) SECOND ANALYSIS WITHOUT END-CHECK
+
+		#read value but don't care if there are still things to analyze
+		result = self.secondAnalysis(ZCI, vap2info) #after this, ZCI index is right AFTER the value read
 		self.optionnalBlanks(ZCI, None)
 
-		#that was it
+		#nothing left to analyze
 		if ZCI.reachedEnd():
 			return result
 
-		#2-operands FOs: casht (FCA)
-		if ZCI.get() == '$':
-			return None
 
-		#2-operands FOs: field access (FFA)
-		if ZCI.get() == '.':
-			return None
+
+		# 3) PROCESSING FOs: 2-OPERANDS
+
+		#casht (FCA)
+		if ZCI.get() == '$':
+			ZCI.inc()
+			self.optionnalBlanks(ZCI, None)
+
+			#read explicit type
+			self.ZCIDeepDebug(ZCI, "2nd analysis: Processing FCA operator on value " + result.toStr())
+			Type = self.readType(ZCI, vap2info.ZCIKindIfError)
+
+			#overwrite result type
+			result.Type = Type
+			self.ZCIDeepDebug("2nd analysis: FCA operator applied type " + unprefixize(Type.name) + " on value " + result.toStr())
+
+		#field access (FFA)
+		#else:
+			#result = self.readFields(ZCI, ): #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+			#return 
 
 		#too much content in VALUE ZCE
-		self.ZCIError(ZCI, "Too much elements in VALUE ZCE (2nd analysis parsing).")
+		if not ZCI.reachedEnd():
+			self.ZCIError(ZCI, "Too much elements in VALUE ZCE (2nd analysis parsing).")
+
+		#success
+		return result
 
 
 
-	def applySecondAnalysis(self, currentPOCall, originalZCI, vap2info):
+	#RECURSIVE entry point for 2nd analysis (applying it on the whole ODP result)
+	def applySecondAnalysis(self, currentPOCall, originalZCI, vap2info): #originalZCI only used for error accuracy
 
 		#process 1st operand
 		firstOperandValue = None
@@ -2081,9 +2155,13 @@ def checkCplOpt(self, cpl_opt):
 			if currentPOCall.firstOperand.id == ATM__POCALL:
 				firstOperandValue = self.applySecondAnalysis(currentPOCall.firstOperand.data, originalZCI, vap2info)
 
-			#considering it can only be a ZCI atm (internal error case could have added)
-			else:
+			#UNITARY entry point for 2nd analysis
+			elif currentPOCall.firstOperand.id == ATM__ZCI:
 				firstOperandValue = self.secondAnalysisIncludingFOs(currentPOCall.firstOperand.data, vap2info)
+
+			#should never happen
+			else:
+				self.internal("Found a non-POCall & non-ZCI atom in ODP result.")
 
 		#process 2nd operand
 		secondOperandValue = None
@@ -2093,9 +2171,13 @@ def checkCplOpt(self, cpl_opt):
 			if currentPOCall.secondOperand.id == ATM__POCALL:
 				secondOperandValue = self.secondAnalysisIncludingFOs(currentPOCall.secondOperand.data, originalZCI, vap2info)
 
-			#considering it can only be a ZCI atm (internal error case could have added)
+			#UNITARY entry point for 2nd analysis
+			elif currentPOCall.secondOperand.id == ATM__ZCI:
+				secondOperandValue = self.secondAnalysisIncludingFOs(currentPOCall.secondOperand.data, vap2info)
+
+			#should never happen
 			else:
-				secondOperandValue = self.processFOAndSecondAnalysis(currentPOCall.secondOperand.data, vap2info)
+				self.internal("Found a non-POCall & non-ZCI atom in ODP result.")
 
 
 
@@ -2139,7 +2221,7 @@ def checkCplOpt(self, cpl_opt):
 				break
 		if matchingFunction is None:
 			originalZCI.forward(currentPOCall.operatorIndex - originalZCI.ctx.icontent.index)
-			self.ZCIError(originalZCI, "No operator \"" + f.name + "\" declared yet.")
+			self.ZCIError(originalZCI, "No operator \"" + unprefixize(f.name) + "\" declared yet.")
 
 		#result
 		return value(
@@ -2172,6 +2254,9 @@ def checkCplOpt(self, cpl_opt):
 			if other.name == di.name:
 				self.ZCIError(ZCI, "Data item or field with name \"" + di.name + "\" already declared.")
 
+
+
+	#WARNING! Returns data item WITHOUT ANY prefix
 	def readDataItem(self, ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUnsolvedType=False):
 		self.ZCIDeepDebug(ZCI, "Reading data item.")
 

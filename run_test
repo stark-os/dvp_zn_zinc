@@ -1,0 +1,4 @@
+#!/bin/bash
+
+src/buildZCTX
+app/zcc ../zcc/src/main.z cfg/LLI_requirements.cfg

@@ -304,15 +304,13 @@
 
 
 
-	def tryReadDataItemIncludingFields(self, ZCI, scope):
-		di = getDataItem(
-			self.readName(ZCI, "Any data item name", parseModulePrefixes=True, modulePrefix_asHeaderOnly=True),
-			scope
-		)
+	def lookForFieldsAccessInDataItem(self, ZCI, di): #basically FFA application
+		if di is None:
+			return None
 
-		#we may find some additionnal fields
+		#as long as we try to access fields
 		while ZCI.get() == '.':
-			fieldName = self.readName(ZCI, "Field from data item " + unprefixizeModule() + "." + di.name)
+			fieldName = self.readName(ZCI, "Field from data item " + unprefixize(di.name))
 
 			#found a field with that name in our dataItem
 			fieldFound = None
@@ -323,8 +321,36 @@
 			if fieldFound is None:
 				self.ZCIError(ZCI, "Data item " + di.name + " has no field " + fieldName)
 
-		#return result
+			#update result (field access)
+			di = fieldFound
+
+		#return result (whenever it has changed or not)
 		return di
+
+
+
+	#WARNING! This function is not to be used as part of ODP (symbol '^' should never refer to XOR operator)
+	#         Technically, we should only use it in 2nd analysis.
+	def tryReadDataItemIncludingFields(self, ZCI, scope):
+		starter = ZCI.get()
+
+		#read name (will have module prefix if any)
+		name = self.readName(ZCI, "Any data item name", parseModulePrefixes=True, modulePrefix_asHeaderOnly=True),
+		di   = None #just declare
+
+		#case 1: having a module prefix => looking directly in global scope
+		if starter == '^':
+			for ldi in self.cpl.globalScope.dataItems:
+				if name == ldi.name: #name should exactly correspond (full name given from readName in case of module prefix)
+					di = ldi
+					break
+
+		#case 2: no module prefix => getting through every local elements until non-module global ones
+		else:
+			di = getDataItem(name, scope)
+
+		#field access if any
+		return self.lookForFieldsAccessInDataItem(ZCI, di)
 
 
 

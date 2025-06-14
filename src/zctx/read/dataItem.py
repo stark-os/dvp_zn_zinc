@@ -5,6 +5,9 @@
 			if other.name == di.name:
 				self.ZCIError(ZCI, "Data item or field with name \"" + di.name + "\" already declared.")
 
+
+
+	#WARNING! Returns data item WITHOUT ANY prefix
 	def readDataItem(self, ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUnsolvedType=False):
 		self.ZCIDeepDebug(ZCI, "Reading data item.")
 
