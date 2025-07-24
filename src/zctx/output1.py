@@ -1,3 +1,5 @@
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/output1.py
+
 	#output
 	def internal(self, msg, printSubCtxs=True, printLine=True):
 		print("[INT ERR] " + msg)

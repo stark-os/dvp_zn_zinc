@@ -4,6 +4,9 @@
 
 # -------- IMPORTATIONS --------
 
+#charsets
+import string
+
 #std
 from std.string     import *
 from std.path       import *
@@ -12,15 +15,16 @@ from std.io         import *
 from std.parsingCtx import *
 from std.int        import *
 
-#charsets
-import string
-
 
 
 
 
 
 # -------- STD Z --------
+
+#charsets
+STR_DECIMAL               = string.digits
+STR_HEXADECIMAL_LOWERCASE = string.hexadecimal[:-6]
 
 #local-python version of atm
 ATM__BOO  = 0

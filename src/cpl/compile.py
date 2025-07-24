@@ -5,9 +5,9 @@
 # -------- IMPORTATIONS --------
 
 #internal
-from cpl.c01_unmodulize       import *
-from cpl.c02_redirectGlobal   import *
-from cpl.c03_developFunctions import *
+from cpl.c01_unmodulize              import *
+from cpl.c02_redirectGlobal          import *
+from cpl.c03_assignmentsAndFunctions import *
 
 
 
@@ -19,7 +19,7 @@ from cpl.c03_developFunctions import *
 #compilation
 def compile(zCtx, DEBUG_MODES, DEEP_DEBUG_MODES):
 
-	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< should not be, this enm is in src/main.py (should be accessible as global CONSTANT dataitem)
+	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< should not be; this enm is in src/main.py (should be accessible as global CONSTANT dataitem)
 	P3  = 0
 	C01 = 1
 	C02 = 2
@@ -33,9 +33,9 @@ def compile(zCtx, DEBUG_MODES, DEEP_DEBUG_MODES):
 	#step c02
 	zCtx.debugMode     = DEBUG_MODES[C02]
 	zCtx.deepDebugMode = DEEP_DEBUG_MODES[C02]
-	fZCIs = c02_redirectGlobal(zCtx)
+	unprocessedZCIs    = c02_redirectGlobal(zCtx)
 
 	#step c03
 	zCtx.debugMode     = DEBUG_MODES[C03]
 	zCtx.deepDebugMode = DEEP_DEBUG_MODES[C03]
-	c03_developFunctions(zCtx, fZCIs)
+	c03_assignmentsAndFunctions(zCtx, unprocessedZCIs)

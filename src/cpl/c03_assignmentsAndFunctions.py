@@ -81,20 +81,27 @@ def readFctDcl(zCtx, ZCI):
 # -------- EXECUTION --------
 
 #compilation
-def c03_developFunctions(zCtx, fZCIs):
+def c03_assignmentsAndFunctions(zCtx, unprocessedZCIs):
 	zCtx.debug("\n\n\n\n")
 	zCtx.debug("=================================================================================")
-	zCtx.debug("======================= C03 DEVELOP FUNCTIONS : beginning =======================")
+	zCtx.debug("=================== C03 ASSIGNMENTS AND FUNCTIONS : beginning ===================")
 	zCtx.debug("=================================================================================\n\n\n\n")
 
-	#analyse EVERY ZCI
-	#for fZCI in fZCIs:
-	#	zCtx.cpl.functions.append(zCtx.readFctDcl(fZCI)) <<<<<<<<<<<<<<<<<<<<<<<<<<< disabled for the moment
+	#analyse EVERY remaining global ZCI
+	for ZCI in unprocessedZCIs:
+
+		#try reading a type
+		#Type = zCtx.readType(ZCI, "Determining ZCI kind", nullIfNotExisting=True)
+		#if Type is None:
+		#	name = zCtx.readName(ZCI, )
+		zCtx.fullDebug("GOT " + ZCI.toStr())
+
+		#zCtx.cpl.functions.append(zCtx.readFctDcl(fZCI)) <<<<<<<<<<<<<<<<<<<<<<<<<<< disabled for the moment
 
 	#debug
 	zCtx.debug("\n\n\n\n")
 	zCtx.debug("===========================================================================")
-	zCtx.debug("======================= C03 DEVELOP FUNCTIONS : end =======================")
+	zCtx.debug("=================== C03 ASSIGNMENTS AND FUNCTIONS : end ===================")
 	zCtx.debug("===========================================================================\n\n\n\n")
 
 	#debug output file

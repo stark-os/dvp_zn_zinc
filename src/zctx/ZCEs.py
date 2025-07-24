@@ -1,3 +1,5 @@
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/ZCEs.py
+
 # -------- SEMANTIC --------
 
 #ZCI
@@ -125,7 +127,7 @@ class typ:
 	def computeStcSize(self):
 		if self.commonDcnData.nature != NATURE__PRIMITIVE:
 			for f in self.commonDcnData.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
-				self.commonDcnData.stcSize += f.type.commonDcnData.size
+				self.commonDcnData.stcSize += f.Type.commonDcnData.size
 
 def newTyp(name, dcnDeg=0, dcns=None, commonDcnData=None):
 	if commonDcnData is None:
@@ -343,9 +345,6 @@ def newStm(kind, parentScope):
 	result.scope = newScp(parent=parentScope)
 	return result
 
-
-
-#functions
 class fct:
 	def __init__(self):
 		self.name    = None

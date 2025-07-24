@@ -1,9 +1,17 @@
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/defs.py
+
 # -------- GENERAL --------
 
 #general name parsing
 NO_NAME            = -1
 BLANK_AFTER_NAME   = -2
 NOTHING_AFTER_NAME = -3
+
+#numeric parsing (enm)
+BASE2  = 0
+BASE8  = 1
+BASE10 = 2
+BASE16 = 3
 
 #root types
 ROOT_TYPES = (
@@ -141,10 +149,11 @@ BLANKS_EXTENDED = (' ', '\t', '\n')
 INCLUDERS       = { '(':')', '[':']', '{':'}' }
 
 #charsets
-DEFAULT_NAME_CHARSET            = tuple(string.ascii_letters + string.digits + '_')
-ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + tuple(INCLUDERS.keys())
-FCT_NAME_CHARSET                = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
-VALUE_CHARSET                   = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_CHARSET + ('@', '#', '$', '`') #additionnal FO + byte notation prefix
+DEFAULT_NAME_CHARSET              = tuple(string.ascii_letters + string.digits + '_')
+ZCI_FIRSTWORD_DETECTION_BLACKLIST = BLANKS + tuple(INCLUDERS.keys())
+FCT_NAME_BLACKLIST                = BLANKS + ('(',)
+FCT_NAME_CHARSET                  = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
+VALUE_CHARSET                     = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_BLACKLIST + ('@', '#', '$', '`') #additionnal FO + byte notation prefix
 
 #option to be defined in src/main.z
 deepDebug_stepByStep = False #should be a global VARIABLE dataitem

@@ -57,6 +57,8 @@ class atm:
 
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/defs.py
+
 # -------- GENERAL --------
 
 #general name parsing
@@ -200,10 +202,11 @@ BLANKS_EXTENDED = (' ', '\t', '\n')
 INCLUDERS       = { '(':')', '[':']', '{':'}' }
 
 #charsets
-DEFAULT_NAME_CHARSET            = tuple(string.ascii_letters + string.digits + '_')
-ZCI_FIRSTWORD_DETECTION_CHARSET = BLANKS + tuple(INCLUDERS.keys())
-FCT_NAME_CHARSET                = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
-VALUE_CHARSET                   = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_CHARSET + ('@', '#', '$', '`') #additionnal FO + byte notation prefix
+DEFAULT_NAME_CHARSET              = tuple(string.ascii_letters + string.digits + '_')
+ZCI_FIRSTWORD_DETECTION_BLACKLIST = BLANKS + tuple(INCLUDERS.keys())
+FCT_NAME_BLACKLIST                = BLANKS + ('(',)
+FCT_NAME_CHARSET                  = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
+VALUE_CHARSET                     = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_BLACKLIST + ('@', '#', '$', '`') #additionnal FO + byte notation prefix
 
 #option to be defined in src/main.z
 deepDebug_stepByStep = False #should be a global VARIABLE dataitem
@@ -243,6 +246,8 @@ PCPL_ITEM_NAME_CHARSET = DEFAULT_NAME_CHARSET #no link, but same value
 
 
 
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/independantTools.py
 
 # -------- TEXT TOOLS --------
 
@@ -332,6 +337,8 @@ def getDataItem(name, scope):
 
 
 
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/ZCEs.py
 
 # -------- SEMANTIC --------
 
@@ -460,7 +467,7 @@ class typ:
 	def computeStcSize(self):
 		if self.commonDcnData.nature != NATURE__PRIMITIVE:
 			for f in self.commonDcnData.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
-				self.commonDcnData.stcSize += f.type.commonDcnData.size
+				self.commonDcnData.stcSize += f.Type.commonDcnData.size
 
 def newTyp(name, dcnDeg=0, dcns=None, commonDcnData=None):
 	if commonDcnData is None:
@@ -678,9 +685,6 @@ def newStm(kind, parentScope):
 	result.scope = newScp(parent=parentScope)
 	return result
 
-
-
-#functions
 class fct:
 	def __init__(self):
 		self.name    = None
@@ -690,6 +694,8 @@ class fct:
 
 
 
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/p-cpl1.py
 
 # -------- PRECOMPILATION --------
 
@@ -755,6 +761,8 @@ def newCplDat(options, rootTypes):
 
 
 
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/zctx.py
 
 # -------- Z CONTEXT --------
 
@@ -911,6 +919,7 @@ class zctx:
 
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/p-cpl2.py
 
 
 	#each cpl option must be defined
@@ -950,6 +959,8 @@ class zctx:
 					self.error("Unknown compilation option \"" + o + "\".")
 
 
+
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/output1.py
 
 	#output
 	def internal(self, msg, printSubCtxs=True, printLine=True):
@@ -1020,6 +1031,7 @@ class zctx:
 
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/parsing.py
 
 
 
@@ -1093,6 +1105,7 @@ class zctx:
 			self.ctx = subCtxs[-1]
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/output2.py
 
 	# ZCI OUTPUT (cpl)
 
@@ -1139,6 +1152,7 @@ class zctx:
 
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/generic.py
 
 	# GENERAL PARSING TOOLS
 
@@ -1496,6 +1510,8 @@ class zctx:
 
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/type.py
+
 	# ABSTRACT ZCEs PARSING TOOLS
 
 	#expecting a Z type
@@ -1592,6 +1608,7 @@ class zctx:
 
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/value.py
 
 	#ODP
 	def ODP_readAndSplitByOperators(self, ZCI, allowedOperators):
@@ -2247,6 +2264,7 @@ class zctx:
 
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/dataItem.py
 
 	#data items
 	def checkAlreadyDeclaredDataItemOrField(self, ZCI, dis, di):

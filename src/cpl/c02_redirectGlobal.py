@@ -222,15 +222,15 @@ def c02_redirectGlobal(zCtx):
 	zCtx.debug("=================================================================================\n\n\n\n")
 
 	#prepare result for next step
-	fZCIs = [] #lst[zci]
+	unprocessedZCIs = []
 
 	#analyse EVERY ZCI
 	for ZCI in zCtx.ZCIs:
-		initialZCICtx = ZCI.ctx.copy()
+		initialCtx = ZCI.ctx.copy()
 		zCtx.ZCIDeepDebug(ZCI, "Treating ZCI " + ZCI.textFormat(), printSubCtxs=True)
 
 		#read 1st ZCI word
-		firstWord = zCtx.readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_CHARSET)
+		firstWord = zCtx.readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)
 
 
 
@@ -292,11 +292,9 @@ def c02_redirectGlobal(zCtx):
 
 		#CASE 3 - ASSIGNMENT OR FUNCTION
 
-		#function DCL_FCT
-		# #not treated yet => to be stored into zCtx <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO 2nd
-
-		#assignment ASG_ASG /!\ DO NOT USE readType() HERE, THERE MIGHT BE UNSOLVED TYPES THAT MUST NOT BE  /!\
-		# #not treated yet => to be stored into zCtx <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO 3rd
+		#will be treated later => store it for now
+		ZCI.resetCtx(initialCtx)
+		unprocessedZCIs.append(ZCI)
 
 	#debug
 	zCtx.debug("\n\n\n\n")
@@ -307,5 +305,5 @@ def c02_redirectGlobal(zCtx):
 	#debug output file
 	zCtx.cplStep_debugZCIs("02")
 
-	#return function declaration ZCIs
-	return fZCIs
+	#return unprocessed ZCIs
+	return unprocessedZCIs

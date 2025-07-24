@@ -1,3 +1,4 @@
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/value.py
 
 	#ODP
 	def ODP_readAndSplitByOperators(self, ZCI, allowedOperators):
@@ -460,8 +461,33 @@
 
 		# III] LITERAL: .
 
-		#
-		#
+		#numeric
+		if c in STR_DECIMAL:
+
+			#non-zero => literal decimal
+			if c != '0':
+				base      = BASE10
+				textValue = c
+				ZCI.inc()
+				while not ZCI.reachedEnd():
+					c = ZCI.get()
+					if c not in STR_DECIMAL:
+						break
+					textValue += c
+					ZCI.inc()
+
+				#parse value
+
+				result = value(
+					self.rootTypes[],
+					atm(ATM__INT, )
+				)
+				self.parseTerminator(ZCI)
+
+			#zero => must analyze more
+			else:
+				
+			#
 
 
 
