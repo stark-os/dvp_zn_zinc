@@ -88,4 +88,36 @@ def getDataItem(name, scope):
 
 
 
+#read a number as raw text (similar to zctx.readName but simpler and overall: skipping underscores!)
+def readNbrAsText(ZCI, allowedCharset):
+	resultText = ZCI.get()
+	ZCI.inc()
+
+	#read until non-charset character found
+	while not ZCI.reachedEnd():
+		c = ZCI.get()
+
+		#skip underscores
+		if c == '_':
+			ZCI.inc()
+			continue
+
+		#out of charset => stop here
+		if c not in allowedCharset:
+			break
+
+		#else, add to result
+		resultText += c
+		ZCI.inc()
+	return resultText
+
+
+
+
+
+
+
+
+
+
 

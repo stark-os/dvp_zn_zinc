@@ -108,7 +108,7 @@ def processTypeDcl(zCtx, ZCI):
 	#process type content: structure syntax
 	if ZCI.get() == '{':
 		zCtx.debug("Type declaration is via structure syntax.", printLine=False)
-		newType.commonDcnData.size   = zCtx.SIZE__LNG
+		newType.commonDcnData.size   = zCtx.rootTypes[RT__PTR].size
 		newType.commonDcnData.nature = NATURE__STRUCTURE
 
 		#reading fields
@@ -182,14 +182,14 @@ def processEnmDcl(zCtx, ZCI, scope):
 	#compute which type will be used
 	zCtx.deepDebug("Enumerate length: " + str(len(fields)))
 	if len(fields) <= 0x1_00:
-		zCtx.deepDebug("Enumerate length indexing can be contained in BYT => using that type for them.")
-		t = zCtx.rootTypes[RT__BYT]
+		zCtx.deepDebug("Enumerate length indexing can be contained in U1 => using that type for them.")
+		t = zCtx.rootTypes[RT__U1]
 	elif len(fields) <= 0x1_00_00:
-		zCtx.deepDebug("Enumerate length indexing can be contained in SHR => using that type for them.")
-		t = zCtx.rootTypes[RT__SHR]
+		zCtx.deepDebug("Enumerate length indexing can be contained in U2 => using that type for them.")
+		t = zCtx.rootTypes[RT__U2]
 	elif len(fields) <= 0x1_00_00_00_00:
-		zCtx.deepDebug("Enumerate length indexing can be contained in INT => using that type for them.")
-		t = zCtx.rootTypes[RT__INT]
+		zCtx.deepDebug("Enumerate length indexing can be contained in U4 => using that type for them.")
+		t = zCtx.rootTypes[RT__U4]
 	else:
 		zCtx.ZCIError(ZCI, "Too much fields in enumerate (congrats for reaching that error, how did you managed to get it ?).")
 

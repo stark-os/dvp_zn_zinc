@@ -23,50 +23,56 @@ def newZCtx(
 	#check CPL options
 	result.checkCplOpt(cpl_opt)
 
-	#real memory items (64bits adjustment)
-	if cpl_opt["ARCH"] == "64":
-		result.SIZE__LNG = 8
-
 	#init root types locally (to be given to cpl data)
 	result.rootTypes = [None,None,None, None,None,None, None,None,None, None,None,None] #can be already declared as a fixed-size table (length: 12)
 
 	#boolean
 	result.rootTypes[RT__BOO]      = newTyp("GUboo")
-	result.rootTypes[RT__BOO].size = result.SIZE__BYT
+	result.rootTypes[RT__BOO].size = result.SIZE__U1
 
-	#bytes
-	result.rootTypes[RT__BYT]       = newTyp("GUbyt")
-	result.rootTypes[RT__BYT].size  = result.SIZE__BYT
-	result.rootTypes[RT__UBYT]      = newTyp("GUubyt")
-	result.rootTypes[RT__UBYT].size = result.SIZE__BYT
+	#1 byte
+	result.rootTypes[RT__S1]      = newTyp("GUs1")
+	result.rootTypes[RT__S1].size = result.SIZE__U1
+	result.rootTypes[RT__U1]      = newTyp("GUu1")
+	result.rootTypes[RT__U1].size = result.SIZE__U1
 
-	#shorts
-	result.rootTypes[RT__SHR]       = newTyp("GUshr")
-	result.rootTypes[RT__SHR].size  = result.SIZE__SHR
-	result.rootTypes[RT__USHR]      = newTyp("GUushr")
-	result.rootTypes[RT__USHR].size = result.SIZE__SHR
+	#2 bytes
+	result.rootTypes[RT__S2]      = newTyp("GUs2")
+	result.rootTypes[RT__S2].size = result.SIZE__U2
+	result.rootTypes[RT__U2]      = newTyp("GUu2")
+	result.rootTypes[RT__U2].size = result.SIZE__U2
 
-	#integers
-	result.rootTypes[RT__INT]       = newTyp("GUint")
-	result.rootTypes[RT__INT].size  = result.SIZE__INT
-	result.rootTypes[RT__UINT]      = newTyp("GUuint")
-	result.rootTypes[RT__UINT].size = result.SIZE__INT
+	#4 bytes
+	result.rootTypes[RT__S4]      = newTyp("GUs4")
+	result.rootTypes[RT__S4].size = result.SIZE__U4
+	result.rootTypes[RT__U4]      = newTyp("GUu4")
+	result.rootTypes[RT__U4].size = result.SIZE__U4
 
-	#longs
-	result.rootTypes[RT__LNG]       = newTyp("GUlng")
-	result.rootTypes[RT__LNG].size  = result.SIZE__LNG
-	result.rootTypes[RT__ULNG]      = newTyp("GUulng")
-	result.rootTypes[RT__ULNG].size = result.SIZE__LNG
+	#4 bytes floating point
+	result.rootTypes[RT__F4]      = newTyp("GUf4")
+	result.rootTypes[RT__F4].size = result.SIZE__U4
 
-	#floating point
-	result.rootTypes[RT__FLT]      = newTyp("GUflt")
-	result.rootTypes[RT__FLT].size = result.SIZE__INT
-	result.rootTypes[RT__DBL]      = newTyp("GUdbl")
-	result.rootTypes[RT__DBL].size = result.SIZE__LNG
+	#8 bytes
+	if cpl_opt["ARCH"] == "64":
 
-	#pointer
-	result.rootTypes[RT__PTR]      = newTyp("GUptr", 1)
-	result.rootTypes[RT__PTR].size = result.SIZE__LNG
+		#8 bytes integer
+		result.rootTypes[RT__S8]      = newTyp("GUs8")
+		result.rootTypes[RT__S8].size = result.SIZE__U8
+		result.rootTypes[RT__U8]      = newTyp("GUu8")
+		result.rootTypes[RT__U8].size = result.SIZE__U8
+
+		#8 bytes floating point
+		result.rootTypes[RT__F8]      = newTyp("GUf8")
+		result.rootTypes[RT__F8].size = result.SIZE__U8
+
+		#pointer (8 bytes for 64b arch)
+		result.rootTypes[RT__PTR]      = newTyp("GUptr", 1)
+		result.rootTypes[RT__PTR].size = result.SIZE__U8
+
+	#pointer (4 bytes for 32b arch)
+	else:
+		result.rootTypes[RT__PTR]      = newTyp("GUptr", 1)
+		result.rootTypes[RT__PTR].size = result.SIZE__U4
 
 	#data
 	result.ZCIs = None
@@ -75,37 +81,37 @@ def newZCtx(
 
 	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TEMPORARY FOR VAP TESTING
 	result.cpl.functions = [
-		result.newFct("sin", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None)]),
-		result.newFct("sno", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None)]),
-		result.newFct("dan", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("dor", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("amu", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("adi", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("amo", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("apo", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("bad", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("bsu", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("lan", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("lor", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("lxo", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("lls", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("lrs", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("llb", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("lrb", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("llr", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("lrr", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("ceq", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("cne", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("clt", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("cgt", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("cle", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("cge", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("iam", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("ina", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("fsz", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None)]),
-		result.newFct("frf", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None)]),
-		result.newFct("fca", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)]),
-		result.newFct("ffa", result.rootTypes[RT__ULNG], [dataItem(result.rootTypes[RT__ULNG], "a", None, None), dataItem(result.rootTypes[RT__ULNG], "b", None, None)])
+		result.newFct("sin", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None)]),
+		result.newFct("sno", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None)]),
+		result.newFct("dan", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("dor", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("amu", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("adi", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("amo", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("apo", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("bad", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("bsu", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("lan", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("lor", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("lxo", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("lls", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("lrs", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("llb", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("lrb", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("llr", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("lrr", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("ceq", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("cne", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("clt", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("cgt", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("cle", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("cge", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("iam", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("ina", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("fsz", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None)]),
+		result.newFct("frf", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None)]),
+		result.newFct("fca", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)]),
+		result.newFct("ffa", result.rootTypes[RT__U8], [dataItem(result.rootTypes[RT__U8], "a", None, None), dataItem(result.rootTypes[RT__U8], "b", None, None)])
 	]
 	return result
 
@@ -122,10 +128,10 @@ class zctx:
 		self.subCtxs      = None
 
 		#real memory items <<<<<<<<<<<<<<<<<<<<<< to be stored into an enm
-		self.SIZE__BYT = 1
-		self.SIZE__SHR = 2
-		self.SIZE__INT = 4
-		self.SIZE__LNG = 4
+		self.SIZE__U1 = 1
+		self.SIZE__U2 = 2
+		self.SIZE__U4 = 4
+		self.SIZE__U8 = 8
 
 		#init root types locally (to be given to cpl data)
 		self.rootTypes = None

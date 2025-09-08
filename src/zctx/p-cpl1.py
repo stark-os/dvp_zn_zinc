@@ -49,7 +49,8 @@ def newCplDat(options, rootTypes):
 
 	#z abstract elements
 	result.modulePrefixes = [] #lst[str]
-	result.types          = lst_copy(rootTypes) #lst[typ]
+	result.types          = [ newTyp("GUtyp") ] #virtual type "typ" (keyword) at index 0
+	result.types          += lst_copy(rootTypes) #lst[typ]
 	result.globalScope    = newScp()
 	result.functions      = [] #lst[fct]
 	result.linkedLibs     = [] #lst[]

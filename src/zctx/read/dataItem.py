@@ -50,7 +50,7 @@
 		#missing Type still not solved
 		if not allowUnsolvedType:
 			if Type is None:
-				self.ZCIError(ZCI, "Missing type to given element (required either explicitely or implicity).")
+				self.ZCIError(ZCI, "Missing type to given element \"" + name + "\" (required either explicitely or implicity).")
 
 		#result
 		self.ZCIDeepDebug(ZCI, "Ended reading data item.")
@@ -94,6 +94,9 @@
 		#return result
 		self.ZCIDeepDebug(ZCI, "Ended reading sequence of data item(s).")
 		return dis
+
+
+
 
 
 

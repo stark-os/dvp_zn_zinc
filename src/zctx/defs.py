@@ -2,39 +2,36 @@
 
 # -------- GENERAL --------
 
+#option to be defined in src/main.z
+deepDebug_stepByStep = True #should be a global VARIABLE dataitem
+
 #general name parsing
 NO_NAME            = -1
 BLANK_AFTER_NAME   = -2
 NOTHING_AFTER_NAME = -3
 
-#numeric parsing (enm)
-BASE2  = 0
-BASE8  = 1
-BASE10 = 2
-BASE16 = 3
-
 #root types
 ROOT_TYPES = (
 	"boo",
-	"byt", "ubyt",
-	"shr", "ushr",
-	"int", "uint",
-	"lng", "ulng",
-	"flt", "dbl",
+	"s1", "u1",
+	"s2", "u2",
+	"s4", "u4",
+	"s8", "u8",
+	"f4", "f8",
 	"ptr"
 )
-RT__BOO  = 0 #enm #for indexing in zCtx.rootTypes
-RT__BYT  = 1
-RT__UBYT = 2
-RT__SHR  = 3
-RT__USHR = 4
-RT__INT  = 5
-RT__UINT = 6
-RT__LNG  = 7
-RT__ULNG = 8
-RT__FLT  = 9
-RT__DBL  = 10
-RT__PTR  = 11
+RT__BOO = 0 #enm #for indexing in zCtx.rootTypes
+RT__S1  = 1
+RT__U1  = 2
+RT__S2  = 3
+RT__U2  = 4
+RT__S4  = 5
+RT__U4  = 6
+RT__S8  = 7
+RT__U8  = 8
+RT__F4  = 9
+RT__F8  = 10
+RT__PTR = 11
 
 #common data structures (shortcut notations)
 TYPE_FULLNAME_TAB  = "GUtab"
@@ -46,9 +43,34 @@ TYPE_FULLNAME_MMAP = "GUmmap"
 #byte notations
 BN_PREFIX = '`'
 
+#literal numeric values: binary limits
+MAX_BINARY_DIGITS_ALLOWED__U2 = 16
+MAX_BINARY_DIGITS_ALLOWED__U4 = 32
+MAX_BINARY_DIGITS_ALLOWED__U8 = 64
+
+#literal numeric values: octal limits
+MAX_OCTAL_DIGITS_ALLOWED__U2 = 6
+MAX_OCTAL_DIGITS_ALLOWED__U4 = 12
+MAX_OCTAL_DIGITS_ALLOWED__U8 = 24
+
+#literal numeric values: hexadecimal limits
+MAX_BINARY_DIGITS_ALLOWED__U2 = 4
+MAX_BINARY_DIGITS_ALLOWED__U4 = 8
+MAX_BINARY_DIGITS_ALLOWED__U8 = 16
+
+#literal numeric values: signed decimal limits
+MAX_DECIMAL_DIGITS_ALLOWED__S2 = 5
+MAX_DECIMAL_DIGITS_ALLOWED__S4 = 10
+MAX_DECIMAL_DIGITS_ALLOWED__S8 = 19
+
+#literal numeric values: unsigned decimal limits
+MAX_DECIMAL_DIGITS_ALLOWED__U2 = 5
+MAX_DECIMAL_DIGITS_ALLOWED__U4 = 10
+MAX_DECIMAL_DIGITS_ALLOWED__U8 = 20
+
 #Single Operators
-SYMBOL__SIN  = 1 #invert
-SYMBOL__SNO  = 2 #not
+SYMBOL__SIN = 1 #invert
+SYMBOL__SNO = 2 #not
 SO = (SYMBOL__SIN, SYMBOL__SNO)
 
 #Decisionnal Operators
@@ -155,16 +177,13 @@ FCT_NAME_BLACKLIST                = BLANKS + ('(',)
 FCT_NAME_CHARSET                  = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
 VALUE_CHARSET                     = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_BLACKLIST + ('@', '#', '$', '`') #additionnal FO + byte notation prefix
 
-#option to be defined in src/main.z
-deepDebug_stepByStep = False #should be a global VARIABLE dataitem
-
 #cpl opt set
-CPL_OPT_VALUES__ARCHT = 0 #architecture type
+CPL_OPT_VALUES__ARCH  = 0 #architecture type
 CPL_OPT_VALUES__ONOFF = 1
 CPL_OPT_VALUES__DIGIT = 2
 CPL_OPT_VALUES__RTYPE = 3 #root type
 CPL_OPT_ALLOWED = {
-	"ARCH":                           CPL_OPT_VALUES__ARCHT,
+	"ARCH":                           CPL_OPT_VALUES__ARCH,
 	"INTERPRET_COMMON_STRUCTURES":    CPL_OPT_VALUES__ONOFF,
 	"MAX_INSTRUCTS_NOFUNCTION":       CPL_OPT_VALUES__DIGIT,
 	"CHECK_NULL_STC_BEFORE_METHOD":   CPL_OPT_VALUES__ONOFF,

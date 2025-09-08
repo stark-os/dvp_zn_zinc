@@ -23,21 +23,23 @@ from std.int        import *
 # -------- STD Z --------
 
 #charsets
-STR_DECIMAL               = string.digits
-STR_HEXADECIMAL_LOWERCASE = string.hexadecimal[:-6]
+STR__BINARY                = ('0', '1')
+STR__DECIMAL               = string.digits
+STR__OCTAL                 = string.digits[:-2]
+STR__HEXADECIMAL_LOWERCASE = string.hexdigits[:-6]
 
 #local-python version of atm
-ATM__BOO  = 0
-ATM__BYT  = 1
-ATM__UBYT = 2
-ATM__SHR  = 3
-ATM__USHR = 4
-ATM__INT  = 5
-ATM__UINT = 6
-ATM__LNG  = 7
-ATM__ULNG = 8
-ATM__CHR  = 9
-ATM__STR  = 10
+ATM__BOO = 0
+ATM__S1  = 1
+ATM__U1  = 2
+ATM__S2  = 3
+ATM__U2  = 4
+ATM__S4  = 5
+ATM__U4  = 6
+ATM__S8  = 7
+ATM__U8  = 8
+ATM__CHR = 9
+ATM__STR = 10
 ATM__CALL     = 11
 ATM__ZCI      = 12
 ATM__VALUE    = 13

@@ -98,7 +98,7 @@ def c01_unmodulize(zCtx):
 
 			# I.2) new module
 			else:
-				zCtx.debug("Detected new module creation.")
+				zCtx.debug("Detected new module creation \"" + modulePrefix + "\".")
 
 				#already declared the same exact module
 				if modulePrefix in zCtx.cpl.modulePrefixes:
@@ -141,13 +141,17 @@ def c01_unmodulize(zCtx):
 			#remove current ZCI in general ZCtx
 			zCtx.debug("Replacing module declaration ZCI by global unmodularized ZCIs.")
 			zCtx.ZCIs = lst_remove(zCtx.ZCIs, z)
-			z -= 1
 
 			#complete general ZCI list
-			previousZCIs = lst_sub(zCtx.ZCIs, stop=z)
-			nextZCIs     = lst_sub(zCtx.ZCIs, start=z+1)
-			zCtx.ZCIs    = previousZCIs + moduleZCIs + nextZCIs
-			zCtx.deepDebugPause()
+			if z == 0:
+				previousZCIs = []
+			else:
+				previousZCIs = lst_sub(zCtx.ZCIs, stop=z-1)
+			nextZCIs  = lst_sub(zCtx.ZCIs, start=z)
+			zCtx.ZCIs = previousZCIs + moduleZCIs + nextZCIs
+
+			#shift current ZCI index because we removed it
+			z -= 1
 
 			_ZCIsLen = len(zCtx.ZCIs) # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only in python, not required in Z (.length field)
 

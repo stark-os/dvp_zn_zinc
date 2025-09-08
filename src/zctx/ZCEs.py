@@ -174,21 +174,21 @@ class value:
 				dataStr = "true"
 
 		#numerical
-		elif self.data.id == ATM__BYT:
+		elif self.data.id == ATM__S1:
 			dataStr = 'S' + hexOnN(self.data.data, 2)
-		elif self.data.id == ATM__UBYT:
+		elif self.data.id == ATM__U1:
 			dataStr = 'U' + hexOnN(self.data.data, 2)
-		elif self.data.id == ATM__SHR:
+		elif self.data.id == ATM__S2:
 			dataStr = 'S' + hexOnN(self.data.data, 4)
-		elif self.data.id == ATM__USHR:
+		elif self.data.id == ATM__U2:
 			dataStr = 'U' + hexOnN(self.data.data, 4)
-		elif self.data.id == ATM__INT:
+		elif self.data.id == ATM__S4:
 			dataStr = 'S' + hexOnN(self.data.data, 8)
-		elif self.data.id == ATM__UINT:
+		elif self.data.id == ATM__U4:
 			dataStr = 'U' + hexOnN(self.data.data, 8)
-		elif self.data.id == ATM__LNG:
+		elif self.data.id == ATM__S8:
 			dataStr = 'S' + hexOnN(self.data.data, 16) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< no way to get arch type here... will stay in 64b for the moment (can be formatted again later)
-		elif self.data.id == ATM__ULNG:
+		elif self.data.id == ATM__U8:
 			dataStr = 'U' + hexOnN(self.data.data, 16)
 		elif self.data.id == ATM__CHR:
 			dataStr = '\'' + self.data.data + '\''

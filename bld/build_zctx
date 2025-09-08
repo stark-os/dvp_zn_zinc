@@ -1,0 +1,24 @@
+#!/bin/bash
+
+CXD=$(dirname $(realpath $0))
+pCXD=$(dirname $CXD)
+SRC=$pCXD/src
+ZCTX=$SRC/zctx
+
+chmod a+w                              $SRC/zctx.py
+cat $ZCTX/std.py                    >  $SRC/zctx.py
+cat $ZCTX/defs.py                   >> $SRC/zctx.py
+cat $ZCTX/independantTools.py       >> $SRC/zctx.py
+cat $ZCTX/ZCEs.py                   >> $SRC/zctx.py
+cat $ZCTX/p-cpl1.py                 >> $SRC/zctx.py
+cat $ZCTX/zctx.py                   >> $SRC/zctx.py
+cat $ZCTX/p-cpl2.py                 >> $SRC/zctx.py
+cat $ZCTX/output1.py                >> $SRC/zctx.py
+cat $ZCTX/parsing.py                >> $SRC/zctx.py
+cat $ZCTX/output2.py                >> $SRC/zctx.py
+cat $ZCTX/read/generic.py           >> $SRC/zctx.py
+cat $ZCTX/read/type.py              >> $SRC/zctx.py
+cat $ZCTX/read/value_ODP.py         >> $SRC/zctx.py
+cat $ZCTX/read/value_2ndAnalysis.py >> $SRC/zctx.py
+cat $ZCTX/read/dataItem.py          >> $SRC/zctx.py
+chmod a-w                              $SRC/zctx.py

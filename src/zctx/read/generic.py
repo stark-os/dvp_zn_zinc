@@ -169,7 +169,7 @@
 
 
 	#read a name according to the given charset (either blacklist or whitelist)
-	# IMPORTANT : Reading ctx from its CURRENT position and move it right AFTER the extracted result
+	# IMPORTANT : Reading ZCI ctx from its CURRENT position and move it right AFTER the extracted result
 	#also, blacklist is prioritary : if null => use whitelist, else, use it (no matter whitelist value)
 	#
 	# /!\ This method must be included in STDZ into ^Parsing.ctx whithout the module prefix part.
@@ -298,7 +298,7 @@
 		if len(name) == 0:
 			if missingFieldIfError is None:
 				return ""
-			self.ZCIError(ZCI, "Missing or invalid name : " + missingFieldIfError)
+			self.ZCIError(ZCI, "Missing or invalid name: " + missingFieldIfError)
 
 		#return result
 		return name
@@ -352,6 +352,8 @@
 
 		#field access if any
 		return self.lookForFieldsAccessInDataItem(ZCI, di)
+
+
 
 
 

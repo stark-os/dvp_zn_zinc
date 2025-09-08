@@ -1,4 +1,4 @@
 #!/bin/bash
 
-src/buildZCTX
-app/zcc ../zcc/src/main.z cfg/LLI_requirements.cfg
+bld/build_zctx
+app/zcc tst/snake/src/main.z

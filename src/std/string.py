@@ -63,7 +63,16 @@ def str_sub(s, start=None, stop=None):
 	return s[start:stop+1]
 
 def lst_sub(l, start=None, stop=None):
-	return str_sub(l, start=start, stop=stop)
+	length = len(l)
+	if length == 0:
+		return []
+	if start is None:
+		start = 0
+	if stop is None:
+		stop = length-1
+	start = negativeIndexing(start, length)
+	stop  = negativeIndexing(stop,  length)
+	return l[start:stop+1]
 
 def str_isConvertible_int(s):
 	if len(s) == 0:

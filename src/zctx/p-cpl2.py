@@ -12,7 +12,7 @@
 				self.error("Missing compilation option \"" + o + "\" in configuration file cpl_opt.cfg.")
 
 			#check value: ARCH type
-			if CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ARCHT:
+			if CPL_OPT_ALLOWED[o] == CPL_OPT_VALUES__ARCH:
 				if cpl_opt[o] not in ("32", "64"):
 					self.error("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " (32 or 64 expected)")
 

@@ -6,7 +6,8 @@
 
 #system
 import os, sys
-CXD = os.path.dirname(os.path.realpath(sys.argv[0]))
+CXD  = os.path.dirname(os.path.realpath(sys.argv[0]))
+pCXD = os.path.dirname(CXD)
 sys.path.append(CXD)
 
 #std
@@ -70,12 +71,34 @@ SCOPE_STATEMENT = 2
 #main
 def main():
 
-	#args
-	if len(sys.argv) < 3:
-		print("zcc: Missing arguments (filename, LLI_requirement_file).")
+	#args: filepath
+	if len(sys.argv) < 2:
+		print("zcc: Missing arguments (at least 1 required: \"filepath\").")
 		exit(1)
-	filepath         = sys.argv[1]
-	LLI_requirements = config.read(sys.argv[2])
+	filepath = sys.argv[1]
+
+	#args: LLI requirement file (optional)
+	if len(sys.argv) >= 3:
+		LLIRequirements = config.read(sys.argv[2])
+
+	#default value instead
+	else:
+		print("zcc: No LLI requirement file given => using LLI inventory instead.")
+		LLICfg = config.read(pCXD + "/cfg/LLI.cfg")
+
+		#cfg issue
+		try:
+			defaultLLIRequirementsFilepath = LLICfg['PATH'] + "/cfg/inventory.cfg"
+		except:
+			print("zcc: No LLI path defined in cfg/LLI.cfg")
+			exit(1)
+
+		#LLI issue
+		try:
+			LLIRequirements = config.read(defaultLLIRequirementsFilepath)
+		except:
+			print("zcc: Unable to find default LLI requirement file (LLI inventory) at location: " + defaultLLIRequirementsFilepath)
+			exit(1)
 
 	#prepare output filename
 	outputFilename = path_name(os.path.basename(filepath)) + ".nc"
@@ -85,7 +108,7 @@ def main():
 	config.ADDITIONAL_SPACES_ALLOWED = False
 	zCtx = newZCtx(
 		filepath,
-		LLI_requirements,
+		LLIRequirements,
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
 		config.read(CXD + "/../cfg/pcpl_itm.cfg", comment_character='%', additionnalSpacesAllowed=False),
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
@@ -101,7 +124,7 @@ def main():
 	zCtx.ZCIs = precompile(zCtx)
 
 	#compile
-	compile(zCtx, DEBUG_MODES, DEEP_DEBUG_MODES) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< debug paramaters should not be passed as parameters, they are global & variables (static)
+	compile(zCtx, DEBUG_MODES, DEEP_DEBUG_MODES) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< debug paramaters should not be passed as parameters, they are global & variable (static)
 	writeFile(outputFilename, zCtx.cpl.textResult)
 
 #run main
