@@ -41,13 +41,13 @@ C03 = 3
 DEBUG_MODES = { #these 2 are to be global VARIABLE dataitems (static)
 	P3 :False,
 	C01:False,
-	C02:True,
+	C02:False,
 	C03:True
 }
 DEEP_DEBUG_MODES = {
 	P3 :False,
 	C01:False,
-	C02:True,
+	C02:False,
 	C03:True
 }
 

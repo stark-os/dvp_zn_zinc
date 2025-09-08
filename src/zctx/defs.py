@@ -3,7 +3,7 @@
 # -------- GENERAL --------
 
 #option to be defined in src/main.z
-deepDebug_stepByStep = True #should be a global VARIABLE dataitem
+deepDebug_stepByStep = False #should be a global VARIABLE dataitem
 
 #general name parsing
 NO_NAME            = -1

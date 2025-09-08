@@ -195,8 +195,8 @@ def processEnmDcl(zCtx, ZCI, scope):
 
 	#fullfill fields
 	for f in range(len(fields)):
-		fields[f].Type = t
-		fields[f].value = value(t, atm(ATM__ULNG, f), constant=True) #value stored as it was a ulng literal to be cashted into type t
+		fields[f].Type  = t
+		fields[f].value = value(t, atm(ATM__PTR, f), constant=True) #value stored as it was a ptr to be cashted into type t
 
 	#create enumerate
 	zCtx.checkAlreadyDeclaredDataItemOrField(ZCI, scope.dataItems, fullName)

@@ -94,7 +94,7 @@ def c03_assignmentsAndFunctions(zCtx, unprocessedZCIs):
 		#Type = zCtx.readType(ZCI, "Determining ZCI kind", nullIfNotExisting=True)
 		#if Type is None:
 		#	name = zCtx.readName(ZCI, )
-		zCtx.fullDebug("GOT " + ZCI.toStr())
+		zCtx.deepDebug("GOT " + ZCI.toStr())
 
 		#zCtx.cpl.functions.append(zCtx.readFctDcl(fZCI)) <<<<<<<<<<<<<<<<<<<<<<<<<<< disabled for the moment
 

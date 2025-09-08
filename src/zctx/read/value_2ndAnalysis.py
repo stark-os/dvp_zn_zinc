@@ -371,7 +371,7 @@
 			self.ZCIDeepDebug(ZCI, "Reading hexadecimal value in single-byte notation.")
 			result = value(
 				self.rootTypes[RT__S1],
-				atm(ATM__BYT, self.readHexByte(ZCI))
+				atm(ATM__S1, self.readHexByte(ZCI))
 			)
 			ZCI.inc()
 			self.ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in SINGLE-BYTE NOTATION " + result.toStr())
