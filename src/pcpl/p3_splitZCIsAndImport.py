@@ -39,17 +39,17 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePref
 	# PROCESSING REGULAR/IMPORT ZCI
 
 	#empty ZCI => ignore it
-	if len(ZCI.text) == 0:
+	if len(ZCI.txt) == 0:
 		return
 
 	#not long enough to be an import => regular ZCI
-	if len(ZCI.text) < 4:
+	if len(ZCI.txt) < 4:
 		zCtx.ZCIDeepDebug(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
 		result.append(ZCI)
 		return
 
 	#import ZCI : process it NOW
-	if ZCI.text.startswith("imp") and ZCI.text[3] in BLANKS:
+	if ZCI.txt.startswith("imp") and ZCI.txt[3] in BLANKS:
 		zCtx.deepDebug("Detected as importation ZCI => processing it now.")
 
 		#importations not allowed
@@ -89,7 +89,7 @@ def stripAndAppendZCI(zCtx, ZCI, result, allowImportsExpansion=False, modulePref
 INT_MAX = sys.maxsize
 
 #split raw text into ZCI list (ZCS)
-def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=None, maximumIndexAllowed=INT_MAX):
+def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=None, maximumIdxAllowed=INT_MAX):
 	zCtx.deepDebug("Extracting ZCIs inside given context.", printSubCtxs=True)
 	if subCtxs is None:
 		subCtxs = zCtx.subCtxs
@@ -97,12 +97,12 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=None
 	#initial state
 	ZCI          = None
 	skipLineFeed = False
-	peerIndex    = 0
+	peerIdx    = 0
 
 	#parsing byte per byte
 	ZCIs = []
 	while not ctx.inc():
-		if ctx.icontent.index > maximumIndexAllowed:
+		if ctx.icontent.idx > maximumIdxAllowed:
 			break
 		c = ctx.get()
 
@@ -119,7 +119,7 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=None
 				skipLineFeed = False
 				continue
 			else: #not actually skipping it, that was just a regular backslash
-				ZCI.text += '\\'
+				ZCI.txt += '\\'
 				#note that we don't reset skipLineFeed here, we will use it as flag in multi-line ZCI detection to say :
 				# "hey! We already had a backslash before so you can ignore the next backslash" (escape sequence)
 
@@ -127,8 +127,8 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=None
 
 		#2: end of ZCI
 		if c == ';' or c == '\n':
-			if len(ZCI.text) != 0: #tiny optimization
-				ZCI.stopIndex = ctx.icontent.index - 1
+			if len(ZCI.txt) != 0: #tiny optimization
+				ZCI.stopIdx = ctx.icontent.idx - 1
 				zCtx.ZCIDeepDebug(ZCI, "Extracted raw ZCI text " + ZCI.textFormat())
 				stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, modulePrefix=modulePrefix)
 
@@ -148,7 +148,7 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=None
 
 		#4: openning includer found
 		if c in INCLUDERS.keys():
-			if ctx.icontent.index in ZCI.pairs.keys(): #already in pairs
+			if ctx.icontent.idx in ZCI.pairs.keys(): #already in pairs
 				zCtx.internal("Processing the same ZCI includer twice.")
 
 			#get every pairs until end of our includer
@@ -163,11 +163,11 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=None
 				ZCI.pairs[p] = currentPairs[p]
 
 			#includers boudaries
-			opening = ctx.icontent.index
+			opening = ctx.icontent.idx
 			closing = currentPairs[opening]
 
 			#store raw includer text into ZCI
-			ZCI.text += str_sub(ctx.icontent.s, opening, closing)
+			ZCI.txt += str_sub(ctx.icontent.s, opening, closing)
 
 			#step until end of includer
 			if ctx.forward(closing - opening):
@@ -183,11 +183,11 @@ def extractZCIsFromCtx(zCtx, ctx, global_=False, subCtxs=None, modulePrefix=None
 
 
 		#6: any other regular character
-		ZCI.text += c
+		ZCI.txt += c
 
 	#also add last ZCI remaining
 	if ZCI is not None:
-		ZCI.stopIndex = ctx.icontent.index
+		ZCI.stopIdx = ctx.icontent.idx
 		stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImportsExpansion=global_, modulePrefix=modulePrefix)
 
 	#return result

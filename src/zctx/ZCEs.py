@@ -9,15 +9,15 @@ class zci:
 		self.ctx          = None
 		self.pairs        = None
 		self.modulePrefix = None
-		self.startIndex   = None
-		self.stopIndex    = None
-		self.text         = ""
+		self.startIdx     = None
+		self.stopIdx      = None
+		self.txt          = ""
 
 	def updateText(self):
-		startIndex = self.startIndex
-		if startIndex == -1:
-			startIndex = 0
-		self.text = str_sub(self.ctx.icontent.s, startIndex, self.stopIndex)
+		startIdx = self.startIdx
+		if startIdx == -1:
+			startIdx = 0
+		self.txt = str_sub(self.ctx.icontent.s, startIdx, self.stopIdx)
 
 
 
@@ -29,10 +29,10 @@ class zci:
 		return self.ctx.forward(step)
 
 	def inc(self):
-		return self.ctx.inc() or self.ctx.icontent.index > self.stopIndex #additionnal stopping reason => end of ZCI
+		return self.ctx.inc() or self.ctx.icontent.idx > self.stopIdx #additionnal stopping reason => end of ZCI
 
 	def reachedEnd(self):
-		return self.ctx.icontent.index > self.stopIndex
+		return self.ctx.icontent.idx > self.stopIdx
 
 
 
@@ -43,41 +43,41 @@ class zci:
 
 	def copy(self, ctxCopy=None): #this copy mainly affects ZCI ctx rather than the other fields
 		if ctxCopy is None:
-			ctxCopy = self.ctx.copy()
-		copy            = newZCI(lst_copy(self.subCtxs), modulePrefix=self.modulePrefix, pairs=self.pairs)
-		copy.startIndex = self.startIndex
-		copy.stopIndex  = self.stopIndex
-		copy.text = self.text
+			ctxCopy   = self.ctx.copy()
+		copy          = newZCI(lst_copy(self.subCtxs), modulePrefix=self.modulePrefix, pairs=self.pairs)
+		copy.startIdx = self.startIdx
+		copy.stopIdx  = self.stopIdx
+		copy.txt      = self.txt
 		copy.resetCtx(ctxCopy) #we copy ctx & subctxs so that we can TEMPORARILY work on that ZCI without affecting it really
 		return copy
 
-	#WARNING! Must be used with ctx.icontent.index at startIndex position !
+	#WARNING! Must be used with ctx.icontent.idx at startIdx position !
 	#ctx will be forwarded if necessary (beginning strip).
 	def strip(self):
 		self.updateText()
 
 		#strip beginning
-		beginningShift = str_getBeginningStripIndex(self.text, charset=BLANKS_EXTENDED)
+		beginningShift = str_getBeginningStripIndex(self.txt, charset=BLANKS_EXTENDED)
 		if beginningShift != 0:
 			self.forward(beginningShift)
-			self.text       = str_sub(self.text, start=beginningShift)
-			self.startIndex = self.ctx.icontent.index
+			self.txt      = str_sub(self.txt, start=beginningShift)
+			self.startIdx = self.ctx.icontent.idx
 
 		#strip end
-		endingIndex = str_getEndStripIndex(self.text, charset=BLANKS_EXTENDED)
-		if endingIndex != -1 and endingIndex != len(self.text)-1:
-			textLengthBefore = len(self.text)
-			self.text        = str_sub(self.text, stop=endingIndex) #strip end of self.text
-			self.stopIndex  -= textLengthBefore - len(self.text)    #shift stopIndex the same amount
+		endingIdx = str_getEndStripIndex(self.txt, charset=BLANKS_EXTENDED)
+		if endingIdx != -1 and endingIdx != len(self.txt)-1:
+			textLengthBefore = len(self.txt)
+			self.txt         = str_sub(self.txt, stop=endingIdx) #strip end of self.txt
+			self.stopIdx    -= textLengthBefore - len(self.txt)    #shift stopIdx the same amount
 
 
 
 	#debug output
 	def textFormat(self):
-		return '\"' + self.text.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n") + '\"'
+		return '\"' + self.txt.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n") + '\"'
 
 	def toStr(self):
-		return "{module:\"" + self.modulePrefix + "\",ctx:\"" + self.ctx.toStr() + "\",ctx.icontent.index:" + str(self.ctx.icontent.index) + ",startIndex:" + str(self.startIndex) + ",stopIndex:" + str(self.stopIndex) + ",text:" + self.textFormat() + ",pairs:\"" + str(self.pairs).replace(' ', '') + "\"}"
+		return "{module:\"" + self.modulePrefix + "\",ctx:\"" + self.ctx.toStr() + "\",ctx.icontent.idx:" + str(self.ctx.icontent.idx) + ",startIdx:" + str(self.startIdx) + ",stopIdx:" + str(self.stopIdx) + ",txt:" + self.textFormat() + ",pairs:\"" + str(self.pairs).replace(' ', '') + "\"}"
 
 def newZCI(subCtxs, modulePrefix=None, pairs=None):
 	if modulePrefix is None:
@@ -92,8 +92,8 @@ def newZCI(subCtxs, modulePrefix=None, pairs=None):
 	result.ctx          = subCtxs[-1]
 	result.pairs        = pairs
 	result.modulePrefix = modulePrefix
-	result.startIndex   = result.ctx.icontent.index #current position is where our ZCI starts
-	result.stopIndex    = result.startIndex
+	result.startIdx     = result.ctx.icontent.idx #current position is where our ZCI starts
+	result.stopIdx      = result.startIdx
 	return result
 
 def dumpZCIs(ZCIs, filename):
@@ -230,7 +230,7 @@ class call:
 class POCall:
 	def __init__(self, firstOperand, secondOperand):
 		self.name          = None          #str, makes no sens to give a correct value on stc creation because we will set it depending on whether a next operand exists (so we don't know at creation time)
-		self.operatorIndex = 0             #same thing
+		self.operatorIdx   = 0             #same thing
 		self.firstOperand  = firstOperand  #atm
 		self.secondOperand = secondOperand #atm
 
@@ -262,16 +262,16 @@ class POCall:
 		return "{\n" + depthSpacing + "\tname:" + nameStr + ",\n" + depthSpacing + "\tfirstOperand:" + firstOperandText + ",\n" + depthSpacing + "\tsecondOperand:" + secondOperandText + "\n" + depthSpacing + "}"
 
 class ODPResult:
-	def __init__(self, maxStopIndex, mainPOCall):
-		self.maxStopIndex = maxStopIndex
-		self.mainPOCall   = mainPOCall
+	def __init__(self, maxStopIdx, mainPOCall):
+		self.maxStopIdx = maxStopIdx
+		self.mainPOCall = mainPOCall
 
 class opSeq:
-	def __init__(self, stopIndex, operands, operators, operatorIndexes):
-		self.stopIndex       = stopIndex
-		self.operands        = operands  #lst[zci]
-		self.operators       = operators #lst (lst[ubyt] cause enm will be stored)
-		self.operatorIndexes = operatorIndexes
+	def __init__(self, stopIdx, operands, operators, operatorIdxes):
+		self.stopIdx       = stopIdx
+		self.operands      = operands  #lst[zci]
+		self.operators     = operators #lst (lst[ubyt] cause enm will be stored)
+		self.operatorIdxes = operatorIdxes
 
 	def toStr(self):
 		operandsText = ""
@@ -280,7 +280,7 @@ class opSeq:
 		operatorsText = ""
 		for o in self.operators:
 			operatorsText += OPERATOR_NAMES[o] + ','
-		return "{stopIndex:" + str(self.stopIndex) + ",operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
+		return "{stopIdx:" + str(self.stopIdx) + ",operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
 
 
 

@@ -45,10 +45,10 @@ def str_subEqual( #that is tab_subequal in stdz actually
 			return False
 	return True
 
-def negativeIndexing(index, length):
-	if index < 0:
-		return negativeIndexing(index+length, length)
-	return index
+def negativeIndexing(idx, length):
+	if idx < 0:
+		return negativeIndexing(idx+length, length)
+	return idx
 
 def str_sub(s, start=None, stop=None):
 	l = len(s)
@@ -89,23 +89,23 @@ def str_isConvertible_int(s):
 
 #strip
 def str_getEndStripIndex(t, charset=" \t"):
-	endIndex = len(t)-1
+	endIdx = len(t)-1
 	for i in range(len(t)):
-		if t[endIndex] not in charset:
+		if t[endIdx] not in charset:
 			break
-		endIndex -= 1
-	return endIndex
+		endIdx -= 1
+	return endIdx
 
 def str_stripEnd(t, charset=" \t"):
 	return str_sub(t, stop=str_getEndStripIndex(t, charset))
 
 def str_getBeginningStripIndex(t, charset=" \t"):
-	startIndex = 0
+	startIdx = 0
 	for i in range(len(t)):
-		if t[startIndex] not in charset:
+		if t[startIdx] not in charset:
 			break
-		startIndex += 1
-	return startIndex
+		startIdx += 1
+	return startIdx
 
 def str_stripBeginning(t, charset=" \t"):
 	return str_sub(t, start=str_getBeginningStripIndex(t, charset))

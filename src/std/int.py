@@ -214,11 +214,11 @@ def str_dec_toNum(s, sMaxLen, uMaxLen):
 		exit(1)
 
 	#parsing by reading backward
-	lastIndex = len(s)-1
-	pow       = 1
-	result    = 0
+	lastIdx = len(s)-1
+	pow     = 1
+	result  = 0
 	for i in range(realLength):
-		d       = chr_dec_toS1(s[lastIndex-i])
+		d       = chr_dec_toS1(s[lastIdx-i])
 		if d == -1:
 			print("Unconvertible decimal string \"" + s + "\" into numerical value.")
 			exit(1)

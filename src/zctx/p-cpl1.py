@@ -41,7 +41,7 @@ class cplDat:
 
 		#program concrete elements
 		#self.dataResult = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
-		self.textResult  = ""
+		self.txtResult  = ""
 
 def newCplDat(options, rootTypes):
 	result = cplDat()

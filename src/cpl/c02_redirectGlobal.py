@@ -72,15 +72,15 @@ def processTypeDcl(zCtx, ZCI):
 	#explicit declination degree if any
 	dcnDeg = 0
 	if ZCI.get() == '[':
-		peerIndex = ZCI.pairs[ZCI.ctx.icontent.index]
+		peerIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
 		ZCI.inc()
 
 		#skip beginning blanks
-		zCtx.optionnalBlanks(ZCI, "declination degree in type declaration ZCI (DCL_TYP)", blanks=BLANKS_EXTENDED)
+		zCtx.optionalBlanks(ZCI, "declination degree in type declaration ZCI (DCL_TYP)", blanks=BLANKS_EXTENDED)
 
 		#strip ending blanks
-		beginningIndex = ZCI.ctx.icontent.index
-		dcnDegText = str_stripEnd( str_sub(ZCI.ctx.icontent.s, start=beginningIndex, stop=peerIndex-1), charset=BLANKS_EXTENDED)
+		beginningIdx = ZCI.ctx.icontent.idx
+		dcnDegText   = str_stripEnd( str_sub(ZCI.ctx.icontent.s, start=beginningIdx, stop=peerIdx-1), charset=BLANKS_EXTENDED)
 
 		#non-integer dcnDeg
 		if not str_isConvertible_int(dcnDegText):
@@ -92,7 +92,7 @@ def processTypeDcl(zCtx, ZCI):
 			zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be positive).")
 
 		#forward after includer
-		ZCI.forward(peerIndex - beginningIndex + 1)
+		ZCI.forward(peerIdx - beginningIdx + 1)
 	zCtx.deepDebug("New type is declinable of degree " + str(dcnDeg))
 
 	#must be followed by blanks once more
@@ -164,7 +164,7 @@ def processEnmDcl(zCtx, ZCI, scope):
 	fullName = scopePrefix + rawName
 
 	#must be followed by braces includer
-	zCtx.optionnalBlanks(ZCI, "fields inside braces includer in enumerate declaration ZCI (DCL_ENM).", blanks=BLANKS_EXTENDED)
+	zCtx.optionalBlanks(ZCI, "fields inside braces includer in enumerate declaration ZCI (DCL_ENM).", blanks=BLANKS_EXTENDED)
 	if ZCI.get() != '{':
 		zCtx.ZCIError(ZCI, "Missing fields inside braces includer in enumerate declaration ZCI (DCL_ENM).")
 
@@ -274,7 +274,7 @@ def c02_redirectGlobal(zCtx):
 			#CASE 3 - BEGINNING WITH KEYWORD AND ALLOWED
 
 			#trigrams requiring a following blank
-			if ZCI.text[3] in BLANKS:
+			if ZCI.txt[3] in BLANKS:
 
 				#2.1 - library linking
 				if str_cmp("lnk", firstWord):

@@ -33,7 +33,7 @@ def p2_applyConfiguration(zCtx):
 	#parsing temporary vars
 	hasNegation   = False
 	CFGName       = ""
-	peerIndex     = 0
+	peerIdx       = 0
 	zoneContent   = ""
 	zoneLineFeeds = ""
 
@@ -92,14 +92,14 @@ def p2_applyConfiguration(zCtx):
 				#error cases, limited : only 1 includer type taken into account => cannot have inconsistency
 				if currentPairs == PARSING_CTX__PEER_NOT_FOUND:
 					zCtx.error("Missing end delimiter for precompiler configuration \"" + CFGName + "\" (corresponding '}' expected).")
-				peerIndex = currentPairs[zCtx.ctx.icontent.index]
+				peerIdx = currentPairs[zCtx.ctx.icontent.idx]
 			continue
 
 
 
 		#4) inside zone to consider
 		if parsingState == IN_ZONE:
-			if zCtx.ctx.icontent.index == peerIndex:
+			if zCtx.ctx.icontent.idx == peerIdx:
 				if zCtx.pcpl.configs[CFGName] != hasNegation: #apply configuration
 					output += zoneContent
 				else:
@@ -117,17 +117,17 @@ def p2_applyConfiguration(zCtx):
 
 		#5) outside anything
 		if parsingState == OUTSIDE:
-			currentIndex = zCtx.ctx.icontent.index
+			currentIdx = zCtx.ctx.icontent.idx
 
 			# #CFG field detection
-			if str_subEqual(currentText, "#CFG", 4, first_from=currentIndex):
+			if str_subEqual(currentText, "#CFG", 4, first_from=currentIdx):
 				parsingState = BEFORE_NAME
 				hasNegation  = False
 				zCtx.ctx.forward(3) #jump after expression
 				continue
 
 			# #!CFG field detection
-			if str_subEqual(currentText, "#!CFG", 5, first_from=currentIndex):
+			if str_subEqual(currentText, "#!CFG", 5, first_from=currentIdx):
 				parsingState = BEFORE_NAME
 				hasNegation  = True
 				zCtx.ctx.forward(4) #jump after expression

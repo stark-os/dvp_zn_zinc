@@ -163,9 +163,9 @@
 
 			#compute value
 			resultNbr = 0 #here, we must use a ulng for storage in Z <<<<<<<<<<<<<<<<<<<
-			lastIndex = len(resultText)-1
+			lastIdx   = len(resultText)-1
 			for r in range(len(resultText)):
-				resultNbr += chr_halfHex_toS1(resultText[r]) * (resultDigitPower**(lastIndex-r))
+				resultNbr += chr_halfHex_toS1(resultText[r]) * (resultDigitPower**(lastIdx-r))
 
 
 
@@ -183,9 +183,9 @@
 
 				#read after point
 				afterPoint = readNbrAsRawText(ZCI, STR__DECIMAL)
-				lastIndex  = len(resultText)-1
+				lastIdx    = len(resultText)-1
 				for r in range(len(resultText)):
-					resultFloatingNbr += chr_dec_toS1(afterPoint[r]) * 1/(10**(lastIndex-r))
+					resultFloatingNbr += chr_dec_toS1(afterPoint[r]) * 1/(10**(lastIdx-r))
 
 				#long float terminator
 				if ZCI.get() == 'l':
@@ -261,8 +261,8 @@
 				targettedType = self.getType(TYPE_FULLNAME_FLY)
 
 			#init limits
-			peerIndex    = ZCI.pairs[ZCI.ctx.icontent.index]
-			targettedEnd = ZCI.ctx.icontent.s[peerIndex]
+			peerIdx      = ZCI.pairs[ZCI.ctx.icontent.idx]
+			targettedEnd = ZCI.ctx.icontent.s[peerIdx]
 			ZCI.inc()
 
 			#read subvalues as long as we have some (separated by comas)
@@ -272,7 +272,7 @@
 			while True:
 
 				#read subvalue
-				self.optionnalBlanks(ZCI, None, BLANKS_EXTENDED)
+				self.optionalBlanks(ZCI, None, BLANKS_EXTENDED)
 				self.ZCIDeepDebug(ZCI, "=> Reading " + str(len(subValues)+1) + "th sub value.", printLine=False)
 				subValues.append( self.readValue(ZCI, vap2info.ZCIKindIfError, vap2info.scope, vap2info.cstOnly) )
 
@@ -280,22 +280,22 @@
 				if targettingMap:
 
 					#colon separator required
-					self.optionnalBlanks(ZCI, None, BLANKS_EXTENDED)
+					self.optionalBlanks(ZCI, None, BLANKS_EXTENDED)
 					next = ZCI.get()
 					if next != ':':
 						self.ZCIError(ZCI, "Invalid element " + next + " given in associative sequence (expected colon separator ':').")
 					ZCI.inc()
 
 					#read a second subvalue (require a couple for association)
-					self.optionnalBlanks(ZCI, None, BLANKS_EXTENDED)
+					self.optionalBlanks(ZCI, None, BLANKS_EXTENDED)
 					subValues_second.append( self.readValue(ZCI, vap2info.ZCIKindIfError, vap2info.scope, vap2info.cstOnly) )
 
 				#look for end separator
-				self.optionnalBlanks(ZCI, None, BLANKS_EXTENDED)
+				self.optionalBlanks(ZCI, None, BLANKS_EXTENDED)
 				next = ZCI.get()
 				if next == targettedEnd:
-					if ZCI.ctx.icontent.index != peerIndex:
-						self.ZCIInternal(ZCI, "Ending value sequence inside includer with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(peerIndex) + ").")
+					if ZCI.ctx.icontent.idx != peerIdx:
+						self.ZCIInternal(ZCI, "Ending value sequence inside includer with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.idx) + " instead of targetted " + str(peerIdx) + ").")
 					ZCI.inc()
 					break
 				if next != ',':
@@ -436,7 +436,7 @@
 
 		#read value but don't care if there are still things to analyze
 		result = self.secondAnalysis(ZCI, vap2info) #after this, ZCI index is right AFTER the value read
-		self.optionnalBlanks(ZCI, None)
+		self.optionalBlanks(ZCI, None)
 
 		#nothing left to analyze
 		if ZCI.reachedEnd():
@@ -449,7 +449,7 @@
 		#casht (FCA)
 		if ZCI.get() == '$':
 			ZCI.inc()
-			self.optionnalBlanks(ZCI, None)
+			self.optionalBlanks(ZCI, None)
 
 			#read explicit type
 			self.ZCIDeepDebug(ZCI, "2nd analysis: Processing FCA operator on value " + result.toStr())
@@ -549,7 +549,7 @@
 				matchingFunction = f
 				break
 		if matchingFunction is None:
-			originalZCI.forward(currentPOCall.operatorIndex - originalZCI.ctx.icontent.index)
+			originalZCI.forward(currentPOCall.operatorIdx - originalZCI.ctx.icontent.idx)
 			self.ZCIError(originalZCI, "No operator \"" + unprefixize(f.name) + "\" declared yet.")
 
 		#result
@@ -566,7 +566,7 @@
 
 		#1st analysis: ODP
 		firstAnalysisResult = self.ODP(ZCI)
-		ZCI.forward( firstAnalysisResult.maxStopIndex - ZCI.ctx.icontent.index +1)
+		ZCI.forward( firstAnalysisResult.maxStopIdx - ZCI.ctx.icontent.idx +1)
 
 		#apply 2nd analysis recursively in ODP result
 		secondAnalysisResult = self.applySecondAnalysis(firstAnalysisResult.mainPOCall, ZCI, vap2(ZCIKindIfError, scope, cstOnly)) #here, ZCI is given for error messages only

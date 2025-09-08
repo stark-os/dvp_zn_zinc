@@ -28,8 +28,8 @@
 		if scope == self.cpl.globalScope:
 			cstInitialValueOnly = True #force cst values
 
-		#optionnal assignment symbol => initial value given
-		self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
+		#optional assignment symbol => initial value given
+		self.optionalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
 		sym = self.readSymbol(ZCI)
 		if sym != SYMBOL__NOT_FOUND: #found a symbol
 			if sym != SYMBOL__ASG:
@@ -38,14 +38,14 @@
 
 			#read given initial value
 			initialized = True
-			self.optionnalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
+			self.optionalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
 			initialValue = self.readValue(ZCI, ZCIKindIfError, scope, cstOnly=cstInitialValueOnly)
 
 			#solve type if missing using initialValue
 			if Type is None:
 				Type = initialValue.Type
 				self.ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + Type.name + "\".")
-		self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+		self.optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 		#missing Type still not solved
 		if not allowUnsolvedType:
@@ -65,16 +65,16 @@
 		self.ZCIDeepDebug(ZCI, "Reading sequence of data item(s).")
 
 		#initial conditions
-		initialIndex = ZCI.ctx.icontent.index
-		peerIndex    = ZCI.pairs[initialIndex]
+		initialIdx = ZCI.ctx.icontent.idx
+		peerIdx    = ZCI.pairs[initialIdx]
 		if ZCI.get() not in INCLUDERS.keys():
 			self.ZCIInternal(ZCI, "Must be at the beginning of an includer to read data item sequence.")
 		ZCI.inc()
 
 		#emptyness
 		dis = [] #lst[dataItem]
-		self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
-		if ZCI.ctx.icontent.index == peerIndex:
+		self.optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+		if ZCI.ctx.icontent.idx == peerIdx:
 			if allowEmpty:
 				ZCI.inc()
 				return dis
@@ -83,7 +83,7 @@
 		#read sequence
 		foundSelfKw = False
 		while True:
-				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+				self.optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 				#read & store data item
 				di = self.readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=cstValuesOnly, allowUnsolvedType=allowUnsolvedTypes, inFctDcl=inFctDcl)
@@ -94,12 +94,12 @@
 				#must be followed by coma or closing peer
 				next = ZCI.get()
 				if next in INCLUDERS.values():
-					if ZCI.ctx.icontent.index != peerIndex:
-						self.ZCIInternal(ZCI, "Ending data item sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(peerIndex) + ").")
+					if ZCI.ctx.icontent.idx != peerIdx:
+						self.ZCIInternal(ZCI, "Ending data item sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.idx) + " instead of targetted " + str(peerIdx) + ").")
 					ZCI.inc()
 					break
 				if next != ',':
-					self.ZCIError(ZCI, "Invalid element " + next + " given in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[peerIndex] + "').")
+					self.ZCIError(ZCI, "Invalid element " + next + " given in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[peerIdx] + "').")
 				ZCI.inc()
 
 		#return result

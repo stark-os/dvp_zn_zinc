@@ -23,8 +23,8 @@ def formatModuleName(zCtx, ZCI, moduleName):
 	backShift         = len(moduleName)
 	for c in moduleName:
 		if c not in DEFAULT_NAME_CHARSET: #this "backshift" strategy for targetting something that has ALREADY been read only works because no tab or line feed is allowed in our charset.
-			ZCI.ctx.icontent.index -= backShift #target exact position of invalid character
-			ZCI.ctx.colmNbr        -= backShift
+			ZCI.ctx.icontent.idx -= backShift #target exact position of invalid character
+			ZCI.ctx.colmNbr      -= backShift
 			zCtx.ZCIError(ZCI, "Character not allowed in module name.")
 		checkedModuleName += c
 
@@ -59,13 +59,13 @@ def c01_unmodulize(zCtx):
 		zCtx.ZCIDeepDebug(ZCI, "Treating ZCI " + ZCI.textFormat(), printSubCtxs=True)
 
 		#too short => skip it
-		if len(ZCI.text) < 5:
+		if len(ZCI.txt) < 5:
 			zCtx.deepDebug("Too short => Skipping ZCI.")
 			z += 1
 			continue
 
 		#found module declaration (DCL_MOD)
-		if ZCI.text.startswith("mod") and ZCI.text[3] in BLANKS:
+		if ZCI.txt.startswith("mod") and ZCI.txt[3] in BLANKS:
 			zCtx.ZCIDebug(ZCI, "Found module declaration.")
 			ZCI.forward(3)
 
@@ -115,15 +115,15 @@ def c01_unmodulize(zCtx):
 			# II] MODULE CONTENT
 
 			#looking for starting point of module content
-			zCtx.optionnalBlanks(ZCI, "Module content after name (braces includer).")
+			zCtx.optionalBlanks(ZCI, "Module content after name (braces includer).")
 			if ZCI.get() != '{':
 				zCtx.ZCIError(ZCI, "Expected module content after name (braces includer).")
 
 			#get module content boundaries
-			moduleContent_startIndex = ZCI.ctx.icontent.index
-			if moduleContent_startIndex not in ZCI.pairs.keys():
+			moduleContent_startIdx = ZCI.ctx.icontent.idx
+			if moduleContent_startIdx not in ZCI.pairs.keys():
 				zCtx.ZCIInternal(ZCI, "Missing pair information for current includer.")
-			moduleContent_stopIndex = ZCI.pairs[moduleContent_startIndex]
+			moduleContent_stopIdx = ZCI.pairs[moduleContent_startIdx]
 
 			#shift 1st character '{'
 			ZCI.inc()
@@ -135,7 +135,7 @@ def c01_unmodulize(zCtx):
 				subCtxs = ZCI.subCtxs,
 				global_ = True,
 				modulePrefix = modulePrefix,
-				maximumIndexAllowed = moduleContent_stopIndex-1 #actually, we must skip the real moduleContent_stopIndex, it refers to the ending includer of module content (=> not interesting).
+				maximumIdxAllowed = moduleContent_stopIdx-1 #actually, we must skip the real moduleContent_stopIdx, it refers to the ending includer of module content (=> not interesting).
 			)
 
 			#remove current ZCI in general ZCtx

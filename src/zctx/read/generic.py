@@ -10,7 +10,7 @@
 		if missingFieldIfError is not None:
 			self.ZCIError(ZCI, "Expected something after blank zone: " + missingFieldIfError)
 
-	def optionnalBlanks(self, ZCI, missingFieldIfError, blanks=BLANKS):
+	def optionalBlanks(self, ZCI, missingFieldIfError, blanks=BLANKS):
 		if ZCI.get() in blanks:
 			self.jumpBlankZone(ZCI, missingFieldIfError, blanks=blanks)
 

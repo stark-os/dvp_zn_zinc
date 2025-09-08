@@ -2,7 +2,7 @@
 
 	#ODP
 	def ODP_readAndSplitByOperators(self, ZCI, allowedOperators):
-		maxStopIndex         = 0
+		maxStopIdx           = 0
 		allowedOperatorsText = "" #only for deep debug
 
 		#deep debug
@@ -16,7 +16,7 @@
 		#split by operator symbols
 		operands          = [] #lst[zci]
 		operators         = [] #lst (certainly ubyt but prefer using only undeclinated for enm storage)
-		operatorIndexes   = []
+		operatorIdxes     = []
 		operandInitialCtx = ZCI.ctx.copy()
 		while not ZCI.reachedEnd() and ZCI.get() in VALUE_CHARSET:
 
@@ -27,19 +27,19 @@
 
 			#CASE 1: not a symbol (that can be anything and especially an includer)
 			if operator == SYMBOL__NOT_FOUND:
-				if ZCI.ctx.icontent.index in ZCI.pairs.keys():
-					ZCI.forward(ZCI.pairs[ZCI.ctx.icontent.index] - ZCI.ctx.icontent.index) #includer? It also belongs to the operand no matter what's inside => skip parsing its content
+				if ZCI.ctx.icontent.idx in ZCI.pairs.keys():
+					ZCI.forward(ZCI.pairs[ZCI.ctx.icontent.idx] - ZCI.ctx.icontent.idx) #includer? It also belongs to the operand no matter what's inside => skip parsing its content
 				ZCI.inc()
 				continue
 
 			#CASE 2: '^'
 			elif operator == SYMBOL__LXO:
-				if ZCI.ctx.icontent.index >= ZCI.stopIndex:
+				if ZCI.ctx.icontent.idx >= ZCI.stopIdx:
 					ZCI.inc()
 					self.ZCIError(ZCI, "Missing second operand to logical XOR operator (LXO, \"^\"), reached end of ZCI.")
 
 				#look at the following character to determine whether it is a module prefix or a regular LXO operator
-				nextChr = ZCI.ctx.icontent.s[ZCI.ctx.icontent.index+1]
+				nextChr = ZCI.ctx.icontent.s[ZCI.ctx.icontent.idx+1]
 				if nextChr == '.' or nextChr in DEFAULT_NAME_CHARSET:
 					self.ZCIDeepDebug(ZCI, "ODP-1: '^' symbol detected as module prefix and not as LXO operator.")
 					ZCI.inc() #not an operator actually => skipping it
@@ -55,16 +55,16 @@
 			#create operand as a unique ZCI.
 			# This is actually a value to be analyzed in further steps.
 			# However, to parse it easilly, we store it as a fragment of the original ZCI (which is, here, a copy of the original but doesn't matter).
-			operand            = ZCI.copy(ctxCopy=operandInitialCtx)
-			operand.startIndex = operandInitialCtx.icontent.index #initial context must be at operand beginning index
-			operand.stopIndex  = ZCI.ctx.icontent.index-1         #we are just before operator index, so at operand end index
+			operand          = ZCI.copy(ctxCopy=operandInitialCtx)
+			operand.startIdx = operandInitialCtx.icontent.idx #initial context must be at operand beginning index
+			operand.stopIdx  = ZCI.ctx.icontent.idx-1         #we are just before operator index, so at operand end index
 			operand.strip()
 
 			#special case for negative number notation, we will skip them, it was not an operator
 			itWasJustANegativeSign = False
 
 			#empty 1st operand
-			operandIsEmpty = (ZCI.ctx.icontent.index == operandInitialCtx.icontent.index)
+			operandIsEmpty = (ZCI.ctx.icontent.idx == operandInitialCtx.icontent.idx)
 			if operandIsEmpty:
 				if operator == SYMBOL__BSU:
 					itWasJustANegativeSign = True
@@ -78,8 +78,8 @@
 			if not itWasJustANegativeSign:
 				operands.append(operand)
 				operators.append(operator)
-				operatorIndexes.append(ZCI.ctx.icontent.index)
-				self.ZCIDeepDebug(ZCI, "ODP-1: New operator " + OPERATOR_NAMES[operator] + " found, current operating sequence is " + opSeq(ZCI.ctx.icontent.index, operands, operators, operatorIndexes).toStr())
+				operatorIdxes.append(ZCI.ctx.icontent.idx)
+				self.ZCIDeepDebug(ZCI, "ODP-1: New operator " + OPERATOR_NAMES[operator] + " found, current operating sequence is " + opSeq(ZCI.ctx.icontent.idx, operands, operators, operatorIdxes).toStr())
 
 			#moving after symbol
 			ZCI.forward(SYMBOL_LENGTHS[operator])
@@ -87,16 +87,16 @@
 			#prepare next operand
 			operandInitialCtx = ZCI.ctx.copy()
 
-		#set maxStopIndex
-		maxStopIndex = ZCI.ctx.icontent.index - 1
+		#set maxStopIdx
+		maxStopIdx = ZCI.ctx.icontent.idx - 1
 
 		#no operator found at all => not an operating sequence => return as it was an operating sequence with no operator and only one operand
 		if len(operators) == 0:
 			self.ZCIDeepDebug(ZCI, "ODP-1: No operator found at all => Finished with null operating sequence.")
-			return opSeq(maxStopIndex, None, None, None)
+			return opSeq(maxStopIdx, None, None, None)
 
 		#last operand cannot be empty
-		if ZCI.ctx.icontent.index == operandInitialCtx.icontent.index:
+		if ZCI.ctx.icontent.idx == operandInitialCtx.icontent.idx:
 			lastOperator = operators[-1]
 			if lastOperator in MONO_OPERAND:
 				self.ZCIError(ZCI, "Missing first (and only) operand to single operator " + OPERATOR_NAMES[lastOperator])
@@ -104,18 +104,18 @@
 				self.ZCIError(ZCI, "Missing second operand to operator " + OPERATOR_NAMES[lastOperator])
 
 		#create last operand
-		operand            = ZCI.copy(ctxCopy=operandInitialCtx)
-		operand.startIndex = operandInitialCtx.icontent.index
-		operand.stopIndex  = ZCI.ctx.icontent.index - 1
+		operand          = ZCI.copy(ctxCopy=operandInitialCtx)
+		operand.startIdx = operandInitialCtx.icontent.idx
+		operand.stopIdx  = ZCI.ctx.icontent.idx - 1
 		operand.strip()
 
 		#add last operand
 		operands.append(operand)
-		self.ZCIDeepDebug(ZCI, "ODP-1: Last operand added, final operating sequence is " + opSeq(maxStopIndex, operands, operators, operatorIndexes).toStr())
+		self.ZCIDeepDebug(ZCI, "ODP-1: Last operand added, final operating sequence is " + opSeq(maxStopIdx, operands, operators, operatorIdxes).toStr())
 
 		#deep debug
 		self.ZCIDeepDebug(ZCI, "ODP-1: Finished reading & splitting ZCI content " + ZCI.textFormat() + " by operators " + allowedOperatorsText)
-		return opSeq(maxStopIndex, operands, operators, operatorIndexes)
+		return opSeq(maxStopIdx, operands, operators, operatorIdxes)
 
 
 
@@ -125,7 +125,7 @@
 
 		#check other operands (not necessary, internal consistency check only)
 		for a in currentOpSeq.operands:
-			if a.stopIndex - a.startIndex >= 0:
+			if a.stopIdx - a.startIdx >= 0:
 				self.internal("Non-empty operand found in mono-operand operating sequence (last element excepted).")
 
 		#deep debug: before
@@ -138,8 +138,8 @@
 		)
 		current = result
 		while len(currentOpSeq.operators) != 0:
-			current.name          = OPERATOR_NAMES[currentOpSeq.operators.pop(0)]
-			current.operatorIndex = currentOpSeq.operatorIndexes.pop(0)
+			current.name        = OPERATOR_NAMES[currentOpSeq.operators.pop(0)]
+			current.operatorIdx = currentOpSeq.operatorIdxes.pop(0)
 			current.secondOperand = atm(
 				ATM__POCALL,
 				POCall(
@@ -176,8 +176,8 @@
 
 		#for each remaining operand, make function calls (Potential Operator Call)
 		while len(currentOpSeq.operands) != 0:
-			current.name          = OPERATOR_NAMES[currentOpSeq.operators.pop()]
-			current.operatorIndex = currentOpSeq.operatorIndexes.pop()
+			current.name        = OPERATOR_NAMES[currentOpSeq.operators.pop()]
+			current.operatorIdx = currentOpSeq.operatorIdxes.pop()
 			current.firstOperand = atm(
 				ATM__POCALL,
 				POCall(
@@ -195,7 +195,7 @@
 
 	#group priorizing
 	# This function is higly important! It applies group priorization on every value that can be found in a POCall.
-	def ODP_applyGroupPriorization(self, maxStopIndex, currentPOCall, operatorsAllowed, monoOperand=False):
+	def ODP_applyGroupPriorization(self, maxStopIdx, currentPOCall, operatorsAllowed, monoOperand=False):
 
 		#1st operand
 		if currentPOCall.firstOperand is not None:
@@ -208,7 +208,7 @@
 				#no operator found => restore original ctx, update ZCI length (even if no op has been found, we know where ODP should stop so we can cut directly => optimization)
 				if currentOpSeq.operators is None:
 					currentPOCall.firstOperand.data.resetCtx(originalCtx)
-					currentPOCall.firstOperand.data.stopIndex = currentOpSeq.stopIndex
+					currentPOCall.firstOperand.data.stopIdx = currentOpSeq.stopIdx
 					currentPOCall.firstOperand.data.strip()
 
 				#operator found => progressive priorizing
@@ -218,13 +218,13 @@
 						self.progressivePriorizing(currentOpSeq, monoOperand)
 					)
 
-				#update maxStopIndex
-				if maxStopIndex < currentOpSeq.stopIndex:
-					maxStopIndex = currentOpSeq.stopIndex
+				#update maxStopIdx
+				if maxStopIdx < currentOpSeq.stopIdx:
+					maxStopIdx = currentOpSeq.stopIdx
 
 			#tree => check deeper
 			elif currentPOCall.firstOperand.id == ATM__POCALL:
-				maxStopIndex = self.ODP_applyGroupPriorization(maxStopIndex, currentPOCall.firstOperand.data, operatorsAllowed, monoOperand=monoOperand)
+				maxStopIdx = self.ODP_applyGroupPriorization(maxStopIdx, currentPOCall.firstOperand.data, operatorsAllowed, monoOperand=monoOperand)
 
 		#2nd operand
 		if currentPOCall.secondOperand is not None:
@@ -237,7 +237,7 @@
 				#no operator found => restore origin ctx, update ZCI length (even if no op has been found, we know where ODP should stop so we can cut directly => optimization)
 				if currentOpSeq.operators is None:
 					currentPOCall.secondOperand.data.resetCtx(originalCtx)
-					currentPOCall.secondOperand.data.stopIndex = currentOpSeq.stopIndex
+					currentPOCall.secondOperand.data.stopIdx = currentOpSeq.stopIdx
 					currentPOCall.secondOperand.data.strip()
 
 				#operator found => progressive priorizing
@@ -247,23 +247,23 @@
 						self.progressivePriorizing(currentOpSeq, monoOperand)
 					)
 
-				#update maxStopIndex
-				if maxStopIndex < currentOpSeq.stopIndex:
-					maxStopIndex = currentOpSeq.stopIndex
+				#update maxStopIdx
+				if maxStopIdx < currentOpSeq.stopIdx:
+					maxStopIdx = currentOpSeq.stopIdx
 
 			#tree => check deeper
 			elif currentPOCall.secondOperand.id == ATM__POCALL:
-				maxStopIndex = self.ODP_applyGroupPriorization(maxStopIndex, currentPOCall.secondOperand.data, operatorsAllowed, monoOperand=monoOperand)
+				maxStopIdx = self.ODP_applyGroupPriorization(maxStopIdx, currentPOCall.secondOperand.data, operatorsAllowed, monoOperand=monoOperand)
 
 		#return it to know until where ODP has been (so we know where to continue reading after that Value)
-		return maxStopIndex
+		return maxStopIdx
 
 
 
 	#entry point for Operation Decomposition Process (ODP)
 	def ODP(self, originalZCI):
-		ZCI            = originalZCI.copy()
-		ZCI.startIndex = ZCI.ctx.icontent.index
+		ZCI          = originalZCI.copy()
+		ZCI.startIdx = ZCI.ctx.icontent.idx
 		ZCI.updateText()
 
 		#prepare result
@@ -277,27 +277,27 @@
 
 		#1st group priorization (lowest): CO
 		self.deepDebug("ODP-0: Applying 1st group priorization.")
-		result.maxStopIndex = self.ODP_applyGroupPriorization(result.maxStopIndex, result.mainPOCall, CO)
+		result.maxStopIdx = self.ODP_applyGroupPriorization(result.maxStopIdx, result.mainPOCall, CO)
 		self.deepDebug("ODP-0: Applied 1st group priorization, resulted into " + result.mainPOCall.toStr())
 
 		#2nd group priorization: BO
 		self.deepDebug("ODP-0: Applying 2nd group priorization")
-		result.maxStopIndex = self.ODP_applyGroupPriorization(result.maxStopIndex, result.mainPOCall, BO)
+		result.maxStopIdx = self.ODP_applyGroupPriorization(result.maxStopIdx, result.mainPOCall, BO)
 		self.deepDebug("ODP-0: Applied 2nd group priorization, resulted into " + result.mainPOCall.toStr())
 
 		#3rd group priorization: AO + LO
 		self.deepDebug("ODP-0: Applying 3rd group priorization")
-		result.maxStopIndex = self.ODP_applyGroupPriorization(result.maxStopIndex, result.mainPOCall, AO + LO)
+		result.maxStopIdx = self.ODP_applyGroupPriorization(result.maxStopIdx, result.mainPOCall, AO + LO)
 		self.deepDebug("ODP-0: Applied 3rd group priorization, resulted into " + result.mainPOCall.toStr())
 
 		#4th group priorization: DO
 		self.deepDebug("ODP-0: Applying 4th group priorization")
-		result.maxStopIndex = self.ODP_applyGroupPriorization(result.maxStopIndex, result.mainPOCall, DO)
+		result.maxStopIdx = self.ODP_applyGroupPriorization(result.maxStopIdx, result.mainPOCall, DO)
 		self.deepDebug("ODP-0: Applied 4th group priorization, resulted into " + result.mainPOCall.toStr())
 
 		#5th group priorization: SO (highest treated in ODP)
 		self.deepDebug("ODP-0: Applying 5th group priorization (SO)")
-		result.maxStopIndex = self.ODP_applyGroupPriorization(result.maxStopIndex, result.mainPOCall, SO, monoOperand=True)
+		result.maxStopIdx = self.ODP_applyGroupPriorization(result.maxStopIdx, result.mainPOCall, SO, monoOperand=True)
 		self.deepDebug("ODP-0: Applied 5th group priorization, resulted into " + result.mainPOCall.toStr())
 		self.deepDebug("Ended ODP on ZCI " + ZCI.textFormat())
 		return result

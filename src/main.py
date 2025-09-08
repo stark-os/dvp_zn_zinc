@@ -125,7 +125,7 @@ def main():
 
 	#compile
 	compile(zCtx, DEBUG_MODES, DEEP_DEBUG_MODES) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< debug paramaters should not be passed as parameters, they are global & variable (static)
-	writeFile(outputFilename, zCtx.cpl.textResult)
+	writeFile(outputFilename, zCtx.cpl.txtResult)
 
 #run main
 main()

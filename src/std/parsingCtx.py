@@ -22,30 +22,30 @@ from std.list import *
 
 #istr
 class istr:
-	def __init__(self, initStr, index=-1):
-		self.index = index
-		self.s     = initStr
+	def __init__(self, initStr, idx=-1):
+		self.idx = idx
+		self.s   = initStr
 
 	def get(self):
-		return self.s[self.index]
+		return self.s[self.idx]
 
 	def set(self, value):
-		self.s[self.index] = value
+		self.s[self.idx] = value
 
 	def forward(self, step):
-		if (self.index + step) >= len(self.s): #could not forward => ret True
+		if (self.idx + step) >= len(self.s): #could not forward => ret True
 			return True
-		self.index += step
+		self.idx += step
 		return False
 
 	def inc(self):
 		return self.forward(1)
 
 	def copy(self):
-		return istr(self.s, self.index)
+		return istr(self.s, self.idx)
 
 	def reachedEnd(self):
-		return self.index == len(self.s)-1
+		return self.idx == len(self.s)-1
 
 
 
@@ -79,10 +79,10 @@ class ParsingCtx:
 		if content is None:
 			content  = self.icontent.s
 		newCtx = ParsingCtx(filepath, content)
-		newCtx.icontent.index = self.icontent.index
-		newCtx.lineNbr        = self.lineNbr
-		newCtx.colmNbr        = self.colmNbr
-		newCtx.detectedLF     = self.detectedLF
+		newCtx.icontent.idx = self.icontent.idx
+		newCtx.lineNbr      = self.lineNbr
+		newCtx.colmNbr      = self.colmNbr
+		newCtx.detectedLF   = self.detectedLF
 		return newCtx
 
 	#print: temporarily made like this
@@ -130,8 +130,8 @@ class ParsingCtx:
 		self.colmNbr    = 0
 		self.detectedLF = False
 		if newText is not None:
-			self.icontent.s     = newText
-			self.icontent.index = -1
+			self.icontent.s   = newText
+			self.icontent.idx = -1
 
 
 
@@ -140,32 +140,32 @@ class ParsingCtx:
 		content = self.icontent.s
 
 		#set beginning & end of line
-		if self.icontent.index == -1: #invalid value (istr starting index)
-			begIndex = 0
-			endIndex = 0
+		if self.icontent.idx == -1: #invalid value (istr starting index)
+			begIdx = 0
+			endIdx = 0
 		else:
-			begIndex = self.icontent.index - (self.colmNbr-1)
-			endIndex = self.icontent.index
+			begIdx = self.icontent.idx - (self.colmNbr-1)
+			endIdx = self.icontent.idx
 
 		#that mean we are in the first line (cannot subtract colmNbr)
-		if begIndex > endIndex:
-			begIndex = 0
+		if begIdx > endIdx:
+			begIdx = 0
 
 		#read to get real end of line
-		while endIndex < len(content):
-			if content[endIndex] == '\n':
+		while endIdx < len(content):
+			if content[endIdx] == '\n':
 				break
-			endIndex += 1
+			endIdx += 1
 
 		#print full line
-		rawConcernedLine = str_sub(content, begIndex, endIndex)
+		rawConcernedLine = str_sub(content, begIdx, endIdx)
 		concernedLine    = str_expandTabs(rawConcernedLine, Term__TAB_LENGTH)
 		print(concernedLine)
 
 		#prepare position indicator
-		positionIndex     = (Term__TAB_LENGTH-1) * rawConcernedLine.count('\t') + self.colmNbr - 1
+		positionIdx       = (Term__TAB_LENGTH-1) * rawConcernedLine.count('\t') + self.colmNbr - 1
 		positionIndicator = ""
-		for i in range(positionIndex):
+		for i in range(positionIdx):
 			positionIndicator += '-'
 		positionIndicator += '^'
 
@@ -188,19 +188,19 @@ class ParsingCtx:
 			return PARSING_CTX__INVALID_FIRST_OPENNING
 
 		#prepare main pair (that can contain some other subPairs)
-		resultPairs  = {} #map[unt_l,unt_l]
-		initialIndex = self.icontent.index
+		resultPairs = {} #map[unt_l,unt_l]
+		initialIdx  = self.icontent.idx
 
 		#read rest of the code taking into account every subPair
 		subOpenings = [] #lst[chr]
-		subIndexes  = [] #lst[unt_l]
+		subIdxes    = [] #lst[unt_l]
 		while not localCtx.inc():
 			c = localCtx.get()
 
 			#openning subPair
 			if c in allowedPairs.keys():
 				subOpenings.append(c)
-				subIndexes.append(localCtx.icontent.index)
+				subIdxes.append(localCtx.icontent.idx)
 
 			#closing subPair
 			elif c in allowedPairs.values():
@@ -210,7 +210,7 @@ class ParsingCtx:
 
 					#found it
 					if c == target:
-						resultPairs[initialIndex] = localCtx.icontent.index #add main pair
+						resultPairs[initialIdx] = localCtx.icontent.idx #add main pair
 						return resultPairs
 
 					#inconsistency 1: closing too soon
@@ -219,9 +219,9 @@ class ParsingCtx:
 
 				#closing latest subPair
 				latestOpening = lst_pop(subOpenings)
-				latestIndex   = lst_pop(subIndexes)
+				latestIdx     = lst_pop(subIdxes)
 				if c == allowedPairs[latestOpening]:
-					resultPairs[latestIndex] = localCtx.icontent.index
+					resultPairs[latestIdx] = localCtx.icontent.idx
 					continue
 
 				#inconsistency 2: unexpected peer

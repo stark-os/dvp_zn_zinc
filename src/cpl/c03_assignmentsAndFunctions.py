@@ -28,7 +28,7 @@ def readFctDcl(zCtx, ZCI):
 
 	#method
 	elif dotCnt == 1:
-		dotIndex = rawName.index('.')
+		dotIdx = rawName.index('.')
 
 		#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO 4th
 
@@ -53,7 +53,7 @@ def readFctDcl(zCtx, ZCI):
 	)
 
 	#return type
-	zCtx.optionnalBlanks(ZCI, None)
+	zCtx.optionalBlanks(ZCI, None)
 	if ZCI.get() == '{':
 		pass #VOID <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	else:

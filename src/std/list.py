@@ -18,8 +18,8 @@ def lst_pop(l):
 	l.pop()
 	return last
 
-def lst_remove(l, index):
-	return l[:index] + l[index+1:]
+def lst_remove(l, idx):
+	return l[:idx] + l[idx+1:]
 
 def lst_copy(l): #only copying refs
 	newL = []

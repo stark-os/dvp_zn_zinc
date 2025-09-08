@@ -33,8 +33,8 @@
 
 		#2 - declination list given => solve them
 		if ZCI.get() == '[':
-			initialIndex = ZCI.ctx.icontent.index
-			peerIndex    = ZCI.pairs[initialIndex]
+			initialIdx = ZCI.ctx.icontent.idx
+			peerIdx    = ZCI.pairs[initialIdx]
 			ZCI.inc()
 
 			#undeclinable type
@@ -45,17 +45,17 @@
 			self.deepDebug("Type is declinated, reading declination types.")
 			dcns = [] #lst[typ]
 			while True:
-				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+				self.optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 				#read & append next declination type (recursive call). Don't check if already exitsing in dcns, we can have the same type twice, thrice and so on...
 				dcns.append(self.readType(ZCI, ZCIKindIfError))
 
 				#must be followed by coma or closing peer
-				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+				self.optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 				next = ZCI.get()
 				if next == ']':
-					if ZCI.ctx.icontent.index != peerIndex:
-						self.ZCIInternal(ZCI, "Ending declination type sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.index) + " instead of targetted " + str(peerIndex) + ").")
+					if ZCI.ctx.icontent.idx != peerIdx:
+						self.ZCIInternal(ZCI, "Ending declination type sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.idx) + " instead of targetted " + str(peerIdx) + ").")
 					ZCI.inc()
 					break
 				elif next != ',':
