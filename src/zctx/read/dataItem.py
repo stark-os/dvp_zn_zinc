@@ -9,7 +9,7 @@
 
 
 	#WARNING! Returns data item WITHOUT ANY prefix
-	def readDataItem(self, ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUnsolvedType=False):
+	def readDataItem(self, ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUnsolvedType=False, inFctDcl=False):
 		self.ZCIDeepDebug(ZCI, "Reading data item.")
 
 		#read type (if any. Else, continue as nothing happened)
@@ -50,7 +50,10 @@
 		#missing Type still not solved
 		if not allowUnsolvedType:
 			if Type is None:
-				self.ZCIError(ZCI, "Missing type to given element \"" + name + "\" (required either explicitely or implicity).")
+				if inFctDcl:
+					self.ZCIError(ZCI, "Unknown type \"" + name + "\" in function declaration ZCI (DCL_FCT).")
+				else:
+					self.ZCIError(ZCI, "Missing type to given element \"" + name + "\" (required either explicitely or implicity).")
 
 		#result
 		self.ZCIDeepDebug(ZCI, "Ended reading data item.")
@@ -58,7 +61,7 @@
 
 	#read dataitem sequence
 	# Given ZCI must be at an opening includer character.
-	def readDataItemSequence(self, ZCI, ZCIKindIfError, scope, cstValuesOnly=False, allowUnsolvedTypes=False):
+	def readDataItemSequence(self, ZCI, ZCIKindIfError, scope, cstValuesOnly=False, allowUnsolvedTypes=False, allowEmpty=False, inFctDcl=False):
 		self.ZCIDeepDebug(ZCI, "Reading sequence of data item(s).")
 
 		#initial conditions
@@ -68,14 +71,22 @@
 			self.ZCIInternal(ZCI, "Must be at the beginning of an includer to read data item sequence.")
 		ZCI.inc()
 
+		#emptyness
+		dis = [] #lst[dataItem]
+		self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+		if ZCI.ctx.icontent.index == peerIndex:
+			if allowEmpty:
+				ZCI.inc()
+				return dis
+			self.ZCIError(ZCI, "Missing at least one data item declaration in " + ZCIKindIfError)
+
 		#read sequence
-		dis = []   #lst[dataItem]
 		foundSelfKw = False
 		while True:
 				self.optionnalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 				#read & store data item
-				di = self.readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=cstValuesOnly, allowUnsolvedType=allowUnsolvedTypes)
+				di = self.readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=cstValuesOnly, allowUnsolvedType=allowUnsolvedTypes, inFctDcl=inFctDcl)
 				self.checkAlreadyDeclaredDataItemOrField(ZCI, dis, di)
 				dis.append(di)
 				self.ZCIDeepDebug(ZCI, "Got data item " + di.toStr())

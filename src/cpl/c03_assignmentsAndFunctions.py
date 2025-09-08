@@ -17,13 +17,9 @@ from zctx import *
 #function declaration
 def readFctDcl(zCtx, ZCI):
 	zCtx.ZCIDebug(ZCI, "Processing function declaration.", printSubCtxs=True)
-	zCtx.jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT)")
-
-	#return type
-	retType = zCtx.readType(ZCI, "return type in function declaration ZCI (DCL_FCT)")
 
 	#function name
-	rawName = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True, whitelist=FCT_NAME_CHARSET, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True)
+	rawName = zCtx.readName(ZCI, "function name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True, whitelist=FCT_NAME_CHARSET, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True)
 	dotCnt  = rawName.count('.')
 
 	#regular function
@@ -33,7 +29,7 @@ def readFctDcl(zCtx, ZCI):
 	#method
 	elif dotCnt == 1:
 		dotIndex = rawName.index('.')
-		
+
 		#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO 4th
 
 		#look for method type
@@ -41,37 +37,33 @@ def readFctDcl(zCtx, ZCI):
 		#for t in zCtx.cpl.types:
 		#	if t.name == 
 
-		fullName = ZCI.modulePrefix + 'T' + targettedType.name + '_' + rawName
+		fullName = "METHOD" #ZCI.modulePrefix + 'T' + targettedType.name + '_' + rawName
 
 	#error case
 	else:
 		zCtx.ZCIError("Invalid function name, multiple dot separators found.")
 
 	#parameters
-	params = self.readDataItemSequence(
+	params = zCtx.readDataItemSequence(
 		ZCI, "function declaration ZCI (DCL_FCT)",
 		zCtx.cpl.globalScope,
-		cstValuesOnly      = True,
-		allowUnsolvedTypes = True
+		cstValuesOnly = True,
+		allowEmpty    = True,
+		inFctDcl      = True
 	)
 
-	#self keyword
-	for p in range(len(params)):
-		if params[p].name == "self":
-			self.deepDebug("Detected self keyword => overwritting it with generic self parameter.")
-			params[p] = dataItem(
-				self.rootTypes[RT__BOO],
-				"self",
-				True,
-				value(self.rootTypes[RT__BOO], True, constant=True)
-			)
+	#return type
+	zCtx.optionnalBlanks(ZCI, None)
+	if ZCI.get() == '{':
+		pass #VOID <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	else:
+		retType = zCtx.readType(ZCI, "return type in function declaration ZCI (DCL_FCT)")
 
-		#if it is not "self", we must have a valid type
-		elif params[p].Type is None:
-			self.ZCIError(ZCI, "Missing type or default value to function parameter \"" + params[p].name + "\".")
+	#content
+	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
 
 	#result
-	return fct(fullName, params, zCtx.cpl.globalScope)
+	return zCtx.newFct(fullName, None, params)
 
 
 
@@ -84,24 +76,21 @@ def readFctDcl(zCtx, ZCI):
 def c03_assignmentsAndFunctions(zCtx, unprocessedZCIs):
 	zCtx.debug("\n\n\n\n")
 	zCtx.debug("=================================================================================")
-	zCtx.debug("=================== C03 ASSIGNMENTS AND FUNCTIONS : beginning ===================")
+	zCtx.debug("================ C03 GLOBAL ASSIGNMENTS AND FUNCTIONS : beginning ===============")
 	zCtx.debug("=================================================================================\n\n\n\n")
 
-	#analyse EVERY remaining global ZCI
-	for ZCI in unprocessedZCIs:
+	#global assignments
+	for ZCI in unprocessedZCIs[1]:
+		pass #readFctDcl(zCtx, ZCI)
 
-		#try reading a type
-		#Type = zCtx.readType(ZCI, "Determining ZCI kind", nullIfNotExisting=True)
-		#if Type is None:
-		#	name = zCtx.readName(ZCI, )
-		zCtx.deepDebug("GOT " + ZCI.toStr())
-
-		#zCtx.cpl.functions.append(zCtx.readFctDcl(fZCI)) <<<<<<<<<<<<<<<<<<<<<<<<<<< disabled for the moment
+	#functions
+	for ZCI in unprocessedZCIs[0]:
+		zCtx.cpl.functions.append( readFctDcl(zCtx, ZCI) )
 
 	#debug
 	zCtx.debug("\n\n\n\n")
 	zCtx.debug("===========================================================================")
-	zCtx.debug("=================== C03 ASSIGNMENTS AND FUNCTIONS : end ===================")
+	zCtx.debug("================ C03 GLOBAL ASSIGNMENTS AND FUNCTIONS : end ===============")
 	zCtx.debug("===========================================================================\n\n\n\n")
 
 	#debug output file

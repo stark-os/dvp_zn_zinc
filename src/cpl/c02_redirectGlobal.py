@@ -222,7 +222,10 @@ def c02_redirectGlobal(zCtx):
 	zCtx.debug("=================================================================================\n\n\n\n")
 
 	#prepare result for next step
-	unprocessedZCIs = []
+	unprocessedZCIs = (
+		[], #function declarations
+		[]  #assignments
+	)
 
 	#analyse EVERY ZCI
 	for ZCI in zCtx.ZCIs:
@@ -284,8 +287,14 @@ def c02_redirectGlobal(zCtx):
 					continue
 
 				#2.3 - Enumerate declaration DCL_ENM
-				if ZCI.text.startswith("enm"):
+				if str_cmp("enm", firstWord):
 					processEnmDcl(zCtx, ZCI, zCtx.cpl.globalScope)
+					continue
+
+				#2.4 - Function declaration
+				if str_cmp("fct", firstWord):
+					zCtx.jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT).")
+					unprocessedZCIs[0].append(ZCI) #to be processed later, and also forwarded ZCI to function name.
 					continue
 
 
@@ -294,7 +303,7 @@ def c02_redirectGlobal(zCtx):
 
 		#will be treated later => store it for now
 		ZCI.resetCtx(initialCtx)
-		unprocessedZCIs.append(ZCI)
+		unprocessedZCIs[1].append(ZCI)
 
 	#debug
 	zCtx.debug("\n\n\n\n")
