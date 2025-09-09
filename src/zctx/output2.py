@@ -1,47 +1,47 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/output2.py
 
-	# ZCI OUTPUT (cpl)
+# ZCI OUTPUT (cpl)
 
-	#output after precompilation is closely related to ZCIs, no longer to global subCtxs
-	def ZCIInternal(self, ZCI, msg, printSubCtxs=True, printLine=True):
-		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.internal(msg, printSubCtxs, printLine)
+#output after precompilation is closely related to ZCIs, no longer to global subCtxs
+def ZCIInternal(ZCI, msg, printSubCtxs=True, printLine=True):
+	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
+	ZCI.zCtx.internal(msg, printSubCtxs, printLine)
 
-	def ZCIError(self, ZCI, msg, printSubCtxs=True, printLine=True):
-		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.error(msg, printSubCtxs, printLine)
+def ZCIError(ZCI, msg, printSubCtxs=True, printLine=True):
+	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
+	ZCI.zCtx.error(msg, printSubCtxs, printLine)
 
-	def ZCIWarning(self, ZCI, msg, printSubCtxs=True, printLine=True):
-		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.warning(msg, printSubCtxs, printLine)
+def ZCIWarning(ZCI, msg, printSubCtxs=True, printLine=True):
+	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
+	ZCI.zCtx.warning(msg, printSubCtxs, printLine)
 
-	def ZCIDebug(self, ZCI, msg, printSubCtxs=False, printLine=True):
-		previousSubCtxs = self.subCtxs
-		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.debug(msg, printSubCtxs, printLine)
-		self.overwriteSubCtxs(previousSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
+def ZCIDebug(ZCI, msg, printSubCtxs=False, printLine=True):
+	previousSubCtxs = ZCI.zCtx.subCtxs
+	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
+	ZCI.zCtx.debug(msg, printSubCtxs, printLine)
+	zCtx__overwriteSubCtxs(ZCI.zCtx, previousSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
 
-	def ZCIDeepDebug(self, ZCI, msg, printSubCtxs=False, printLine=True):
-		previousSubCtxs = self.subCtxs
-		self.overwriteSubCtxs(ZCI.subCtxs)
-		self.deepDebug(msg, printSubCtxs, printLine)
-		self.overwriteSubCtxs(previousSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
+def ZCIDeepDebug(ZCI, msg, printSubCtxs=False, printLine=True):
+	previousSubCtxs = ZCI.zCtx.subCtxs
+	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
+	ZCI.zCtx.deepDebug(msg, printSubCtxs, printLine)
+	zCtx__overwriteSubCtxs(ZCI.zCtx, previousSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
 
 
 
-	# DEBUG
+# DEBUG
 
-	#modules
-	def debugModules(self):
-		unprefixedModules = ""
-		for mp in self.cpl.modulePrefixes:
-			unprefixedModules += "\n - " + unprefixizeModule(mp)
-		self.debug("Available modules are :" + unprefixedModules)
+#modules
+def zCtx__debugMods(zCtx):
+	unprefixedMods = ""
+	for mp in zCtx.cpl.modPrefixes:
+		unprefixedMods += "\n - " + unprefixizeMod(mp)
+	zCtx.debug("Available modules are :" + unprefixedMods)
 
-	#cpl steps output
-	def cplStep_debugZCIs(self, cplStep):
-		if self.debugMode:
-			dumpZCIs(self.ZCIs, "debug/" + path_name(self.initialCtx.filename) + ".c" + cplStep + ".json")
+#cpl steps output
+def zCtx__cplStep_debugZCIs(zCtx, cplStep):
+	if zCtx.debugMode:
+		dumpZCIs(zCtx.ZCIs, "debug/" + path_name(zCtx.initialCtx.filename) + ".c" + cplStep + ".json")
 
 
 

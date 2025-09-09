@@ -15,16 +15,16 @@ from zctx import *
 # -------- DCL_FCT --------
 
 #function declaration
-def readFctDcl(zCtx, ZCI):
-	zCtx.ZCIDebug(ZCI, "Processing function declaration.", printSubCtxs=True)
+def readFctDcl(ZCI):
+	ZCIDebug(ZCI, "Processing function declaration.", printSubCtxs=True)
 
 	#function name
-	rawName = zCtx.readName(ZCI, "function name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True, whitelist=FCT_NAME_CHARSET, parseModulePrefixes=True, modulePrefix_asHeaderOnly=True)
+	rawName = readName(ZCI, "function name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True, whitelist=FCT_NAME_CHARSET, parseModPrefixes=True, modPrefix_asHeaderOnly=True)
 	dotCnt  = rawName.count('.')
 
 	#regular function
 	if dotCnt == 0:
-		fullName = ZCI.modulePrefix + 'F' + rawName
+		fullName = ZCI.modPrefix + 'F' + rawName
 
 	#method
 	elif dotCnt == 1:
@@ -41,29 +41,29 @@ def readFctDcl(zCtx, ZCI):
 
 	#error case
 	else:
-		zCtx.ZCIError("Invalid function name, multiple dot separators found.")
+		ZCIError(ZCI, "Invalid function name, multiple dot separators found.")
 
 	#parameters
-	params = zCtx.readDataItemSequence(
+	params = readDataItemSequence(
 		ZCI, "function declaration ZCI (DCL_FCT)",
-		zCtx.cpl.globalScope,
+		ZCI.zCtx.cpl.gblScp,
 		cstValuesOnly = True,
 		allowEmpty    = True,
 		inFctDcl      = True
 	)
 
 	#return type
-	zCtx.optionalBlanks(ZCI, None)
+	optionalBlanks(ZCI, None)
 	if ZCI.get() == '{':
 		pass #VOID <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	else:
-		retType = zCtx.readType(ZCI, "return type in function declaration ZCI (DCL_FCT)")
+		retType = readType(ZCI, "return type in function declaration ZCI (DCL_FCT)")
 
 	#content
 	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
 
 	#result
-	return zCtx.newFct(fullName, None, params)
+	return newFct(fullName, None, params, ZCI.zCtx.cpl.gblScp)
 
 
 
@@ -81,11 +81,11 @@ def c03_assignmentsAndFunctions(zCtx, unprocessedZCIs):
 
 	#global assignments
 	for ZCI in unprocessedZCIs[1]:
-		pass #readFctDcl(zCtx, ZCI)
+		pass
 
 	#functions
 	for ZCI in unprocessedZCIs[0]:
-		zCtx.cpl.functions.append( readFctDcl(zCtx, ZCI) )
+		zCtx.cpl.fcts.append( readFctDcl(ZCI) )
 
 	#debug
 	zCtx.debug("\n\n\n\n")
@@ -94,4 +94,4 @@ def c03_assignmentsAndFunctions(zCtx, unprocessedZCIs):
 	zCtx.debug("===========================================================================\n\n\n\n")
 
 	#debug output file
-	zCtx.cplStep_debugZCIs("03")
+	zCtx__cplStep_debugZCIs(zCtx, "03")

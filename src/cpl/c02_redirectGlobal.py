@@ -21,25 +21,25 @@ from zctx import *
 # -------- EXT_LNK --------
 
 #external linking
-def processLnk(zCtx, ZCI):
-	zCtx.ZCIDebug(ZCI, "Processing SDL addition.", printSubCtxs=True)
-	zCtx.jumpBlankZone(ZCI, "File path in library linking ZCI (EXT_LNK)")
+def processLnk(ZCI):
+	ZCIDebug(ZCI, "Processing SDL addition.", printSubCtxs=True, printLine=False)
+	jumpBlankZone(ZCI, "File path in library linking ZCI (EXT_LNK)")
 
 	#library linking path
-	path = os.path.realpath( zCtx.readName(ZCI, "File path in library linking ZCI (EXT_LNK).", blacklist=BLANKS_EXTENDED) )
-	zCtx.endOfZCI(ZCI, "library linking ZCI (EXT_LNK).")
+	path = os.path.realpath( readName(ZCI, "File path in library linking ZCI (EXT_LNK).", blacklist=BLANKS_EXTENDED) )
+	endOfZCI(ZCI, "library linking ZCI (EXT_LNK).")
 
 	#check existence
 	if not os.path.isfile(path):
-		zCtx.ZCIError(ZCI, "Shared & Dynamically Linked (SDL) library " + path + " not found.")
-	zCtx.debug("SDL file \"" + path + "\" found.")
+		ZCIError(ZCI, "Shared & Dynamically Linked (SDL) library " + path + " not found.")
+	ZCIDebug(ZCI, "SDL file \"" + path + "\" found.", printLine=False)
 
 	#add link
 	if path not in zCtx.cpl.linkedLibs:
 		zCtx.cpl.linkedLibs.append(path)
-		zCtx.ZCIDebug(ZCI, "Added SDL \"" + path + "\" to linking list.")
+		ZCIDebug(ZCI, "Added SDL \"" + path + "\" to linking list.")
 	else:
-		zCtx.ZCIDebug(ZCI, "SDL \"" + path + "\" already in linking list => skipping it.")
+		ZCIDebug(ZCI, "SDL \"" + path + "\" already in linking list => skipping it.")
 
 
 
@@ -50,24 +50,24 @@ def processLnk(zCtx, ZCI):
 
 #type declaration
 
-def processTypeDcl(zCtx, ZCI):
-	zCtx.ZCIDebug(ZCI, "Processing type declaration.", printSubCtxs=True)
-	zCtx.jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
+def processTypeDcl(ZCI):
+	ZCIDebug(ZCI, "Processing type declaration.", printSubCtxs=True, printLine=False)
+	jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
 
 	#get full type name considered as "undeclinated"
-	rawName = zCtx.readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True)
-	if len(ZCI.modulePrefix) == 0:
+	rawName = readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True)
+	if len(ZCI.modPrefix) == 0:
 		fullName = "GU" + rawName
 	else:
-		fullName = ZCI.modulePrefix + 'U' + rawName
+		fullName = ZCI.modPrefix + 'U' + rawName
 
 	#check already existing
-	if zCtx.getType(fullName) is not None:
-		modulePrefixText = ""
-		if len(ZCI.modulePrefix) != 0:
-			modulePrefixText = unprefixizeModule(ZCI.modulePrefix)
-		zCtx.ZCIError(ZCI, "Type " + modulePrefixText + rawName.replace("__", '_') + " already exists, can't declare a new one with the same name (DCL_TYP).")
-	zCtx.deepDebug("New type does not exist yet.")
+	if ZCI.zCtx.getType(fullName) is not None:
+		modPrefixText = ""
+		if len(ZCI.modPrefix) != 0:
+			modPrefixText = unprefixizeMod(ZCI.modPrefix)
+		ZCIError(ZCI, "Type " + modPrefixText + rawName.replace("__", '_') + " already exists, can't declare a new one with the same name (DCL_TYP).")
+	ZCIDeepDebug(ZCI, "New type does not exist yet.", printLine=False)
 
 	#explicit declination degree if any
 	dcnDeg = 0
@@ -76,7 +76,7 @@ def processTypeDcl(zCtx, ZCI):
 		ZCI.inc()
 
 		#skip beginning blanks
-		zCtx.optionalBlanks(ZCI, "declination degree in type declaration ZCI (DCL_TYP)", blanks=BLANKS_EXTENDED)
+		optionalBlanks(ZCI, "declination degree in type declaration ZCI (DCL_TYP)", blanks=BLANKS_EXTENDED)
 
 		#strip ending blanks
 		beginningIdx = ZCI.ctx.icontent.idx
@@ -84,59 +84,59 @@ def processTypeDcl(zCtx, ZCI):
 
 		#non-integer dcnDeg
 		if not str_isConvertible_int(dcnDegText):
-			zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be an integer).")
+			ZCIError(ZCI, "Invalid explicit declination degree given (must be an integer).")
 
 		#negative dcnDeg
 		dcnDeg = int(dcnDegText)
 		if dcnDeg < 0:
-			zCtx.ZCIError(ZCI, "Invalid explicit declination degree given (must be positive).")
+			ZCIError(ZCI, "Invalid explicit declination degree given (must be positive).")
 
 		#forward after includer
 		ZCI.forward(peerIdx - beginningIdx + 1)
-	zCtx.deepDebug("New type is declinable of degree " + str(dcnDeg))
+	ZCIDeepDebug(ZCI, "New type is declinable of degree " + str(dcnDeg), printLine=False)
 
 	#must be followed by blanks once more
 	if ZCI.get() not in BLANKS:
-		zCtx.ZCIError(ZCI, "Expected blank zone after type name in type declaration ZCI (DCL_TYP).")
-	zCtx.jumpBlankZone(ZCI, "Type content definition in type declaration ZCI (DCL_TYP).")
+		ZCIError(ZCI, "Expected blank zone after type name in type declaration ZCI (DCL_TYP).")
+	jumpBlankZone(ZCI, "Type content definition in type declaration ZCI (DCL_TYP).")
 
 	#add generic type for the moment (it is incomplete: we don't know if it is a structure, if it has a parent...)
 	newType = newTyp(fullName, dcnDeg)
-	zCtx.cpl.types.append(newType)
-	zCtx.ZCIDebug(ZCI, "Explicitely added type " + newType.name + " but there are still missing information about it (incomplete for the moment).")
+	ZCI.zCtx.cpl.types.append(newType)
+	ZCIDebug(ZCI, "Explicitely added type " + newType.name + " but there are still missing information about it (incomplete for the moment).")
 
 	#process type content: structure syntax
 	if ZCI.get() == '{':
-		zCtx.debug("Type declaration is via structure syntax.", printLine=False)
-		newType.commonDcnData.size   = zCtx.rootTypes[RT__PTR].size
+		ZCIDebug(ZCI, "Type declaration is via structure syntax.", printLine=False)
+		newType.commonDcnData.size   = ZCI.zCtx.rootTypes[RT__PTR].size
 		newType.commonDcnData.nature = NATURE__STRUCTURE
 
 		#reading fields
-		newType.commonDcnData.fields = zCtx.readDataItemSequence(
+		newType.commonDcnData.fields = readDataItemSequence(
 			ZCI, "type declaration ZCI (DCL_TYP).",
-			zCtx.cpl.globalScope,
+			ZCI.zCtx.cpl.gblScp,
 			cstValuesOnly = True
 		)
 		if len(newType.commonDcnData.fields) == 0:
-			zCtx.ZCIError(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDataItemSequence cannot return 0-length list)
+			ZCIError(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDataItemSequence cannot return 0-length list)
 
 		#update stcSize
 		newType.computeStcSize()
 
 	#process type content: type-copy syntax
 	else:
-		zCtx.debug("Type declaration is via type-copy syntax.", printLine=False)
-		parent = zCtx.readType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
+		ZCIDebug(ZCI, "Type declaration is via type-copy syntax.", printLine=False)
+		parent = readType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
 		if parent.commonDcnData == newType.commonDcnData:
-			zCtx.ZCIError(ZCI, "Type cannot be declared as a copy of itself or one of its declination.") #seems obvious, but anyway
+			ZCIError(ZCI, "Type cannot be declared as a copy of itself or one of its declination.") #seems obvious, but anyway
 		newType.commonDcnData.size   = parent.commonDcnData.size
 		newType.commonDcnData.nature = parent.commonDcnData.nature
 		newType.commonDcnData.parent = parent
 
 	#end of ZCI expected
-	zCtx.endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")
-	zCtx.debug("Type declaration " + newType.name + " processed.")
-	zCtx.deepDebugPause()
+	endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")
+	ZCIDebug(ZCI, "Type declaration " + newType.name + " processed.", printLine=False)
+	ZCI.zCtx.deepDebugPause()
 
 
 
@@ -146,30 +146,30 @@ def processTypeDcl(zCtx, ZCI):
 # -------- DCL_ENM --------
 
 #enumerate declaration
-def processEnmDcl(zCtx, ZCI, scope):
-	zCtx.ZCIDebug(ZCI, "Processing enumerate declaration.", printSubCtxs=True)
-	zCtx.jumpBlankZone(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM)")
+def processEnmDcl(ZCI, scope):
+	ZCIDebug(ZCI, "Processing enumerate declaration.", printSubCtxs=True, printLine=False)
+	jumpBlankZone(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM)")
 
 	#set scope prefix
-	if scope == zCtx.cpl.globalScope:
-		if len(ZCI.modulePrefix) == 0:
-			scopePrefix = ZCI.modulePrefix + 'E' #global "element" (not "enumerate", there is no distinction with other data items)
+	if scope == ZCI.zCtx.cpl.gblScp:
+		if len(ZCI.modPrefix) == 0:
+			scpPrefix = ZCI.modPrefix + 'E' #global "element" (not "enumerate", there is no distinction with other data items)
 		else:
-			scopePrefix = "GE"
+			scpPrefix = "GE"
 	else:
-		scopePrefix = 'L' #"local" element
+		scpPrefix = 'L' #"local" element
 
 	#get full enm name
-	rawName  = zCtx.readName(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM).", doubleUnderscores=True)
-	fullName = scopePrefix + rawName
+	rawName  = readName(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM).", doubleUnderscores=True)
+	fullName = scpPrefix + rawName
 
 	#must be followed by braces includer
-	zCtx.optionalBlanks(ZCI, "fields inside braces includer in enumerate declaration ZCI (DCL_ENM).", blanks=BLANKS_EXTENDED)
+	optionalBlanks(ZCI, "fields inside braces includer in enumerate declaration ZCI (DCL_ENM).", blanks=BLANKS_EXTENDED)
 	if ZCI.get() != '{':
-		zCtx.ZCIError(ZCI, "Missing fields inside braces includer in enumerate declaration ZCI (DCL_ENM).")
+		ZCIError(ZCI, "Missing fields inside braces includer in enumerate declaration ZCI (DCL_ENM).")
 
 	#read fields
-	fields = zCtx.readDataItemSequence(
+	fields = readDataItemSequence(
 		ZCI, "enumerate declaration ZCI (DCL_ENM).",
 		scope,
 		cstValuesOnly      = True,
@@ -177,35 +177,35 @@ def processEnmDcl(zCtx, ZCI, scope):
 	)
 	for di in fields:
 		if di.Type != None: #no type must be found (neither explicit type given or initial value)
-			zCtx.ZCIError(ZCI, "No explicit type or value is allowed in enumerate declaration (DCL_ENM).")
+			ZCIError(ZCI, "No explicit type or value is allowed in enumerate declaration (DCL_ENM).")
 
 	#compute which type will be used
-	zCtx.deepDebug("Enumerate length: " + str(len(fields)))
+	ZCIDeepDebug(ZCI, "Enumerate length: " + str(len(fields)), printLine=False)
 	if len(fields) <= 0x1_00:
-		zCtx.deepDebug("Enumerate length indexing can be contained in U1 => using that type for them.")
-		t = zCtx.rootTypes[RT__U1]
+		ZCIDeepDebug(ZCI, "Enumerate length indexing can be contained in U1 => using that type for them.", printLine=False)
+		t = ZCI.zCtx.rootTypes[RT__U1]
 	elif len(fields) <= 0x1_00_00:
-		zCtx.deepDebug("Enumerate length indexing can be contained in U2 => using that type for them.")
-		t = zCtx.rootTypes[RT__U2]
+		ZCIDeepDebug(ZCI, "Enumerate length indexing can be contained in U2 => using that type for them.", printLine=False)
+		t = ZCI.zCtx.rootTypes[RT__U2]
 	elif len(fields) <= 0x1_00_00_00_00:
-		zCtx.deepDebug("Enumerate length indexing can be contained in U4 => using that type for them.")
+		ZCIDeepDebug(ZCI, "Enumerate length indexing can be contained in U4 => using that type for them.")
 		t = zCtx.rootTypes[RT__U4]
 	else:
-		zCtx.ZCIError(ZCI, "Too much fields in enumerate (congrats for reaching that error, how did you managed to get it ?).")
+		ZCIError(ZCI, "Too much fields in enumerate (congrats for reaching that error, how did you managed to get it ?).")
 
 	#fullfill fields
 	for f in range(len(fields)):
 		fields[f].Type  = t
-		fields[f].value = value(t, atm(ATM__PTR, f), constant=True) #value stored as it was a ptr to be cashted into type t
+		fields[f].value = value(t, atm(ATM__PTR, f), Cst=True) #value stored as it was a ptr to be cashted into type t
 
 	#create enumerate
-	zCtx.checkAlreadyDeclaredDataItemOrField(ZCI, scope.dataItems, fullName)
-	scope.dataItems.append( dataItem(t, fullName, True, None, constant=True, fields=fields) )
+	checkAlreadyDeclaredDataItemOrField(ZCI, scope.dataItems, fullName)
+	scope.dataItems.append( dataItem(t, fullName, True, None, Cst=True, fields=fields) )
 
 	#end of ZCI expected
-	zCtx.endOfZCI(ZCI, "enumerate declaration ZCI (DCL_ENM).")
-	zCtx.debug("Enumerate declaration processed.")
-	zCtx.deepDebugPause()
+	endOfZCI(ZCI, "enumerate declaration ZCI (DCL_ENM).")
+	ZCIDebug(ZCI, "Enumerate declaration processed.", printLine=False)
+	ZCI.zCtx.deepDebugPause()
 
 
 
@@ -230,10 +230,10 @@ def c02_redirectGlobal(zCtx):
 	#analyse EVERY ZCI
 	for ZCI in zCtx.ZCIs:
 		initialCtx = ZCI.ctx.copy()
-		zCtx.ZCIDeepDebug(ZCI, "Treating ZCI " + ZCI.textFormat(), printSubCtxs=True)
+		ZCIDeepDebug(ZCI, "Treating ZCI " + ZCI.textFormat(), printSubCtxs=True)
 
 		#read 1st ZCI word
-		firstWord = zCtx.readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)
+		firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)
 
 
 
@@ -242,32 +242,32 @@ def c02_redirectGlobal(zCtx):
 		#bigrams
 		if len(firstWord) == 2:
 			if str_cmp("if", firstWord):
-				zCtx.ZCIError(ZCI, "IF/ELIF/ELSE statements are not allowed in global scope (STM_IF_ detected).")
+				ZCIError(ZCI, "IF/ELIF/ELSE statements are not allowed in global scope (STM_IF_ detected).")
 
 		#trigrams
 		elif len(firstWord) == 3:
 
 			#1.1 - jumps
 			if str_cmp("brk", firstWord):
-				zCtx.ZCIError(ZCI, "BREAK jumps are not allowed in global scope (JMP_BRK detected).")
+				ZCIError(ZCI, "BREAK jumps are not allowed in global scope (JMP_BRK detected).")
 			if str_cmp("ctn", firstWord):
-				zCtx.ZCIError(ZCI, "CONTINUE jumps are not allowed in global scope (JMP_CTN detected).")
+				ZCIError(ZCI, "CONTINUE jumps are not allowed in global scope (JMP_CTN detected).")
 			if str_cmp("ret", firstWord):
-				zCtx.ZCIError(ZCI, "RETURN jumps are not allowed in global scope (JMP_RET detected).")
+				ZCIError(ZCI, "RETURN jumps are not allowed in global scope (JMP_RET detected).")
 
 			#1.2 - statements
 			if str_cmp("elf", firstWord) or str_cmp("els", firstWord):
-				zCtx.ZCIError(ZCI, "IF/ELIF/ELSE statements are not allowed in global scope (STM_IF_ detected).")
+				ZCIError(ZCI, "IF/ELIF/ELSE statements are not allowed in global scope (STM_IF_ detected).")
 			if str_cmp("for", firstWord):
-				zCtx.ZCIError(ZCI, "FOR statements are not allowed in global scope (STM_FOR detected).")
+				ZCIError(ZCI, "FOR statements are not allowed in global scope (STM_FOR detected).")
 			if str_cmp("while", firstWord):
-				zCtx.ZCIError(ZCI, "WHILE statements are not allowed in global scope (STM_WHI detected).")
+				ZCIError(ZCI, "WHILE statements are not allowed in global scope (STM_WHI detected).")
 			if str_cmp("swi", firstWord):
-				zCtx.ZCIError(ZCI, "SWITCH statements are not allowed in global scope (STM_SWI detected).")
+				ZCIError(ZCI, "SWITCH statements are not allowed in global scope (STM_SWI detected).")
 
 			#1.3 - remaining imports (should never occur)
 			if str_cmp("imp", firstWord):
-				zCtx.ZCIInternal(ZCI, "Must not have any importation remaining at that step.")
+				ZCIInternal(ZCI, "Must not have any importation remaining at that step.")
 
 
 
@@ -278,22 +278,22 @@ def c02_redirectGlobal(zCtx):
 
 				#2.1 - library linking
 				if str_cmp("lnk", firstWord):
-					processLnk(zCtx, ZCI)
+					processLnk(ZCI)
 					continue
 
 				#2.2 - type declaration DCL_TYP
 				if str_cmp("typ", firstWord):
-					processTypeDcl(zCtx, ZCI)
+					processTypeDcl(ZCI)
 					continue
 
 				#2.3 - Enumerate declaration DCL_ENM
 				if str_cmp("enm", firstWord):
-					processEnmDcl(zCtx, ZCI, zCtx.cpl.globalScope)
+					processEnmDcl(ZCI, ZCI.zCtx.cpl.gblScp)
 					continue
 
 				#2.4 - Function declaration
 				if str_cmp("fct", firstWord):
-					zCtx.jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT).")
+					jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT).")
 					unprocessedZCIs[0].append(ZCI) #to be processed later, and also forwarded ZCI to function name.
 					continue
 
@@ -312,7 +312,7 @@ def c02_redirectGlobal(zCtx):
 	zCtx.debug("===========================================================================\n\n\n\n")
 
 	#debug output file
-	zCtx.cplStep_debugZCIs("02")
+	zCtx__cplStep_debugZCIs(zCtx, "02")
 
 	#return unprocessed ZCIs
 	return unprocessedZCIs

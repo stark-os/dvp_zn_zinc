@@ -5,7 +5,7 @@ pCXD=$(dirname $CXD)
 SRC=$pCXD/src
 ZCTX=$SRC/zctx
 
-chmod a+w                              $SRC/zctx.py
+chmod a+w                              $SRC/zctx.py 2> /dev/null
 cat $ZCTX/std.py                    >  $SRC/zctx.py
 cat $ZCTX/defs.py                   >> $SRC/zctx.py
 cat $ZCTX/independantTools.py       >> $SRC/zctx.py

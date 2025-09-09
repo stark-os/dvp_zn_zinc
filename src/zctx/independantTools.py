@@ -3,21 +3,21 @@
 # -------- TEXT TOOLS --------
 
 #unprefixing module prefixes especially
-def unprefixizeModule(modulePrefix):
-	if len(modulePrefix) == 0:
+def unprefixizeMod(modPrefix):
+	if len(modPrefix) == 0:
 		return ""
-	if modulePrefix[0] == 'G':
+	if modPrefix[0] == 'G':
 		return ""
-	return "^" + str_sub(modulePrefix, start=1).replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1] + '.'
+	return "^" + str_sub(modPrefix, start=1).replace("__", "%").replace("_M", ".^").replace("%",'_')[:-1] + '.'
 
-def extractModulePrefix(name):
+def extractModPrefix(name):
 	if len(name) == 0:
 		return ""
 	if name[0] != 'M': #no module prefix
 		return ""
 
 	#get only module prefix from name
-	modulePrefix    = "M"
+	modPrefix    = "M"
 	foundUnderscore = False
 	for c in name[1:]:
 
@@ -36,30 +36,29 @@ def extractModulePrefix(name):
 			foundUnderscore = True
 
 		#in module prefix
-		modulePrefix += c
+		modPrefix += c
 
 	#count ending underscores
 	uNbr = 0
-	modulePrefix_length = len(modulePrefix)
-	for c in range(modulePrefix_length):
-		if modulePrefix[modulePrefix_length-c-1] == '_':
+	modPrefix_length = len(modPrefix)
+	for c in range(modPrefix_length):
+		if modPrefix[modPrefix_length-c-1] == '_':
 			uNbr += 1
 		else:
 			break
 
 	#error case : should never occur. It would mean we made s-thing wrong when transforming module notation into module prefix
 	if uNbr%2 == 0:
-		print("[INTERNAL] Invalid module prefix '" + modulePrefix + "' extracted from name '" + name + "' (ending with even number of underscores).")
+		print("[INTERNAL] Invalid module prefix '" + modPrefix + "' extracted from name '" + name + "' (ending with even number of underscores).")
 		exit(1)
-	return modulePrefix
+	return modPrefix
+
+
 
 #unprefixing anything <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< MAYBE MAKE IT EFFICIENT ENOUGH SO THAT WE CAN GET RID OF UNPREFIXIZEMODULE & EXTRACTMODULEPREFIX ?
 def unprefixizeAnyName(name): #GE<name> => <name>, M<mod>_E<name> => ^<mod>.<name>, ...
-	prefix = extractModulePrefix(name)
-	return unprefixizeModule(prefix) + str_sub(name, len(prefix)).replace("__", '_')
-
-#def extractAnyPrefix()
-#	return
+	prefix = extractModPrefix(name)
+	return unprefixizeMod(prefix) + str_sub(name, len(prefix)).replace("__", '_')
 
 
 

@@ -38,12 +38,12 @@ def p2_applyConfiguration(zCtx):
 	zoneLineFeeds = ""
 
 	#all configs
-	CFGKeys = zCtx.pcpl.configs.keys()
+	CFGKeys = zCtx.pcpl.cfgs.keys()
 
 	#parsing byte per byte
 	currentText  = zCtx.ctx.icontent.s
-	while not zCtx.inc():
-		c = zCtx.get()
+	while not zCtx__inc(zCtx):
+		c = zCtx__get(zCtx)
 
 
 
@@ -100,7 +100,7 @@ def p2_applyConfiguration(zCtx):
 		#4) inside zone to consider
 		if parsingState == IN_ZONE:
 			if zCtx.ctx.icontent.idx == peerIdx:
-				if zCtx.pcpl.configs[CFGName] != hasNegation: #apply configuration
+				if zCtx.pcpl.cfgs[CFGName] != hasNegation: #apply configuration
 					output += zoneContent
 				else:
 					output += zoneLineFeeds
@@ -130,7 +130,7 @@ def p2_applyConfiguration(zCtx):
 			if str_subEqual(currentText, "#!CFG", 5, first_from=currentIdx):
 				parsingState = BEFORE_NAME
 				hasNegation  = True
-				zCtx.ctx.forward(4) #jump after expression
+				zCtx__forward(zCtx, 4) #jump after expression
 				continue
 
 			#regular code

@@ -56,9 +56,9 @@ ATM__POCALL = 23
 ATM__LST = 24
 ATM__ATM = 99
 class atm:
-	def __init__(self, id, data):
-		self.id   = id   #ulng
-		self.data = data #ulng
+	def __init__(sbj, id, data):
+		sbj.id   = id   #ulng
+		sbj.data = data #ulng
 
 
 

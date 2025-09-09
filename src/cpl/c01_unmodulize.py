@@ -16,25 +16,25 @@ from pcpl.p3_splitZCIsAndImport import *
 
 #check & turn raw Module name into prefix
 # HERE, we consider our ZCI to be at position right after reading the given moduleName
-def formatModuleName(zCtx, ZCI, moduleName):
+def formatModName(ZCI, modName):
 
 	#charset check
-	checkedModuleName = ""
-	backShift         = len(moduleName)
-	for c in moduleName:
+	checkedModName = ""
+	backShift      = len(modName)
+	for c in modName:
 		if c not in DEFAULT_NAME_CHARSET: #this "backshift" strategy for targetting something that has ALREADY been read only works because no tab or line feed is allowed in our charset.
 			ZCI.ctx.icontent.idx -= backShift #target exact position of invalid character
 			ZCI.ctx.colmNbr      -= backShift
-			zCtx.ZCIError(ZCI, "Character not allowed in module name.")
-		checkedModuleName += c
+			ZCIError(ZCI, "Character not allowed in module name.")
+		checkedModName += c
 
 		#doubling underscores
 		if c == '_':
-			checkedModuleName += '_'
+			checkedModName += '_'
 		backShift -= 1
 
 	#final module prefix
-	return "M" + checkedModuleName + "_"
+	return "M" + checkedModName + "_"
 
 
 
@@ -56,7 +56,7 @@ def c01_unmodulize(zCtx):
 	_ZCIsLen = len(zCtx.ZCIs) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only exists here in python, won't be useful in Z (we got .length)
 	while z < _ZCIsLen:
 		ZCI = zCtx.ZCIs[z]
-		zCtx.ZCIDeepDebug(ZCI, "Treating ZCI " + ZCI.textFormat(), printSubCtxs=True)
+		ZCIDeepDebug(ZCI, "Treating ZCI " + ZCI.textFormat(), printSubCtxs=True)
 
 		#too short => skip it
 		if len(ZCI.txt) < 5:
@@ -66,7 +66,7 @@ def c01_unmodulize(zCtx):
 
 		#found module declaration (DCL_MOD)
 		if ZCI.txt.startswith("mod") and ZCI.txt[3] in BLANKS:
-			zCtx.ZCIDebug(ZCI, "Found module declaration.")
+			ZCIDebug(ZCI, "Found module declaration.")
 			ZCI.forward(3)
 
 
@@ -74,68 +74,65 @@ def c01_unmodulize(zCtx):
 			# I] MODULE NAME
 
 			#read next word
-			zCtx.jumpBlankZone(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
-			moduleName = zCtx.readName(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
+			jumpBlankZone(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
+			modName = readName(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
 
 			#combine with current module (we can be in another module => this allows submodularization)
-			modulePrefix = ZCI.modulePrefix + formatModuleName(zCtx, ZCI, moduleName)
+			modPrefix = ZCI.modPrefix + formatModName(ZCI, modName)
 
 			# I.1) module addition
-			if moduleName == "add":
+			if modName == "add":
 				zCtx.debug("Detected addition to existing module.")
 
 				#read one more name
-				zCtx.jumpBlankZone(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD).")
-				modulePrefix = ZCI.modulePrefix + formatModuleName(
-					zCtx, ZCI,
-					zCtx.readName(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD).")
-				)
+				jumpBlankZone(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD).")
+				modPrefix = ZCI.modPrefix + formatModName(ZCI, readName(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD)."))
 
 				#adding to inexisting module
-				if modulePrefix not in zCtx.cpl.modulePrefixes:
-					zCtx.debugModules()
-					zCtx.ZCIError(ZCI, "No module " + unprefixizeModule(modulePrefix) + " declared yet, can't add to it.")
+				if modPrefix not in zCtx.cpl.modPrefixes:
+					zCtx__debugMods(zCtx)
+					ZCIError(ZCI, "No module " + unprefixizeMod(modPrefix) + " declared yet, can't add to it.")
 
 			# I.2) new module
 			else:
-				zCtx.debug("Detected new module creation \"" + modulePrefix + "\".")
+				zCtx.debug("Detected new module creation \"" + modPrefix + "\".")
 
 				#already declared the same exact module
-				if modulePrefix in zCtx.cpl.modulePrefixes:
-					zCtx.debugModules()
-					zCtx.ZCIError(ZCI, "Module " + unprefixizeModule(modulePrefix) + " already declared, you may consider \"adding\" to it.")
+				if modPrefix in zCtx.cpl.modPrefixes:
+					zCtx__debugMods(zCtx)
+					ZCIError(ZCI, "Module " + unprefixizeMod(modPrefix) + " already declared, you may consider \"adding\" to it.")
 
 				#avoid re-declaration
-				zCtx.cpl.modulePrefixes.append(modulePrefix)
-				zCtx.debug("Added module \"" + modulePrefix + "\" to compiler context.")
-			zCtx.ZCIDebug(ZCI, "Full module name read \"" + modulePrefix + "\" (based on prefix \"" + ZCI.modulePrefix + "\").")
+				zCtx.cpl.modPrefixes.append(modPrefix)
+				zCtx.debug("Added module \"" + modPrefix + "\" to compiler context.")
+			ZCIDebug(ZCI, "Full module name read \"" + modPrefix + "\" (based on prefix \"" + ZCI.modPrefix + "\").")
 
 
 
 			# II] MODULE CONTENT
 
 			#looking for starting point of module content
-			zCtx.optionalBlanks(ZCI, "Module content after name (braces includer).")
+			optionalBlanks(ZCI, "Module content after name (braces includer).")
 			if ZCI.get() != '{':
-				zCtx.ZCIError(ZCI, "Expected module content after name (braces includer).")
+				ZCIError(ZCI, "Expected module content after name (braces includer).")
 
 			#get module content boundaries
-			moduleContent_startIdx = ZCI.ctx.icontent.idx
-			if moduleContent_startIdx not in ZCI.pairs.keys():
-				zCtx.ZCIInternal(ZCI, "Missing pair information for current includer.")
-			moduleContent_stopIdx = ZCI.pairs[moduleContent_startIdx]
+			modContent_startIdx = ZCI.ctx.icontent.idx
+			if modContent_startIdx not in ZCI.pairs.keys():
+				ZCIInternal(ZCI, "Missing pair information for current includer.")
+			modContent_stopIdx = ZCI.pairs[modContent_startIdx]
 
 			#shift 1st character '{'
 			ZCI.inc()
 
 			#extract ZCIs from content
 			zCtx.debug("Extracting ZCIs from module content.")
-			moduleZCIs = extractZCIsFromCtx(zCtx,
+			modZCIs = extractZCIsFromCtx(zCtx,
 				ZCI.ctx,
-				subCtxs = ZCI.subCtxs,
-				global_ = True,
-				modulePrefix = modulePrefix,
-				maximumIdxAllowed = moduleContent_stopIdx-1 #actually, we must skip the real moduleContent_stopIdx, it refers to the ending includer of module content (=> not interesting).
+				subCtxs       = ZCI.subCtxs,
+				gbl           = True,
+				modPrefix     = modPrefix,
+				maxIdxAllowed = modContent_stopIdx-1 #actually, we must skip the real modContent_stopIdx, it refers to the ending includer of module content (=> not interesting).
 			)
 
 			#remove current ZCI in general ZCtx
@@ -148,7 +145,7 @@ def c01_unmodulize(zCtx):
 			else:
 				previousZCIs = lst_sub(zCtx.ZCIs, stop=z-1)
 			nextZCIs  = lst_sub(zCtx.ZCIs, start=z)
-			zCtx.ZCIs = previousZCIs + moduleZCIs + nextZCIs
+			zCtx.ZCIs = previousZCIs + modZCIs + nextZCIs
 
 			#shift current ZCI index because we removed it
 			z -= 1
@@ -166,4 +163,4 @@ def c01_unmodulize(zCtx):
 	zCtx.deepDebugPause()
 
 	#debug output file
-	zCtx.cplStep_debugZCIs("01")
+	zCtx__cplStep_debugZCIs(zCtx, "01")

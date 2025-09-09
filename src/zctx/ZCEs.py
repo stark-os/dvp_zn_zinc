@@ -4,97 +4,98 @@
 
 #ZCI
 class zci:
-	def __init__(self):
-		self.subCtxs      = None
-		self.ctx          = None
-		self.pairs        = None
-		self.modulePrefix = None
-		self.startIdx     = None
-		self.stopIdx      = None
-		self.txt          = ""
+	def __init__(sbj, zCtx):
+		sbj.zCtx      = zCtx
+		sbj.subCtxs   = None
+		sbj.ctx       = None
+		sbj.pairs     = None
+		sbj.modPrefix = None
+		sbj.startIdx  = None
+		sbj.stopIdx   = None
+		sbj.txt       = ""
 
-	def updateText(self):
-		startIdx = self.startIdx
+	def updateText(sbj):
+		startIdx = sbj.startIdx
 		if startIdx == -1:
 			startIdx = 0
-		self.txt = str_sub(self.ctx.icontent.s, startIdx, self.stopIdx)
+		sbj.txt = str_sub(sbj.ctx.icontent.s, startIdx, sbj.stopIdx)
 
 
 
 	#forwarding
-	def get(self):
-		return self.ctx.get()
+	def get(sbj):
+		return sbj.ctx.get()
 
-	def forward(self, step):
-		return self.ctx.forward(step)
+	def forward(sbj, step):
+		return sbj.ctx.forward(step)
 
-	def inc(self):
-		return self.ctx.inc() or self.ctx.icontent.idx > self.stopIdx #additionnal stopping reason => end of ZCI
+	def inc(sbj):
+		return sbj.ctx.inc() or sbj.ctx.icontent.idx > sbj.stopIdx #additionnal stopping reason => end of ZCI
 
-	def reachedEnd(self):
-		return self.ctx.icontent.idx > self.stopIdx
+	def reachedEnd(sbj):
+		return sbj.ctx.icontent.idx > sbj.stopIdx
 
 
 
 	#ctx related
-	def resetCtx(self, newCtx):
-		self.ctx         = newCtx
-		self.subCtxs[-1] = newCtx #a ZCI must have at least 1 subCtx
+	def resetCtx(sbj, newCtx):
+		sbj.ctx         = newCtx
+		sbj.subCtxs[-1] = newCtx #a ZCI must have at least 1 subCtx
 
-	def copy(self, ctxCopy=None): #this copy mainly affects ZCI ctx rather than the other fields
+	def copy(sbj, ctxCopy=None): #this copy mainly affects ZCI ctx rather than the other fields
 		if ctxCopy is None:
-			ctxCopy   = self.ctx.copy()
-		copy          = newZCI(lst_copy(self.subCtxs), modulePrefix=self.modulePrefix, pairs=self.pairs)
-		copy.startIdx = self.startIdx
-		copy.stopIdx  = self.stopIdx
-		copy.txt      = self.txt
+			ctxCopy   = sbj.ctx.copy()
+		copy          = newZCI(sbj.zCtx, lst_copy(sbj.subCtxs), modPrefix=sbj.modPrefix, pairs=sbj.pairs)
+		copy.startIdx = sbj.startIdx
+		copy.stopIdx  = sbj.stopIdx
+		copy.txt      = sbj.txt
 		copy.resetCtx(ctxCopy) #we copy ctx & subctxs so that we can TEMPORARILY work on that ZCI without affecting it really
 		return copy
 
 	#WARNING! Must be used with ctx.icontent.idx at startIdx position !
 	#ctx will be forwarded if necessary (beginning strip).
-	def strip(self):
-		self.updateText()
+	def strip(sbj):
+		sbj.updateText()
 
 		#strip beginning
-		beginningShift = str_getBeginningStripIndex(self.txt, charset=BLANKS_EXTENDED)
+		beginningShift = str_getBeginningStripIndex(sbj.txt, charset=BLANKS_EXTENDED)
 		if beginningShift != 0:
-			self.forward(beginningShift)
-			self.txt      = str_sub(self.txt, start=beginningShift)
-			self.startIdx = self.ctx.icontent.idx
+			sbj.forward(beginningShift)
+			sbj.txt      = str_sub(sbj.txt, start=beginningShift)
+			sbj.startIdx = sbj.ctx.icontent.idx
 
 		#strip end
-		endingIdx = str_getEndStripIndex(self.txt, charset=BLANKS_EXTENDED)
-		if endingIdx != -1 and endingIdx != len(self.txt)-1:
-			textLengthBefore = len(self.txt)
-			self.txt         = str_sub(self.txt, stop=endingIdx) #strip end of self.txt
-			self.stopIdx    -= textLengthBefore - len(self.txt)    #shift stopIdx the same amount
+		endingIdx = str_getEndStripIndex(sbj.txt, charset=BLANKS_EXTENDED)
+		if endingIdx != -1 and endingIdx != len(sbj.txt)-1:
+			textLengthBefore = len(sbj.txt)
+			sbj.txt         = str_sub(sbj.txt, stop=endingIdx) #strip end of sbj.txt
+			sbj.stopIdx    -= textLengthBefore - len(sbj.txt)    #shift stopIdx the same amount
 
 
 
 	#debug output
-	def textFormat(self):
-		return '\"' + self.txt.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n") + '\"'
+	def textFormat(sbj):
+		return '\"' + sbj.txt.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n") + '\"'
 
-	def toStr(self):
-		return "{module:\"" + self.modulePrefix + "\",ctx:\"" + self.ctx.toStr() + "\",ctx.icontent.idx:" + str(self.ctx.icontent.idx) + ",startIdx:" + str(self.startIdx) + ",stopIdx:" + str(self.stopIdx) + ",txt:" + self.textFormat() + ",pairs:\"" + str(self.pairs).replace(' ', '') + "\"}"
+	def toStr(sbj):
+		return "{mod:\"" + sbj.modPrefix + "\",ctx:\"" + sbj.ctx.toStr() + "\",ctx.icontent.idx:" + str(sbj.ctx.icontent.idx) + ",startIdx:" + str(sbj.startIdx) + ",stopIdx:" + str(sbj.stopIdx) + ",txt:" + sbj.textFormat() + ",pairs:\"" + str(sbj.pairs).replace(' ', '') + "\"}"
 
-def newZCI(subCtxs, modulePrefix=None, pairs=None):
-	if modulePrefix is None:
-		modulePrefix = ""
+def newZCI(zCtx, subCtxs, modPrefix=None, pairs=None):
+	if modPrefix is None:
+		modPrefix = ""
 	if pairs is None:
 		pairs = {}
 	if lst_isEmpty(subCtxs):
 		print("[INTERNAL] Cannot instantiate a ZCI with no subCtxs.")
 		exit(1)
-	result = zci()
-	result.subCtxs      = subCtxs
-	result.ctx          = subCtxs[-1]
-	result.pairs        = pairs
-	result.modulePrefix = modulePrefix
-	result.startIdx     = result.ctx.icontent.idx #current position is where our ZCI starts
-	result.stopIdx      = result.startIdx
-	return result
+	res           = zci(zCtx)
+	res.subCtxs   = subCtxs
+	res.ctx       = subCtxs[-1]
+	res.pairs     = pairs
+	res.modPrefix = modPrefix
+	res.startIdx  = res.ctx.icontent.idx #current position is where our ZCI starts
+	res.stopIdx   = res.startIdx
+	return res
 
 def dumpZCIs(ZCIs, filename):
 	output = "[\n"
@@ -107,51 +108,51 @@ def dumpZCIs(ZCIs, filename):
 
 #types
 class typ_commonDcnData: #common type data among every declination
-	def __init__(self, dcnDeg):
-		self.parent = None
-		self.size   = 0
-		self.dcnDeg = dcnDeg
+	def __init__(sbj, dcnDeg):
+		sbj.parent = None
+		sbj.size   = 0
+		sbj.dcnDeg = dcnDeg
 
 		#stc related
-		self.nature  = NATURE__PRIMITIVE
-		self.fields  = None #lst[dataItem]
-		self.stcSize = 0
+		sbj.nature  = NATURE__PRIMITIVE
+		sbj.fields  = None #lst[dataItem]
+		sbj.stcSize = 0
 
 class typ:
-	def __init__(self):
-		self.name          = None
-		self.methods       = None #lst[fct]
-		self.dcns          = None #tab[typ]
-		self.commonDcnData = None #typ_commonDcnData
+	def __init__(sbj):
+		sbj.name          = None
+		sbj.methods       = None #lst[fct]
+		sbj.dcns          = None #tab[typ]
+		sbj.commonDcnData = None #typ_commonDcnData
 
-	def computeStcSize(self):
-		if self.commonDcnData.nature != NATURE__PRIMITIVE:
-			for f in self.commonDcnData.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
-				self.commonDcnData.stcSize += f.Type.commonDcnData.size
+	def computeStcSize(sbj):
+		if sbj.commonDcnData.nature != NATURE__PRIMITIVE:
+			for f in sbj.commonDcnData.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
+				sbj.commonDcnData.stcSize += f.Type.commonDcnData.size
 
 def newTyp(name, dcnDeg=0, dcns=None, commonDcnData=None):
 	if commonDcnData is None:
 		commonDcnData = typ_commonDcnData(dcnDeg) #create a new commonDcnData by default (new type => new commonDcnData)
-	result = typ()
-	result.name          = name
-	result.methods       = []   #lst[fct]
-	result.dcns          = dcns #tab[typ]
-	result.commonDcnData = commonDcnData #typ_commonDcnData
-	return result
+	res               = typ()
+	res.name          = name
+	res.methods       = []   #lst[fct]
+	res.dcns          = dcns #tab[typ]
+	res.commonDcnData = commonDcnData #typ_commonDcnData
+	return res
 
 #scope
 class scp:
-	def __init__(self):
-		self.exes      = None #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
-		self.dataItems = None #lst[dataItem]
-		self.parent    = None #scp
+	def __init__(sbj):
+		sbj.exes      = None #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
+		sbj.dataItems = None #lst[dataItem]
+		sbj.parent    = None #scp
 
 def newScp(parent=None):
-	result = scp()
-	result.exes      = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
-	result.dataItems = [] #lst[dataItem]
-	result.parent    = parent
-	return result
+	res           = scp()
+	res.exes      = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
+	res.dataItems = [] #lst[dataItem]
+	res.parent    = parent
+	return res
 
 
 
@@ -162,51 +163,51 @@ def newScp(parent=None):
 
 #value
 class value:
-	def __init__(self, Type, data, constant=False):
-		self.Type     = Type
-		self.data     = data  #atm #can be either a root type (literal), str (name) or call.
-		self.constant = constant
+	def __init__(sbj, Type, data, Cst=False):
+		sbj.Type = Type
+		sbj.data = data  #atm #can be either a root type (literal), str (name) or call.
+		sbj.Cst  = Cst
 
-	def toStr(self, depth=0):
-		if self.data.id == ATM__BOO: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< I know, this seems weird in Python but it makes sens in Z (will have to be a swi btw)
+	def toStr(sbj, depth=0):
+		if sbj.data.id == ATM__BOO: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< I know, this seems weird in Python but it makes sens in Z (will have to be a swi btw)
 			dataStr = "false"
-			if self.data:
+			if sbj.data:
 				dataStr = "true"
 
 		#numerical
-		elif self.data.id == ATM__S1:
-			dataStr = 'S' + hexOnN(self.data.data, 2)
-		elif self.data.id == ATM__U1:
-			dataStr = 'U' + hexOnN(self.data.data, 2)
-		elif self.data.id == ATM__S2:
-			dataStr = 'S' + hexOnN(self.data.data, 4)
-		elif self.data.id == ATM__U2:
-			dataStr = 'U' + hexOnN(self.data.data, 4)
-		elif self.data.id == ATM__S4:
-			dataStr = 'S' + hexOnN(self.data.data, 8)
-		elif self.data.id == ATM__U4:
-			dataStr = 'U' + hexOnN(self.data.data, 8)
-		elif self.data.id == ATM__S8:
-			dataStr = 'S' + hexOnN(self.data.data, 16) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< no way to get arch type here... will stay in 64b for the moment (can be formatted again later)
-		elif self.data.id == ATM__U8:
-			dataStr = 'U' + hexOnN(self.data.data, 16)
-		elif self.data.id == ATM__CHR:
-			dataStr = '\'' + self.data.data + '\''
-		elif self.data.id == ATM__STR: #this case covers both literal string & name. In all cases, toStr() will output a double-quoted result.
-			dataStr = '\"' + self.data.data + '\"' #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< for the moment, it also covers the case of literal structures (stored under raw text)
+		elif sbj.data.id == ATM__S1:
+			dataStr = 'S' + hexOnN(sbj.data.data, 2)
+		elif sbj.data.id == ATM__U1:
+			dataStr = 'U' + hexOnN(sbj.data.data, 2)
+		elif sbj.data.id == ATM__S2:
+			dataStr = 'S' + hexOnN(sbj.data.data, 4)
+		elif sbj.data.id == ATM__U2:
+			dataStr = 'U' + hexOnN(sbj.data.data, 4)
+		elif sbj.data.id == ATM__S4:
+			dataStr = 'S' + hexOnN(sbj.data.data, 8)
+		elif sbj.data.id == ATM__U4:
+			dataStr = 'U' + hexOnN(sbj.data.data, 8)
+		elif sbj.data.id == ATM__S8:
+			dataStr = 'S' + hexOnN(sbj.data.data, 16) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< no way to get arch type here... will stay in 64b for the moment (can be formatted again later)
+		elif sbj.data.id == ATM__U8:
+			dataStr = 'U' + hexOnN(sbj.data.data, 16)
+		elif sbj.data.id == ATM__CHR:
+			dataStr = '\'' + sbj.data.data + '\''
+		elif sbj.data.id == ATM__STR: #this case covers both literal string & name. In all cases, toStr() will output a double-quoted result.
+			dataStr = '\"' + sbj.data.data + '\"' #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< for the moment, it also covers the case of literal structures (stored under raw text)
 
 		#common data structures (all stored as lst)
-		elif self.data.id == ATM__LST:
+		elif sbj.data.id == ATM__LST:
 			dataStr = '['
-			for e in self.data.data:
+			for e in sbj.data.data:
 				dataStr += e.toStr() + ','
 			dataStr += ']'
 
 		#calls
-		elif self.data.id == ATM__CALL:
+		elif sbj.data.id == ATM__CALL:
 			depthSpace = '\t' * depth
-			dataStr  = "\"call " + self.data.data.name + "(\n"
-			for p in self.data.data.params:
+			dataStr  = "\"call " + sbj.data.data.name + "(\n"
+			for p in sbj.data.data.params:
 				dataStr += depthSpace + '\t' + p.toStr(depth+1) + ',\n' #recursive call
 			dataStr += depthSpace + ')'
 
@@ -214,109 +215,109 @@ class value:
 		else:
 			print("[INTERNAL] Invalid data stored inside value (can only be literal, name or call).")
 			exit(1)
-		return "{type:\"" + self.Type.name + "\",constant:" + str(self.constant) + ",data:" + dataStr + "}"
+		return "{type:\"" + sbj.Type.name + "\",cst:" + str(sbj.Cst) + ",data:" + dataStr + "}"
 
 
 
 #calls
 class call:
-	def __init__(self, name, params):
-		self.name   = name
-		self.params = params #lst[value]
+	def __init__(sbj, name, params):
+		sbj.name   = name
+		sbj.params = params #lst[value]
 
 #"potential operator call" Same things as a call except we store only 2 params and under atm types.
 #                          We expect to have only zci or POCall types for these atoms.
 #                          This allows us to work with operator calls while parameters are not analyzed yet during progressive priorizing.
 class POCall:
-	def __init__(self, firstOperand, secondOperand):
-		self.name          = None          #str, makes no sens to give a correct value on stc creation because we will set it depending on whether a next operand exists (so we don't know at creation time)
-		self.operatorIdx   = 0             #same thing
-		self.firstOperand  = firstOperand  #atm
-		self.secondOperand = secondOperand #atm
+	def __init__(sbj, firstOperand, secondOperand):
+		sbj.name          = None          #str, makes no sens to give a correct value on stc creation because we will set it depending on whether a next operand exists (so we don't know at creation time)
+		sbj.operatorIdx   = 0             #same thing
+		sbj.firstOperand  = firstOperand  #atm
+		sbj.secondOperand = secondOperand #atm
 
-	def toStr(self, depth=0):
+	def toStr(sbj, depth=0):
 		depthSpacing = '\t' * depth
 
 		#name
 		nameStr = "null"
-		if self.name is not None:
-			nameStr = '"' + self.name + '"'
+		if sbj.name is not None:
+			nameStr = '"' + sbj.name + '"'
 
 		#1st operand
 		firstOperandText = "null"
-		if self.firstOperand is not None:
-			if self.firstOperand.id == ATM__ZCI:
-				firstOperandText = self.firstOperand.data.textFormat()
-			elif self.firstOperand.id == ATM__POCALL:
-				firstOperandText = self.firstOperand.data.toStr(depth+1)
+		if sbj.firstOperand is not None:
+			if sbj.firstOperand.id == ATM__ZCI:
+				firstOperandText = sbj.firstOperand.data.textFormat()
+			elif sbj.firstOperand.id == ATM__POCALL:
+				firstOperandText = sbj.firstOperand.data.toStr(depth+1)
 
 		#2nd operand
 		secondOperandText = "null"
-		if self.secondOperand is not None:
-			if self.secondOperand.id == ATM__ZCI:
-				secondOperandText = self.secondOperand.data.textFormat()
-			elif self.secondOperand.id == ATM__POCALL:
-				secondOperandText = self.secondOperand.data.toStr(depth+1)
+		if sbj.secondOperand is not None:
+			if sbj.secondOperand.id == ATM__ZCI:
+				secondOperandText = sbj.secondOperand.data.textFormat()
+			elif sbj.secondOperand.id == ATM__POCALL:
+				secondOperandText = sbj.secondOperand.data.toStr(depth+1)
 
 		#final string
 		return "{\n" + depthSpacing + "\tname:" + nameStr + ",\n" + depthSpacing + "\tfirstOperand:" + firstOperandText + ",\n" + depthSpacing + "\tsecondOperand:" + secondOperandText + "\n" + depthSpacing + "}"
 
-class ODPResult:
-	def __init__(self, maxStopIdx, mainPOCall):
-		self.maxStopIdx = maxStopIdx
-		self.mainPOCall = mainPOCall
+class ODPRes:
+	def __init__(sbj, maxStopIdx, mainPOCall):
+		sbj.maxStopIdx = maxStopIdx
+		sbj.mainPOCall = mainPOCall
 
 class opSeq:
-	def __init__(self, stopIdx, operands, operators, operatorIdxes):
-		self.stopIdx       = stopIdx
-		self.operands      = operands  #lst[zci]
-		self.operators     = operators #lst (lst[ubyt] cause enm will be stored)
-		self.operatorIdxes = operatorIdxes
+	def __init__(sbj, stopIdx, operands, operators, operatorIdxes):
+		sbj.stopIdx       = stopIdx
+		sbj.operands      = operands  #lst[zci]
+		sbj.operators     = operators #lst (lst[ubyt] cause enm will be stored)
+		sbj.operatorIdxes = operatorIdxes
 
-	def toStr(self):
+	def toStr(sbj):
 		operandsText = ""
-		for a in self.operands:
+		for a in sbj.operands:
 			operandsText += a.textFormat() + ','
 		operatorsText = ""
-		for o in self.operators:
+		for o in sbj.operators:
 			operatorsText += OPERATOR_NAMES[o] + ','
-		return "{stopIdx:" + str(self.stopIdx) + ",operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
+		return "{stopIdx:" + str(sbj.stopIdx) + ",operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
 
 
 
 #type for holding some VAP 2nd analysis information
 class vap2:
-	def __init__(self, ZCIKindIfError, scope, cstOnly):
-		self.ZCIKindIfError = ZCIKindIfError
-		self.scope          = scope
-		self.cstOnly        = cstOnly
+	def __init__(sbj, ZCIKindIfError, scope, cstOnly):
+		sbj.ZCIKindIfError = ZCIKindIfError
+		sbj.scope          = scope
+		sbj.cstOnly        = cstOnly
 
 
 
 #dataItem
 class dataItem:
-	def __init__(self, Type, name, initialized, initialValue, constant=False, fields=None):
-		self.Type         = Type
-		self.name         = name
-		self.initialized  = initialized
-		self.initialValue = initialValue #value
-		self.constant     = constant
-		self.fields       = fields #lst[dataItem]
+	def __init__(sbj, Type, name, initialized, initialValue, Cst=False, fields=None):
+		sbj.Type         = Type
+		sbj.name         = name
+		sbj.initialized  = initialized
+		sbj.initialValue = initialValue #value
+		sbj.Cst          = Cst
+		sbj.fields       = fields #lst[dataItem]
 
-	def toStr(self):
+	def toStr(sbj):
 		initialValueStr = "null"
-		if self.initialValue is not None:
-			initialValueStr = self.initialValue.toStr()
+		if sbj.initialValue is not None:
+			initialValueStr = sbj.initialValue.toStr()
 		typeStr = "null"
-		if self.Type is not None:
-			typeStr = '\"' + self.Type.name + '\"'
+		if sbj.Type is not None:
+			typeStr = '\"' + sbj.Type.name + '\"'
 		fieldsText = "null"
-		if self.fields is not None:
+		if sbj.fields is not None:
 			fieldsText = "[\n"
-			for f in self.fields:
+			for f in sbj.fields:
 				fieldsText += "\t" + f.toStr() + ",\n"
 			fieldsText += "]"
-		return "{type:" + typeStr + ",name:\"" + self.name + "\",initialized:" + str(self.initialized) + ",initialValue:" + initialValueStr + ",constant:" + str(self.constant) + ",fields:" + fieldsText + "}"
+		return "{type:" + typeStr + ",name:\"" + sbj.name + "\",initialized:" + str(sbj.initialized) + ",initialValue:" + initialValueStr + ",Cst:" + str(sbj.Cst) + ",fields:" + fieldsText + "}"
 
 
 
@@ -327,30 +328,39 @@ class dataItem:
 
 #assignment
 class asg:
-	def __init__(self, dst, src):
-		self.dst = dst #dataItem or str (name only) ?
-		self.src = src #value
+	def __init__(sbj, dst, src):
+		sbj.dst = dst #dataItem or str (name only) ?
+		sbj.src = src #value
 
 
 
 #statements
 class stm:
-	def __init__(self):
-		self.kind  = None
-		self.scope = None
+	def __init__(sbj):
+		sbj.kind  = None
+		sbj.scope = None
 
-def newStm(kind, parentScope):
-	result       = stm()
-	result.kind  = kind
-	result.scope = newScp(parent=parentScope)
-	return result
+def newStm(kind, parentScp):
+	res       = stm()
+	res.kind  = kind
+	res.scope = newScp(parent=parentScp)
+	return res
 
 class fct:
-	def __init__(self):
-		self.name    = None
-		self.retType = None #typ
-		self.params  = None #lst[dataItem]
-		self.scope   = None
+	def __init__(sbj):
+		sbj.name    = None
+		sbj.retType = None #typ
+		sbj.params  = None #lst[dataItem]
+		sbj.scope   = None
+
+def newFct(name, retType, params, gblScp): #global scope must be given to create its own scopes as children
+	res         = fct()
+	res.name    = name
+	res.retType = retType
+	res.params  = params
+	res.scope   = newScp(parent=gblScp) #create its own independant scope which holds a link to the parent one (that must be "global" btw)
+	return res
+
 
 
 

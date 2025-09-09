@@ -19,9 +19,9 @@ from pcpl.byteNotation import *
 # -------- EXECUTION --------
 
 #module
-def p1_CommentsPItemsText(zCtx):
+def p1_commentsPItemsText(zCtx):
 	output = ""
-	if zCtx.inc():
+	if zCtx__inc(zCtx):
 		return output
 
 
@@ -50,7 +50,7 @@ def p1_CommentsPItemsText(zCtx):
 	escaping = False
 
 	#first character
-	c = zCtx.get()
+	c = zCtx__get(zCtx)
 	if c == '\'':
 		inChr = True
 	elif c == '"':
@@ -65,8 +65,8 @@ def p1_CommentsPItemsText(zCtx):
 	#ANALYSIS
 
 	#parsing byte per byte
-	while not zCtx.inc():
-		c = zCtx.get()
+	while not zCtx__inc(zCtx):
+		c = zCtx__get(zCtx)
 
 
 
@@ -183,17 +183,17 @@ def p1_CommentsPItemsText(zCtx):
 				#case 2 : anything else
 				else:
 					piNotFound = True
-					for pi in zCtx.pcpl.items.keys():
+					for pi in zCtx.pcpl.itms.keys():
 
 						#found a definition => replace it
 						if pcplItem_name == pi:
-							output     += zCtx.pcpl.items[pi]
+							output     += zCtx.pcpl.itms[pi]
 							piNotFound  = False
 							break
 
 					#item not found => WARNING (text will be kept AS IS)
 					if piNotFound:
-						zCtx.warning("Precompiler item \"" + pcplItem_name + "\" not found (in \"" + str(zCtx.pcpl.items) + "\").")
+						zCtx.warning("Precompiler item \"" + pcplItem_name + "\" not found (in \"" + str(zCtx.pcpl.itms) + "\").")
 				continue
 
 			#valid content => fill variable name
@@ -266,7 +266,7 @@ def p1_CommentsPItemsText(zCtx):
 
 	#incomplete definition
 	if inMultiCom:
-		zCtx.overwriteSubCtxs(commentBeginningCtx)
+		zCtx__overwriteSubCtxs(zCtx, commentBeginningCtx)
 		zCtx.error("Missing ending delimiter for multi-line comment (end of file reached too early).")
 	if inChr:
 		zCtx.error("Missing ending delimiter for character (end of file reached too early).")

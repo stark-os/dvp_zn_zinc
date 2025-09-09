@@ -4,21 +4,21 @@
 
 #pcpl data
 class pcplDat:
-	def __init__(self, configs, items):
-		self.items   = items
-		self.configs = configs
+	def __init__(sbj, cfgs, itms):
+		sbj.itms = itms
+		sbj.cfgs = cfgs
 
-def newPcplDat(configs, items):
-	formatted_configs = {}
-	for c in configs.keys():
-		v = configs[c]
+def newPcplDat(cfgs, itms):
+	formatted_cfgs = {}
+	for c in cfgs.keys():
+		v = cfgs[c]
 		if v == "ON":
-			formatted_configs[c] = True
+			formatted_cfgs[c] = True
 		elif v == "OFF":
-			formatted_configs[c] = False
+			formatted_cfgs[c] = False
 		else:
 			raise ValueError("Invalid value \"" + v + "\" given to precompiler configuration \"" + c + "\".")
-	return pcplDat(formatted_configs, items)
+	return pcplDat(formatted_cfgs, itms)
 
 
 
@@ -29,35 +29,35 @@ def newPcplDat(configs, items):
 
 #compiler data
 class cplDat:
-	def __init__(self):
-		self.options = None
+	def __init__(sbj):
+		sbj.opts = None
 
 		#z abstract elements
-		self.modulePrefixes = None #lst[str]
-		self.types          = None #lst[typ]
-		self.globalScope    = None
-		self.functions      = None #lst[fct]
-		self.linkedLibs     = None #lst[]
+		sbj.modPrefixes = None #lst[str]
+		sbj.types       = None #lst[typ]
+		sbj.gblScp      = None
+		sbj.fcts        = None #lst[fct]
+		sbj.linkedLibs  = None #lst[]
 
 		#program concrete elements
-		#self.dataResult = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
-		self.txtResult  = ""
+		#sbj.dataRes = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
+		sbj.txtRes  = ""
 
 def newCplDat(options, rootTypes):
-	result = cplDat()
-	result.options = options
+	res      = cplDat()
+	res.opts = options
 
 	#z abstract elements
-	result.modulePrefixes = [] #lst[str]
-	result.types          = [ newTyp("GUtyp") ] #virtual type "typ" (keyword) at index 0
-	result.types          += lst_copy(rootTypes) #lst[typ]
-	result.globalScope    = newScp()
-	result.functions      = [] #lst[fct]
-	result.linkedLibs     = [] #lst[]
+	res.modPrefixes = [] #lst[str]
+	res.types       = [ newTyp("GUtyp") ] #virtual type "typ" (keyword) at index 0
+	res.types      += lst_copy(rootTypes) #lst[typ]
+	res.gblScp      = newScp()
+	res.fcts        = [] #lst[fct]
+	res.linkedLibs  = [] #lst[]
 
 	#program concrete elements
 	#result.dataResult = program() <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
-	return result
+	return res
 
 
 
