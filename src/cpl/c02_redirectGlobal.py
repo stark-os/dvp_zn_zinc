@@ -49,7 +49,6 @@ def processLnk(ZCI):
 # -------- DCL_TYP --------
 
 #type declaration
-
 def processTypeDcl(ZCI):
 	ZCIDebug(ZCI, "Processing type declaration.", printSubCtxs=True, printLine=False)
 	jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
@@ -62,7 +61,7 @@ def processTypeDcl(ZCI):
 		fullName = ZCI.modPrefix + 'U' + rawName
 
 	#check already existing
-	if ZCI.zCtx.getType(fullName) is not None:
+	if ZCI.getTypeIDFromName(fullName) != TYPE_ID__NOT_FOUND:
 		modPrefixText = ""
 		if len(ZCI.modPrefix) != 0:
 			modPrefixText = unprefixizeMod(ZCI.modPrefix)
@@ -101,41 +100,42 @@ def processTypeDcl(ZCI):
 	jumpBlankZone(ZCI, "Type content definition in type declaration ZCI (DCL_TYP).")
 
 	#add generic type for the moment (it is incomplete: we don't know if it is a structure, if it has a parent...)
-	newType = newTyp(fullName, dcnDeg)
-	ZCI.zCtx.cpl.types.append(newType)
-	ZCIDebug(ZCI, "Explicitely added type " + newType.name + " but there are still missing information about it (incomplete for the moment).")
+	newTypeID   = ZCI.zCtx.cpl.newTyp(fullName, dcnDeg)
+	newTypeInst = ZCI.getTypeInstanceFromID(newTypeID)
+	ZCIDebug(ZCI, "Explicitely added type " + newTypeInst.name + " but there are still missing information about it (incomplete for the moment).")
 
 	#process type content: structure syntax
 	if ZCI.get() == '{':
 		ZCIDebug(ZCI, "Type declaration is via structure syntax.", printLine=False)
-		newType.commonDcnData.size   = ZCI.zCtx.rootTypes[RT__PTR].size
-		newType.commonDcnData.nature = NATURE__STRUCTURE
+		newTypeInst.commonDcnData.size   = ZCI.zCtx.ptrSize
+		newTypeInst.commonDcnData.nature = NATURE__STRUCTURE
 
 		#reading fields
-		newType.commonDcnData.fields = readDataItemSequence(
+		newTypeInst.commonDcnData.fields = readDataItemSequence(
 			ZCI, "type declaration ZCI (DCL_TYP).",
 			ZCI.zCtx.cpl.gblScp,
 			cstValuesOnly = True
 		)
-		if len(newType.commonDcnData.fields) == 0:
+		if len(newTypeInst.commonDcnData.fields) == 0:
 			ZCIError(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDataItemSequence cannot return 0-length list)
 
 		#update stcSize
-		newType.computeStcSize()
+		newTypeInst.computeStcSize(ZCI.zCtx.cpl.types)
 
 	#process type content: type-copy syntax
 	else:
 		ZCIDebug(ZCI, "Type declaration is via type-copy syntax.", printLine=False)
-		parent = readType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
-		if parent.commonDcnData == newType.commonDcnData:
+		parentID   = readType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
+		parentInst = ZCI.getTypeInstanceFromID(parentID)
+		if parentInst.commonDcnData == newTypeInst.commonDcnData:
 			ZCIError(ZCI, "Type cannot be declared as a copy of itself or one of its declination.") #seems obvious, but anyway
-		newType.commonDcnData.size   = parent.commonDcnData.size
-		newType.commonDcnData.nature = parent.commonDcnData.nature
-		newType.commonDcnData.parent = parent
+		newTypeInst.commonDcnData.size   = parentInst.commonDcnData.size
+		newTypeInst.commonDcnData.nature = parentInst.commonDcnData.nature
+		newTypeInst.commonDcnData.parent = parentID
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")
-	ZCIDebug(ZCI, "Type declaration " + newType.name + " processed.", printLine=False)
+	ZCIDebug(ZCI, "Type declaration " + newTypeInst.name + " processed.", printLine=False)
 	ZCI.zCtx.deepDebugPause()
 
 
@@ -172,11 +172,11 @@ def processEnmDcl(ZCI, scope):
 	fields = readDataItemSequence(
 		ZCI, "enumerate declaration ZCI (DCL_ENM).",
 		scope,
-		cstValuesOnly      = True,
-		allowUnsolvedTypes = True
+		cstValuesOnly     = True,
+		allowMissingTypes = True
 	)
 	for di in fields:
-		if di.Type != None: #no type must be found (neither explicit type given or initial value)
+		if di.Type != TYPE_ID__NOT_FOUND: #no type must be found (neither explicit type given or initial value)
 			ZCIError(ZCI, "No explicit type or value is allowed in enumerate declaration (DCL_ENM).")
 
 	#compute which type will be used

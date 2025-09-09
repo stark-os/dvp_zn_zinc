@@ -9,12 +9,12 @@ def checkAlreadyDeclaredDataItemOrField(ZCI, dis, di):
 
 
 #WARNING! Returns data item WITHOUT ANY prefix
-def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUnsolvedType=False, inFctDcl=False):
-	ZCIDeepDebug(ZCI, "Reading data item.")
+def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowMissingType=False):
+	ZCIDeepDebug(ZCI, "Reading data item.", printLine=False)
 
 	#read type (if any. Else, continue as nothing happened)
-	Type = readType(ZCI, "data item declarator, in " + ZCIKindIfError, nullIfNotExisting=True)
-	if Type is not None:
+	Type = readType(ZCI, "data item declarator, in " + ZCIKindIfError, errorIfNotExisting=False)
+	if Type != TYPE_ID__NOT_FOUND:
 		jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 
 	#read name
@@ -42,18 +42,15 @@ def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUns
 		initialValue = readValue(ZCI, ZCIKindIfError, scope, cstOnly=cstInitialValueOnly)
 
 		#solve type if missing using initialValue
-		if Type is None:
+		if Type == TYPE_ID__NOT_FOUND:
 			Type = initialValue.Type
-			ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + Type.name + "\".")
+			ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + ZCI.getTypeInstanceFromID(Type).name + "\".")
 	optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 	#missing Type still not solved
-	if not allowUnsolvedType:
-		if Type is None:
-			if inFctDcl:
-				ZCIError(ZCI, "Unknown type \"" + name + "\" in function declaration ZCI (DCL_FCT).")
-			else:
-				ZCIError(ZCI, "Missing type to given element \"" + name + "\" (required either explicitely or implicity).")
+	if Type == TYPE_ID__NOT_FOUND:
+		if not allowMissingType:
+			ZCIError(ZCI, "Missing type to given element \"" + name + "\" (required either explicitely or implicity using initial value).")
 
 	#result
 	ZCIDeepDebug(ZCI, "Ended reading data item.")
@@ -65,8 +62,8 @@ def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUns
 # Given ZCI must be at an opening includer character.
 def readDataItemSequence(
 	ZCI, ZCIKindIfError, scope,
-	cstValuesOnly = False, allowUnsolvedTypes = False,
-	allowEmpty    = False, inFctDcl           = False
+	cstValuesOnly = False, allowMissingTypes = False,
+	allowEmpty    = False
 ):
 	ZCIDeepDebug(ZCI, "Reading sequence of data item(s).")
 
@@ -95,8 +92,7 @@ def readDataItemSequence(
 			di = readDataItem(
 				ZCI, ZCIKindIfError, scope,
 				cstInitialValueOnly = cstValuesOnly,
-				allowUnsolvedType   = allowUnsolvedTypes,
-				inFctDcl            = inFctDcl
+				allowMissingType    = allowMissingTypes
 			)
 			checkAlreadyDeclaredDataItemOrField(ZCI, dis, di)
 			dis.append(di)

@@ -80,6 +80,15 @@ class zci:
 	def toStr(sbj):
 		return "{mod:\"" + sbj.modPrefix + "\",ctx:\"" + sbj.ctx.toStr() + "\",ctx.icontent.idx:" + str(sbj.ctx.icontent.idx) + ",startIdx:" + str(sbj.startIdx) + ",stopIdx:" + str(sbj.stopIdx) + ",txt:" + sbj.textFormat() + ",pairs:\"" + str(sbj.pairs).replace(' ', '') + "\"}"
 
+
+
+	#type tools
+	def getTypeInstanceFromID(sbj, id):
+		return sbj.zCtx.getTypeInstanceFromID(id)
+
+	def getTypeIDFromName(sbj, name):
+		return sbj.zCtx.getTypeIDFromName(name)
+
 def newZCI(zCtx, subCtxs, modPrefix=None, pairs=None):
 	if modPrefix is None:
 		modPrefix = ""
@@ -108,9 +117,9 @@ def dumpZCIs(ZCIs, filename):
 
 #types
 class typ_commonDcnData: #common type data among every declination
-	def __init__(sbj, dcnDeg):
+	def __init__(sbj, dcnDeg, size=0):
 		sbj.parent = None
-		sbj.size   = 0
+		sbj.size   = size
 		sbj.dcnDeg = dcnDeg
 
 		#stc related
@@ -119,26 +128,16 @@ class typ_commonDcnData: #common type data among every declination
 		sbj.stcSize = 0
 
 class typ:
-	def __init__(sbj):
+	def __init__(sbj, size):
 		sbj.name          = None
 		sbj.methods       = None #lst[fct]
 		sbj.dcns          = None #tab[typ]
 		sbj.commonDcnData = None #typ_commonDcnData
 
-	def computeStcSize(sbj):
+	def computeStcSize(sbj, types):
 		if sbj.commonDcnData.nature != NATURE__PRIMITIVE:
 			for f in sbj.commonDcnData.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
-				sbj.commonDcnData.stcSize += f.Type.commonDcnData.size
-
-def newTyp(name, dcnDeg=0, dcns=None, commonDcnData=None):
-	if commonDcnData is None:
-		commonDcnData = typ_commonDcnData(dcnDeg) #create a new commonDcnData by default (new type => new commonDcnData)
-	res               = typ()
-	res.name          = name
-	res.methods       = []   #lst[fct]
-	res.dcns          = dcns #tab[typ]
-	res.commonDcnData = commonDcnData #typ_commonDcnData
-	return res
+				sbj.commonDcnData.stcSize += types[f.Type].commonDcnData.size
 
 #scope
 class scp:
@@ -215,7 +214,7 @@ class value:
 		else:
 			print("[INTERNAL] Invalid data stored inside value (can only be literal, name or call).")
 			exit(1)
-		return "{type:\"" + sbj.Type.name + "\",cst:" + str(sbj.Cst) + ",data:" + dataStr + "}"
+		return "{type:\"" + str(sbj.Type) + "\",cst:" + str(sbj.Cst) + ",data:" + dataStr + "}"
 
 
 
@@ -308,16 +307,13 @@ class dataItem:
 		initialValueStr = "null"
 		if sbj.initialValue is not None:
 			initialValueStr = sbj.initialValue.toStr()
-		typeStr = "null"
-		if sbj.Type is not None:
-			typeStr = '\"' + sbj.Type.name + '\"'
 		fieldsText = "null"
 		if sbj.fields is not None:
 			fieldsText = "[\n"
 			for f in sbj.fields:
 				fieldsText += "\t" + f.toStr() + ",\n"
 			fieldsText += "]"
-		return "{type:" + typeStr + ",name:\"" + sbj.name + "\",initialized:" + str(sbj.initialized) + ",initialValue:" + initialValueStr + ",Cst:" + str(sbj.Cst) + ",fields:" + fieldsText + "}"
+		return "{type:" + str(sbj.Type) + ",name:\"" + sbj.name + "\",initialized:" + str(sbj.initialized) + ",initialValue:" + initialValueStr + ",Cst:" + str(sbj.Cst) + ",fields:" + fieldsText + "}"
 
 
 

@@ -23,61 +23,53 @@ def newZCtx(
 	#check CPL options
 	res.checkCplOpt(cpl_opt)
 
-	#init root types locally (to be given to cpl data)
-	res.rootTypes = [None,None,None, None,None,None, None,None,None, None,None,None] #can be already declared as a fixed-size table (length: 12)
-
-	#boolean
-	res.rootTypes[RT__BOO]      = newTyp("GUboo")
-	res.rootTypes[RT__BOO].size = res.SIZE__U1
-
-	#1 byte
-	res.rootTypes[RT__S1]      = newTyp("GUs1")
-	res.rootTypes[RT__S1].size = res.SIZE__U1
-	res.rootTypes[RT__U1]      = newTyp("GUu1")
-	res.rootTypes[RT__U1].size = res.SIZE__U1
-
-	#2 bytes
-	res.rootTypes[RT__S2]      = newTyp("GUs2")
-	res.rootTypes[RT__S2].size = res.SIZE__U2
-	res.rootTypes[RT__U2]      = newTyp("GUu2")
-	res.rootTypes[RT__U2].size = res.SIZE__U2
-
-	#4 bytes
-	res.rootTypes[RT__S4]      = newTyp("GUs4")
-	res.rootTypes[RT__S4].size = res.SIZE__U4
-	res.rootTypes[RT__U4]      = newTyp("GUu4")
-	res.rootTypes[RT__U4].size = res.SIZE__U4
-
-	#4 bytes floating point
-	res.rootTypes[RT__F4]      = newTyp("GUf4")
-	res.rootTypes[RT__F4].size = res.SIZE__U4
-
-	#8 bytes
-	if cpl_opt["ARCH"] == "64":
-
-		#8 bytes integer
-		res.rootTypes[RT__S8]      = newTyp("GUs8")
-		res.rootTypes[RT__S8].size = res.SIZE__U8
-		res.rootTypes[RT__U8]      = newTyp("GUu8")
-		res.rootTypes[RT__U8].size = res.SIZE__U8
-
-		#8 bytes floating point
-		res.rootTypes[RT__F8]      = newTyp("GUf8")
-		res.rootTypes[RT__F8].size = res.SIZE__U8
-
-		#pointer (8 bytes for 64b arch)
-		res.rootTypes[RT__PTR]      = newTyp("GUptr", 1)
-		res.rootTypes[RT__PTR].size = res.SIZE__U8
-
-	#pointer (4 bytes for 32b arch)
-	else:
-		res.rootTypes[RT__PTR]      = newTyp("GUptr", 1)
-		res.rootTypes[RT__PTR].size = res.SIZE__U4
-
 	#data
 	res.ZCIs = None
 	res.pcpl = newPcplDat(pcpl_cfg, pcpl_itm)
-	res.cpl  = newCplDat(cpl_opt, res.rootTypes)
+	res.cpl  = newCplDat(cpl_opt)
+
+	#"typ" keyword: virtual type that seems to work like a regular one for the moment
+	res.typKeyword = res.cpl.newTyp("GUtyp")
+
+	#create a list to hold root types. This is purely a simplification tool in zCtx.
+	res.rootTypes = [0,0,0, 0,0,0, 0,0,0, 0,0,0] #can be already declared as a fixed-size table (length: 12)
+
+	#boolean
+	res.rootTypes[RT__BOO] = res.cpl.newTyp("GUboo", size=res.SIZE__U1)
+
+	#1 byte
+	res.rootTypes[RT__S1] = res.cpl.newTyp("GUs1", size=res.SIZE__U1)
+	res.rootTypes[RT__U1] = res.cpl.newTyp("GUu1", size=res.SIZE__U1)
+
+	#2 bytes
+	res.rootTypes[RT__S2] = res.cpl.newTyp("GUs2", size=res.SIZE__U2)
+	res.rootTypes[RT__U2] = res.cpl.newTyp("GUu2", size=res.SIZE__U2)
+
+	#4 bytes
+	res.rootTypes[RT__S4] = res.cpl.newTyp("GUs4", size=res.SIZE__U4)
+	res.rootTypes[RT__U4] = res.cpl.newTyp("GUu4", size=res.SIZE__U4)
+
+	#4 bytes floating point
+	res.rootTypes[RT__F4] = res.cpl.newTyp("GUf4", size=res.SIZE__U4)
+
+	#8 bytes
+	if cpl_opt["ARCH"] == "64":
+		res.ptrSize = res.SIZE__U8
+
+		#8 bytes integer
+		res.rootTypes[RT__S8] = res.cpl.newTyp("GUs8", size=res.SIZE__U8)
+		res.rootTypes[RT__U8] = res.cpl.newTyp("GUu8", size=res.SIZE__U8)
+
+		#8 bytes floating point
+		res.rootTypes[RT__F8] = res.cpl.newTyp("GUf8", size=res.SIZE__U8)
+
+		#pointer (8 bytes for 64b arch)
+		res.rootTypes[RT__PTR] = res.cpl.newTyp("GUptr", dcnDeg=1, size=res.SIZE__U8)
+
+	#pointer (4 bytes for 32b arch)
+	else:
+		res.ptrSize = res.SIZE__U4
+		res.rootTypes[RT__PTR] = res.cpl.newTyp("GUptr", dcnDeg=1, size=res.SIZE__U4)
 
 	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TEMPORARY FOR VAP TESTING
 	res.cpl.fcts = []
@@ -135,19 +127,35 @@ class zctx:
 		sbj.SIZE__U4 = 4
 		sbj.SIZE__U8 = 8
 
-		#init root types locally (to be given to cpl data)
-		sbj.rootTypes = None
+		#size of the biggest primitive
+		sbj.ptrSize = 0
+
+		#types
+		sbj.typKeyword = 0
+		sbj.rootTypes  = None
 
 		#data
 		sbj.ZCIs = None
 		sbj.pcpl = None
 		sbj.cpl  = None
 
-	def getType(sbj, name):
-		for t in sbj.cpl.types:
-			if t.name == name:
-				return t
+	def getTypeInstanceFromID(sbj, id):
+		if id > 0 and id < len(sbj.cpl.types):
+			return sbj.cpl.types[id]
 		return None
+
+	def getTypeIDFromName(sbj, name):
+		for t in range(len(sbj.cpl.types)):
+			if sbj.cpl.types[t].name == name:
+				return t
+		return TYPE_ID__NOT_FOUND
+
+	def getTypeNameFromIDIncludingUnsolved(sbj, id):
+		i = getTypeInstanceFromID(id)
+		if i is None:
+			return "<unsolved_yet>"
+		return i.name
+
 
 
 

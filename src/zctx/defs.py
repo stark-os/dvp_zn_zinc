@@ -33,12 +33,15 @@ RT__F4  = 9
 RT__F8  = 10
 RT__PTR = 11
 
+#specific type ID
+TYPE_ID__NOT_FOUND = 0
+
 #common data structures (shortcut notations)
-TYPE_FULLNAME_TAB  = "GUtab"
-TYPE_FULLNAME_LST  = "GUlst"
-TYPE_FULLNAME_FLY  = "GUfly"
-TYPE_FULLNAME_FMAP = "GUfmap"
-TYPE_FULLNAME_MMAP = "GUmmap"
+TYPE_FULLNAME__TAB  = "GUtab"
+TYPE_FULLNAME__LST  = "GUlst"
+TYPE_FULLNAME__FLY  = "GUfly"
+TYPE_FULLNAME__FMAP = "GUfmap"
+TYPE_FULLNAME__MMAP = "GUmmap"
 
 #byte notations
 BN_PREFIX = '`'

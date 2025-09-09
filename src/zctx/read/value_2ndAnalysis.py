@@ -12,7 +12,7 @@ def parseLiteralIntOrFloat(ZCI):
 	resText       = ""
 	resDigitPower = 0
 	resIsNegative = False
-	resType       = None #type
+	resType       = TYPE_ID__NOT_FOUND #int
 	resAtmID      = 0 #no initial value is preferable <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 	#negativity
@@ -245,20 +245,20 @@ def secondAnalysis(ZCI, vap2info):
 		keyValue_initializerType = None #for maps only
 		if c == '(':
 			if targettingMap:
-				targettedType            = ZCI.zCtx.getType(TYPE_FULLNAME_FMAP)
-				keyValue_initializerType = ZCI.zCtx.getType(TYPE_FULLNAME_TAB) #require 2 tab for fmap initialization
+				targettedType            = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__FMAP, vap2info.ZCIKindIfError)
+				keyValue_initializerType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__TAB,  vap2info.ZCIKindIfError) #require 2 tab for fmap initialization
 			else:
-				targettedType = ZCI.zCtx.getType(TYPE_FULLNAME_TAB)
+				targettedType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__TAB, vap2info.ZCIKindIfError)
 		elif c == '[':
 			if targettingMap:
-				targettedType            = ZCI.zCtx.getType(TYPE_FULLNAME_MMAP)
-				keyValue_initializerType = ZCI.zCtx.getType(TYPE_FULLNAME_LST) #require 2 lst for mmap initialization
+				targettedType            = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__MMAP, vap2info.ZCIKindIfError)
+				keyValue_initializerType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__LST,  vap2info.ZCIKindIfError) #require 2 lst for mmap initialization
 			else:
-				targettedType = ZCI.zCtx.getType(TYPE_FULLNAME_LST)
+				targettedType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__LST, vap2info.ZCIKindIfError)
 		elif c == '{':
 			if targettingMap:
 				ZCIError(ZCI, "Associative notation cannot be set to braces includer (\":{...}\" is linked to nothing).")
-			targettedType = ZCI.zCtx.getType(TYPE_FULLNAME_FLY)
+			targettedType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__FLY, vap2info.ZCIKindIfError)
 
 		#init limits
 		peerIdx      = ZCI.pairs[ZCI.ctx.icontent.idx]
@@ -353,7 +353,7 @@ def secondAnalysis(ZCI, vap2info):
 			sequence = [] #lst[value]
 			while ZCI.get() in HEX_DIGITS_LOWERCASE:
 				sequence.append(
-					value(ZCI.zCtx.rootTypes[RT__BYT], atm(ATM__S1, readHexByte(ZCI)) )
+					value(ZCI.zCtx.rootTypes[RT__S1], atm(ATM__S1, readHexByte(ZCI)) )
 				)
 				if ZCI.inc():
 					break
@@ -405,13 +405,14 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 		Type = readType(ZCI, vap2info.ZCIKindIfError)
 
 		#get size
-		if Type.commonDcnData.nature != NATURE__PRIMITIVE:
-			size = Type.commonDcnData.stcSize
+		tInst = ZCI.getTypeInstanceFromID(Type)
+		if tInst.commonDcnData.nature != NATURE__PRIMITIVE:
+			size = tInst.commonDcnData.stcSize
 		else:
-			size = Type.size
+			size = tInst.size
 
 		#result
-		ZCIDeepDebug("2nd analysis: FSZ resulted into fsz(" + unprefixize(Type.name) + ") = " + str(size))
+		ZCIDeepDebug(ZCI,"2nd analysis: FSZ resulted into fsz(" + unprefixize(tInst.name) + ") = " + str(size))
 		if ZCI.zCtx.cpl.opts["ARCH"] == 64:
 			return value(ZCI.zCtx.rootTypes[RT__U8], atm(ATM__U8, size))
 		return value(ZCI.zCtx.rootTypes[RT__U4], atm(ATM__U4, size))
@@ -427,7 +428,7 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 			ZCIError(ZCI, "Missing or invalid data item given for reference operator '@' (FRF).")
 
 		#result
-		ZCIDeepDebug("2nd analysis: FRF resulted into call to frf()") #<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+		ZCIDeepDebug(ZCI, "2nd analysis: FRF resulted into call to frf()") #<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
 		return value(ZCI.zCtx.rootTypes[RT__PTR], atm(ATM__PTR, 0))           #<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
@@ -453,11 +454,10 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 
 		#read explicit type
 		ZCIDeepDebug(ZCI, "2nd analysis: Processing FCA operator on value " + res.toStr())
-		Type = readType(ZCI, vap2info.ZCIKindIfError)
+		res.Type = readType(ZCI, vap2info.ZCIKindIfError)
 
 		#overwrite result type
-		res.Type = Type
-		ZCIDeepDebug("2nd analysis: FCA operator applied type " + unprefixize(Type.name) + " on value " + res.toStr())
+		ZCIDeepDebug("2nd analysis: FCA operator applied type " + unprefixize(ZCI.zCtx.getTypeNameFromIDIncludingUnsolved(Type)) + " on value " + res.toStr())
 
 	#field access (FFA)
 	#else:
@@ -544,7 +544,7 @@ def applySecondAnalysis(currentPOCall, originalZCI, vap2info): #originalZCI only
 
 	#check for matching operator function
 	matchingFunction = None
-	for f in originalZCI.zCtx.cpl.functions:
+	for f in originalZCI.zCtx.cpl.fcts:
 		if f.name == operatorFullName:
 			matchingFunction = f
 			break

@@ -48,8 +48,7 @@ def readFctDcl(ZCI):
 		ZCI, "function declaration ZCI (DCL_FCT)",
 		ZCI.zCtx.cpl.gblScp,
 		cstValuesOnly = True,
-		allowEmpty    = True,
-		inFctDcl      = True
+		allowEmpty    = True
 	)
 
 	#return type
