@@ -80,6 +80,7 @@ def readDataItemSequence(
 	if ZCI.ctx.icontent.idx == peerIdx:
 		if allowEmpty:
 			ZCI.inc()
+			ZCIDeepDebug(ZCI, "Data item sequence is empty (allowed here) => ending reading here.")
 			return dis
 		ZCIError(ZCI, "Missing at least one data item declaration in " + ZCIKindIfError)
 

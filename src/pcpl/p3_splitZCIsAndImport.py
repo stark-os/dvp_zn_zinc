@@ -188,7 +188,7 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPrefix=None, maxId
 	#also add last ZCI remaining
 	if ZCI is not None:
 		ZCI.stopIdx = ctx.icontent.idx
-		stripAndAppendZCI(zCtx, ZCI, ZCIs, allowImpExpansion=gbl, modPrefix=modPrefix)
+		stripAndAppendZCI(ZCI, ZCIs, allowImpExpansion=gbl, modPrefix=modPrefix)
 
 	#return result
 	return ZCIs

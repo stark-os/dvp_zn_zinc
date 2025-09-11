@@ -177,7 +177,7 @@ INCLUDERS       = { '(':')', '[':']', '{':'}' }
 DEFAULT_NAME_CHARSET              = tuple(string.ascii_letters + string.digits + '_')
 ZCI_FIRSTWORD_DETECTION_BLACKLIST = BLANKS + tuple(INCLUDERS.keys())
 FCT_NAME_BLACKLIST                = BLANKS + ('(',)
-FCT_NAME_CHARSET                  = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', '[', ':', '~', '!', '?', '&', '|', '<', '>')
+FCT_NAME_CHARSET                  = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', ':', '~', '!', '?', '&', '|', '<', '>')
 VALUE_CHARSET                     = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_BLACKLIST + ('@', '#', '$', '`') #additionnal FO + byte notation prefix
 
 #cpl opt set

@@ -254,18 +254,19 @@ def readName(ZCI,
 			if len(mods) == 0:
 				name += '^'
 
-			#at least one module name => add it to name
+			#at least one module name => add it/them to name
 			else:
-
-				#resolve implicit module naming
 				for m in range(len(mods)):
+
+					#no module name given => resolve implicit naming
 					if len(mods[m]) == 0:
 						if len(ZCI.modPrefix) == 0:
 							ZCIError(ZCI, "Can't resolve implicit module prefix, we are outside of any module.")
-						mods[m] = ZCI.modPrefix
+						name += ZCI.modPrefix
 
-				#add module prefix to our name
-				name += 'M' + "_M".join(mods) + '_'
+					#prefixing them eitherway
+					else:
+						name += 'M' + mods[m] + '_'
 
 			#reached end of ZCI => regular end of name
 			if ZCI.reachedEnd():

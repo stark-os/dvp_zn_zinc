@@ -8,7 +8,10 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True, allowUnsolved=False):
 	initialZCICtx = ZCI.ctx.copy()
 
 	#read raw type name (actually, it also includes explicit module prefix if any... so not really "raw")
-	tRawName = readName(ZCI, "Type name in " + ZCIKindIfError, parseModPrefixes=True, modPrefix_asHeaderOnly=True)
+	ZCIKindIfError_forMissingName = None
+	if errorIfNotExisting:
+		ZCIKindIfError_forMissingName = "Type name in " + ZCIKindIfError
+	tRawName = readName(ZCI, ZCIKindIfError_forMissingName, parseModPrefixes=True, modPrefix_asHeaderOnly=True)
 
 	#module-realted / global
 	if initialZCICtx.get() == '^':

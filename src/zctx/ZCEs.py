@@ -89,6 +89,9 @@ class zci:
 	def getTypeIDFromName(sbj, name):
 		return sbj.zCtx.getTypeIDFromName(name)
 
+	def getTypeNameFromIDIncludingUnsolved(sbj, id):
+		return sbj.zCtx.getTypeNameFromIDIncludingUnsolved(id)
+
 def newZCI(zCtx, subCtxs, modPrefix=None, pairs=None):
 	if modPrefix is None:
 		modPrefix = ""
@@ -345,16 +348,18 @@ def newStm(kind, parentScp):
 class fct:
 	def __init__(sbj):
 		sbj.name    = None
-		sbj.retType = None #typ
+		sbj.retType = 0
 		sbj.params  = None #lst[dataItem]
 		sbj.scope   = None
+		sbj.content = None #lst[ZCI]
 
-def newFct(name, retType, params, gblScp): #global scope must be given to create its own scopes as children
+def newFct(name, retType, params, gblScp, content): #global scope must be given to create its own scopes as children
 	res         = fct()
 	res.name    = name
 	res.retType = retType
 	res.params  = params
 	res.scope   = newScp(parent=gblScp) #create its own independant scope which holds a link to the parent one (that must be "global" btw)
+	res.content = content
 	return res
 
 

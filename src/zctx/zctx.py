@@ -151,9 +151,9 @@ class zctx:
 		return TYPE_ID__NOT_FOUND
 
 	def getTypeNameFromIDIncludingUnsolved(sbj, id):
-		i = getTypeInstanceFromID(id)
+		i = sbj.getTypeInstanceFromID(id)
 		if i is None:
-			return "<unsolved_yet>"
+			return "<unsolved_yet/void>"
 		return i.name
 
 

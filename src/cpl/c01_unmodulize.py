@@ -127,9 +127,9 @@ def c01_unmodulize(zCtx):
 
 			#extract ZCIs from content
 			zCtx.debug("Extracting ZCIs from module content.")
-			modZCIs = extractZCIsFromCtx(zCtx,
-				ZCI.ctx,
-				subCtxs       = ZCI.subCtxs,
+			modZCIs = extractZCIsFromCtx(
+				zCtx,
+				ZCI.ctx, subCtxs=ZCI.subCtxs,
 				gbl           = True,
 				modPrefix     = modPrefix,
 				maxIdxAllowed = modContent_stopIdx-1 #actually, we must skip the real modContent_stopIdx, it refers to the ending includer of module content (=> not interesting).

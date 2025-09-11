@@ -5,7 +5,8 @@
 # -------- IMPORTATIONS --------
 
 #internal
-from zctx import *
+from pcpl.p3_splitZCIsAndImport import *
+from zctx                       import *
 
 
 
@@ -18,30 +19,28 @@ from zctx import *
 def readFctDcl(ZCI):
 	ZCIDebug(ZCI, "Processing function declaration.", printSubCtxs=True)
 
-	#function name
-	rawName = readName(ZCI, "function name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True, whitelist=FCT_NAME_CHARSET, parseModPrefixes=True, modPrefix_asHeaderOnly=True)
-	dotCnt  = rawName.count('.')
+	#function name: maybe it is type related (method) => try reading a type
+	methodType = readType(ZCI, "function name in function declaration ZCI (DCL_FCT).", errorIfNotExisting=False)
 
-	#regular function
-	if dotCnt == 0:
-		fullName = ZCI.modPrefix + 'F' + rawName
+	#method name must be followed by a dot
+	isMethod = (methodType != TYPE_ID__NOT_FOUND)
+	if isMethod:
+		if ZCI.get() != '.':
+			ZCIError(ZCI, "Expected a dot '.' after type given in method name.")
+		ZCI.inc()
 
-	#method
-	elif dotCnt == 1:
-		dotIdx = rawName.index('.')
+	#read function name
+	rawName = readName(ZCI, "function name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True, whitelist=FCT_NAME_CHARSET)
 
-		#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO 4th
+	#build full function name
+	fullName = ZCI.modPrefix
+	if isMethod:
+		fullName += 'T' + ZCI.getTypeNameFromIDIncludingUnsolved(methodType) + '_' #btw, no unsolved type can be output here
+	fullName += 'F' + rawName
 
-		#look for method type
-		#targettedType = None
-		#for t in zCtx.cpl.types:
-		#	if t.name == 
-
-		fullName = "METHOD" #ZCI.modulePrefix + 'T' + targettedType.name + '_' + rawName
-
-	#error case
-	else:
-		ZCIError(ZCI, "Invalid function name, multiple dot separators found.")
+	#must be followed by parameters between parentheses includer
+	if ZCI.get() != '(':
+		ZCIError(ZCI, "Expected parameters between parentheses includer right after function name.")
 
 	#parameters
 	params = readDataItemSequence(
@@ -51,18 +50,34 @@ def readFctDcl(ZCI):
 		allowEmpty    = True
 	)
 
-	#return type
+	#return type: void
 	optionalBlanks(ZCI, None)
 	if ZCI.get() == '{':
-		pass #VOID <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		retType = TYPE_ID__NOT_FOUND
+
+	#return type: explicitly given
 	else:
 		retType = readType(ZCI, "return type in function declaration ZCI (DCL_FCT)")
 
+		#move to function content
+		optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+		if ZCI.get() != '{':
+			ZCIError(ZCI, "Expected to have function content after return type given (braces includer).")
+	ZCIDeepDebug(ZCI, "Return type detected \"" + ZCI.getTypeNameFromIDIncludingUnsolved(retType) + "\".")
+
 	#content
-	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+	ZCIDeepDebug(ZCI, "Extracting function \"" + fullName + "\"'s content.")
+	content = extractZCIsFromCtx(
+		ZCI.zCtx,
+		ZCI.ctx, subCtxs=ZCI.subCtxs,
+		gbl           = False,
+		modPrefix     = ZCI.modPrefix,
+		maxIdxAllowed = ZCI.pairs[ZCI.ctx.icontent.idx]-1
+	)
+	ZCIDeepDebug(ZCI, "End of extraction for function \"" + fullName + "\".")
 
 	#result
-	return newFct(fullName, None, params, ZCI.zCtx.cpl.gblScp)
+	return newFct(fullName, retType, params, ZCI.zCtx.cpl.gblScp, content)
 
 
 
