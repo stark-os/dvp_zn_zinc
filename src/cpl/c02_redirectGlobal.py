@@ -107,16 +107,16 @@ def processTypeDcl(ZCI):
 	#process type content: structure syntax
 	if ZCI.get() == '{':
 		ZCIDebug(ZCI, "Type declaration is via structure syntax.", printLine=False)
-		newTypeInst.commonDcnData.size   = ZCI.zCtx.ptrSize
-		newTypeInst.commonDcnData.nature = NATURE__STRUCTURE
+		newTypeInst.dcnCommon.size   = ZCI.zCtx.ptrSize
+		newTypeInst.dcnCommon.nature = NATURE__STC
 
 		#reading fields
-		newTypeInst.commonDcnData.fields = readDataItemSequence(
+		newTypeInst.dcnCommon.fields = readDataItemSequence(
 			ZCI, "type declaration ZCI (DCL_TYP).",
 			ZCI.zCtx.cpl.gblScp,
 			cstValuesOnly = True
 		)
-		if len(newTypeInst.commonDcnData.fields) == 0:
+		if len(newTypeInst.dcnCommon.fields) == 0:
 			ZCIError(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDataItemSequence cannot return 0-length list)
 
 		#update stcSize
@@ -127,11 +127,11 @@ def processTypeDcl(ZCI):
 		ZCIDebug(ZCI, "Type declaration is via type-copy syntax.", printLine=False)
 		parentID   = readType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
 		parentInst = ZCI.getTypeInstanceFromID(parentID)
-		if parentInst.commonDcnData == newTypeInst.commonDcnData:
+		if parentInst.dcnCommon == newTypeInst.dcnCommon:
 			ZCIError(ZCI, "Type cannot be declared as a copy of itself or one of its declination.") #seems obvious, but anyway
-		newTypeInst.commonDcnData.size   = parentInst.commonDcnData.size
-		newTypeInst.commonDcnData.nature = parentInst.commonDcnData.nature
-		newTypeInst.commonDcnData.parent = parentID
+		newTypeInst.dcnCommon.size   = parentInst.dcnCommon.size
+		newTypeInst.dcnCommon.nature = parentInst.dcnCommon.nature
+		newTypeInst.dcnCommon.parent = parentID
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")

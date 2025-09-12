@@ -100,6 +100,7 @@ def readDataItemSequence(
 			ZCIDeepDebug(ZCI, "Got data item " + di.toStr())
 
 			#must be followed by coma or closing peer
+			optionalBlanks(ZCI, None)
 			next = ZCI.get()
 			if next in INCLUDERS.values():
 				if ZCI.ctx.icontent.idx != peerIdx:

@@ -24,6 +24,7 @@ def parseLiteralIntOrFloat(ZCI):
 
 	#first character is important (in all cases, must be a decimal digit)
 	if c in STR__DECIMAL:
+		ZCIDeepDebug(ZCI, "2nd analysis: Integer or float detected.", printLine=False)
 		resType  = ZCI.zCtx.rootTypes[RT__S4] #default case, considering an S4
 		resAtmID = ATM__S4
 
@@ -162,8 +163,8 @@ def parseLiteralIntOrFloat(ZCI):
 		#STEP 3: finally, compute the actual value
 
 		#compute value
-		resNbr = 0 #here, we must use a ulng for storage in Z <<<<<<<<<<<<<<<<<<<
-		lastIdx   = len(resText)-1
+		resNbr  = 0 #here, we must use a ulng for storage in Z <<<<<<<<<<<<<<<<<<<
+		lastIdx = len(resText)-1
 		for r in range(len(resText)):
 			resNbr += chr_halfHex_toS1(resText[r]) * (resDigitPower**(lastIdx-r))
 
@@ -237,28 +238,30 @@ def secondAnalysis(ZCI, vap2info):
 		if ZCI.inc():
 			unknownValueErrorIn2ndAnalysis(ZCI)
 		targettingMap = True
+		ZCIDeepDebug(ZCI, "2nd analysis: Potential map-type detected.", printLine=False)
 
 	#starting with includer
 	if c in ('(', '[', '{'):
+		ZCIDeepDebug(ZCI, "2nd analysis: Includer detected => Potentially targetting tab,lst,fly,fmap,mmap.", printLine=False)
 		#Seems similar to check in the whole INCLUDERS.keys() but this is not related to these actually.
 		#We are specificly targetting these 3 and not because they are includer keys but because we have specific pattern associated to them.
 		keyValue_initializerType = None #for maps only
 		if c == '(':
 			if targettingMap:
-				targettedType            = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__FMAP, vap2info.ZCIKindIfError)
-				keyValue_initializerType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__TAB,  vap2info.ZCIKindIfError) #require 2 tab for fmap initialization
+				targettedType            = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__FMAP, vap2info.ZCIKindIfError)
+				keyValue_initializerType = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__TAB,  vap2info.ZCIKindIfError) #require 2 tab for fmap initialization
 			else:
-				targettedType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__TAB, vap2info.ZCIKindIfError)
+				targettedType            = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__TAB, vap2info.ZCIKindIfError)
 		elif c == '[':
 			if targettingMap:
-				targettedType            = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__MMAP, vap2info.ZCIKindIfError)
-				keyValue_initializerType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__LST,  vap2info.ZCIKindIfError) #require 2 lst for mmap initialization
+				targettedType            = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__MMAP, vap2info.ZCIKindIfError)
+				keyValue_initializerType = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__LST,  vap2info.ZCIKindIfError) #require 2 lst for mmap initialization
 			else:
-				targettedType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__LST, vap2info.ZCIKindIfError)
+				targettedType            = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__LST, vap2info.ZCIKindIfError)
 		elif c == '{':
 			if targettingMap:
 				ZCIError(ZCI, "Associative notation cannot be set to braces includer (\":{...}\" is linked to nothing).")
-			targettedType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__FLY, vap2info.ZCIKindIfError)
+			targettedType                = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__FLY, vap2info.ZCIKindIfError)
 
 		#init limits
 		peerIdx      = ZCI.pairs[ZCI.ctx.icontent.idx]
@@ -381,10 +384,107 @@ def secondAnalysis(ZCI, vap2info):
 
 	# III] LITERAL: INTEGERS & FLOATING POINT
 
-	#parsing is quite complex => has been taken appart in another method
+	#parsing is quite complex => has been taken away in another method
 	v = parseLiteralIntOrFloat(ZCI)
 	if v is not None:
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in INTEGER/FLOAT " + v.toStr())
 		return v
+
+
+
+	# IV] LITERAL: STRUCTURE DEFINITION
+
+	#try reading a type
+	tID   = readType(ZCI, None, errorIfNotExisting=False)
+	tInst = ZCI.getTypeInstanceFromID(tID)
+	if tID != TYPE_ID__NOT_FOUND:
+		ZCIDeepDebug(ZCI, "2nd analysis: Structure type definition")
+
+		#must be a structure
+		if tInst.dcnCommon.nature != NATURE__STC:
+			ZCIError(ZCI, "Only structure types are allowed as type definition value (2nd analysis).")
+
+		#continue parsing to get its fields
+		optionnalBlanks(ZCI, "Value parsing (2nd analysis, structure definition with type \"" + tInst.name + "\" detected).")
+		if ZCI.get() != '{':
+			ZCIError(ZCI, "Expected a braces includer for structure definition value (2nd analysis).")
+		ZCI.inc()
+
+		#prepare data structure to store the given fields
+		givenFields = {} #fmap[str,value]
+		for f in tInst.dcnCommon.fields:
+			givenFields[f.name] = None
+
+		#read fields
+		givenFieldsIdx = 0
+		endIdx         = ZCI.pairs[ZCI.ctx.icontent.idx]
+		while True:
+			optionnalBlanks(ZCI, None)
+
+			#try reading a name (on a copy) for "NAME = VALUE" notation
+			tmpCopy   = ZCI.copy()
+			fieldName = readName(tmpCopy, None)
+
+			#valid name => check for a following assignment symbol '='
+			if len(fieldName) != 0:
+				optionnalBlanks(tmpCopy, None)
+
+				#no assignment symbol => that was not a "NAME = VALUE" notation => reset everything, we will read again the whole thing as "VALUE" notation
+				if readSymbol(tmpCopy) != SYMBOL__ASG:
+					fieldName = ""
+
+				#assignment symbol => alright! let's move our ZCI then
+				else:
+					ZCI.forward(tmpCopy.ctx.icontent.idx - ZCI.ctx.icontent.idx + SYMBOL_LENGTHS[SYMBOL__ASG])
+					optionnalBlanks(ZCI, "Value after assignment symbol in \"NAME = VALUE\" association (2nd analysis, structure definition, field " + fieldName + ").")
+
+			#value empty or simply not given
+			if ZCI.ctx.icontent.idx >= endIdx: #should never be greater (could have set an internal error here)
+				break
+			if ZCI.get() == ',':
+				ZCIError(ZCI, "Empty VALUE given in field of structure definition (2nd analysis, \"VALUE\" or \"NAME = VALUE\" expected).")
+
+			#read value
+			v = readValue(ZCI, "Field VALUE in structure definition (2nd analysis).", vap2info.scope, cstOnly=vap2info.cstOnly)
+
+			#solve name if not explicitely given
+			if len(fieldName) == 0:
+				if givenFieldIdx >= len(tInst.dcnCommon.fields):
+					ZCIError(ZCI, "Too much fields given in structure definition value (2nd analysis, max " + str(len(tInst.dcnCommon.fields)) + " fields allowed, " + str(givenFieldsIdx) + " given).")
+				fieldName = tInst.dcnCommon.fields[givenFieldIdx].name
+
+			#set value to corresponding field
+			if givenFields[fieldName] is not None:
+				ZCIError(ZCI, "Value for field " + fieldName + " is already set (2nd analysis, structure definition).")
+			givenFields[fieldName] = v
+
+			#must be followed by coma or closing brace
+			optionnalBlanks(ZCI, None)
+			next = ZCI.get()
+			if next == '}':
+				if ZCI.ctx.icontent.idx != endIdx:
+					ZCIInternal(ZCI, "Ending structure fields definition with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.idx) + " instead of targetted " + str(endIdx) + ").")
+				ZCI.inc()
+				break
+			if next != ',':
+				ZCIError(ZCI, "Invalid element " + next + " given in structure definition, following a field value (2nd analysis, expected coma separator ',' or closing includer '}').")
+			ZCI.inc()
+
+		#fill missing fields with their default value
+		for f in givenFields.keys():
+			if givenFields[f] is None:
+				di = tInst.dcnCommon.fields[f]
+
+				#set default value if no one given
+				if not di.initialized:
+					ZCIError(ZCI, "Value required for field " + f + " in structure definition (2nd analysis, no default value set for that field)")
+				ZCIDeepDebug(ZCI, "No value given for field " + f + " in structure definition (2nd analysis, structure " + tInst.name + ") => set default value: " + di.initialValue.toStr())
+				givenFields[f] = di.initialValue
+
+		#return complete fields map as value
+		res = value(tID, atm(ATM__FMAP_STR_VALUE, givenFields))
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in STRUCTURE DEFINITION " + res.toStr())
+		return res
 
 	#unknown value format
 	unknownValueErrorIn2ndAnalysis(ZCI)
@@ -406,8 +506,8 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 
 		#get size
 		tInst = ZCI.getTypeInstanceFromID(Type)
-		if tInst.commonDcnData.nature != NATURE__PRIMITIVE:
-			size = tInst.commonDcnData.stcSize
+		if tInst.dcnCommon.nature != NATURE__PRM:
+			size = tInst.dcnCommon.stcSize
 		else:
 			size = tInst.size
 
@@ -457,7 +557,7 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 		res.Type = readType(ZCI, vap2info.ZCIKindIfError)
 
 		#overwrite result type
-		ZCIDeepDebug("2nd analysis: FCA operator applied type " + unprefixize(ZCI.zCtx.getTypeNameFromIDIncludingUnsolved(Type)) + " on value " + res.toStr())
+		ZCIDeepDebug("2nd analysis: FCA operator applied type " + unprefixize(ZCI.getTypeNameFromID(Type)) + " on value " + res.toStr())
 
 	#field access (FFA)
 	#else:

@@ -46,14 +46,15 @@ ATM__ZCI      = 13
 ATM__VALUE    = 14
 ATM__DATAITEM = 15
 ATM__TYP      = 16
-ATM__TYP_COMMONDATA = 17
+ATM__TYP_DCNCOMMON = 17
 ATM__SCP = 18
 ATM__ASG = 19
 ATM__STM = 20
 ATM__FCT = 21
 ATM__OPSEQ  = 22
 ATM__POCALL = 23
-ATM__LST = 24
+ATM__LST  = 24
+ATM__FMAP_STR_VALUE = 25
 ATM__ATM = 99
 class atm:
 	def __init__(sbj, id, data):

@@ -35,7 +35,7 @@ def readFctDcl(ZCI):
 	#build full function name
 	fullName = ZCI.modPrefix
 	if isMethod:
-		fullName += 'T' + ZCI.getTypeNameFromIDIncludingUnsolved(methodType) + '_' #btw, no unsolved type can be output here
+		fullName += 'T' + ZCI.getTypeNameFromID(methodType) + '_'
 	fullName += 'F' + rawName
 
 	#must be followed by parameters between parentheses includer
@@ -63,7 +63,7 @@ def readFctDcl(ZCI):
 		optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 		if ZCI.get() != '{':
 			ZCIError(ZCI, "Expected to have function content after return type given (braces includer).")
-	ZCIDeepDebug(ZCI, "Return type detected \"" + ZCI.getTypeNameFromIDIncludingUnsolved(retType) + "\".")
+	ZCIDeepDebug(ZCI, "Return type detected \"" + ZCI.getTypeNameFromID(retType) + "\".")
 
 	#content
 	ZCIDeepDebug(ZCI, "Extracting function \"" + fullName + "\"'s content.")

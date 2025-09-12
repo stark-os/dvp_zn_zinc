@@ -34,7 +34,7 @@ RT__F8  = 10
 RT__PTR = 11
 
 #specific type ID
-TYPE_ID__NOT_FOUND = 0
+TYPE_ID__NOT_FOUND = -1
 
 #common data structures (shortcut notations)
 TYPE_FULLNAME__TAB  = "GUtab"
@@ -198,9 +198,9 @@ CPL_OPT_ALLOWED = {
 }
 
 #data item nature
-NATURE__PRIMITIVE = 0
-NATURE__STRUCTURE = 1
-NATURE__ENUMERATE = 2
+NATURE__PRM = 0
+NATURE__STC = 1
+NATURE__ENM = 2
 
 #statement kinds
 STM__IF_ = 0

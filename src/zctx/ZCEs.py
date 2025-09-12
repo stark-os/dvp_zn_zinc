@@ -89,8 +89,8 @@ class zci:
 	def getTypeIDFromName(sbj, name):
 		return sbj.zCtx.getTypeIDFromName(name)
 
-	def getTypeNameFromIDIncludingUnsolved(sbj, id):
-		return sbj.zCtx.getTypeNameFromIDIncludingUnsolved(id)
+	def getTypeNameFromID(sbj, id):
+		return sbj.zCtx.getTypeNameFromID(id)
 
 def newZCI(zCtx, subCtxs, modPrefix=None, pairs=None):
 	if modPrefix is None:
@@ -119,28 +119,28 @@ def dumpZCIs(ZCIs, filename):
 
 
 #types
-class typ_commonDcnData: #common type data among every declination
+class typ_dcnCommon: #common data among every declination of a type
 	def __init__(sbj, dcnDeg, size=0):
 		sbj.parent = None
 		sbj.size   = size
 		sbj.dcnDeg = dcnDeg
 
 		#stc related
-		sbj.nature  = NATURE__PRIMITIVE
+		sbj.nature  = NATURE__PRM
 		sbj.fields  = None #lst[dataItem]
 		sbj.stcSize = 0
 
 class typ:
 	def __init__(sbj, size):
-		sbj.name          = None
-		sbj.methods       = None #lst[fct]
-		sbj.dcns          = None #tab[typ]
-		sbj.commonDcnData = None #typ_commonDcnData
+		sbj.name      = None
+		sbj.methods   = None #lst[fct]
+		sbj.dcns      = None #tab[typ]
+		sbj.dcnCommon = None #typ_dcnCommon
 
 	def computeStcSize(sbj, types):
-		if sbj.commonDcnData.nature != NATURE__PRIMITIVE:
-			for f in sbj.commonDcnData.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
-				sbj.commonDcnData.stcSize += types[f.Type].commonDcnData.size
+		if sbj.dcnCommon.nature != NATURE__PRM:
+			for f in sbj.dcnCommon.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
+				sbj.dcnCommon.stcSize += types[f.Type].dcnCommon.size
 
 #scope
 class scp:
@@ -212,6 +212,14 @@ class value:
 			for p in sbj.data.data.params:
 				dataStr += depthSpace + '\t' + p.toStr(depth+1) + ',\n' #recursive call
 			dataStr += depthSpace + ')'
+
+		#structure definition (fields)
+		elif sbj.data.id == ATM__FMAP_STR_VALUE:
+			depthSpace = '\t' * depth
+			dataStr  = "\"fmap[str][value] " + sbj.data.data.name + "{\n"
+			for k in sbj.data.data.keys():
+				dataStr += depthSpace + '\t' + k.toStr(depth+1) + ": " + sbj.data.data[k].toStr(depth+1) + ',\n' #recursive call
+			dataStr += depthSpace + '}'
 
 		#invalid
 		else:

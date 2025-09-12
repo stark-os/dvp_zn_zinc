@@ -31,6 +31,9 @@ def newZCtx(
 	#"typ" keyword: virtual type that seems to work like a regular one for the moment
 	res.typKeyword = res.cpl.newTyp("GUtyp")
 
+	#"fly" virtual type that also seems to work like a regular one for the moment
+	res.flyType    = res.cpl.newTyp("GUfly")
+
 	#create a list to hold root types. This is purely a simplification tool in zCtx.
 	res.rootTypes = [0,0,0, 0,0,0, 0,0,0, 0,0,0] #can be already declared as a fixed-size table (length: 12)
 
@@ -132,6 +135,7 @@ class zctx:
 
 		#types
 		sbj.typKeyword = 0
+		sbj.flyType    = 1
 		sbj.rootTypes  = None
 
 		#data
@@ -140,7 +144,7 @@ class zctx:
 		sbj.cpl  = None
 
 	def getTypeInstanceFromID(sbj, id):
-		if id > 0 and id < len(sbj.cpl.types):
+		if id >= 0 and id < len(sbj.cpl.types):
 			return sbj.cpl.types[id]
 		return None
 
@@ -150,10 +154,10 @@ class zctx:
 				return t
 		return TYPE_ID__NOT_FOUND
 
-	def getTypeNameFromIDIncludingUnsolved(sbj, id):
+	def getTypeNameFromID(sbj, id):
 		i = sbj.getTypeInstanceFromID(id)
 		if i is None:
-			return "<unsolved_yet/void>"
+			return "<void>"
 		return i.name
 
 

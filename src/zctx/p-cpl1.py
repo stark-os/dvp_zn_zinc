@@ -33,29 +33,24 @@ class cplDat:
 		sbj.opts = None
 
 		#z abstract elements
-		sbj.modPrefixes   = None #lst[str]
-		sbj.types         = None #lst[int]
-		sbj.unsolvedTypes = None #lst[ZCI] #temporarily keep each ZCI corresponding to an unsolved type aside. We solve types in 2 steps
-		sbj.gblScp        = None
-		sbj.fcts          = None #lst[fct]
-		sbj.linkedLibs    = None #lst[]
+		sbj.modPrefixes = None #lst[str]
+		sbj.types       = None #lst[int]
+		sbj.gblScp      = None
+		sbj.fcts        = None #lst[fct]
+		sbj.linkedLibs  = None #lst[]
 
 		#program concrete elements
 		#sbj.dataRes = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
 		sbj.txtRes  = ""
 
-	def addUnsolvedType(sbj, ZCI):
-		sbj.unsolvedTypes.append(ZCI.copy())
-		return -len(sbj.unsolvedTypes) #negative index as type ID means "unsolved"
-
-	def newTyp(sbj, name, dcnDeg=0, size=0, dcns=None, commonDcnData=None):
-		if commonDcnData is None:
-			commonDcnData = typ_commonDcnData(dcnDeg, size=size) #create a new commonDcnData by default (new type => new commonDcnData)
-		res               = typ(size)
-		res.name          = name
-		res.methods       = []   #lst[fct]
-		res.dcns          = dcns #tab[typ]
-		res.commonDcnData = commonDcnData #typ_commonDcnData
+	def newTyp(sbj, name, dcnDeg=0, size=0, dcns=None, dcnCommon=None):
+		if dcnCommon is None:
+			dcnCommon = typ_dcnCommon(dcnDeg, size=size) #create a new dcnCommon by default (new type => new dcnCommon)
+		res           = typ(size)
+		res.name      = name
+		res.methods   = []   #lst[fct]
+		res.dcns      = dcns #tab[typ]
+		res.dcnCommon = dcnCommon #typ_dcnCommon
 
 		#add type to CPL data
 		typeIdx = len(sbj.types)
@@ -68,8 +63,7 @@ def newCplDat(opts):
 
 	#z abstract elements
 	res.modPrefixes   = [] #lst[str]
-	res.types         = [typ(0)] #index 0 == TYPE_ID__NOT_FOUND, must corresponds to nothing useful.
-	res.unsolvedTypes = []
+	res.types         = []
 	res.gblScp        = newScp()
 	res.fcts          = [] #lst[fct]
 	res.linkedLibs    = [] #lst[]
@@ -80,8 +74,8 @@ def newCplDat(opts):
 
 
 
-#create a fake ZCI with targetted type as text to be read, and then read that type (can be "unsolved")
-def createFakeZCIAndTryReadingCommonType(originalZCI, commonTypeFullName, ZCIKindIfError):
+#create a fake ZCI with targetted type as text to be read, and then read that type
+def createFakeZCIAndReadCommonType(originalZCI, commonTypeFullName, ZCIKindIfError):
 	fakeZCI              = originalZCI.copy()
 	fakeZCI.ctx.icontent = istr(commonTypeFullName)
 	fakeZCI.startIdx     = 0
@@ -89,7 +83,7 @@ def createFakeZCIAndTryReadingCommonType(originalZCI, commonTypeFullName, ZCIKin
 	fakeZCI.updateText()
 
 	#try to find out a type
-	return readType(fakeZCI, ZCIKindIfError, allowUnsolved=True)
+	return readType(fakeZCI, ZCIKindIfError)
 
 
 
