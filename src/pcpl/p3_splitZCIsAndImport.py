@@ -32,7 +32,7 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPrefix=None):
 
 	#strip sides
 	ZCI.strip()
-	ZCIDeepDebug(ZCI, "Stripped blanks from ZCI " + ZCI.textFormat(), printSubCtxs=False, printLine=False)
+	ZCIDeepDebug(ZCI, "Stripped blanks from ZCI \"" + ZCI.textFormat() + '\"', printSubCtxs=False, printLine=False)
 
 
 
@@ -129,7 +129,7 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPrefix=None, maxId
 		if c == ';' or c == '\n':
 			if len(ZCI.txt) != 0: #tiny optimization
 				ZCI.stopIdx = ctx.icontent.idx - 1
-				ZCIDeepDebug(ZCI, "Extracted raw ZCI text " + ZCI.textFormat())
+				ZCIDeepDebug(ZCI, "Extracted raw ZCI text \"" + ZCI.textFormat() + '\"')
 				stripAndAppendZCI(ZCI, ZCIs, allowImpExpansion=gbl, modPrefix=modPrefix)
 
 			#next ZCI

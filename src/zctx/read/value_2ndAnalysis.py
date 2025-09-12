@@ -224,7 +224,7 @@ def unknownValueErrorIn2ndAnalysis(ZCI):
 	ZCIError(ZCI, "Unknown value given (not respecting any format supported by VAP in 2nd analysis).")
 
 def secondAnalysis(ZCI, vap2info):
-	ZCIDeepDebug(ZCI, "2nd analysis: Reading ZCI fragment " + ZCI.textFormat() + " to apply second analysis on it.")
+	ZCIDeepDebug(ZCI, "2nd analysis: Reading ZCI fragment \"" + ZCI.textFormat() + "\" to apply second analysis on it.")
 	res = None
 	c = ZCI.get()
 
@@ -311,7 +311,7 @@ def secondAnalysis(ZCI, vap2info):
 		#table with only one element => explicit priorization
 		if targettedEnd == ')' and not targettingMap and len(subValues) == 1:
 			res = subValues[0]
-			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in EXPLICIT PRIORIZATION " + res.toStr())
+			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in EXPLICIT PRIORIZATION " + res.toStr())
 			return res
 
 		#finishing result: maps
@@ -330,7 +330,7 @@ def secondAnalysis(ZCI, vap2info):
 			res = value(targettedType, atm(ATM__LST, subValues))
 
 		#return result
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION " + res.toStr())
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION " + res.toStr())
 		return res
 
 	#having found a colon but wasn't a map => no pattern matches such a thing
@@ -367,7 +367,7 @@ def secondAnalysis(ZCI, vap2info):
 
 			#finish result
 			res = value(ZCI.zCtx.rootTypes[RT__PTR], atm(ATM__LST, sequence))
-			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in MULTI-BYTE NOTATION " + res.toStr())
+			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in MULTI-BYTE NOTATION " + res.toStr())
 			return res
 
 		#single-byte sequence
@@ -377,7 +377,7 @@ def secondAnalysis(ZCI, vap2info):
 			atm(ATM__S1, readHexByte(ZCI))
 		)
 		ZCI.inc()
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in SINGLE-BYTE NOTATION " + res.toStr())
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in SINGLE-BYTE NOTATION " + res.toStr())
 		return res
 
 
@@ -387,7 +387,7 @@ def secondAnalysis(ZCI, vap2info):
 	#parsing is quite complex => has been taken away in another method
 	v = parseLiteralIntOrFloat(ZCI)
 	if v is not None:
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in INTEGER/FLOAT " + v.toStr())
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in INTEGER/FLOAT " + v.toStr())
 		return v
 
 
@@ -483,7 +483,7 @@ def secondAnalysis(ZCI, vap2info):
 
 		#return complete fields map as value
 		res = value(tID, atm(ATM__FMAP_STR_VALUE, givenFields))
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment " + ZCI.textFormat() + ", resulted in STRUCTURE DEFINITION " + res.toStr())
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in STRUCTURE DEFINITION " + res.toStr())
 		return res
 
 	#unknown value format

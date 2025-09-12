@@ -11,7 +11,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOperators):
 		for o in allowedOperators:
 			allowedOperatorsText += OPERATOR_NAMES[o] + ','
 		allowedOperatorsText += "]"
-		ZCIDeepDebug(ZCI, "ODP-1: Reading & splitting ZCI content " + ZCI.textFormat() + " by operators " + allowedOperatorsText)
+		ZCIDeepDebug(ZCI, "ODP-1: Reading & splitting ZCI content \"" + ZCI.textFormat() + "\" by operators " + allowedOperatorsText)
 
 	#split by operator symbols
 	operands          = [] #lst[zci]
@@ -114,7 +114,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOperators):
 	ZCIDeepDebug(ZCI, "ODP-1: Last operand added, final operating sequence is " + opSeq(maxStopIdx, operands, operators, operatorIdxes).toStr())
 
 	#deep debug
-	ZCIDeepDebug(ZCI, "ODP-1: Finished reading & splitting ZCI content " + ZCI.textFormat() + " by operators " + allowedOperatorsText)
+	ZCIDeepDebug(ZCI, "ODP-1: Finished reading & splitting ZCI content \"" + ZCI.textFormat() + "\" by operators " + allowedOperatorsText)
 	return opSeq(maxStopIdx, operands, operators, operatorIdxes)
 
 
@@ -273,7 +273,7 @@ def ODP(originalZCI):
 	)
 
 	#deep debug
-	originalZCI.zCtx.deepDebug("Beginning ODP on ZCI " + ZCI.textFormat())
+	originalZCI.zCtx.deepDebug("Beginning ODP on ZCI \"" + ZCI.textFormat() + '\"')
 
 	#1st group priorization (lowest): CO
 	originalZCI.zCtx.deepDebug("ODP-0: Applying 1st group priorization.")
@@ -299,7 +299,7 @@ def ODP(originalZCI):
 	originalZCI.zCtx.deepDebug("ODP-0: Applying 5th group priorization (SO)")
 	res.maxStopIdx = ODP_applyGroupPriorization(originalZCI.zCtx, res.maxStopIdx, res.mainPOCall, SO, monoOperand=True)
 	originalZCI.zCtx.deepDebug("ODP-0: Applied 5th group priorization, resulted into " + res.mainPOCall.toStr())
-	originalZCI.zCtx.deepDebug("Ended ODP on ZCI " + ZCI.textFormat())
+	originalZCI.zCtx.deepDebug("Ended ODP on ZCI \"" + ZCI.textFormat() + '\"')
 	return res
 
 

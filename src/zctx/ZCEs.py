@@ -75,10 +75,10 @@ class zci:
 
 	#debug output
 	def textFormat(sbj):
-		return '\"' + sbj.txt.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n") + '\"'
+		return sbj.txt.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
 
 	def toStr(sbj):
-		return "{mod:\"" + sbj.modPrefix + "\",ctx:\"" + sbj.ctx.toStr() + "\",ctx.icontent.idx:" + str(sbj.ctx.icontent.idx) + ",startIdx:" + str(sbj.startIdx) + ",stopIdx:" + str(sbj.stopIdx) + ",txt:" + sbj.textFormat() + ",pairs:\"" + str(sbj.pairs).replace(' ', '') + "\"}"
+		return "{mod:\"" + sbj.modPrefix + "\",ctx:\"" + sbj.ctx.toStr() + "\",ctx.icontent.idx:" + str(sbj.ctx.icontent.idx) + ",startIdx:" + str(sbj.startIdx) + ",stopIdx:" + str(sbj.stopIdx) + ",txt:\"" + sbj.textFormat() + "\",pairs:\"" + str(sbj.pairs).replace(' ', '') + "\"}"
 
 
 
@@ -91,6 +91,22 @@ class zci:
 
 	def getTypeNameFromID(sbj, id):
 		return sbj.zCtx.getTypeNameFromID(id)
+
+
+
+	#std (generated at compile time in Z, normally under atm format with subatoms etc...)
+	def toAtm(sbj):
+		return {
+			'mod': sbj.modPrefix,
+			'ctx': sbj.ctx.toStr(),
+			#'ctx.icontent.idx': sbj.ctx.icontent.idx,
+			#'startIdx': sbj.startIdx,
+			#'stopIdx': sbj.stopIdx,
+			'txt': sbj.textFormat(),
+			'pairs': str(sbj.pairs).replace(' ', '')
+		}
+
+
 
 def newZCI(zCtx, subCtxs, modPrefix=None, pairs=None):
 	if modPrefix is None:
@@ -109,11 +125,17 @@ def newZCI(zCtx, subCtxs, modPrefix=None, pairs=None):
 	res.stopIdx   = res.startIdx
 	return res
 
-def dumpZCIs(ZCIs, filename):
-	output = "[\n"
-	for ZCI in ZCIs:
-		output += "\t" + ZCI.toStr() + ",\n"
-	output += "]"
+def dumpZCIs(ZCIs, filename, oneLine=True):
+	if oneLine:
+		output = "[\n"
+		for ZCI in ZCIs:
+			output += "\t" + ZCI.toStr() + ",\n"
+		output += "]"
+	else:
+		outputLst = []
+		for ZCI in ZCIs:
+			outputLst.append(ZCI.toAtm())
+		output = dreamlands.toText(outputLst)
 	writeFile(filename, output)
 
 
@@ -190,13 +212,13 @@ class value:
 		elif sbj.data.id == ATM__U4:
 			dataStr = 'U' + hexOnN(sbj.data.data, 8)
 		elif sbj.data.id == ATM__S8:
-			dataStr = 'S' + hexOnN(sbj.data.data, 16) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< no way to get arch type here... will stay in 64b for the moment (can be formatted again later)
+			dataStr = 'S' + hexOnN(sbj.data.data, 16)
 		elif sbj.data.id == ATM__U8:
 			dataStr = 'U' + hexOnN(sbj.data.data, 16)
 		elif sbj.data.id == ATM__CHR:
 			dataStr = '\'' + sbj.data.data + '\''
 		elif sbj.data.id == ATM__STR: #this case covers both literal string & name. In all cases, toStr() will output a double-quoted result.
-			dataStr = '\"' + sbj.data.data + '\"' #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< for the moment, it also covers the case of literal structures (stored under raw text)
+			dataStr = '\"' + sbj.data.data + '\"'
 
 		#common data structures (all stored as lst)
 		elif sbj.data.id == ATM__LST:
@@ -257,7 +279,7 @@ class POCall:
 		firstOperandText = "null"
 		if sbj.firstOperand is not None:
 			if sbj.firstOperand.id == ATM__ZCI:
-				firstOperandText = sbj.firstOperand.data.textFormat()
+				firstOperandText = '\"' + sbj.firstOperand.data.textFormat() + '\"'
 			elif sbj.firstOperand.id == ATM__POCALL:
 				firstOperandText = sbj.firstOperand.data.toStr(depth+1)
 
@@ -265,7 +287,7 @@ class POCall:
 		secondOperandText = "null"
 		if sbj.secondOperand is not None:
 			if sbj.secondOperand.id == ATM__ZCI:
-				secondOperandText = sbj.secondOperand.data.textFormat()
+				secondOperandText = '\"' + sbj.secondOperand.data.textFormat() + '\"'
 			elif sbj.secondOperand.id == ATM__POCALL:
 				secondOperandText = sbj.secondOperand.data.toStr(depth+1)
 
@@ -287,7 +309,7 @@ class opSeq:
 	def toStr(sbj):
 		operandsText = ""
 		for a in sbj.operands:
-			operandsText += a.textFormat() + ','
+			operandsText += '\"' + a.textFormat() + ",\""
 		operatorsText = ""
 		for o in sbj.operators:
 			operatorsText += OPERATOR_NAMES[o] + ','

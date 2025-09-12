@@ -41,7 +41,7 @@ def zCtx__debugMods(zCtx):
 #cpl steps output
 def zCtx__cplStep_debugZCIs(zCtx, cplStep):
 	if zCtx.debugMode:
-		dumpZCIs(zCtx.ZCIs, "debug/" + path_name(zCtx.initialCtx.filename) + ".c" + cplStep + ".json")
+		dumpZCIs(zCtx.ZCIs, "debug/" + path_name(zCtx.initialCtx.filename) + ".c" + cplStep + ".dl", oneLine=False)
 
 
 

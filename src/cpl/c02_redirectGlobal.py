@@ -230,7 +230,7 @@ def c02_redirectGlobal(zCtx):
 	#analyse EVERY ZCI
 	for ZCI in zCtx.ZCIs:
 		initialCtx = ZCI.ctx.copy()
-		ZCIDeepDebug(ZCI, "Treating ZCI " + ZCI.textFormat(), printSubCtxs=True)
+		ZCIDeepDebug(ZCI, "Treating ZCI \"" + ZCI.textFormat() + '\"', printSubCtxs=True)
 
 		#read 1st ZCI word
 		firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)

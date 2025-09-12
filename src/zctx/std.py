@@ -15,6 +15,9 @@ from std.io         import *
 from std.parsingCtx import *
 from std.int        import *
 
+#dreamlands
+import std.dreamlands as dreamlands
+
 
 
 

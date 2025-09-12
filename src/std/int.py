@@ -6,6 +6,21 @@
 
 #hexadecimal string representation on fixed amount of digits
 def hexOnN(b, N):
+
+	#negativity with python
+	if b < 1:
+		if N == 2:
+			return hexOnN(0xff + b, N)
+		elif N == 4:
+			return hexOnN(0xffff + b, N)
+		elif N == 8:
+			return hexOnN(0xffff_ffff + b, N)
+		elif N == 16:
+			return hexOnN(0xffff_ffff_ffff_ffff + b, )
+		print("ERROR IN STD/int.py (invalid number of hex digits for negative output)")
+		exit(1)
+
+	#regular execution
 	h = hex(b)[2:]
 	if len(h) > N:
 		print("ERROR IN STD/int.py")
