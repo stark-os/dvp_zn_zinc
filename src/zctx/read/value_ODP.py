@@ -28,7 +28,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOperators):
 		#CASE 1: not a symbol (that can be anything and especially an includer)
 		if operator == SYMBOL__NOT_FOUND:
 			if ZCI.ctx.icontent.idx in ZCI.pairs.keys():
-				ZCI.forward(ZCI.pairs[ZCI.ctx.icontent.idx] - ZCI.ctx.icontent.idx) #includer? It also belongs to the operand no matter what's inside => skip parsing its content
+				ZCI.forwardUntil( ZCI.pairs[ZCI.ctx.icontent.idx] ) #includer? It also belongs to the operand no matter what's inside => skip parsing its content
 			ZCI.inc()
 			continue
 

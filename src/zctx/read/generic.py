@@ -179,7 +179,7 @@ def readName(ZCI,
 	blacklist=None, whitelist=DEFAULT_NAME_CHARSET,
 	doubleUnderscores=False,
 	parseModPrefixes=False,
-	modPrefix_asHeaderOnly=False #means "if any, it must BEGIN with it and be the only occurrence"
+	modPrefixes_asHeaderOnly=False #means "if any, it must BEGIN with it and be the only occurrence"
 ):
 	ZCIDeepDebug(ZCI, "Reading name.")
 	if parseModPrefixes:
@@ -204,7 +204,7 @@ def readName(ZCI,
 			currentModName = ""
 
 			#only allowing it as name header
-			if modPrefix_asHeaderOnly and not firstCharacter:
+			if modPrefixes_asHeaderOnly and not firstCharacter:
 				ZCIError(ZCI, "Module prefixes only allowed at beginning of name here.")
 
 
@@ -335,7 +335,7 @@ def tryReadDataItemIncludingFields(ZCI, scope):
 	starter = ZCI.get()
 
 	#read name (will have module prefix if any)
-	name = readName(ZCI, "Any data item name", parseModPrefixes=True, modPrefix_asHeaderOnly=True),
+	name = readName(ZCI, "Any data item name", parseModPrefixes=True, modPrefixes_asHeaderOnly=True),
 	di   = None #just declare
 
 	#case 1: having a module prefix => looking directly in global scope

@@ -160,6 +160,16 @@ class zctx:
 			return "<void>"
 		return i.name
 
+	def checkIDRecursivelyInType(sbj, tID, tgtID):
+		print("ID[" + str(tID) + "]     TARGET["+str(tgtID)+"]")
+		if tID == tgtID:
+			return True
+		dcns = sbj.getTypeInstanceFromID(tID).dcns
+		if dcns is not None:
+			for d in dcns:
+				if sbj.checkIDRecursivelyInType(d, tgtID):
+					return True
+		return False
 
 
 

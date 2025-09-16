@@ -32,7 +32,13 @@ def readFctDcl(ZCI):
 	#read function name
 	rawName = readName(ZCI, "function name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True, whitelist=FCT_NAME_CHARSET)
 
-	#build full function name
+	#check name availability !HERE, WE WANT TO GUARANTEE NO CONFUSION BETWEEN GBL DI NAMES & FCT NAMES. USER CODE CAN HAVE AMBIGUITY, BUT Z NOTATION CAN'T: THIS IS WHY WE USE A "TMP PREFIXED NOTATION" TO CHECK THEM TEMPORARILY.
+	tmpPrefixedName = ZCI.modPrefix + rawName
+	for gdi in ZCI.zCtx.cpl.gblScp.dataItems:
+		if gdi.name == tmpPrefixedName:
+			ZCIError(ZCI, "Unable to declare function \"" + modPrefixedName + "\" (tmp prefixed notation) because a global data item with the same name already exist.")
+
+	#build full function name (with real prefixing this time)
 	fullName = ZCI.modPrefix
 	if isMethod:
 		fullName += 'T' + ZCI.getTypeNameFromID(methodType) + '_'

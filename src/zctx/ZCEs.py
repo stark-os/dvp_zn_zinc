@@ -29,6 +29,12 @@ class zci:
 	def forward(sbj, step):
 		return sbj.ctx.forward(step)
 
+	def forwardUntil(sbj, tgtIdx):
+		return sbj.ctx.forwardUntil(tgtIdx)
+
+	def forwardAlike(sbj, otherZCI):
+		return sbj.ctx.forwardAlike(otherZCI.ctx)
+
 	def inc(sbj):
 		return sbj.ctx.inc() or sbj.ctx.icontent.idx > sbj.stopIdx #additionnal stopping reason => end of ZCI
 
@@ -78,7 +84,15 @@ class zci:
 		return sbj.txt.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
 
 	def toStr(sbj):
-		return "{mod:\"" + sbj.modPrefix + "\",ctx:\"" + sbj.ctx.toStr() + "\",ctx.icontent.idx:" + str(sbj.ctx.icontent.idx) + ",startIdx:" + str(sbj.startIdx) + ",stopIdx:" + str(sbj.stopIdx) + ",txt:\"" + sbj.textFormat() + "\",pairs:\"" + str(sbj.pairs).replace(' ', '') + "\"}"
+		return \
+			"{mod:\"" + sbj.modPrefix + \
+			"\",ctx:\"" + sbj.ctx.toStr() + \
+			"\",ctx.icontent.idx:" + str(sbj.ctx.icontent.idx) + \
+			",startIdx:" + str(sbj.startIdx) + \
+			",stopIdx:" + str(sbj.stopIdx) + \
+			",txt:\"" + sbj.textFormat() + \
+			"\",pairs:\"" + str(sbj.pairs).replace(' ', '') + \
+			"\"}"
 
 
 
@@ -91,6 +105,9 @@ class zci:
 
 	def getTypeNameFromID(sbj, id):
 		return sbj.zCtx.getTypeNameFromID(id)
+
+	def checkIDRecursivelyInType(sbj, tID, tgtID):
+		return sbj.zCtx.checkIDRecursivelyInType(tID, tgtID)
 
 
 
@@ -187,60 +204,64 @@ def newScp(parent=None):
 
 #value
 class value:
-	def __init__(sbj, Type, data, Cst=False):
-		sbj.Type = Type
-		sbj.data = data  #atm #can be either a root type (literal), str (name) or call.
-		sbj.Cst  = Cst
+	def __init__(sbj, Type, vdata, Cst=False):
+		sbj.Type  = Type
+		sbj.vdata = vdata  #atm #can be either a root type (literal), str (name) or call.
+		sbj.Cst   = Cst
 
 	def toStr(sbj, depth=0):
-		if sbj.data.id == ATM__BOO: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< I know, this seems weird in Python but it makes sens in Z (will have to be a swi btw)
+		depthSpace = '\t' * depth
+		if sbj.vdata.id == ATM__BOO: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< I know, this seems weird in Python but it makes sens in Z (will have to be a swi btw)
 			dataStr = "false"
-			if sbj.data:
+			if sbj.vdata:
 				dataStr = "true"
 
 		#numerical
-		elif sbj.data.id == ATM__S1:
-			dataStr = 'S' + hexOnN(sbj.data.data, 2)
-		elif sbj.data.id == ATM__U1:
-			dataStr = 'U' + hexOnN(sbj.data.data, 2)
-		elif sbj.data.id == ATM__S2:
-			dataStr = 'S' + hexOnN(sbj.data.data, 4)
-		elif sbj.data.id == ATM__U2:
-			dataStr = 'U' + hexOnN(sbj.data.data, 4)
-		elif sbj.data.id == ATM__S4:
-			dataStr = 'S' + hexOnN(sbj.data.data, 8)
-		elif sbj.data.id == ATM__U4:
-			dataStr = 'U' + hexOnN(sbj.data.data, 8)
-		elif sbj.data.id == ATM__S8:
-			dataStr = 'S' + hexOnN(sbj.data.data, 16)
-		elif sbj.data.id == ATM__U8:
-			dataStr = 'U' + hexOnN(sbj.data.data, 16)
-		elif sbj.data.id == ATM__CHR:
-			dataStr = '\'' + sbj.data.data + '\''
-		elif sbj.data.id == ATM__STR: #this case covers both literal string & name. In all cases, toStr() will output a double-quoted result.
-			dataStr = '\"' + sbj.data.data + '\"'
+		elif sbj.vdata.id == ATM__S1:
+			dataStr = 'S' + hexOnN(sbj.vdata.data, 2)
+		elif sbj.vdata.id == ATM__U1:
+			dataStr = 'U' + hexOnN(sbj.vdata.data, 2)
+		elif sbj.vdata.id == ATM__S2:
+			dataStr = 'S' + hexOnN(sbj.vdata.data, 4)
+		elif sbj.vdata.id == ATM__U2:
+			dataStr = 'U' + hexOnN(sbj.vdata.data, 4)
+		elif sbj.vdata.id == ATM__S4:
+			dataStr = 'S' + hexOnN(sbj.vdata.data, 8)
+		elif sbj.vdata.id == ATM__U4:
+			dataStr = 'U' + hexOnN(sbj.vdata.data, 8)
+		elif sbj.vdata.id == ATM__S8:
+			dataStr = 'S' + hexOnN(sbj.vdata.data, 16)
+		elif sbj.vdata.id == ATM__U8:
+			dataStr = 'U' + hexOnN(sbj.vdata.data, 16)
+		elif sbj.vdata.id == ATM__CHR:
+			dataStr = '\'' + sbj.vdata.data + '\''
+		elif sbj.vdata.id == ATM__STR: #this case covers both literal string & name. In all cases, toStr() will output a double-quoted result.
+			dataStr = '\"' + sbj.vdata.data + '\"'
 
 		#common data structures (all stored as lst)
-		elif sbj.data.id == ATM__LST:
+		elif sbj.vdata.id == ATM__LST:
 			dataStr = '['
-			for e in sbj.data.data:
-				dataStr += e.toStr() + ','
+#			for e in sbj.vdata.data:
+#				dataStr += e.toStr() + ',' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TEMPORARILY SWITCHING TO A MORE TOLERANT WAY
+			for e in sbj.vdata.data:
+				if isinstance(e, atm):
+					dataStr += e.data.toStr() + ','
+				else:
+					dataStr += e.toStr() + ','
 			dataStr += ']'
 
 		#calls
-		elif sbj.data.id == ATM__CALL:
-			depthSpace = '\t' * depth
-			dataStr  = "\"call " + sbj.data.data.name + "(\n"
-			for p in sbj.data.data.params:
+		elif sbj.vdata.id == ATM__CALL:
+			dataStr  = "\"call " + sbj.vdata.data.name + "(\n"
+			for p in sbj.vdata.data.params:
 				dataStr += depthSpace + '\t' + p.toStr(depth+1) + ',\n' #recursive call
-			dataStr += depthSpace + ')'
+			dataStr += depthSpace + ")->[" + str(sbj.vdata.data.retType) + ']'
 
 		#structure definition (fields)
-		elif sbj.data.id == ATM__FMAP_STR_VALUE:
-			depthSpace = '\t' * depth
-			dataStr  = "\"fmap[str][value] " + sbj.data.data.name + "{\n"
-			for k in sbj.data.data.keys():
-				dataStr += depthSpace + '\t' + k.toStr(depth+1) + ": " + sbj.data.data[k].toStr(depth+1) + ',\n' #recursive call
+		elif sbj.vdata.id == ATM__FMAP_STR_VALUE:
+			dataStr  = "\"fmap[str][value]{\n"
+			for k in sbj.vdata.data.keys():
+				dataStr += depthSpace + '\t' + k + ": " + sbj.vdata.data[k].toStr(depth+1) + ',\n' #recursive call
 			dataStr += depthSpace + '}'
 
 		#invalid
@@ -253,9 +274,10 @@ class value:
 
 #calls
 class call:
-	def __init__(sbj, name, params):
-		sbj.name   = name
-		sbj.params = params #lst[value]
+	def __init__(sbj, name, params, retType):
+		sbj.name    = name
+		sbj.params  = params #lst[value]
+		sbj.retType = retType
 
 #"potential operator call" Same things as a call except we store only 2 params and under atm types.
 #                          We expect to have only zci or POCall types for these atoms.
@@ -358,7 +380,7 @@ class dataItem:
 #assignment
 class asg:
 	def __init__(sbj, dst, src):
-		sbj.dst = dst #dataItem or str (name only) ?
+		sbj.dst = dst #dataItem
 		sbj.src = src #value
 
 

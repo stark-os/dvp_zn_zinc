@@ -22,30 +22,38 @@ from std.list import *
 
 #istr
 class istr:
-	def __init__(self, initStr, idx=-1):
-		self.idx = idx
-		self.s   = initStr
+	def __init__(sbj, initStr, idx=-1):
+		sbj.idx = idx
+		sbj.s   = initStr
 
-	def get(self):
-		return self.s[self.idx]
+	def get(sbj):
+		return sbj.s[sbj.idx]
 
-	def set(self, value):
-		self.s[self.idx] = value
+	def set(sbj, value):
+		sbj.s[sbj.idx] = value
 
-	def forward(self, step):
-		if (self.idx + step) >= len(self.s): #could not forward => ret True
+	def forward(sbj, step):
+		if (sbj.idx + step) >= len(sbj.s): #could not forward => ret True
 			return True
-		self.idx += step
+		sbj.idx += step
 		return False
 
-	def inc(self):
-		return self.forward(1)
+	def forwardUntil(sbj, tgtIdx):
+		if tgtIdx < sbj.idx: #wrong value given
+			return True
+		return sbj.forward(tgtIdx - sbj.idx)
 
-	def copy(self):
-		return istr(self.s, self.idx)
+	def forwardAlike(sbj, otherIStr):
+		return sbj.forwardUntil(otherIStr.idx)
 
-	def reachedEnd(self):
-		return self.idx == len(self.s)-1
+	def inc(sbj):
+		return sbj.forward(1)
+
+	def copy(sbj):
+		return istr(sbj.s, sbj.idx)
+
+	def reachedEnd(sbj):
+		return sbj.idx == len(sbj.s)-1
 
 
 
@@ -60,92 +68,98 @@ Term__CUU1       = "\x1b\x5b\x41"
 
 #parsing ctx object
 class ParsingCtx:
-	def __init__(self, filepath, content, resolveSymlinks=False):
+	def __init__(sbj, filepath, content, resolveSymlinks=False):
 		if resolveSymlinks:
-			self.filepath = os.path.realpath(filepath)
+			sbj.filepath = os.path.realpath(filepath)
 		else:
-			self.filepath = os.path.abspath(filepath)
-		self.dirname    = os.path.dirname(self.filepath)
-		self.filename   = os.path.basename(self.filepath)
-		self.lineNbr    = 1
-		self.colmNbr    = 0
-		self.icontent   = istr(content)
-		self.detectedLF = False
+			sbj.filepath = os.path.abspath(filepath)
+		sbj.dirname    = os.path.dirname(sbj.filepath)
+		sbj.filename   = os.path.basename(sbj.filepath)
+		sbj.lineNbr    = 1
+		sbj.colmNbr    = 0
+		sbj.icontent   = istr(content)
+		sbj.detectedLF = False
 
 	#copy
-	def copy(self, filepath=None, content=None):
+	def copy(sbj, filepath=None, content=None):
 		if filepath is None:
-			filepath = self.filepath
+			filepath = sbj.filepath
 		if content is None:
-			content  = self.icontent.s
+			content  = sbj.icontent.s
 		newCtx = ParsingCtx(filepath, content)
-		newCtx.icontent.idx = self.icontent.idx
-		newCtx.lineNbr      = self.lineNbr
-		newCtx.colmNbr      = self.colmNbr
-		newCtx.detectedLF   = self.detectedLF
+		newCtx.icontent.idx = sbj.icontent.idx
+		newCtx.lineNbr      = sbj.lineNbr
+		newCtx.colmNbr      = sbj.colmNbr
+		newCtx.detectedLF   = sbj.detectedLF
 		return newCtx
 
 	#print: temporarily made like this
-	def toStr(self):
-		return self.filepath + ":" + str(self.lineNbr) + ":" + str(self.colmNbr)
+	def toStr(sbj):
+		return sbj.filepath + ":" + str(sbj.lineNbr) + ":" + str(sbj.colmNbr)
 
 
 
 	#regular parsing
-	def get(self):
-		return self.icontent.get()
+	def get(sbj):
+		return sbj.icontent.get()
 
-	def set(self, value):
-		self.icontent.set(value)
+	def set(sbj, value):
+		sbj.icontent.set(value)
 
-	def inc(self):
-		if self.icontent.inc(): #can't go further => can't go further
+	def inc(sbj):
+		if sbj.icontent.inc(): #can't go further => can't go further
 			return True
 
 		#last character was a line feed => update line indicators
-		if self.detectedLF:
-			self.detectedLF = False
-			self.lineNbr   += 1
-			self.colmNbr    = 0
+		if sbj.detectedLF:
+			sbj.detectedLF = False
+			sbj.lineNbr   += 1
+			sbj.colmNbr    = 0
 
 		#LF behavior
-		if self.icontent.get() == '\n':
-			self.detectedLF = True
+		if sbj.icontent.get() == '\n':
+			sbj.detectedLF = True
 
 		#regular behavior
-		self.colmNbr += 1
+		sbj.colmNbr += 1
 		return False
 
-	def forward(self, step):
+	def forward(sbj, step):
 		for s in range(step):
-			if self.inc():
+			if sbj.inc():
 				return True
 		return False
 
-	def reachedEnd(self):
-		return self.icontent.reachedEnd()
+	def forwardUntil(sbj, tgtIdx):
+		return sbj.icontent.forwardUntil(tgtIdx)
 
-	def reset(self, newText=None):
-		self.lineNbr    = 1
-		self.colmNbr    = 0
-		self.detectedLF = False
+	def forwardAlike(sbj, otherCtx):
+		return sbj.icontent.forwardUntil(otherCtx.icontent)
+
+	def reachedEnd(sbj):
+		return sbj.icontent.reachedEnd()
+
+	def reset(sbj, newText=None):
+		sbj.lineNbr    = 1
+		sbj.colmNbr    = 0
+		sbj.detectedLF = False
 		if newText is not None:
-			self.icontent.s   = newText
-			self.icontent.idx = -1
+			sbj.icontent.s   = newText
+			sbj.icontent.idx = -1
 
 
 
 	#output
-	def printLineIndicator(self):
-		content = self.icontent.s
+	def printLineIndicator(sbj):
+		content = sbj.icontent.s
 
 		#set beginning & end of line
-		if self.icontent.idx == -1: #invalid value (istr starting index)
+		if sbj.icontent.idx == -1: #invalid value (istr starting index)
 			begIdx = 0
 			endIdx = 0
 		else:
-			begIdx = self.icontent.idx - (self.colmNbr-1)
-			endIdx = self.icontent.idx
+			begIdx = sbj.icontent.idx - (sbj.colmNbr-1)
+			endIdx = sbj.icontent.idx
 
 		#that mean we are in the first line (cannot subtract colmNbr)
 		if begIdx > endIdx:
@@ -163,7 +177,7 @@ class ParsingCtx:
 		print(concernedLine)
 
 		#prepare position indicator
-		positionIdx       = (Term__TAB_LENGTH-1) * rawConcernedLine.count('\t') + self.colmNbr - 1
+		positionIdx       = (Term__TAB_LENGTH-1) * rawConcernedLine.count('\t') + sbj.colmNbr - 1
 		positionIndicator = ""
 		for i in range(positionIdx):
 			positionIndicator += '-'
@@ -175,10 +189,10 @@ class ParsingCtx:
 
 
 	#includers
-	def getPairsUntilCorrespondingPeer(self, allowedPairs={'(':')', '[':']', '{':'}', '<':'>'}):
+	def getPairsUntilCorrespondingPeer(sbj, allowedPairs={'(':')', '[':']', '{':'}', '<':'>'}):
 
 		#use local copy of context for precise error indication without affecting the original one
-		localCtx = self.copy()
+		localCtx = sbj.copy()
 		c        = localCtx.get()
 		if c in allowedPairs.keys():
 			target = allowedPairs[c]
@@ -189,7 +203,7 @@ class ParsingCtx:
 
 		#prepare main pair (that can contain some other subPairs)
 		resultPairs = {} #map[unt_l,unt_l]
-		initialIdx  = self.icontent.idx
+		initialIdx  = sbj.icontent.idx
 
 		#read rest of the code taking into account every subPair
 		subOpenings = [] #lst[chr]

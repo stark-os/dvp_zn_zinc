@@ -150,18 +150,9 @@ def processEnmDcl(ZCI, scope):
 	ZCIDebug(ZCI, "Processing enumerate declaration.", printSubCtxs=True, printLine=False)
 	jumpBlankZone(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM)")
 
-	#set scope prefix
-	if scope == ZCI.zCtx.cpl.gblScp:
-		if len(ZCI.modPrefix) == 0:
-			scpPrefix = ZCI.modPrefix + 'E' #global "element" (not "enumerate", there is no distinction with other data items)
-		else:
-			scpPrefix = "GE"
-	else:
-		scpPrefix = 'L' #"local" element
-
 	#get full enm name
 	rawName  = readName(ZCI, "Enumerate name in enumerate declaration ZCI (DCL_ENM).", doubleUnderscores=True)
-	fullName = scpPrefix + rawName
+	fullName = getDataItemModPrefixFromScope(ZCI, scope) + rawName
 
 	#must be followed by braces includer
 	optionalBlanks(ZCI, "fields inside braces includer in enumerate declaration ZCI (DCL_ENM).", blanks=BLANKS_EXTENDED)
@@ -172,8 +163,8 @@ def processEnmDcl(ZCI, scope):
 	fields = readDataItemSequence(
 		ZCI, "enumerate declaration ZCI (DCL_ENM).",
 		scope,
-		cstValuesOnly     = True,
-		allowMissingTypes = True
+		cstValuesOnly        = True,
+		allowUnsolvableTypes = True
 	)
 	for di in fields:
 		if di.Type != TYPE_ID__NOT_FOUND: #no type must be found (neither explicit type given or initial value)
@@ -199,13 +190,122 @@ def processEnmDcl(ZCI, scope):
 		fields[f].value = value(t, atm(ATM__PTR, f), Cst=True) #value stored as it was a ptr to be cashted into type t
 
 	#create enumerate
-	checkAlreadyDeclaredDataItemOrField(ZCI, scope.dataItems, fullName)
-	scope.dataItems.append( dataItem(t, fullName, True, None, Cst=True, fields=fields) )
+	enmDI = dataItem(t, fullName, True, None, Cst=True, fields=fields)
+	checkAlreadyDeclaredDataItemOrField(ZCI, enmDI, scope.dataItems)
+	scope.dataItems.append(enmDI)
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "enumerate declaration ZCI (DCL_ENM).")
 	ZCIDebug(ZCI, "Enumerate declaration processed.", printLine=False)
 	ZCI.zCtx.deepDebugPause()
+
+
+
+
+
+
+# -------- DCL_DAT & ASG_ASG --------
+
+#data item assignment only (assigning to existing destination) WARNING: ZCI must be RIGHT AFTER destination expression !
+def processAsg(ZCI, scope, dstDI):
+
+	#being in global scope affects further behaviors
+	inGblScp = False
+	if scope == ZCI.zCtx.cpl.gblScp:
+		inGblScp = True
+
+	#assignment symbol must follow
+	optionalBlanks(ZCI, None)
+	if readSymbol(ZCI) != SYMBOL__ASG:
+		ZCIError(ZCI, "Expected an assignment symbol here (ASG_ASG ZCI detected).")
+	ZCI.forward(SYMBOL_LENGTHS[SYMBOL__ASG])
+
+	#then a value
+	v = readValue(ZCI, "assignment ZCI (ASG_ASG).", scope, cstOnly=inGblScp)
+
+	#add execution to concerned scope
+	scope.exes.append( atm(ATM__ASG, asg(dstDI, v)) )
+
+	#end of ZCI expected
+	endOfZCI(ZCI, "data item assignment ZCI (ASG_ASG).")
+
+	#debug
+	ZCIDebug(ZCI, "Data item assignment processed.", printLine=False)
+	ZCI.zCtx.deepDebugPause()
+
+
+
+#data item declaration (including assignment with initial value)
+def processDclDat(ZCI, scope, isCst):
+
+	#being in global scope affects further behaviors
+	inGblScp = False
+	if scope == ZCI.zCtx.cpl.gblScp:
+		inGblScp = True
+
+	#read the whole ZCI from the start
+	di = readDataItem(ZCI, "Data item declaration (DCL_DAT).", scope, cstInitialValueOnly=inGblScp)
+
+	#don't allow the use of module notation in name when declaring !
+	givenModPrefix = extractModPrefix(di.name)
+	if len(givenModPrefix) != 0:
+		ZCIError(ZCI, "Cannot use module notation in name when declaring a data item (DCL_DAT ZCI detected, declare inside module instead).")
+
+	#set some important info to the NEWLY CREATED data item
+	di.name = getDataItemModPrefixFromScope(ZCI, scope) + di.name #add module prefix to name ONLY IF WE ARE DECLARING !!! Else, we are affecting a regular global data item (even if inside a module)
+	di.Cst  = isCst
+
+	#add declaration to scope
+	checkAlreadyDeclaredDataItemOrField(ZCI, di, scope.dataItems) #check already existing
+	scope.dataItems.append(di)
+
+	#end of ZCI expected
+	endOfZCI(ZCI, "data item declaration ZCI (DCL_DAT).")
+
+	#debug
+	ZCIDebug(ZCI, "Data item declaration processed.", printLine=False)
+	ZCI.zCtx.deepDebugPause()
+
+
+
+#data item declaration or assignment
+def processDclOrAsg(ZCI, scope):
+	ZCIDebug(ZCI, "Processing data item declaration or assignment.", printSubCtxs=True, printLine=False)
+
+	#try getting a "cst" keyword
+	initialCtx = ZCI.ctx.copy()
+	cstKeyword = readName(ZCI, None)
+	isCst      = (cstKeyword == "cst")
+
+	#move on
+	if isCst:
+		optionalBlanks(ZCI, None) #actually, blanks are not optional here, but we expect to have at least 2 names separated here ("cst <type> ..." or "cst <name> ..." => can be only OK using blanks)
+	else:
+		ZCI.resetCtx(initialCtx) #constant keyword not found => reset ZCI
+
+	#try reading a type (in a separated copy, in all cases we will have to read from the start)
+	tmpCopy = ZCI.copy()
+	tID     = readType(tmpCopy, None, errorIfNotExisting=False)
+
+	#not starting with a type name => can possibly be just an assignment without declaration
+	if tID == TYPE_ID__NOT_FOUND:
+
+		#get targetted name
+		name = readName(tmpCopy, "Data item name in assignment (ASG_ASG).", parseModPrefixes=True, modPrefixes_asHeaderOnly=True)
+
+		#already have a data item with that name => ASG_ASG then
+		di = getDataItemFromPrefixedName(name, scope)
+		if di is not None:
+			ZCI.forwardAlike(tmpCopy)
+			processAsg(ZCI, scope, di)
+			return
+
+	#also check the use of "typ" keyword, forbidden here
+	elif tmpCopy.checkIDRecursivelyInType(tID, tmpCopy.zCtx.typKeyword):
+		ZCIError(tmpCopy, "Cannot use keyword \"typ\" in data item declaration.")
+
+	#in every other cases => DCL_DAT
+	processDclDat(ZCI, scope, isCst)
 
 
 
@@ -222,10 +322,7 @@ def c02_redirectGlobal(zCtx):
 	zCtx.debug("=================================================================================\n\n\n\n")
 
 	#prepare result for next step
-	unprocessedZCIs = (
-		[], #function declarations
-		[]  #assignments
-	)
+	fctZCIs = []
 
 	#analyse EVERY ZCI
 	for ZCI in zCtx.ZCIs:
@@ -293,17 +390,17 @@ def c02_redirectGlobal(zCtx):
 
 				#2.4 - Function declaration
 				if str_cmp("fct", firstWord):
-					jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT).")
-					unprocessedZCIs[0].append(ZCI) #to be processed later, and also forwarded ZCI to function name.
+					jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT).") #forward to function name directly
+					fctZCIs.append(ZCI) #to be processed later
 					continue
 
 
 
-		#CASE 3 - ASSIGNMENT OR FUNCTION
+		#CASE 4 - ANYTHING ELSE (can be only global DCL_DAT or global ASG_ASG)
 
-		#will be treated later => store it for now
+		#reset ZCI at initial state & try parsing it, no other possibility for a global ZCI
 		ZCI.resetCtx(initialCtx)
-		unprocessedZCIs[1].append(ZCI)
+		processDclOrAsg(ZCI, zCtx.cpl.gblScp)
 
 	#debug
 	zCtx.debug("\n\n\n\n")
@@ -315,4 +412,4 @@ def c02_redirectGlobal(zCtx):
 	zCtx__cplStep_debugZCIs(zCtx, "02")
 
 	#return unprocessed ZCIs
-	return unprocessedZCIs
+	return fctZCIs

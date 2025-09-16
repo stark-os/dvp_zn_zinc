@@ -1,15 +1,7 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/dataItem.py
 
-#data items
-def checkAlreadyDeclaredDataItemOrField(ZCI, dis, di):
-	for other in dis:
-		if other.name == di.name:
-			ZCIError(ZCI, "Data item or field with name \"" + di.name + "\" already declared.")
-
-
-
 #WARNING! Returns data item WITHOUT ANY prefix
-def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowMissingType=False):
+def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUnsolvableType=False):
 	ZCIDeepDebug(ZCI, "Reading data item.", printLine=False)
 
 	#read type (if any. Else, continue as nothing happened)
@@ -18,7 +10,7 @@ def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowMis
 		jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 
 	#read name
-	name = readName(ZCI, "data item name", parseModPrefixes=True, modPrefix_asHeaderOnly=True)
+	name = readName(ZCI, "data item name", parseModPrefixes=True, modPrefixes_asHeaderOnly=True)
 
 	#default initial value: uninitialized
 	initialized  = False
@@ -49,8 +41,8 @@ def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowMis
 
 	#missing Type still not solved
 	if Type == TYPE_ID__NOT_FOUND:
-		if not allowMissingType:
-			ZCIError(ZCI, "Missing type to given element \"" + name + "\" (required either explicitely or implicity using initial value).")
+		if not allowUnsolvableType:
+			ZCIError(ZCI, "Unsolvable type to given element \"" + name + "\" (required either explicitely or implicity using initial value).")
 
 	#result
 	ZCIDeepDebug(ZCI, "Ended reading data item.")
@@ -62,16 +54,16 @@ def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowMis
 # Given ZCI must be at an opening includer character.
 def readDataItemSequence(
 	ZCI, ZCIKindIfError, scope,
-	cstValuesOnly = False, allowMissingTypes = False,
+	cstValuesOnly = False, allowUnsolvableTypes = False,
 	allowEmpty    = False
 ):
 	ZCIDeepDebug(ZCI, "Reading sequence of data item(s).")
 
 	#initial conditions
-	initialIdx = ZCI.ctx.icontent.idx
-	peerIdx    = ZCI.pairs[initialIdx]
 	if ZCI.get() not in INCLUDERS.keys():
 		ZCIInternal(ZCI, "Must be at the beginning of an includer to read data item sequence.")
+	initialIdx = ZCI.ctx.icontent.idx
+	peerIdx    = ZCI.pairs[initialIdx]
 	ZCI.inc()
 
 	#emptyness
@@ -85,7 +77,6 @@ def readDataItemSequence(
 		ZCIError(ZCI, "Missing at least one data item declaration in " + ZCIKindIfError)
 
 	#read sequence
-	foundSelfKw = False
 	while True:
 			optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
@@ -93,9 +84,9 @@ def readDataItemSequence(
 			di = readDataItem(
 				ZCI, ZCIKindIfError, scope,
 				cstInitialValueOnly = cstValuesOnly,
-				allowMissingType    = allowMissingTypes
+				allowUnsolvableType = allowUnsolvableTypes
 			)
-			checkAlreadyDeclaredDataItemOrField(ZCI, dis, di)
+			checkAlreadyDeclaredDataItemOrField(ZCI, di, dis)
 			dis.append(di)
 			ZCIDeepDebug(ZCI, "Got data item " + di.toStr())
 

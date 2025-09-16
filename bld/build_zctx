@@ -8,7 +8,7 @@ ZCTX=$SRC/zctx
 chmod a+w                              $SRC/zctx.py 2> /dev/null
 cat $ZCTX/std.py                    >  $SRC/zctx.py
 cat $ZCTX/defs.py                   >> $SRC/zctx.py
-cat $ZCTX/independantTools.py       >> $SRC/zctx.py
+cat $ZCTX/genericTools.py           >> $SRC/zctx.py
 cat $ZCTX/ZCEs.py                   >> $SRC/zctx.py
 cat $ZCTX/p-cpl1.py                 >> $SRC/zctx.py
 cat $ZCTX/zctx.py                   >> $SRC/zctx.py
@@ -20,5 +20,6 @@ cat $ZCTX/read/generic.py           >> $SRC/zctx.py
 cat $ZCTX/read/type.py              >> $SRC/zctx.py
 cat $ZCTX/read/value_ODP.py         >> $SRC/zctx.py
 cat $ZCTX/read/value_2ndAnalysis.py >> $SRC/zctx.py
+cat $ZCTX/read/value.py             >> $SRC/zctx.py
 cat $ZCTX/read/dataItem.py          >> $SRC/zctx.py
 chmod a-w                              $SRC/zctx.py

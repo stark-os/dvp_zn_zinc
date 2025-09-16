@@ -11,7 +11,7 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 	ZCIKindIfError_forMissingName = None
 	if errorIfNotExisting:
 		ZCIKindIfError_forMissingName = "Type name in " + ZCIKindIfError
-	tRawName = readName(ZCI, ZCIKindIfError_forMissingName, parseModPrefixes=True, modPrefix_asHeaderOnly=True)
+	tRawName = readName(ZCI, ZCIKindIfError_forMissingName, parseModPrefixes=True, modPrefixes_asHeaderOnly=True)
 
 	#module-realted / global
 	if initialZCICtx.get() == '^':
