@@ -73,20 +73,21 @@ def c01_unmodulize(zCtx):
 
 			# I] MODULE NAME
 
-			#read next word
-			jumpBlankZone(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
+			#look for module addition symbol
+			jumpBlankZone(ZCI, "module name in module declaration ZCI (DCL_MOD).")
+			modAdd = (ZCI.get() == '+')
+			if modAdd:
+				ZCI.inc()
+
+			#read module name
 			modName = readName(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
 
 			#combine with current module (we can be in another module => this allows submodularization)
 			modPrefix = ZCI.modPrefix + formatModName(ZCI, modName)
 
 			# I.1) module addition
-			if modName == "add":
-				zCtx.debug("Detected addition to existing module.")
-
-				#read one more name
-				jumpBlankZone(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD).")
-				modPrefix = ZCI.modPrefix + formatModName(ZCI, readName(ZCI, "Module name in addition to module declaration ZCI (DCL_MOD)."))
+			if modAdd:
+				zCtx.debug("Detected addition to existing module \"" + unprefixizeMod(modPrefix) + "\".")
 
 				#adding to inexisting module
 				if modPrefix not in zCtx.cpl.modPrefixes:
@@ -95,7 +96,7 @@ def c01_unmodulize(zCtx):
 
 			# I.2) new module
 			else:
-				zCtx.debug("Detected new module creation \"" + modPrefix + "\".")
+				zCtx.debug("Detected new module creation \"" + unprefixizeMod(modPrefix) + "\".")
 
 				#already declared the same exact module
 				if modPrefix in zCtx.cpl.modPrefixes:
@@ -149,6 +150,8 @@ def c01_unmodulize(zCtx):
 
 			#shift current ZCI index because we removed it
 			z -= 1
+			zCtx.deepDebug("Module declaration processed.")
+			zCtx.deepDebugPause()
 
 			_ZCIsLen = len(zCtx.ZCIs) # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only in python, not required in Z (.length field)
 
