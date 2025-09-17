@@ -77,7 +77,7 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 			#set default value if no one given
 			if not di.initialized:
 				ZCIError(ZCI, "Value required for field " + f + " in value sequence (no default value set for that field)")
-			ZCIDeepDebug(ZCI, "No value given for field " + f + " in value sequence (=> set default value: " + di.initialValue.toStr())
+			ZCIDeepDebug(ZCI, "No value given for field " + f + " in value sequence (=> set default value: " + di.initialValue.toStr(ZCI))
 			givenFields[f] = di.initialValue
 
 	#return completed result
@@ -95,7 +95,7 @@ def readValue(ZCI, ZCIKindIfError, scope, cstOnly=False):
 
 	#apply 2nd analysis recursively in ODP result
 	secondAnalysisRes = applySecondAnalysis(firstAnalysisRes.mainPOCall, ZCI, vap2(ZCIKindIfError, scope, cstOnly)) #here, ZCI is given for error messages only
-	ZCIDeepDebug(ZCI, "Ended reading value with result :" + secondAnalysisRes.toStr())
+	ZCIDeepDebug(ZCI, "Ended reading value with result :" + secondAnalysisRes.toStr(ZCI))
 	return secondAnalysisRes
 
 

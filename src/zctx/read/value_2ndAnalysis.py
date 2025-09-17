@@ -35,8 +35,12 @@ def parseLiteralIntOrFloat(ZCI):
 
 		#zero => can be anything
 		else:
-			if ZCI.inc():
-				return value(ZCI.zCtx.rootTypes[RT__S4], atm(ATM__S4, 0)) #lonely '0'
+			if ZCI.inc(): #lonely '0'
+				return value(
+					ZCI.zCtx.rootTypes[RT__S4],
+					atm(ATM__S4, 0),
+					True
+				)
 
 			#binary, octal, hexadecimal
 			c = ZCI.get()
@@ -207,12 +211,12 @@ def parseLiteralIntOrFloat(ZCI):
 				resAsFloat = -1.0*resAsFloat
 
 			#end of value parsing (floating point)
-			return value(resType, atm(resAtmID, resFloatingNbr))
+			return value(resType, atm(resAtmID, resFloatingNbr), True)
 
 		#end of value parsing (integer)
 		if resIsNegative:
-			return value(resType, atm(resAtmID, -1*resNbr)) # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Can be optimized in a single return in python, but in Z it may be better this way since resNbr is a ULNG
-		return value(resType, atm(resAtmID, resNbr))
+			return value(resType, atm(resAtmID, -1*resNbr), True) # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Can be optimized in a single return in python, but in Z it may be better this way since resNbr is a ULNG
+		return value(resType, atm(resAtmID, resNbr), True)
 
 	#no literal number found
 	return None
@@ -311,26 +315,35 @@ def secondAnalysis(ZCI, vap2info):
 		#table with only one element => explicit priorization
 		if targettedEnd == ')' and not targettingMap and len(subValues) == 1:
 			res = subValues[0]
-			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in EXPLICIT PRIORIZATION " + res.toStr())
+			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in EXPLICIT PRIORIZATION " + res.toStr(ZCI))
 			return res
 
 		#finishing result: maps
 		if targettingMap:
 
 			#set keys et values for map initialization
-			keys   = value(keyValue_initializerType, atm(ATM__LST, subValues))
-			values = value(keyValue_initializerType, atm(ATM__LST, subValues_second))
+			keys = value(
+				keyValue_initializerType,
+				atm(ATM__LST_VALUE, subValues),
+				True
+			)
+			values = value(
+				keyValue_initializerType,
+				atm(ATM__LST_VALUE, subValues_second),
+				True
+			)
 			res = value(
 				targettedType,
-				atm(ATM__LST, [keys, values])
+				atm(ATM__LST_VALUE, [keys, values]),
+				True
 			)
 
 		#finishing result: tab, lst & fly
 		else:
-			res = value(targettedType, atm(ATM__LST, subValues))
+			res = value(targettedType, atm(ATM__LST_VALUE, subValues), True)
 
 		#return result
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION " + res.toStr())
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION " + res.toStr(ZCI))
 		return res
 
 	#having found a colon but wasn't a map => no pattern matches such a thing
@@ -356,7 +369,11 @@ def secondAnalysis(ZCI, vap2info):
 			sequence = [] #lst[value]
 			while ZCI.get() in HEX_DIGITS_LOWERCASE:
 				sequence.append(
-					value(ZCI.zCtx.rootTypes[RT__S1], atm(ATM__S1, readHexByte(ZCI)) )
+					value(
+						ZCI.zCtx.rootTypes[RT__S1],
+						atm(ATM__S1, readHexByte(ZCI)),
+						True
+					)
 				)
 				if ZCI.inc():
 					break
@@ -366,18 +383,19 @@ def secondAnalysis(ZCI, vap2info):
 				ZCIError(ZCI, "2nd analysis: Missing valid hexadecimal characters in multi-bytes notation.")
 
 			#finish result
-			res = value(ZCI.zCtx.rootTypes[RT__PTR], atm(ATM__LST, sequence))
-			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in MULTI-BYTE NOTATION " + res.toStr())
+			res = value(ZCI.zCtx.rootTypes[RT__PTR], atm(ATM__LST_VALUE, sequence), True)
+			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in MULTI-BYTE NOTATION " + res.toStr(ZCI))
 			return res
 
 		#single-byte sequence
 		ZCIDeepDebug(ZCI, "2nd analysis: Reading hexadecimal value in single-byte notation.")
 		res = value(
 			ZCI.zCtx.rootTypes[RT__S1],
-			atm(ATM__S1, readHexByte(ZCI))
+			atm(ATM__S1, readHexByte(ZCI)),
+			True
 		)
 		ZCI.inc()
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in SINGLE-BYTE NOTATION " + res.toStr())
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in SINGLE-BYTE NOTATION " + res.toStr(ZCI))
 		return res
 
 
@@ -387,7 +405,7 @@ def secondAnalysis(ZCI, vap2info):
 	#parsing is quite complex => has been taken away in another method
 	v = parseLiteralIntOrFloat(ZCI)
 	if v is not None:
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in INTEGER/FLOAT " + v.toStr())
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in INTEGER/FLOAT " + v.toStr(ZCI))
 		return v
 
 
@@ -413,8 +431,12 @@ def secondAnalysis(ZCI, vap2info):
 		givenFields = readValueSequence(ZCI, tInst.dcnCommon.fields, vap2info.scope, cstOnly=vap2info.cstOnly)
 
 		#return complete fields map as value
-		res = value(tID, atm(ATM__FMAP_STR_VALUE, givenFields))
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in STRUCTURE DEFINITION " + res.toStr())
+		res = value(
+			tID,
+			atm(ATM__FMAP_STR_VALUE, givenFields),
+			True
+		)
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in STRUCTURE DEFINITION " + res.toStr(ZCI))
 		return res
 
 
@@ -429,21 +451,39 @@ def secondAnalysis(ZCI, vap2info):
 		if ZCI.get() == '(':
 			ZCIDeepDebug(ZCI, "2nd analysis: !VFC detected.")
 
+			#cstOnly => not allowed
+			if vap2info.cstOnly:
+				ZCIError(ZCI, "2nd analysis: Only constant values allowed here (got a !VFC => variable return value).")
+
 			#prepare fct name
 			fctName = getFctNameFromPrefixedName(ZCI, prefixedName)
 
+			#parse & check call elements given
+			parsedCall = checkAll_thenReadParams_thenCreateCall(ZCI, fctName, vap2info.scope, vap2info.cstOnly)
+
 			#return complete value (call)
-			res = checkAll_thenReadParams_thenCreateCall(ZCI, fctName, vap2info.scope, vap2info.cstOnly)
-			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in !VFC " + res.toStr())
-			return res
+			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in !VFC " + res.toStr(ZCI))
+			return value(
+				parsedCall.retType,
+				atm(ATM__CALL, parsedCall),
+				False
+			)
 
 		#just a regular name actually
 		di = getDataItemFromPrefixedName(prefixedName, vap2info.scope)
 		if di is None:
 			ZCIError(ZCI, "2nd analysis: Cannot find data item " + unprefixizeAnyName(prefixedName) + " in current scope or higher.")
 
+		#cstOnly => not allowed
+		if vap2info.cstOnly and not di.Cst:
+			ZCIError(ZCI, "2nd analysis: Only constant values allowed here (got a variable data item).")
+
 		#return dataItem found
-		res = value(di.Type, atm(ATM__DATAITEM, di))
+		res = value(
+			di.Type,
+			atm(ATM__DATAITEM, di),
+			di.Cst
+		)
 		return res
 
 
@@ -476,8 +516,16 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 		#result
 		ZCIDeepDebug(ZCI,"2nd analysis: FSZ resulted into fsz(" + unprefixizeMod(tInst.name) + ") = " + str(size))
 		if ZCI.zCtx.cpl.opts["ARCH"] == 64:
-			return value(ZCI.zCtx.rootTypes[RT__U8], atm(ATM__U8, size))
-		return value(ZCI.zCtx.rootTypes[RT__U4], atm(ATM__U4, size))
+			return value(
+				ZCI.zCtx.rootTypes[RT__U8],
+				atm(ATM__U8, size),
+				True
+			)
+		return value(
+			ZCI.zCtx.rootTypes[RT__U4],
+			atm(ATM__U4, size),
+			True
+		)
 
 	#reference (FRF)
 	if starter == '@':
@@ -492,7 +540,11 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 
 		#result
 		ZCIDeepDebug(ZCI, "2nd analysis: FRF resulted into call to frf()") #<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-		return value(ZCI.zCtx.rootTypes[RT__PTR], atm(ATM__PTR, 0))        #<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		return value(
+			ZCI.zCtx.rootTypes[RT__PTR],
+			atm(ATM__PTR, 0),
+			True #<<<<<<<<<<<<<<<<<<< this will depend on the data item targetted (static => cst adr, else variable)
+		)
 
 
 
@@ -517,11 +569,11 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 		optionalBlanks(ZCI, None)
 
 		#read explicit type
-		ZCIDeepDebug(ZCI, "2nd analysis: Processing FCA operator on value " + res.toStr())
+		ZCIDeepDebug(ZCI, "2nd analysis: Processing FCA operator on value " + res.toStr(ZCI))
 		res.Type = readType(ZCI, vap2info.ZCIKindIfError)
 
 		#overwrite result type
-		ZCIDeepDebug(ZCI, "2nd analysis: FCA operator applied type " + unprefixizeMod(ZCI.getTypeNameFromID(Type)) + " on value " + res.toStr())
+		ZCIDeepDebug(ZCI, "2nd analysis: FCA operator applied type " + unprefixizeMod(ZCI.getTypeNameFromID(Type)) + " on value " + res.toStr(ZCI))
 
 	#field access (FFA)
 	elif following == '.':
@@ -534,11 +586,15 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 		#get the complete chain of accessed fields
 		FAChain         = [atm(ATM__str, res.vdata.data.name)] #store the NAME of the first data item parsed (in 2nd analysis)
 		latestChunkType = res.vdata.data.Type
+		isCst           = res.vdata.data.Cst
 		while not ZCI.reachedEnd():
 			newChunkName = readName(ZCI, "[2nd analysis] Missing second operand after field access operator (FFA).", parseModPrefix=True, modPrefixes_asHeaderOnly=True)
 
 			#case 1: following parentheses => METHOD call (and not function call)
 			if ZCI.get() == '(':
+				isCst = False #got a method call => value is no longer constant
+
+				#parse call
 				newChunkName = getFctNameFromPrefixedName(ZCI, newChunkName, methodOf=latestChunkType)
 				newChunk     = checkAll_thenReadParams_thenCreateCall(ZCI, newChunkName, vap2info.scope, vap2info.cstOnly)
 
@@ -557,7 +613,11 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 			ZCI.inc()
 
 		#format chain under VALUE format
-		res = value(latestChunkType, atm(ATM__LST, FAChain))
+		res = value(
+			latestChunkType,
+			atm(ATM__LST_ATM, FAChain),
+			isCst
+		)
 
 	#too much content in VALUE ZCE
 	if not ZCI.reachedEnd():
@@ -646,7 +706,8 @@ def applySecondAnalysis(currentPOCall, originalZCI, vap2info): #originalZCI only
 	#result
 	return value(
 		matchingFct.retType,
-		atm(ATM__CALL, call(operatorFullName, params, matchingFct.retType))
+		atm(ATM__CALL, call(operatorFullName, params, matchingFct.retType)),
+		False
 	)
 
 

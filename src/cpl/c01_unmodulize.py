@@ -45,10 +45,10 @@ def formatModName(ZCI, modName):
 
 #compilation
 def c01_unmodulize(zCtx):
-	zCtx.debug("\n\n\n\n")
+	zCtx.debugSepLine()
 	zCtx.debug("============================================================================")
 	zCtx.debug("======================== C01 UNMODULIZE : beginning ========================")
-	zCtx.debug("============================================================================\n\n\n\n")
+	zCtx.debug("============================================================================")
 	zCtx.deepDebugPause()
 
 	#for each precompiled ZCI
@@ -56,7 +56,7 @@ def c01_unmodulize(zCtx):
 	_ZCIsLen = len(zCtx.ZCIs) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only exists here in python, won't be useful in Z (we got .length)
 	while z < _ZCIsLen:
 		ZCI = zCtx.ZCIs[z]
-		ZCIDeepDebug(ZCI, "Treating ZCI \"" + ZCI.textFormat() + '\"', printSubCtxs=True)
+		ZCIDeepDebug(ZCI, "Treating global ZCI \"" + ZCI.textFormat() + '\"', printSubCtxs=True)
 
 		#too short => skip it
 		if len(ZCI.txt) < 5:
@@ -156,10 +156,10 @@ def c01_unmodulize(zCtx):
 		z += 1
 
 	#debug
-	zCtx.debug("\n\n\n\n")
 	zCtx.debug("======================================================================")
 	zCtx.debug("======================== C01 UNMODULIZE : end ========================")
-	zCtx.debug("======================================================================\n\n\n\n")
+	zCtx.debug("======================================================================")
+	zCtx.debugSepLine()
 	zCtx.deepDebugPause()
 
 	#debug output file

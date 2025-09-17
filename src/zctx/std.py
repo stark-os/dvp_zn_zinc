@@ -14,6 +14,7 @@ from std.list       import *
 from std.io         import *
 from std.parsingCtx import *
 from std.int        import *
+from std.term       import *
 
 #dreamlands
 import std.dreamlands as dreamlands
@@ -54,10 +55,12 @@ ATM__SCP = 18
 ATM__ASG = 19
 ATM__STM = 20
 ATM__FCT = 21
-ATM__OPSEQ  = 22
-ATM__POCALL = 23
-ATM__LST  = 24
-ATM__FMAP_STR_VALUE = 25
+ATM__OPSEQ          = 22
+ATM__POCALL         = 23
+ATM__LST            = 24
+ATM__LST_VALUE      = 25
+ATM__LST_ATM        = 26
+ATM__FMAP_STR_VALUE = 27
 ATM__ATM = 99
 class atm:
 	def __init__(sbj, id, data):

@@ -299,7 +299,7 @@ def ODP(originalZCI):
 	originalZCI.zCtx.deepDebug("ODP-0: Applying 5th group priorization (SO)")
 	res.maxStopIdx = ODP_applyGroupPriorization(originalZCI.zCtx, res.maxStopIdx, res.mainPOCall, SO, monoOperand=True)
 	originalZCI.zCtx.deepDebug("ODP-0: Applied 5th group priorization, resulted into " + res.mainPOCall.toStr())
-	originalZCI.zCtx.deepDebug("Ended ODP on ZCI \"" + ZCI.textFormat() + '\"')
+	originalZCI.zCtx.deepDebug("Ended ODP on ZCI fragment \"" + ZCI.textFormat() + '\"')
 	return res
 
 

@@ -57,11 +57,16 @@
 					sbj.internal("No context to deep-debug-output line from.", printSubCtxs=False, printLine=False)
 				sbj.ctx.printLineIndicator()
 
+	def debugSepLine(sbj):
+		if sbj.debugMode:
+			Term__drawSepLine()
+
 	def deepDebugPause(sbj):
 		if sbj.deepDebugMode and deepDebug_stepByStep:
 			print("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~", end="")
 			input()
 			print(Term__CUU1 + "                                       \r", end="")
+			Term__drawSepLine()
 
 
 

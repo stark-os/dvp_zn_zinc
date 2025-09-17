@@ -93,25 +93,30 @@ def readFctDcl(ZCI):
 # -------- EXECUTION --------
 
 #compilation
-def c03_assignmentsAndFunctions(zCtx, unprocessedZCIs):
-	zCtx.debug("\n\n\n\n")
+def c03_assignmentsAndFunctions(zCtx, fctZCIs):
+	zCtx.debugSepLine()
 	zCtx.debug("=================================================================================")
 	zCtx.debug("================ C03 GLOBAL ASSIGNMENTS AND FUNCTIONS : beginning ===============")
-	zCtx.debug("=================================================================================\n\n\n\n")
+	zCtx.debug("=================================================================================")
+	zCtx.deepDebugPause()
 
-	#global assignments
-	for ZCI in unprocessedZCIs[1]:
-		pass
+	#for each function
+	for fZCI in fctZCIs:
 
-	#functions
-	for ZCI in unprocessedZCIs[0]:
-		zCtx.cpl.fcts.append( readFctDcl(ZCI) )
+		#process DCL_FCT
+		f = readFctDcl(fZCI)
+		zCtx.cpl.fcts.append(f)
+
+		#process internal content
+		#for ZCI in f.content:
+		#	...
 
 	#debug
-	zCtx.debug("\n\n\n\n")
 	zCtx.debug("===========================================================================")
 	zCtx.debug("================ C03 GLOBAL ASSIGNMENTS AND FUNCTIONS : end ===============")
-	zCtx.debug("===========================================================================\n\n\n\n")
+	zCtx.debug("===========================================================================")
+	zCtx.debugSepLine()
+	zCtx.deepDebugPause()
 
 	#debug output file
 	zCtx__cplStep_debugZCIs(zCtx, "03")

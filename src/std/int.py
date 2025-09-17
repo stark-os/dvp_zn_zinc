@@ -8,22 +8,22 @@
 def hexOnN(b, N):
 
 	#negativity with python
-	if b < 1:
+	if b < 0:
 		if N == 2:
-			return hexOnN(0xff + b, N)
+			return hexOnN(0x1_00 + b, N)
 		elif N == 4:
-			return hexOnN(0xffff + b, N)
+			return hexOnN(0x1_0000 + b, N)
 		elif N == 8:
-			return hexOnN(0xffff_ffff + b, N)
+			return hexOnN(0x1_0000_0000 + b, N)
 		elif N == 16:
-			return hexOnN(0xffff_ffff_ffff_ffff + b, )
+			return hexOnN(0x1_0000_0000_0000_0000 + b, N)
 		print("ERROR IN STD/int.py (invalid number of hex digits for negative output)")
 		exit(1)
 
 	#regular execution
 	h = hex(b)[2:]
 	if len(h) > N:
-		print("ERROR IN STD/int.py")
+		print("ERROR IN STD/int.py ["+h+","+str(N)+"]")
 		exit(1)
 	while len(h) < N:
 		h = '0' + h

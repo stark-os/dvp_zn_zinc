@@ -172,7 +172,6 @@ class typ_dcnCommon: #common data among every declination of a type
 class typ:
 	def __init__(sbj, size):
 		sbj.name      = None
-		sbj.methods   = None #lst[fct]
 		sbj.dcns      = None #tab[typ]
 		sbj.dcnCommon = None #typ_dcnCommon
 
@@ -204,14 +203,14 @@ def newScp(parent=None):
 
 #value
 class value:
-	def __init__(sbj, Type, vdata, Cst=False):
+	def __init__(sbj, Type, vdata, Cst):
 		sbj.Type  = Type
 		sbj.vdata = vdata  #atm #can be either a root type (literal), str (name) or call.
 		sbj.Cst   = Cst
 
-	def toStr(sbj, depth=0):
+	def toStr(sbj, ZCI, depth=0): #I know, having a ZCI is sad here, makes not very much sens... but we need type instances (through ZCI.zCtx.cpl) to display type NAME (more readable than the ID)
 		depthSpace = '\t' * depth
-		if sbj.vdata.id == ATM__BOO: #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< I know, this seems weird in Python but it makes sens in Z (will have to be a swi btw)
+		if sbj.vdata.id == ATM__BOO:
 			dataStr = "false"
 			if sbj.vdata:
 				dataStr = "true"
@@ -239,36 +238,40 @@ class value:
 			dataStr = '\"' + sbj.vdata.data + '\"'
 
 		#common data structures (all stored as lst)
-		elif sbj.vdata.id == ATM__LST:
+		elif sbj.vdata.id == ATM__LST_VALUE:
 			dataStr = '['
-#			for e in sbj.vdata.data:
-#				dataStr += e.toStr() + ',' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TEMPORARILY SWITCHING TO A MORE TOLERANT WAY
 			for e in sbj.vdata.data:
-				if isinstance(e, atm):
-					dataStr += e.data.toStr() + ','
+				dataStr += e.toStr(ZCI) + ','
+			dataStr += ']'
+
+		#temporary storage format of FFA chain <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TEMPORARY
+		elif sbj.vdata.id == ATM__LST_ATM:
+			dataStr = '['
+			for e in sbj.vdata.data:
+				if e.id == ATM__CALL:
+					dataStr += e.data.toStr(ZCI, depth=depth+1) + ','
+				elif e.id == ATM__STR:
+					dataStr += '\"' + e.data + "\","
 				else:
-					dataStr += e.toStr() + ','
+					ZCIInternal(ZCI, "Got an value.vdata of type lst[atm], but one of these atoms has unexpected ID [" + str(e.id) + "].")
 			dataStr += ']'
 
 		#calls
 		elif sbj.vdata.id == ATM__CALL:
-			dataStr  = "\"call " + sbj.vdata.data.name + "(\n"
-			for p in sbj.vdata.data.params:
-				dataStr += depthSpace + '\t' + p.toStr(depth+1) + ',\n' #recursive call
-			dataStr += depthSpace + ")->[" + str(sbj.vdata.data.retType) + ']'
+			dataStr = sbj.vdata.data.toStr(ZCI, depth=depth)
 
 		#structure definition (fields)
 		elif sbj.vdata.id == ATM__FMAP_STR_VALUE:
-			dataStr  = "\"fmap[str][value]{\n"
+			dataStr = "\"fmap[str][value]{\n"
 			for k in sbj.vdata.data.keys():
-				dataStr += depthSpace + '\t' + k + ": " + sbj.vdata.data[k].toStr(depth+1) + ',\n' #recursive call
+				dataStr += depthSpace + '\t' + '\"' + k + "\": " + sbj.vdata.data[k].toStr(ZCI, depth+1) + ',\n' #recursive call
 			dataStr += depthSpace + '}'
 
 		#invalid
 		else:
 			print("[INTERNAL] Invalid data stored inside value (can only be literal, name or call).")
 			exit(1)
-		return "{type:\"" + str(sbj.Type) + "\",cst:" + str(sbj.Cst) + ",data:" + dataStr + "}"
+		return "{type:\"" + ZCI.getTypeNameFromID(sbj.Type) + "\",cst:" + str(sbj.Cst) + ",data:" + dataStr + "}"
 
 
 
@@ -278,6 +281,13 @@ class call:
 		sbj.name    = name
 		sbj.params  = params #lst[value]
 		sbj.retType = retType
+
+	def toStr(sbj, ZCI, depth=0): #same reason as for values, ZCI is required...
+		depthSpace = '\t' * depth
+		dataStr  = "\"call " + sbj.name + "(\n"
+		for p in sbj.params:
+			dataStr += depthSpace + '\t' + p.toStr(ZCI) + ',\n'
+		dataStr += depthSpace + ")->[" + ZCI.getTypeNameFromID(sbj.retType) + ']'
 
 #"potential operator call" Same things as a call except we store only 2 params and under atm types.
 #                          We expect to have only zci or POCall types for these atoms.
@@ -358,17 +368,17 @@ class dataItem:
 		sbj.Cst          = Cst
 		sbj.fields       = fields #lst[dataItem]
 
-	def toStr(sbj):
+	def toStr(sbj, ZCI): #same reason as for values, we need a ZCI...
 		initialValueStr = "null"
 		if sbj.initialValue is not None:
-			initialValueStr = sbj.initialValue.toStr()
+			initialValueStr = sbj.initialValue.toStr(ZCI)
 		fieldsText = "null"
 		if sbj.fields is not None:
 			fieldsText = "[\n"
 			for f in sbj.fields:
-				fieldsText += "\t" + f.toStr() + ",\n"
+				fieldsText += "\t" + f.toStr(ZCI) + ",\n"
 			fieldsText += "]"
-		return "{type:" + str(sbj.Type) + ",name:\"" + sbj.name + "\",initialized:" + str(sbj.initialized) + ",initialValue:" + initialValueStr + ",Cst:" + str(sbj.Cst) + ",fields:" + fieldsText + "}"
+		return "{type:\"" + ZCI.getTypeNameFromID(sbj.Type) + "\",name:\"" + sbj.name + "\",initialized:" + str(sbj.initialized) + ",initialValue:" + initialValueStr + ",Cst:" + str(sbj.Cst) + ",fields:" + fieldsText + "}"
 
 
 

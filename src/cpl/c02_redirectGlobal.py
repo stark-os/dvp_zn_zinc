@@ -208,6 +208,7 @@ def processEnmDcl(ZCI, scope):
 
 #data item assignment only (assigning to existing destination) WARNING: ZCI must be RIGHT AFTER destination expression !
 def processAsg(ZCI, scope, dstDI):
+	ZCIDebug(ZCI, "Processing data item assignment (ASG_ASG).", printSubCtxs=True, printLine=False)
 
 	#being in global scope affects further behaviors
 	inGblScp = False
@@ -237,6 +238,7 @@ def processAsg(ZCI, scope, dstDI):
 
 #data item declaration (including assignment with initial value)
 def processDclDat(ZCI, scope, isCst):
+	ZCIDebug(ZCI, "Processing data item declaration (DCL_DAT).", printSubCtxs=True, printLine=False)
 
 	#being in global scope affects further behaviors
 	inGblScp = False
@@ -272,17 +274,6 @@ def processDclDat(ZCI, scope, isCst):
 def processDclOrAsg(ZCI, scope):
 	ZCIDebug(ZCI, "Processing data item declaration or assignment.", printSubCtxs=True, printLine=False)
 
-	#try getting a "cst" keyword
-	initialCtx = ZCI.ctx.copy()
-	cstKeyword = readName(ZCI, None)
-	isCst      = (cstKeyword == "cst")
-
-	#move on
-	if isCst:
-		optionalBlanks(ZCI, None) #actually, blanks are not optional here, but we expect to have at least 2 names separated here ("cst <type> ..." or "cst <name> ..." => can be only OK using blanks)
-	else:
-		ZCI.resetCtx(initialCtx) #constant keyword not found => reset ZCI
-
 	#try reading a type (in a separated copy, in all cases we will have to read from the start)
 	tmpCopy = ZCI.copy()
 	tID     = readType(tmpCopy, None, errorIfNotExisting=False)
@@ -305,7 +296,7 @@ def processDclOrAsg(ZCI, scope):
 		ZCIError(tmpCopy, "Cannot use keyword \"typ\" in data item declaration.")
 
 	#in every other cases => DCL_DAT
-	processDclDat(ZCI, scope, isCst)
+	processDclDat(ZCI, scope, False)
 
 
 
@@ -316,10 +307,11 @@ def processDclOrAsg(ZCI, scope):
 
 #compilation
 def c02_redirectGlobal(zCtx):
-	zCtx.debug("\n\n\n\n")
+	zCtx.debugSepLine()
 	zCtx.debug("=================================================================================")
 	zCtx.debug("======================== C02 REDIRECT GLOBAL : beginning ========================")
-	zCtx.debug("=================================================================================\n\n\n\n")
+	zCtx.debug("=================================================================================")
+	zCtx.deepDebugPause()
 
 	#prepare result for next step
 	fctZCIs = []
@@ -327,7 +319,7 @@ def c02_redirectGlobal(zCtx):
 	#analyse EVERY ZCI
 	for ZCI in zCtx.ZCIs:
 		initialCtx = ZCI.ctx.copy()
-		ZCIDeepDebug(ZCI, "Treating ZCI \"" + ZCI.textFormat() + '\"', printSubCtxs=True)
+		ZCIDeepDebug(ZCI, "Treating global ZCI \"" + ZCI.textFormat() + '\"', printSubCtxs=True)
 
 		#read 1st ZCI word
 		firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)
@@ -391,7 +383,17 @@ def c02_redirectGlobal(zCtx):
 				#2.4 - Function declaration
 				if str_cmp("fct", firstWord):
 					jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT).") #forward to function name directly
-					fctZCIs.append(ZCI) #to be processed later
+
+					#to be processed later
+					ZCIDebug(ZCI, "Function declaration detected => Kept aside, to be processed later.")
+					fctZCIs.append(ZCI)
+					zCtx.deepDebugPause()
+					continue
+
+				#2.5 - Constant data item declaration
+				if str_cmp("cst", firstWord):
+					jumpBlankZone(ZCI, "Constant keyword in data item declaration ZCI (DCL_DAT).")
+					processDclDat(ZCI, zCtx.cpl.gblScp, True)
 					continue
 
 
@@ -403,10 +405,11 @@ def c02_redirectGlobal(zCtx):
 		processDclOrAsg(ZCI, zCtx.cpl.gblScp)
 
 	#debug
-	zCtx.debug("\n\n\n\n")
 	zCtx.debug("===========================================================================")
 	zCtx.debug("======================== C02 REDIRECT GLOBAL : end ========================")
-	zCtx.debug("===========================================================================\n\n\n\n")
+	zCtx.debug("===========================================================================")
+	zCtx.debugSepLine()
+	zCtx.deepDebugPause()
 
 	#debug output file
 	zCtx__cplStep_debugZCIs(zCtx, "02")

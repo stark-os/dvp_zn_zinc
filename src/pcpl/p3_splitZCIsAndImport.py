@@ -197,22 +197,22 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPrefix=None, maxId
 
 #main
 def p3_splitZCIsAndImport(zCtx):
-	zCtx.deepDebug("\n\n\n\n")
-	zCtx.deepDebug("============================================================================")
-	zCtx.deepDebug("=================== P3 SPLIT ZCIs AND IMPORT : beginning ===================")
-	zCtx.deepDebug("============================================================================")
-	zCtx.deepDebug("FILE: " + zCtx.ctx.filepath + "\n\n\n\n")
+	zCtx.debugSepLine()
+	zCtx.debug("============================================================================")
+	zCtx.debug("=================== P3 SPLIT ZCIs AND IMPORT : beginning ===================")
+	zCtx.debug("============================================================================")
+	zCtx.debug("FILE: " + zCtx.ctx.filepath + "\n\n\n\n")
 	zCtx.deepDebugPause()
 
 	#extract global scope ZCIs
 	ZCIs = extractZCIsFromCtx(zCtx, zCtx.ctx, gbl=True)
 
 	#debug
-	zCtx.deepDebug("\n\n\n\n")
-	zCtx.deepDebug("======================================================================")
-	zCtx.deepDebug("=================== P3 SPLIT ZCIs AND IMPORT : end ===================")
-	zCtx.deepDebug("======================================================================")
-	zCtx.deepDebug("FILE: " + zCtx.ctx.filepath + "\n\n\n\n")
+	zCtx.debug("======================================================================")
+	zCtx.debug("=================== P3 SPLIT ZCIs AND IMPORT : end ===================")
+	zCtx.debug("======================================================================")
+	zCtx.debug("FILE: " + zCtx.ctx.filepath + "\n\n\n\n")
+	zCtx.debugSepLine()
 	zCtx.deepDebugPause()
 
 	#debug
