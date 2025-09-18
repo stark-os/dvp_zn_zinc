@@ -143,33 +143,6 @@ class zctx:
 		sbj.pcpl = None
 		sbj.cpl  = None
 
-	def getTypeInstanceFromID(sbj, id):
-		if id >= 0 and id < len(sbj.cpl.types):
-			return sbj.cpl.types[id]
-		return None
-
-	def getTypeIDFromName(sbj, name):
-		for t in range(len(sbj.cpl.types)):
-			if sbj.cpl.types[t].name == name:
-				return t
-		return TYPE_ID__NOT_FOUND
-
-	def getTypeNameFromID(sbj, id):
-		i = sbj.getTypeInstanceFromID(id)
-		if i is None:
-			return "<void>"
-		return i.name
-
-	def checkIDRecursivelyInType(sbj, tID, tgtID):
-		print("ID[" + str(tID) + "]     TARGET["+str(tgtID)+"]")
-		if tID == tgtID:
-			return True
-		dcns = sbj.getTypeInstanceFromID(tID).dcns
-		if dcns is not None:
-			for d in dcns:
-				if sbj.checkIDRecursivelyInType(d, tgtID):
-					return True
-		return False
 
 
 

@@ -2,7 +2,7 @@
 
 # -------- TYPES RELATED TOOLS --------
 
-#
+#type fields
 def getTypeFieldFromName(ZCI, tgtTypeID, tgtFieldName):
 	tInst = ZCI.zCtx.getTypeInstanceFromID(tgtTypeID)
 
@@ -85,7 +85,7 @@ def getDataItemFromPrefixedName(prefixedName, scope):
 # -------- FUNCTIONS & METHODS RELATED TOOLS --------
 
 #similar to getDataItemFromPrefixedName() but returns a NAME instead of a function
-def getFctNameFromPrefixedName(ZCI, prefixedName, methodOf=TYPE_ID__NOT_FOUND):
+def getFctNameFromPrefixedName(ZCI, prefixedName, methodOf=TYPE_ID__UNKNOWN):
 	modPrefix = extractModPrefix(prefixedName)
 	rawName   = str_sub(prefixedName, start=len(modPrefix))
 
@@ -95,15 +95,15 @@ def getFctNameFromPrefixedName(ZCI, prefixedName, methodOf=TYPE_ID__NOT_FOUND):
 
 	#method
 	methodText = ""
-	if methodOf != TYPE_ID__NOT_FOUND:
+	if methodOf != TYPE_ID__UNKNOWN:
 		methodText = 'T' + ZCI.getTypeNameFromID(methodOf) + '_'
 
 	#formated function name
 	return modPrefix + methodText + 'F' + rawName
 
-def getFctFromName(ZCI, tgtFctName): #must be EXACT NAME
+def getFctFromName(ZCI, exactName):
 	for f in ZCI.zCtx.cpl.fcts:
-		if fctName == f.name:
+		if exactName == f.name:
 			return f
 	return None
 
@@ -120,7 +120,7 @@ def checkAll_thenReadParams_thenCreateCall(ZCI, exactName, scope, cstOnly, noVFC
 		ZCIError(ZCI, "No matching function \"" + exactName + "\" found (parsing call).")
 
 	#check return type
-	if noVFCAllowed and tgtFct.retType == TYPE_ID__NOT_FOUND:
+	if noVFCAllowed and tgtFct.retType == TYPE_ID__UNKNOWN:
 		ZCIError(ZCI, "Can't have void returning function call here (only !VFC allowed).")
 
 	#read params

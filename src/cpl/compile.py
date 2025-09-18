@@ -7,7 +7,7 @@
 #internal
 from cpl.c01_unmodulize              import *
 from cpl.c02_redirectGlobal          import *
-from cpl.c03_assignmentsAndFunctions import *
+from cpl.c03_processFunctionContents import *
 
 
 
@@ -33,9 +33,9 @@ def compile(zCtx, DEBUG_MODES, DEEP_DEBUG_MODES):
 	#step c02
 	zCtx.debugMode     = DEBUG_MODES[C02]
 	zCtx.deepDebugMode = DEEP_DEBUG_MODES[C02]
-	fctZCIs            = c02_redirectGlobal(zCtx)
+	c02_redirectGlobal(zCtx)
 
 	#step c03
 	zCtx.debugMode     = DEBUG_MODES[C03]
 	zCtx.deepDebugMode = DEEP_DEBUG_MODES[C03]
-	c03_assignmentsAndFunctions(zCtx, fctZCIs)
+	c03_processFunctionContents(zCtx)

@@ -12,7 +12,7 @@ def parseLiteralIntOrFloat(ZCI):
 	resText       = ""
 	resDigitPower = 0
 	resIsNegative = False
-	resType       = TYPE_ID__NOT_FOUND #int
+	resType       = TYPE_ID__UNKNOWN
 	resAtmID      = 0 #no initial value is preferable <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 	#negativity
@@ -415,7 +415,7 @@ def secondAnalysis(ZCI, vap2info):
 	#try reading a type
 	tID   = readType(ZCI, None, errorIfNotExisting=False)
 	tInst = ZCI.getTypeInstanceFromID(tID)
-	if tID != TYPE_ID__NOT_FOUND:
+	if tID != TYPE_ID__UNKNOWN:
 		ZCIDeepDebug(ZCI, "2nd analysis: Structure definition detected.")
 
 		#must be a structure
@@ -685,28 +685,42 @@ def applySecondAnalysis(currentPOCall, originalZCI, vap2info): #originalZCI only
 	#2ND CASE: OPERATOR CALL
 
 	#set operator parameters
-	params = []
+	paramValues    = []
+	paramTypeIDs   = []
+	paramTypeNames = []
 	if firstOperandValue is not None:
-		params.append(firstOperandValue)
+		paramValues.append(                                  firstOperandValue       )
+		paramTypeIDs.append(                                 firstOperandValue.Type  )
+		paramTypeNames.append( originalZCI.getTypeNameFromID(firstOperandValue.Type) )
 	if secondOperandValue is not None:
-		params.append(secondOperandValue)
+		paramValues.append(                                  secondOperandValue       )
+		paramTypeIDs.append(                                 secondOperandValue.Type  )
+		paramTypeNames.append( originalZCI.getTypeNameFromID(secondOperandValue.Type) )
 
 	#solve name
-	operatorFullName = currentPOCall.name[:] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TO COMPLETE with full name constitution
-	#operatorFullName = 'O' + currentPOCall.name
-	#for p in params:
-	#	operatorFullName += '_' + p.type.name
+	operatorFullName = 'O' + currentPOCall.name
+	for p in paramTypeNames:
+		operatorFullName += '_' + p
 
-	#check for matching operator function
+	#check for EXACT matching operator
 	matchingFct = getFctFromName(originalZCI, operatorFullName)
 	if matchingFct is None:
-		originalZCI.forwardUntil(currentPOCall.operatorIdx)
-		ZCIError(originalZCI, "No operator \"" + unprefixizeMod(operatorFullName) + "\" declared yet.")
+		alternatives = originalZCI.listAllOperatorAlternatives(currentPOCall.name)
+
+		#try with parent types #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+		#for p in params:
+		#	for a in alternatives:
+		#operatorExactName =
+
+		#still no one found
+		if matchingFct is None:
+			originalZCI.forwardUntil(currentPOCall.operatorIdx)
+			ZCIError(originalZCI, "No operator " + currentPOCall.name + " matching for parameters (" + ','.join(paramTypeNames) + ").")
 
 	#result
 	return value(
 		matchingFct.retType,
-		atm(ATM__CALL, call(operatorFullName, params, matchingFct.retType)),
+		atm(ATM__CALL, call(operatorFullName, paramValues, matchingFct.retType)),
 		False
 	)
 

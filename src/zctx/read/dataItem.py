@@ -6,7 +6,7 @@ def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUns
 
 	#read type (if any. Else, continue as nothing happened)
 	Type = readType(ZCI, "data item declarator, in " + ZCIKindIfError, errorIfNotExisting=False)
-	if Type != TYPE_ID__NOT_FOUND:
+	if Type != TYPE_ID__UNKNOWN:
 		jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 
 	#read name
@@ -34,13 +34,13 @@ def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUns
 		initialValue = readValue(ZCI, ZCIKindIfError, scope, cstOnly=cstInitialValueOnly)
 
 		#solve type if missing using initialValue
-		if Type == TYPE_ID__NOT_FOUND:
+		if Type == TYPE_ID__UNKNOWN:
 			Type = initialValue.Type
 			ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + ZCI.getTypeInstanceFromID(Type).name + "\".")
 	optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 	#missing Type still not solved
-	if Type == TYPE_ID__NOT_FOUND:
+	if Type == TYPE_ID__UNKNOWN:
 		if not allowUnsolvableType:
 			ZCIError(ZCI, "Unsolvable type to given element \"" + name + "\" (required either explicitely or implicity using initial value).")
 

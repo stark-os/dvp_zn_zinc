@@ -109,6 +109,9 @@ class zci:
 	def checkIDRecursivelyInType(sbj, tID, tgtID):
 		return sbj.zCtx.checkIDRecursivelyInType(tID, tgtID)
 
+	def listAllOperatorAlternatives(sbj, opeTrigram):
+		return sbj.zCtx.listAllOperatorAlternatives(opeTrigram)
+
 
 
 	#std (generated at compile time in Z, normally under atm format with subatoms etc...)

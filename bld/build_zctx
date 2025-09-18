@@ -12,6 +12,7 @@ cat $ZCTX/genericTools.py           >> $SRC/zctx.py
 cat $ZCTX/ZCEs.py                   >> $SRC/zctx.py
 cat $ZCTX/p-cpl1.py                 >> $SRC/zctx.py
 cat $ZCTX/zctx.py                   >> $SRC/zctx.py
+cat $ZCTX/type.py                   >> $SRC/zctx.py
 cat $ZCTX/p-cpl2.py                 >> $SRC/zctx.py
 cat $ZCTX/output1.py                >> $SRC/zctx.py
 cat $ZCTX/parsing.py                >> $SRC/zctx.py

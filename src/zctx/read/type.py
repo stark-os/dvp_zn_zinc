@@ -27,7 +27,7 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 
 	#1 - check UNDECLINATED variant existence
 	tID = ZCI.getTypeIDFromName(tUndecFullName)
-	if tID == TYPE_ID__NOT_FOUND:
+	if tID == TYPE_ID__UNKNOWN:
 
 		#case 1: type not found => error
 		if errorIfNotExisting:
@@ -37,7 +37,7 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 		ZCIDeepDebug(ZCI, "Type " + unprefixizeMod(tModPrefix) + tRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", printLine=False)
 		ZCI.resetCtx(initialZCICtx)
 		ZCIDeepDebug(ZCI, "Restoring ZCI context to that position => Ended reading Z type.")
-		return TYPE_ID__NOT_FOUND
+		return TYPE_ID__UNKNOWN
 
 	#got it
 	ZCIDeepDebug(ZCI, "Undeclinated type \"" + tUndecFullName + "\" targetted.")
@@ -84,8 +84,8 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 
 		#one declination does not exist => our current type can't exist
 		for d in dcns:
-			if d == TYPE_ID__NOT_FOUND:
-				return TYPE_ID__NOT_FOUND
+			if d == TYPE_ID__UNKNOWN:
+				return TYPE_ID__UNKNOWN
 
 		#check declination length
 		if len(dcns) < tUndecInst.dcnCommon.dcnDeg:
@@ -103,7 +103,7 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 		tID      = ZCI.getTypeIDFromName(tDecFullName)
 
 		#not found => create that declination (this new combination must exist)
-		if tID == TYPE_ID__NOT_FOUND:
+		if tID == TYPE_ID__UNKNOWN:
 			tID           = ZCI.zCtx.cpl.newTyp(tDecFullName, dcnCommon=tUndecInst.dcnCommon) #share the same dcnCommon (affecting the undeclinated instance will affect every declination)
 			tDecInst      = ZCI.getTypeInstanceFromID(tID)
 			tDecInst.dcns = dcns

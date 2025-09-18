@@ -35,7 +35,7 @@ RT__F8  = 10
 RT__PTR = 11
 
 #specific type ID
-TYPE_ID__NOT_FOUND = -1
+TYPE_ID__UNKNOWN = -1
 
 #common data structures (shortcut notations)
 TYPE_FULLNAME__TAB  = "GUtab"
@@ -72,27 +72,27 @@ MAX_DECIMAL_DIGITS_ALLOWED__U2 = 5
 MAX_DECIMAL_DIGITS_ALLOWED__U4 = 10
 MAX_DECIMAL_DIGITS_ALLOWED__U8 = 20
 
+#other
+SYMBOL__ASG       = 1 #assignment
+SYMBOL__NOT_FOUND = 0
+
 #Single Operators
 SYMBOL__SIN = 1 #invert
 SYMBOL__SNO = 2 #not
-SO = (SYMBOL__SIN, SYMBOL__SNO)
 
 #Decisionnal Operators
 SYMBOL__DAN = 3 #decisionnal and
 SYMBOL__DOR = 4 #decisionnal or
-DO = (SYMBOL__DAN, SYMBOL__DOR)
 
 #Arithmetic Operators
 SYMBOL__AMU = 5 #multiply
 SYMBOL__ADI = 6 #divide
 SYMBOL__AMO = 7 #modulo
 SYMBOL__APO = 8 #power
-AO = (SYMBOL__AMU, SYMBOL__ADI, SYMBOL__AMO, SYMBOL__APO)
 
 #B-rithmetic Operators
 SYMBOL__BAD =  9 #add
 SYMBOL__BSU = 10 #subtract
-BO = (SYMBOL__BAD, SYMBOL__BSU)
 
 #Logical Operators
 SYMBOL__LAN = 11 #logical and
@@ -104,12 +104,6 @@ SYMBOL__LLB = 16 #left byte-shift
 SYMBOL__LRB = 17 #right byte-shift
 SYMBOL__LLR = 18 #left roll
 SYMBOL__LRR = 19 #right roll
-LO = (
-	SYMBOL__LAN, SYMBOL__LOR, SYMBOL__LXO,
-	SYMBOL__LLS, SYMBOL__LRS,
-	SYMBOL__LLB, SYMBOL__LRB,
-	SYMBOL__LLR, SYMBOL__LRR
-)
 
 #Conditionnal Operators
 SYMBOL__CEQ = 20 #equals
@@ -118,56 +112,100 @@ SYMBOL__CLT = 22 #lesser than
 SYMBOL__CGT = 23 #greater than
 SYMBOL__CLE = 24 #lesser or equal
 SYMBOL__CGE = 25 #greater or equal
+
+#Indexing Operators
+SYMBOL__IAM = 30 #among
+SYMBOL__INA = 31 #not among
+SYMBOL__IIN = 32 #index
+SYMBOL__IIA = 33 #index assign
+SYMBOL__ISU = 34 #sub
+SYMBOL__ISA = 35 #sub assign
+
+#Fixed Operators
+SYMBOL__FSZ = 36 #size
+SYMBOL__FRF = 37 #reference
+SYMBOL__FCA = 38 #casht
+SYMBOL__FFA = 39 #field access
+
+#useful symbol sets
+SO = (SYMBOL__SIN, SYMBOL__SNO)
+DO = (SYMBOL__DAN, SYMBOL__DOR)
+AO = (
+	SYMBOL__AMU, SYMBOL__ADI,
+	SYMBOL__AMO, SYMBOL__APO
+)
+BO = (SYMBOL__BAD, SYMBOL__BSU)
+LO = (
+	SYMBOL__LAN, SYMBOL__LOR, SYMBOL__LXO,
+	SYMBOL__LLS, SYMBOL__LRS,
+	SYMBOL__LLB, SYMBOL__LRB,
+	SYMBOL__LLR, SYMBOL__LRR
+)
 CO = (
 	SYMBOL__CEQ, SYMBOL__CNE,
 	SYMBOL__CLT, SYMBOL__CGT,
 	SYMBOL__CLE, SYMBOL__CGE
 )
-
-#Indexing Operators (without includers)
-SYMBOL__IAM = 30 #among
-SYMBOL__INA = 31 #not among
-IO_AMONG = (SYMBOL__IAM, SYMBOL__INA)
-
-#Fixed Operators
-SYMBOL__FSZ = 32 #size
-SYMBOL__FRF = 33 #reference
-SYMBOL__FCA = 34 #casht
-SYMBOL__FFA = 35 #field access
-
-#mono-operand operators
+IO_AMONG     = (SYMBOL__IAM, SYMBOL__INA)
 MONO_OPERAND = SO + (SYMBOL__FSZ, SYMBOL__FRF)
 
-#other
-SYMBOL__ASG       = 1 #assignment
-SYMBOL__NOT_FOUND = 0
+#operator names in DCL_FCT
+OPERATOR_FCTNAME2SYMBOL = {
+	"~"  : SYMBOL__SIN, "!"   : SYMBOL__SNO, #SO
+	"&&" : SYMBOL__DAN, "||"  : SYMBOL__DOR, #DO
+	"*"  : SYMBOL__AMU, "/"   : SYMBOL__ADI, #AO
+	"%"  : SYMBOL__AMO, "**"  : SYMBOL__APO,
+	"+"  : SYMBOL__BAD, "-"   : SYMBOL__BSU, #BO
+	"&"  : SYMBOL__LAN, "|"   : SYMBOL__LOR, "^": SYMBOL__LXO, #LO
+	"<<" : SYMBOL__LLS, ">>"  : SYMBOL__LRS,
+	"<<|": SYMBOL__LLB, "|>>" : SYMBOL__LRB,
+	"<<-": SYMBOL__LLR, "->>" : SYMBOL__LRR,
+	"==" : SYMBOL__CEQ, "!="  : SYMBOL__CNE, #CO
+	"<"  : SYMBOL__CLT, ">"   : SYMBOL__CGT,
+	"<=" : SYMBOL__CLE, ">="  : SYMBOL__CGE,
+	"?"  : SYMBOL__IAM, "!?"  : SYMBOL__INA, #IO
+	"[]" : SYMBOL__IIN, "[]=" : SYMBOL__IIA,
+	"[:]": SYMBOL__ISU, "[:]=": SYMBOL__ISA
+}
 
 #lengths
 SYMBOL_LENGTHS = { #map[ubyt,ubyt]
-	SYMBOL__SIN: 1, SYMBOL__SNO: 1, SYMBOL__DAN: 2, SYMBOL__DOR: 2,
-	SYMBOL__AMU: 1, SYMBOL__ADI: 1, SYMBOL__AMO: 1, SYMBOL__APO: 2,
-	SYMBOL__BAD: 1, SYMBOL__BSU: 1, SYMBOL__LAN: 1, SYMBOL__LOR: 1,
-	SYMBOL__LXO: 1, SYMBOL__LLS: 2, SYMBOL__LRS: 2, SYMBOL__LLB: 3,
-	SYMBOL__LRB: 3, SYMBOL__LLR: 3, SYMBOL__LRR: 3, SYMBOL__CEQ: 2,
-	SYMBOL__CNE: 2, SYMBOL__CLT: 1, SYMBOL__CGT: 1, SYMBOL__CLE: 2,
-	SYMBOL__CGE: 2, SYMBOL__IAM: 2, SYMBOL__INA: 3, SYMBOL__FSZ: 1,
-	SYMBOL__FRF: 1, SYMBOL__FCA: 1, SYMBOL__FFA: 1, SYMBOL__ASG: 1,
-	SYMBOL__NOT_FOUND: 0
+	SYMBOL__SIN: 1, SYMBOL__SNO: 1, #SO
+	SYMBOL__DAN: 2, SYMBOL__DOR: 2, #DO
+	SYMBOL__AMU: 1, SYMBOL__ADI: 1,
+	SYMBOL__AMO: 1, SYMBOL__APO: 2, #AO
+	SYMBOL__BAD: 1, SYMBOL__BSU: 1, #BO
+	SYMBOL__LAN: 1, SYMBOL__LOR: 1, SYMBOL__LXO: 1, #LO
+	SYMBOL__LLS: 2, SYMBOL__LRS: 2,
+	SYMBOL__LLB: 3, SYMBOL__LRB: 3,
+	SYMBOL__LLR: 3, SYMBOL__LRR: 3,
+	SYMBOL__CEQ: 2, SYMBOL__CNE: 2, #CO
+	SYMBOL__CLT: 1, SYMBOL__CGT: 1,
+	SYMBOL__CLE: 2, SYMBOL__CGE: 2,
+	SYMBOL__IAM: 2, SYMBOL__INA: 3, #IO
+	SYMBOL__FSZ: 1, SYMBOL__FRF: 1, #FO
+	SYMBOL__FCA: 1, SYMBOL__FFA: 1,
+	SYMBOL__ASG: 1,	SYMBOL__NOT_FOUND: 0 #other
 }
 OPERATOR_NAMES = {
-	SYMBOL__SIN: "sin", SYMBOL__SNO: "sno", SYMBOL__DAN: "dan", SYMBOL__DOR: "dor",
-	SYMBOL__AMU: "amu", SYMBOL__ADI: "adi", SYMBOL__AMO: "amo", SYMBOL__APO: "apo",
-	SYMBOL__BAD: "bad", SYMBOL__BSU: "bsu", SYMBOL__LAN: "lan", SYMBOL__LOR: "lor",
-	SYMBOL__LXO: "lxo", SYMBOL__LLS: "lls", SYMBOL__LRS: "lrs", SYMBOL__LLB: "llb",
-	SYMBOL__LRB: "lrb", SYMBOL__LLR: "llr", SYMBOL__LRR: "lrr", SYMBOL__CEQ: "ceq",
-	SYMBOL__CNE: "cne", SYMBOL__CLT: "clt", SYMBOL__CGT: "cgt", SYMBOL__CLE: "cle",
-	SYMBOL__CGE: "cge", SYMBOL__IAM: "iam", SYMBOL__INA: "ina", SYMBOL__FSZ: "fsz",
-	SYMBOL__FRF: "frf", SYMBOL__FCA: "fca", SYMBOL__FFA: "ffa"
+	SYMBOL__SIN: "sin", SYMBOL__SNO: "sno", #SO
+	SYMBOL__DAN: "dan", SYMBOL__DOR: "dor", #DO
+	SYMBOL__AMU: "amu", SYMBOL__ADI: "adi", #AO
+	SYMBOL__AMO: "amo", SYMBOL__APO: "apo",
+	SYMBOL__BAD: "bad", SYMBOL__BSU: "bsu", #BO
+	SYMBOL__LAN: "lan", SYMBOL__LOR: "lor", SYMBOL__LXO: "lxo", #LO
+	SYMBOL__LLS: "lls", SYMBOL__LRS: "lrs",
+	SYMBOL__LLB: "llb", SYMBOL__LRB: "lrb",
+	SYMBOL__LLR: "llr", SYMBOL__LRR: "lrr",
+	SYMBOL__CEQ: "ceq", SYMBOL__CNE: "cne", #CO
+	SYMBOL__CLT: "clt", SYMBOL__CGT: "cgt",
+	SYMBOL__CLE: "cle", SYMBOL__CGE: "cge",
+	SYMBOL__IAM: "iam", SYMBOL__INA: "ina", #IO
+	SYMBOL__IIN: "iin", SYMBOL__IIA: "iia",
+	SYMBOL__ISU: "isu", SYMBOL__ISA: "isa",
+	SYMBOL__FSZ: "fsz", SYMBOL__FRF: "frf", #FO
+	SYMBOL__FCA: "fca", SYMBOL__FFA: "ffa"
 }
-FO_NAMES = (
-	OPERATOR_NAMES[SYMBOL__FSZ], OPERATOR_NAMES[SYMBOL__FRF],
-	OPERATOR_NAMES[SYMBOL__FCA], OPERATOR_NAMES[SYMBOL__FFA]
-)
 
 #general syntax
 BLANKS          = (' ', '\t')

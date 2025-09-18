@@ -12,6 +12,7 @@ from std.string import *
 
 #internal
 from zctx import *
+from pcpl.p3_splitZCIsAndImport import *
 
 
 
@@ -61,7 +62,7 @@ def processTypeDcl(ZCI):
 		fullName = ZCI.modPrefix + 'U' + rawName
 
 	#check already existing
-	if ZCI.getTypeIDFromName(fullName) != TYPE_ID__NOT_FOUND:
+	if ZCI.getTypeIDFromName(fullName) != TYPE_ID__UNKNOWN:
 		modPrefixText = ""
 		if len(ZCI.modPrefix) != 0:
 			modPrefixText = unprefixizeMod(ZCI.modPrefix)
@@ -167,7 +168,7 @@ def processEnmDcl(ZCI, scope):
 		allowUnsolvableTypes = True
 	)
 	for di in fields:
-		if di.Type != TYPE_ID__NOT_FOUND: #no type must be found (neither explicit type given or initial value)
+		if di.Type != TYPE_ID__UNKNOWN: #no type must be found (neither explicit type given or initial value)
 			ZCIError(ZCI, "No explicit type or value is allowed in enumerate declaration (DCL_ENM).")
 
 	#compute which type will be used
@@ -279,7 +280,7 @@ def processDclOrAsg(ZCI, scope):
 	tID     = readType(tmpCopy, None, errorIfNotExisting=False)
 
 	#not starting with a type name => can possibly be just an assignment without declaration
-	if tID == TYPE_ID__NOT_FOUND:
+	if tID == TYPE_ID__UNKNOWN:
 
 		#get targetted name
 		name = readName(tmpCopy, "Data item name in assignment (ASG_ASG).", parseModPrefixes=True, modPrefixes_asHeaderOnly=True)
@@ -303,6 +304,101 @@ def processDclOrAsg(ZCI, scope):
 
 
 
+# -------- DCL_FCT --------
+
+#function declaration
+def processFctDcl(ZCI):
+	ZCIDebug(ZCI, "Processing function declaration.", printSubCtxs=True)
+
+	#function name: maybe it is type related (method) => try reading a type
+	methodType = readType(ZCI, "function name in function declaration ZCI (DCL_FCT).", errorIfNotExisting=False)
+
+	#method name must be followed by a dot
+	isMethod = (methodType != TYPE_ID__UNKNOWN)
+	if isMethod:
+		if ZCI.get() != '.':
+			ZCIError(ZCI, "Expected a dot '.' after type given in method name.")
+		ZCI.inc()
+
+	#read function name
+	rawName = readName(ZCI, "function name in type declaration ZCI (DCL_TYP).", doubleUnderscores=True, whitelist=FCT_NAME_CHARSET)
+
+	#must be followed by parameters between parentheses includer
+	if ZCI.get() != '(':
+		ZCIError(ZCI, "Expected parameters between parentheses includer right after function name.")
+
+	#parameters
+	params = readDataItemSequence(
+		ZCI, "function declaration ZCI (DCL_FCT)",
+		ZCI.zCtx.cpl.gblScp,
+		cstValuesOnly = True,
+		allowEmpty    = True
+	)
+
+	#targetting operator
+	isOpe = (rawName in OPERATOR_FCTNAME2SYMBOL.keys())
+
+	#case 1: regular function
+	if not isOpe:
+
+		#additionnal check: name availability !HERE, WE WANT TO GUARANTEE NO CONFUSION BETWEEN GBL DI NAMES & FCT NAMES. USER CODE CAN HAVE AMBIGUITY, BUT Z NOTATION CAN'T: THIS IS WHY WE USE A "TMP PREFIXED NOTATION" TO CHECK THEM TEMPORARILY.
+		if not isMethod:
+			equivalentDIName = getDataItemModPrefixFromScope(ZCI, ZCI.zCtx.cpl.gblScp)
+			for gdi in ZCI.zCtx.cpl.gblScp.dataItems:
+				if gdi.name == equivalentDIName:
+					ZCIError(ZCI, "Unable to declare function \"" + unprefixizeMod(ZCI.modPrefix + rawName) + "\" because a global data item with the same name already exist (avoiding confusion).")
+
+		#build full function name
+		fullName = getFctNameFromPrefixedName(ZCI, ZCI.modPrefix + rawName, methodOf=methodType)
+
+	#case 2: operator
+	else:
+		if isMethod:
+			ZCIError(ZCI, "Operator functions cannot be used as methods for a given type (type " + ZCI.getTypeNameFromID(methodType) + " targetted for operator " + OPERATOR_NAMES[OPERATOR_FCTNAME2SYMBOL[rawName]] + ").")
+
+		#build full function name
+		fullName = 'O' + OPERATOR_NAMES[OPERATOR_FCTNAME2SYMBOL[rawName]]
+		for p in params:
+			fullName += '_' + ZCI.getTypeNameFromID(p.Type)
+
+	#check if function/method/operator already exists
+	if getFctFromName(ZCI, fullName) is not None:
+		ZCIError(ZCI, "Already have a function/method/operator with name " + unprefixizedMod(fullName))
+
+	#return type: void
+	optionalBlanks(ZCI, None)
+	if ZCI.get() == '{':
+		retType = TYPE_ID__UNKNOWN
+
+	#return type: explicitly given
+	else:
+		retType = readType(ZCI, "return type in function declaration ZCI (DCL_FCT)")
+
+		#move to function content
+		optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
+		if ZCI.get() != '{':
+			ZCIError(ZCI, "Expected to have function content after return type given (braces includer).")
+	ZCIDeepDebug(ZCI, "Return type detected \"" + ZCI.getTypeNameFromID(retType) + "\".")
+
+	#content
+	ZCIDeepDebug(ZCI, "Extracting function \"" + unprefixizeMod(fullName) + "\"'s content.")
+	content = extractZCIsFromCtx(
+		ZCI.zCtx,
+		ZCI.ctx, subCtxs=ZCI.subCtxs,
+		gbl           = False,
+		modPrefix     = ZCI.modPrefix,
+		maxIdxAllowed = ZCI.pairs[ZCI.ctx.icontent.idx]-1
+	)
+	ZCIDeepDebug(ZCI, "End of extraction for function \"" + unprefixizeMod(fullName) + "\".")
+
+	#store result into fct list
+	ZCI.zCtx.cpl.fcts.append( newFct(fullName, retType, params, ZCI.zCtx.cpl.gblScp, content) )
+
+
+
+
+
+
 # -------- EXECUTION --------
 
 #compilation
@@ -312,9 +408,6 @@ def c02_redirectGlobal(zCtx):
 	zCtx.debug("======================== C02 REDIRECT GLOBAL : beginning ========================")
 	zCtx.debug("=================================================================================")
 	zCtx.deepDebugPause()
-
-	#prepare result for next step
-	fctZCIs = []
 
 	#analyse EVERY ZCI
 	for ZCI in zCtx.ZCIs:
@@ -383,11 +476,7 @@ def c02_redirectGlobal(zCtx):
 				#2.4 - Function declaration
 				if str_cmp("fct", firstWord):
 					jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT).") #forward to function name directly
-
-					#to be processed later
-					ZCIDebug(ZCI, "Function declaration detected => Kept aside, to be processed later.")
-					fctZCIs.append(ZCI)
-					zCtx.deepDebugPause()
+					processFctDcl(ZCI)
 					continue
 
 				#2.5 - Constant data item declaration
@@ -413,6 +502,3 @@ def c02_redirectGlobal(zCtx):
 
 	#debug output file
 	zCtx__cplStep_debugZCIs(zCtx, "02")
-
-	#return unprocessed ZCIs
-	return fctZCIs
