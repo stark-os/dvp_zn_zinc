@@ -187,6 +187,43 @@ def extractModPrefix(name):
 		exit(1)
 	return modPrefix
 
+def cutDcnFromTypeName(exactTypeName):
+	rawName = exactTypeName #not affected for non-module types
+
+	#module prefixes causes problems for next step
+	hasModPrefix = (exactTypeName[0] == 'M')
+	if hasModPrefix:
+		modPrefix = extractModPrefix(exactTypeName)
+		rawName   = str_sub(exactTypeName, start=len(modPrefix)) #not exactly raw here because starting with declination indicator 'U' or 'D'
+
+	#now, compute to cut the rest of the name with separators (which can only corresponds to declinations)
+	res = ""
+	onUnderscore = False
+	for c in rawName:
+		if onUnderscore:
+
+			#pair of underscores => regular underscore in type name
+			if c == '_':
+				onUnderscore = False
+				res += '_'
+
+			#single underscore => declination delimiter
+			else:
+				break
+		else:
+
+			#found underscore => check following character
+			if c == '_':
+				onUnderscore = True
+
+			#regular character => add it to name
+			else:
+				res += c
+
+	#restore module prefix if it has been taken off
+	if hasModPrefix:
+		res = modPrefix + res
+	return res
 
 
 #unprefixing anything <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< MAYBE MAKE IT EFFICIENT ENOUGH SO THAT WE CAN GET RID OF UNPREFIXIZEMODULE & EXTRACTMODULEPREFIX ?

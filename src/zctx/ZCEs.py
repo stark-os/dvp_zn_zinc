@@ -173,7 +173,7 @@ class typ_dcnCommon: #common data among every declination of a type
 		sbj.stcSize = 0
 
 class typ:
-	def __init__(sbj, size):
+	def __init__(sbj):
 		sbj.name      = None
 		sbj.dcns      = None #tab[typ]
 		sbj.dcnCommon = None #typ_dcnCommon

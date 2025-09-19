@@ -46,7 +46,9 @@ class cplDat:
 	def newTyp(sbj, name, dcnDeg=0, size=0, dcns=None, dcnCommon=None):
 		if dcnCommon is None:
 			dcnCommon = typ_dcnCommon(dcnDeg, size=size) #create a new dcnCommon by default (new type => new dcnCommon)
-		res           = typ(size)
+		if dcns is None:
+			dcns = []
+		res           = typ()
 		res.name      = name
 		res.methods   = []   #lst[fct]
 		res.dcns      = dcns #tab[typ]

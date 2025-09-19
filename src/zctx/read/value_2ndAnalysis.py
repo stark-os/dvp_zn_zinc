@@ -705,12 +705,7 @@ def applySecondAnalysis(currentPOCall, originalZCI, vap2info): #originalZCI only
 	#check for EXACT matching operator
 	matchingFct = getFctFromName(originalZCI, operatorFullName)
 	if matchingFct is None:
-		alternatives = originalZCI.listAllOperatorAlternatives(currentPOCall.name)
-
-		#try with parent types #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-		#for p in params:
-		#	for a in alternatives:
-		#operatorExactName =
+		matchingFct = originalZCI.zCtx.findMatchingOperator('O' + currentPOCall.name, paramTypeNames)
 
 		#still no one found
 		if matchingFct is None:

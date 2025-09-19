@@ -8,13 +8,14 @@
 import string
 
 #std
-from std.string     import *
-from std.path       import *
-from std.list       import *
-from std.io         import *
-from std.parsingCtx import *
-from std.int        import *
-from std.term       import *
+from std.string            import *
+from std.path              import *
+from std.list              import *
+from std.io                import *
+from std.parsingCtx        import *
+from std.int               import *
+from std.term              import *
+from std.math_combinations import *
 
 #dreamlands
 import std.dreamlands as dreamlands
