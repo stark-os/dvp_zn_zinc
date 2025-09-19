@@ -128,10 +128,15 @@ def processTypeDcl(ZCI):
 		ZCIDebug(ZCI, "Type declaration is via type-copy syntax.", printLine=False)
 		parentID   = readType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
 		parentInst = ZCI.getTypeInstanceFromID(parentID)
+
+		#copying itself, no matter the declination (error case seems obvious, though required)
 		if parentInst.dcnCommon == newTypeInst.dcnCommon:
-			ZCIError(ZCI, "Type cannot be declared as a copy of itself or one of its declination.") #seems obvious, but anyway
+			ZCIError(ZCI, "Type cannot be declared as a copy of itself or one of its declination.")
+
+		#copy every important field from parent
 		newTypeInst.dcnCommon.size   = parentInst.dcnCommon.size
 		newTypeInst.dcnCommon.nature = parentInst.dcnCommon.nature
+		newTypeInst.dcnCommon.fields = parentInst.dcnCommon.fields
 		newTypeInst.dcnCommon.parent = parentID
 
 	#end of ZCI expected
@@ -382,6 +387,8 @@ def processFctDcl(ZCI):
 
 	#content
 	ZCIDeepDebug(ZCI, "Extracting function \"" + unprefixizeMod(fullName) + "\"'s content.")
+	#ZCI.zCtx.debugMode     = DBG_MODES[DBG__P3]
+	#ZCI.zCtx.deepDebugMode = DEEP_DBG_MODES[DBG__P3]
 	content = extractZCIsFromCtx(
 		ZCI.zCtx,
 		ZCI.ctx, subCtxs=ZCI.subCtxs,
@@ -389,6 +396,8 @@ def processFctDcl(ZCI):
 		modPrefix     = ZCI.modPrefix,
 		maxIdxAllowed = ZCI.pairs[ZCI.ctx.icontent.idx]-1
 	)
+	#ZCI.zCtx.debugMode     = DBG_MODES[DBG__C02]
+	#ZCI.zCtx.deepDebugMode = DEEP_DBG_MODES[DBG__C02]
 	ZCIDeepDebug(ZCI, "End of extraction for function \"" + unprefixizeMod(fullName) + "\".")
 
 	#store result into fct list

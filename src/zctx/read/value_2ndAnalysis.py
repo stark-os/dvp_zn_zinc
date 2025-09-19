@@ -71,6 +71,7 @@ def parseLiteralIntOrFloat(ZCI):
 		#STEP 2: Check terminator to get correct res type
 
 		#read terminator if any
+		c = ZCI.get()
 		if c == 'u':
 			ZCI.inc()
 			if c == 's':
@@ -177,7 +178,7 @@ def parseLiteralIntOrFloat(ZCI):
 		#STEP 4: Floating point possibility
 
 		#only for decimal without terminator
-		if resDigitPower == 10 and resAtmID == ATM__S4 and ZCI.get() == '.':
+		if resDigitPower == 10 and resAtmID == ATM__S4 and c == '.':
 			resAsFloat = float(resNbr) #<<<<<<<<<<<<<<<<<<<<<<<<<<< switch from ulng to dbl storage
 			resType    = ZCI.zCtx.rootTypes[RT__F4]
 			resAtmID   = ATM__F4
@@ -315,7 +316,7 @@ def secondAnalysis(ZCI, vap2info):
 		#table with only one element => explicit priorization
 		if targettedEnd == ')' and not targettingMap and len(subValues) == 1:
 			res = subValues[0]
-			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in EXPLICIT PRIORIZATION " + res.toStr(ZCI))
+			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in EXPLICIT PRIORIZATION:\n" + res.toStr(ZCI))
 			return res
 
 		#finishing result: maps
@@ -343,7 +344,7 @@ def secondAnalysis(ZCI, vap2info):
 			res = value(targettedType, atm(ATM__LST_VALUE, subValues), True)
 
 		#return result
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION " + res.toStr(ZCI))
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION:\n" + res.toStr(ZCI))
 		return res
 
 	#having found a colon but wasn't a map => no pattern matches such a thing
@@ -384,7 +385,7 @@ def secondAnalysis(ZCI, vap2info):
 
 			#finish result
 			res = value(ZCI.zCtx.rootTypes[RT__PTR], atm(ATM__LST_VALUE, sequence), True)
-			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in MULTI-BYTE NOTATION " + res.toStr(ZCI))
+			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in MULTI-BYTE NOTATION:\n" + res.toStr(ZCI))
 			return res
 
 		#single-byte sequence
@@ -395,7 +396,7 @@ def secondAnalysis(ZCI, vap2info):
 			True
 		)
 		ZCI.inc()
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in SINGLE-BYTE NOTATION " + res.toStr(ZCI))
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in SINGLE-BYTE NOTATION:\n" + res.toStr(ZCI))
 		return res
 
 
@@ -405,7 +406,7 @@ def secondAnalysis(ZCI, vap2info):
 	#parsing is quite complex => has been taken away in another method
 	v = parseLiteralIntOrFloat(ZCI)
 	if v is not None:
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in INTEGER/FLOAT " + v.toStr(ZCI))
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in INTEGER/FLOAT:\n" + v.toStr(ZCI))
 		return v
 
 
@@ -436,7 +437,7 @@ def secondAnalysis(ZCI, vap2info):
 			atm(ATM__FMAP_STR_VALUE, givenFields),
 			True
 		)
-		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in STRUCTURE DEFINITION " + res.toStr(ZCI))
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in STRUCTURE DEFINITION:\n" + res.toStr(ZCI))
 		return res
 
 
@@ -462,7 +463,7 @@ def secondAnalysis(ZCI, vap2info):
 			parsedCall = checkAll_thenReadParams_thenCreateCall(ZCI, fctName, vap2info.scope, vap2info.cstOnly)
 
 			#return complete value (call)
-			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in !VFC " + res.toStr(ZCI))
+			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in !VFC:\n" + res.toStr(ZCI))
 			return value(
 				parsedCall.retType,
 				atm(ATM__CALL, parsedCall),
@@ -484,6 +485,7 @@ def secondAnalysis(ZCI, vap2info):
 			atm(ATM__DATAITEM, di),
 			di.Cst
 		)
+		ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in DATA ITEM:\n" + res.toStr(ZCI))
 		return res
 
 
@@ -569,7 +571,7 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 		optionalBlanks(ZCI, None)
 
 		#read explicit type
-		ZCIDeepDebug(ZCI, "2nd analysis: Processing FCA operator on value " + res.toStr(ZCI))
+		ZCIDeepDebug(ZCI, "2nd analysis: Processing FCA operator on " + res.toStr(ZCI))
 		res.Type = readType(ZCI, vap2info.ZCIKindIfError)
 
 		#overwrite result type
@@ -686,15 +688,12 @@ def applySecondAnalysis(currentPOCall, originalZCI, vap2info): #originalZCI only
 
 	#set operator parameters
 	paramValues    = []
-	paramTypeIDs   = []
 	paramTypeNames = []
 	if firstOperandValue is not None:
 		paramValues.append(                                  firstOperandValue       )
-		paramTypeIDs.append(                                 firstOperandValue.Type  )
 		paramTypeNames.append( originalZCI.getTypeNameFromID(firstOperandValue.Type) )
 	if secondOperandValue is not None:
 		paramValues.append(                                  secondOperandValue       )
-		paramTypeIDs.append(                                 secondOperandValue.Type  )
 		paramTypeNames.append( originalZCI.getTypeNameFromID(secondOperandValue.Type) )
 
 	#solve name
@@ -702,15 +701,13 @@ def applySecondAnalysis(currentPOCall, originalZCI, vap2info): #originalZCI only
 	for p in paramTypeNames:
 		operatorFullName += '_' + p
 
-	#check for EXACT matching operator
-	matchingFct = getFctFromName(originalZCI, operatorFullName)
-	if matchingFct is None:
-		matchingFct = originalZCI.zCtx.findMatchingOperator('O' + currentPOCall.name, paramTypeNames)
+	#check for every operator alternative
+	matchingFct = originalZCI.zCtx.findMatchingOperator('O' + currentPOCall.name, paramTypeNames)
 
-		#still no one found
-		if matchingFct is None:
-			originalZCI.forwardUntil(currentPOCall.operatorIdx)
-			ZCIError(originalZCI, "No operator " + currentPOCall.name + " matching for parameters (" + ','.join(paramTypeNames) + ").")
+	#still no one found
+	if matchingFct is None:
+		originalZCI.forwardUntil(currentPOCall.operatorIdx)
+		ZCIError(originalZCI, "No operator " + currentPOCall.name + " matching for parameters (" + ','.join(paramTypeNames) + ").")
 
 	#result
 	return value(

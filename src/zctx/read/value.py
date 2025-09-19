@@ -50,7 +50,10 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 		if len(fieldName) == 0:
 			if givenFieldsIdx >= len(tgtFields):
 				ZCIError(ZCI, "Too much fields given in value sequence (max " + str(len(tgtFields)) + " fields allowed, " + str(givenFieldsIdx) + " given).")
-			fieldName = tgtFields[givenFieldsIdx].name
+
+			#use the next field in logical order
+			fieldName       = tgtFields[givenFieldsIdx].name
+			givenFieldsIdx += 1
 
 		#set value to corresponding field
 		if givenFields[fieldName] is not None:
@@ -95,7 +98,7 @@ def readValue(ZCI, ZCIKindIfError, scope, cstOnly=False):
 
 	#apply 2nd analysis recursively in ODP result
 	secondAnalysisRes = applySecondAnalysis(firstAnalysisRes.mainPOCall, ZCI, vap2(ZCIKindIfError, scope, cstOnly)) #here, ZCI is given for error messages only
-	ZCIDeepDebug(ZCI, "Ended reading value with result :" + secondAnalysisRes.toStr(ZCI))
+	ZCIDeepDebug(ZCI, "Ended reading value.")
 	return secondAnalysisRes
 
 

@@ -34,32 +34,25 @@ from cpl.compile     import *
 # -------- DECLARATIONS --------
 
 #debug
-P3  = 0 #global enm
-C01 = 1
-C02 = 2
-C03 = 3
-DEBUG_MODES = { #these 2 are to be global VARIABLE dataitems (static)
-	P3 :False,
-	C01:False,
-	C02:True,
-	C03:True
+DBG__INIT = 0 #global enm
+DBG__P3   = 1
+DBG__C01  = 2
+DBG__C02  = 3
+DBG__C03  = 4
+DBG_MODES = { #these 2 are to be global VARIABLE dataitems (static)
+	DBG__INIT:False,
+	DBG__P3  :False,
+	DBG__C01 :False,
+	DBG__C02 :True,
+	DBG__C03 :True
 }
-DEEP_DEBUG_MODES = {
-	P3 :False,
-	C01:False,
-	C02:True,
-	C03:True
+DEEP_DBG_MODES = {
+	DBG__INIT:False,
+	DBG__P3  :False,
+	DBG__C01 :False,
+	DBG__C02 :True,
+	DBG__C03 :True
 }
-
-#includers
-INCLUDER_PARENTHESES = 0
-INCLUDER_BRACKETS    = 1
-INCLUDER_BRACES      = 2
-
-#scopes
-SCOPE_GLOBAL    = 0
-SCOPE_FUNCTION  = 1
-SCOPE_STATEMENT = 2
 
 
 
@@ -77,28 +70,32 @@ def main():
 		exit(1)
 	filepath = sys.argv[1]
 
-	#args: LLI requirement file (optional)
+	#args: LLI inventory filepath (optional)
+	LLIInvFilepath = ""
 	if len(sys.argv) >= 3:
-		LLIRequirements = config.read(sys.argv[2])
+		LLIInvFilepath = sys.argv[2]
 
-	#default value instead
+	#default path instead
 	else:
-		print("zcc: No LLI requirement file given => using LLI inventory instead.")
-		LLICfg = config.read(pCXD + "/cfg/LLI.cfg")
+		LLILclFilepath = pCXD + "/cfg/LLI.cfg"
+		print("No LLI inventory file given")
+		print("  => look for a default LLI at PATH mentionned in local " + LLILclFilepath)
 
-		#cfg issue
+		#parse local LLI cfg
 		try:
-			defaultLLIRequirementsFilepath = LLICfg['PATH'] + "/cfg/inventory.cfg"
+			LLILclCfg = config.read(LLILclFilepath)
 		except:
-			print("zcc: No LLI path defined in cfg/LLI.cfg")
+			print("zcc: Unable to read local LLI configuration file " + LLILclFilepath)
 			exit(1)
 
-		#LLI issue
+		#local cfg missing field
 		try:
-			LLIRequirements = config.read(defaultLLIRequirementsFilepath)
+			LLIInvFilepath = LLILclCfg['PATH'] + "/cfg/inventory.cfg"
 		except:
-			print("zcc: Unable to find default LLI requirement file (LLI inventory) at location: " + defaultLLIRequirementsFilepath)
+			print("zcc: No LLI path defined in cfg/LLI.cfg (\"PATH\" field required).")
 			exit(1)
+		print("Default LLI PATH set, and found LLI at that location.")
+		print("  => Using its default inventory " + LLIInvFilepath)
 
 	#prepare output filename
 	outputFilename = path_name(os.path.basename(filepath)) + ".nc"
@@ -108,15 +105,19 @@ def main():
 	config.ADDITIONAL_SPACES_ALLOWED = False
 	zCtx = newZCtx(
 		filepath,
-		LLIRequirements,
+		LLIInvFilepath,
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
 		config.read(CXD + "/../cfg/pcpl_itm.cfg", comment_character='%', additionnalSpacesAllowed=False),
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
-		debugMode     = DEBUG_MODES[P3],
-		deepDebugMode = DEEP_DEBUG_MODES[P3]
+
+		#debug
+		dbgMode     = DBG_MODES[DBG__INIT],
+		deepDbgMode = DEEP_DBG_MODES[DBG__INIT]
 	)
 	if (
-		True in ( list(DEBUG_MODES.values()) + list(DEEP_DEBUG_MODES.values()) )
+		True in (
+			list(DBG_MODES.values()) + list(DEEP_DBG_MODES.values())
+		)
 	) and not os.path.isdir("debug"):
 		os.mkdir("debug")
 
@@ -124,7 +125,7 @@ def main():
 	zCtx.ZCIs = precompile(zCtx)
 
 	#compile
-	compile(zCtx, DEBUG_MODES, DEEP_DEBUG_MODES) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< debug paramaters should not be passed as parameters, they are global & variable (static)
+	compile(zCtx, DBG_MODES, DEEP_DBG_MODES) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< debug stuff should not be passed as parameters, they are global & variable (static)
 	writeFile(outputFilename, zCtx.cpl.txtRes)
 
 #run main

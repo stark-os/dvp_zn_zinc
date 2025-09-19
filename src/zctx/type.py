@@ -97,15 +97,6 @@
 		for p in paramTypeNames:
 			paramIndividualAlternatives.append( sbj.getTypeMatchingAlternativeNames(p) )
 
-		print("PARAM INDIVIDUAL ALTERNATIVES: PARAM[0] [")
-		for p in paramIndividualAlternatives[0]:
-			print("\t\"" + p + "\"")
-		print("]")
-		print("PARAM INDIVIDUAL ALTERNATIVES: PARAM[1] [")
-		for p in paramIndividualAlternatives[1]:
-			print("\t\"" + p + "\"")
-		print("]")
-
 		#get every combination of them together
 		paramAlternativesTogether = Combinations__makeAll(paramIndividualAlternatives)
 
@@ -124,24 +115,18 @@
 
 	#find THE RIGHT matching operator among, the first one among the possible names that truely exists
 	def findMatchingOperator(sbj, opeHeader, paramTypeNames):
+		sbj.deepDebug("Trying to find matching function for operator " + opeHeader + " with parameters (" + ",".join(paramTypeNames) + ").", printSubCtxs=False, printLine=False)
 		existingOpeAlternatives  = sbj.listAllOperatorAlternatives(opeHeader)
 		possibleMatchingOpeNames = sbj.listAllTargettableOperatorNames(opeHeader, paramTypeNames)
 
-		print("EXISTING OPE ALTERNATIVES [")
-		for ope in existingOpeAlternatives:
-			print("\t\"" + ope.name + "\"")
-		print("]")
-		print("POSSIBLE_MATCHING_NAMES [")
-		for p in possibleMatchingOpeNames:
-			print("\t\"" + p + "\"")
-		print("]")
-
 		#look for the 1st existing operator among those mentionned as "possible matching"
 		for p in possibleMatchingOpeNames:
+			sbj.deepDebug("Next possible matching name " + p, printSubCtxs=False, printLine=False)
 			for ope in existingOpeAlternatives:
 
 				#match => stop here
 				if ope.name == p:
+					sbj.deepDebug("Its a MATCH ! => using it.", printSubCtxs=False, printLine=False)
 					return ope
 
 		#no alternative found

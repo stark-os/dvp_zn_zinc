@@ -24,6 +24,12 @@ def c03_processFunctionContents(zCtx):
 
 	#for each function
 	for f in zCtx.cpl.fcts:
+
+		#skip LLI fcts
+		if f.content is None:
+			continue
+
+		#process content
 		for ZCI in f.content:
 
 			#

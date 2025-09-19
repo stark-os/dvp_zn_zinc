@@ -4,14 +4,14 @@
 
 #z code context
 def newZCtx(
-	filepath, LLI,
+	filepath, LLIInvFilepath,
 	pcpl_cfg, pcpl_itm,
-	cpl_opt,  debugMode=False, deepDebugMode=False
+	cpl_opt,  dbgMode=False, deepDbgMode=False
 ):
-	res               = zctx()
-	res.LLI           = {}
-	res.debugMode     = debugMode
-	res.deepDebugMode = deepDebugMode
+	res                = zctx()
+	res.LLIInvFilepath = LLIInvFilepath
+	res.debugMode      = dbgMode
+	res.deepDebugMode  = deepDbgMode
 
 	#every imported context & the current one
 	res.initialCtx   = ParsingCtx(filepath, readFile(filepath))
@@ -74,49 +74,16 @@ def newZCtx(
 		res.ptrSize = res.SIZE__U4
 		res.rootTypes[RT__PTR] = res.cpl.newTyp("GUptr", dcnDeg=1, size=res.SIZE__U4)
 
-	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TEMPORARY FOR VAP TESTING
+	#init functions
 	res.cpl.fcts = []
-	'''
-		res.newFct("sin", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None)]),
-		res.newFct("sno", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None)]),
-		res.newFct("dan", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("dor", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("amu", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("adi", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("amo", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("apo", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("bad", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("bsu", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("lan", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("lor", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("lxo", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("lls", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("lrs", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("llb", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("lrb", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("llr", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("lrr", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("ceq", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("cne", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("clt", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("cgt", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("cle", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("cge", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("iam", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("ina", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("fsz", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None)]),
-		res.newFct("frf", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None)]),
-		res.newFct("fca", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)]),
-		res.newFct("ffa", res.rootTypes[RT__U8], [dataItem(res.rootTypes[RT__U8], "a", None, None), dataItem(res.rootTypes[RT__U8], "b", None, None)])
-	]
-	'''
+	res.loadLLIFcts()
 	return res
 
 class zctx:
 	def __init__(sbj):
-		sbj.LLI           = None
-		sbj.debugMode     = None
-		sbj.deepDebugMode = None
+		sbj.LLIInvFilepath = None
+		sbj.debugMode      = None
+		sbj.deepDebugMode  = None
 
 		#every imported context & the current one
 		sbj.initialCtx   = None
@@ -142,6 +109,49 @@ class zctx:
 		sbj.ZCIs = None
 		sbj.pcpl = None
 		sbj.cpl  = None
+
+
+
+	#load LLI functions
+	def loadLLIFcts(sbj):
+
+		#read cfg
+		try:
+			LLICfg = config.read(sbj.LLIInvFilepath)
+		except:
+			sbj.error("Problem while extracting configuration from LLI inventory file " + sbj.LLIInvFilepath, printSubCtxs=False, printLine=False)
+
+		#for each function given
+		for fName in LLICfg.keys():
+			paramsTexts = LLICfg[fName].split(',')
+
+			#get type of each parameter
+			retType = TYPE_ID__UNKNOWN
+			params  = [] #lst[dataItem]
+			for p in range(len(paramsTexts)):
+
+				#get type ID (should be a root type if no other default type is loaded yet)
+				tID = sbj.getTypeIDFromName(paramsTexts[p])
+
+				#"void" keyword is allowed, but every other undefined type must raise an error
+				if tID == TYPE_ID__UNKNOWN and paramsTexts[p] != "void":
+					sbj.error("Undefined type " + paramsTexts[p] + " given as parameter for function " + fName + " in LLI configuration file " + sbj.LLIInvFilepath, printSubCtxs=False, printLine=False)
+
+				#retType
+				if p == 0:
+					retType = tID
+
+				#params
+				else:
+					if tID == TYPE_ID__UNKNOWN:
+						sbj.error("Cannot have \"void\" as parameter type for function " + fName + " (only allowed in return type), in LLI configuration file " + sbj.LLIInvFilepath, printSubCtxs=False, printLine=False)
+					params.append( dataItem(tID, str(DEFAULT_NAME_CHARSET[p]), False, None) )
+
+			#add function
+			sbj.cpl.fcts.append(
+				newFct(fName, retType, params, sbj.cpl.gblScp, None) #null content means "Will be loaded at LLI bridging time"
+			)
+
 
 
 

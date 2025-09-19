@@ -149,7 +149,7 @@ def dumpZCIs(ZCIs, filename, oneLine=True):
 	if oneLine:
 		output = "[\n"
 		for ZCI in ZCIs:
-			output += "\t" + ZCI.toStr() + ",\n"
+			output += TERM__OUTPUT_TAB + ZCI.toStr() + ",\n"
 		output += "]"
 	else:
 		outputLst = []
@@ -212,7 +212,7 @@ class value:
 		sbj.Cst   = Cst
 
 	def toStr(sbj, ZCI, depth=0): #I know, having a ZCI is sad here, makes not very much sens... but we need type instances (through ZCI.zCtx.cpl) to display type NAME (more readable than the ID)
-		depthSpace = '\t' * depth
+		depthSpace = TERM__OUTPUT_TAB * depth
 		if sbj.vdata.id == ATM__BOO:
 			dataStr = "false"
 			if sbj.vdata:
@@ -242,39 +242,43 @@ class value:
 
 		#common data structures (all stored as lst)
 		elif sbj.vdata.id == ATM__LST_VALUE:
-			dataStr = '['
+			dataStr = "[\n"
 			for e in sbj.vdata.data:
-				dataStr += e.toStr(ZCI) + ','
-			dataStr += ']'
+				dataStr += depthSpace + TERM__OUTPUT_TAB + e.toStr(ZCI) + ",\n"
+			dataStr += depthSpace + "]"
 
 		#temporary storage format of FFA chain <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TEMPORARY
 		elif sbj.vdata.id == ATM__LST_ATM:
-			dataStr = '['
+			dataStr = "[\n"
 			for e in sbj.vdata.data:
 				if e.id == ATM__CALL:
-					dataStr += e.data.toStr(ZCI, depth=depth+1) + ','
+					dataStr += depthSpace + TERM__OUTPUT_TAB + e.data.toStr(ZCI, depth=depth+1) + ",\n"
 				elif e.id == ATM__STR:
-					dataStr += '\"' + e.data + "\","
+					dataStr += depthSpace + TERM__OUTPUT_TAB + "\"" + e.data + "\",\n"
 				else:
 					ZCIInternal(ZCI, "Got an value.vdata of type lst[atm], but one of these atoms has unexpected ID [" + str(e.id) + "].")
-			dataStr += ']'
+			dataStr += depthSpace + "]"
 
 		#calls
 		elif sbj.vdata.id == ATM__CALL:
 			dataStr = sbj.vdata.data.toStr(ZCI, depth=depth)
 
+		#data items
+		elif sbj.vdata.id == ATM__DATAITEM:
+			dataStr = sbj.vdata.data.toStr(ZCI)
+
 		#structure definition (fields)
 		elif sbj.vdata.id == ATM__FMAP_STR_VALUE:
 			dataStr = "\"fmap[str][value]{\n"
 			for k in sbj.vdata.data.keys():
-				dataStr += depthSpace + '\t' + '\"' + k + "\": " + sbj.vdata.data[k].toStr(ZCI, depth+1) + ',\n' #recursive call
+				dataStr += depthSpace + TERM__OUTPUT_TAB + '\"' + k + "\": " + sbj.vdata.data[k].toStr(ZCI, depth+1) + ',\n' #recursive call
 			dataStr += depthSpace + '}'
 
 		#invalid
 		else:
-			print("[INTERNAL] Invalid data stored inside value (can only be literal, name or call).")
+			print("[INTERNAL] Invalid vdata stored inside value (id:" + str(sbj.vdata.id) + ").")
 			exit(1)
-		return "{type:\"" + ZCI.getTypeNameFromID(sbj.Type) + "\",cst:" + str(sbj.Cst) + ",data:" + dataStr + "}"
+		return "VALUE{type:\"" + ZCI.getTypeNameFromID(sbj.Type) + "\",cst:" + str(sbj.Cst) + ",data:" + dataStr + "}"
 
 
 
@@ -286,11 +290,12 @@ class call:
 		sbj.retType = retType
 
 	def toStr(sbj, ZCI, depth=0): #same reason as for values, ZCI is required...
-		depthSpace = '\t' * depth
-		dataStr  = "\"call " + sbj.name + "(\n"
+		depthSpace = TERM__OUTPUT_TAB * depth
+		dataStr  = "\"CALL " + sbj.name + "(\n"
 		for p in sbj.params:
-			dataStr += depthSpace + '\t' + p.toStr(ZCI) + ',\n'
+			dataStr += depthSpace + TERM__OUTPUT_TAB + p.toStr(ZCI) + ',\n'
 		dataStr += depthSpace + ")->[" + ZCI.getTypeNameFromID(sbj.retType) + ']'
+		return dataStr
 
 #"potential operator call" Same things as a call except we store only 2 params and under atm types.
 #                          We expect to have only zci or POCall types for these atoms.
@@ -303,7 +308,7 @@ class POCall:
 		sbj.secondOperand = secondOperand #atm
 
 	def toStr(sbj, depth=0):
-		depthSpacing = '\t' * depth
+		depthSpacing = TERM__OUTPUT_TAB * depth
 
 		#name
 		nameStr = "null"
@@ -327,7 +332,11 @@ class POCall:
 				secondOperandText = sbj.secondOperand.data.toStr(depth+1)
 
 		#final string
-		return "{\n" + depthSpacing + "\tname:" + nameStr + ",\n" + depthSpacing + "\tfirstOperand:" + firstOperandText + ",\n" + depthSpacing + "\tsecondOperand:" + secondOperandText + "\n" + depthSpacing + "}"
+		return "{\n" + \
+			depthSpacing + TERM__OUTPUT_TAB + "name:" + nameStr + ",\n" + \
+			depthSpacing + TERM__OUTPUT_TAB + "firstOperand:" + firstOperandText + ",\n" + \
+			depthSpacing + TERM__OUTPUT_TAB + "secondOperand:" + secondOperandText + "\n" + \
+			depthSpacing + "}"
 
 class ODPRes:
 	def __init__(sbj, maxStopIdx, mainPOCall):
@@ -344,7 +353,7 @@ class opSeq:
 	def toStr(sbj):
 		operandsText = ""
 		for a in sbj.operands:
-			operandsText += '\"' + a.textFormat() + ",\""
+			operandsText += '\"' + a.textFormat() + "\","
 		operatorsText = ""
 		for o in sbj.operators:
 			operatorsText += OPERATOR_NAMES[o] + ','
@@ -379,9 +388,9 @@ class dataItem:
 		if sbj.fields is not None:
 			fieldsText = "[\n"
 			for f in sbj.fields:
-				fieldsText += "\t" + f.toStr(ZCI) + ",\n"
+				fieldsText += TERM__OUTPUT_TAB + f.toStr(ZCI) + ",\n"
 			fieldsText += "]"
-		return "{type:\"" + ZCI.getTypeNameFromID(sbj.Type) + "\",name:\"" + sbj.name + "\",initialized:" + str(sbj.initialized) + ",initialValue:" + initialValueStr + ",Cst:" + str(sbj.Cst) + ",fields:" + fieldsText + "}"
+		return "DATAITEM{type:\"" + ZCI.getTypeNameFromID(sbj.Type) + "\",name:\"" + sbj.name + "\",initialized:" + str(sbj.initialized) + ",initialValue:" + initialValueStr + ",Cst:" + str(sbj.Cst) + ",fields:" + fieldsText + "}"
 
 
 

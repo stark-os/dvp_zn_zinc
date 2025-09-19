@@ -79,7 +79,7 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 		#debug
 		ZCIDeepDebug(ZCI, "Found declination types [", printLine=False)
 		for d in dcns:
-			ZCIDeepDebug(ZCI, "\t" + ZCI.getTypeNameFromID(d) + ",", printLine=False)
+			ZCIDeepDebug(ZCI, TERM__OUTPUT_TAB + ZCI.getTypeNameFromID(d) + ",", printLine=False)
 		ZCIDeepDebug(ZCI, "].", printLine=False)
 
 		#one declination does not exist => our current type can't exist

@@ -45,7 +45,7 @@ def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUns
 			ZCIError(ZCI, "Unsolvable type to given element \"" + name + "\" (required either explicitely or implicity using initial value).")
 
 	#result
-	ZCIDeepDebug(ZCI, "Ended reading data item."+ZCI.toStr())
+	ZCIDeepDebug(ZCI, "Ended reading data item.")
 	return dataItem(Type, name, initialized, initialValue)
 
 
