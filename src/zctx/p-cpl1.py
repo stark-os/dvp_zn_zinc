@@ -37,6 +37,7 @@ class cplDat:
 		sbj.types       = None #lst[int]
 		sbj.gblScp      = None
 		sbj.fcts        = None #lst[fct]
+		#sbj.gencFcts    = None #lst[fct] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
 		sbj.linkedLibs  = None #lst[]
 
 		#program concrete elements
@@ -68,6 +69,7 @@ def newCplDat(opts):
 	res.types         = []
 	res.gblScp        = newScp()
 	res.fcts          = [] #lst[fct]
+	#res.gencFcts     = [] #lst[fct] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< disabled for the moment
 	res.linkedLibs    = [] #lst[]
 
 	#program concrete elements

@@ -28,8 +28,8 @@ def newZCtx(
 	res.pcpl = newPcplDat(pcpl_cfg, pcpl_itm)
 	res.cpl  = newCplDat(cpl_opt)
 
-	#"typ" keyword: virtual type that seems to work like a regular one for the moment
-	res.typKeyword = res.cpl.newTyp("GUtyp")
+	#"typ" keyword: virtual type that seems to work like a regular one for the moment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
+	#res.typKeyword = res.cpl.newTyp("GUtyp")
 
 	#"fly" virtual type that also seems to work like a regular one for the moment
 	res.flyType    = res.cpl.newTyp("GUfly")
@@ -38,41 +38,41 @@ def newZCtx(
 	res.rootTypes = [0,0,0, 0,0,0, 0,0,0, 0,0,0] #can be already declared as a fixed-size table (length: 12)
 
 	#boolean
-	res.rootTypes[RT__BOO] = res.cpl.newTyp("GUboo", size=res.SIZE__U1)
+	res.rootTypes[RT__BOO] = res.cpl.newTyp("GUboo", size=res.SIZE__U8)
 
 	#1 byte
-	res.rootTypes[RT__S1] = res.cpl.newTyp("GUs1", size=res.SIZE__U1)
-	res.rootTypes[RT__U1] = res.cpl.newTyp("GUu1", size=res.SIZE__U1)
+	res.rootTypes[RT__S8] = res.cpl.newTyp("GUs8", size=res.SIZE__U8)
+	res.rootTypes[RT__U8] = res.cpl.newTyp("GUu8", size=res.SIZE__U8)
 
 	#2 bytes
-	res.rootTypes[RT__S2] = res.cpl.newTyp("GUs2", size=res.SIZE__U2)
-	res.rootTypes[RT__U2] = res.cpl.newTyp("GUu2", size=res.SIZE__U2)
+	res.rootTypes[RT__S16] = res.cpl.newTyp("GUs16", size=res.SIZE__U16)
+	res.rootTypes[RT__U16] = res.cpl.newTyp("GUu16", size=res.SIZE__U16)
 
 	#4 bytes
-	res.rootTypes[RT__S4] = res.cpl.newTyp("GUs4", size=res.SIZE__U4)
-	res.rootTypes[RT__U4] = res.cpl.newTyp("GUu4", size=res.SIZE__U4)
+	res.rootTypes[RT__S32] = res.cpl.newTyp("GUs32", size=res.SIZE__U32)
+	res.rootTypes[RT__U32] = res.cpl.newTyp("GUu32", size=res.SIZE__U32)
 
 	#4 bytes floating point
-	res.rootTypes[RT__F4] = res.cpl.newTyp("GUf4", size=res.SIZE__U4)
+	res.rootTypes[RT__F32] = res.cpl.newTyp("GUf32", size=res.SIZE__U32)
 
 	#8 bytes
 	if cpl_opt["ARCH"] == "64":
-		res.ptrSize = res.SIZE__U8
+		res.refSize = res.SIZE__U64
 
 		#8 bytes integer
-		res.rootTypes[RT__S8] = res.cpl.newTyp("GUs8", size=res.SIZE__U8)
-		res.rootTypes[RT__U8] = res.cpl.newTyp("GUu8", size=res.SIZE__U8)
+		res.rootTypes[RT__S64] = res.cpl.newTyp("GUs64", size=res.SIZE__U64)
+		res.rootTypes[RT__U64] = res.cpl.newTyp("GUu64", size=res.SIZE__U64)
 
 		#8 bytes floating point
-		res.rootTypes[RT__F8] = res.cpl.newTyp("GUf8", size=res.SIZE__U8)
+		res.rootTypes[RT__F64] = res.cpl.newTyp("GUf64", size=res.SIZE__U64)
 
 		#pointer (8 bytes for 64b arch)
-		res.rootTypes[RT__PTR] = res.cpl.newTyp("GUptr", dcnDeg=1, size=res.SIZE__U8)
+		res.rootTypes[RT__REF] = res.cpl.newTyp("GUref", dcnDeg=1, size=res.SIZE__U64)
 
-	#pointer (4 bytes for 32b arch)
+	#reference (4 bytes for 32b arch)
 	else:
-		res.ptrSize = res.SIZE__U4
-		res.rootTypes[RT__PTR] = res.cpl.newTyp("GUptr", dcnDeg=1, size=res.SIZE__U4)
+		res.refSize = res.SIZE__U32
+		res.rootTypes[RT__REF] = res.cpl.newTyp("GUref", dcnDeg=1, size=res.SIZE__U32)
 
 	#init functions
 	res.cpl.fcts = []
@@ -92,16 +92,16 @@ class zctx:
 		sbj.subCtxs      = None
 
 		#real memory items <<<<<<<<<<<<<<<<<<<<<< to be stored into an enm
-		sbj.SIZE__U1 = 1
-		sbj.SIZE__U2 = 2
-		sbj.SIZE__U4 = 4
-		sbj.SIZE__U8 = 8
+		sbj.SIZE__U8  = 1
+		sbj.SIZE__U16 = 2
+		sbj.SIZE__U32 = 4
+		sbj.SIZE__U64 = 8
 
 		#size of the biggest primitive
-		sbj.ptrSize = 0
+		sbj.refSize = 0
 
 		#types
-		sbj.typKeyword = 0
+		#sbj.typKeyword = 0 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
 		sbj.flyType    = 1
 		sbj.rootTypes  = None
 

@@ -71,10 +71,10 @@
 
 		#second: parents (or multi-type keyword if no one)
 		if tInst.dcnCommon.parent is None:
-			alternatives.append("GUtyp")
+			pass
+			#alternatives.append("GUtyp") #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DON'T ALLOW "typ" kw use for the moment
 		else:
 			alternatives += sbj.getTypeMatchingAlternativeNames( sbj.getTypeNameFromID(tInst.dcnCommon.parent) )
-
 		return alternatives
 
 

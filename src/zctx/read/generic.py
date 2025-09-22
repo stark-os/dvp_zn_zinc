@@ -41,7 +41,7 @@ def readHexByte(ZCI):
 		ZCIError(ZCI, "Invalid second hexadecimal digit '" + h0 + "' given in byte notation.")
 
 	#return byte
-	return hex_toS1(h1, h0)
+	return hex_toS8(h1, h0)
 
 
 

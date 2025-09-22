@@ -52,40 +52,29 @@ def getGblScpFromScope(scope):
 def getDataItemFromPrefixedName(prefixedName, scope):
 	modPrefix = extractModPrefix(prefixedName)
 
-	print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> PREFIXED NAME["+prefixedName+"]")
-
 	#case 1: module-related global element targetted
 	if len(modPrefix) != 0:
-		print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> MOD GBL["+modprefix+"]")
 		scope   = getGblScpFromScope(scope) #no matter which scope we are currently into, using a module notation means "go take me a module-related GLOBAL element"
 		rawName = str_sub(prefixedName, start=len(modPrefix))
-		print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> MOD GBL LOOKING FOR["+modprefix+'E'+rawName+"]")
 		res     = getDataItemFromScope(modPrefix + 'E' + rawName, scope)
 
 		#last option: module function name
 		if res is None:
-			print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> MOD GBL LAST OPT: FCT REF["+modprefix+'F'+rawName+"]")
 			return getDataItemFromScope(modPrefix + 'F' + rawName, scope)
-		print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> MOD GBL FOUND!")
 		return res
 
 	#case 2: non-module global element targetted
 	if scope.parent is None:
-		print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> !MOD BUT STILL GBL[GE"+prefixedName+"]")
 		res = getDataItemFromScope("GE" + prefixedName, scope) #scope can only be the global one here
 
 		#last option: non-module function name
 		if res is None:
-			print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> !MOD BUT STILL GBL LAST OPT: FCT[GF"+prefixedName+"]")
 			return getDataItemFromScope("GF" + prefixedName, scope) #same thing
-		print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> !MOD BUT STILL GBL FOUND!")
 		return res
 
 	#case 3: local scope element targetted
-	print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> LCL[L"+prefixedName+"]")
 	res = getDataItemFromScope('L' + prefixedName, scope)
 	if res is None:
-		print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> LCL LAST OPTION: PARENT["+prefixedName+"]")
 		return getDataItemFromPrefixedName(prefixedName, scope.parent) #recursive call on higher scope
 	return res
 

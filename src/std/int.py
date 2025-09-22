@@ -30,7 +30,7 @@ def hexOnN(b, N):
 	return h
 
 #conversions
-def chr_halfHex_toS1(h):
+def chr_halfHex_toS8(h):
 	if h == '0':
 		return 0
 	if h == '1':
@@ -66,36 +66,36 @@ def chr_halfHex_toS1(h):
 	return -1 #`ff
 '''
 MORE OPTIMIZED Z VERSION
-s1 chr.halfHex_toS1(typ) {
-	t = typ$s1
-	if t >= '0'$s1 && t <= '9'$s1 { ret t - '0'$s1       }
-	if t >= 'a'$s1 && t <= 'f'$s1 { ret t - 'a'$s1 + `0a }
+s8 chr.halfHex_toS8(typ) {
+	t = typ$s8
+	if t >= '0'$s8 && t <= '9'$s8 { ret t - '0'$s8       }
+	if t >= 'a'$s8 && t <= 'f'$s8 { ret t - 'a'$s8 + `0a }
 	ret `ff
 }
 '''
 
-def hex_toS1(h1, h0):
-	return (chr_halfHex_toS1(h1) << 4) + chr_halfHex_toS1(h0)
+def hex_toS8(h1, h0):
+	return (chr_halfHex_toS8(h1) << 4) + chr_halfHex_toS8(h0)
 
-def str_hex_toS1(s):
+def str_hex_toS8(s):
 	if len(s) != 2:
-		print("Hex string \"" + s + "\" must be only 2 characters to be converted into s1.")
+		print("Hex string \"" + s + "\" must be only 2 characters to be converted into s8.")
 		exit(1)
-	pow1 = chr_halfHex_toS1(s[0])
-	pow0 = chr_halfHex_toS1(s[1])
+	pow1 = chr_halfHex_toS8(s[0])
+	pow0 = chr_halfHex_toS8(s[1])
 	if pow0 == -1 or pow1 == -1:
 		print("Unconvertible hex string \"" + s + "\" into numerical value.")
 		exit(1)
 	return pow1 << 4 | pow0
 
-def str_hex_toS2(s):
+def str_hex_toS16(s):
 	if len(s) != 4:
-		print("Hex string \"" + s + "\" must be only 4 characters to be converted into s2.")
+		print("Hex string \"" + s + "\" must be only 4 characters to be converted into s16.")
 		exit(1)
-	pow3 = chr_halfHex_toS1(s[0])
-	pow2 = chr_halfHex_toS1(s[1])
-	pow1 = chr_halfHex_toS1(s[2])
-	pow0 = chr_halfHex_toS1(s[3])
+	pow3 = chr_halfHex_toS8(s[0])
+	pow2 = chr_halfHex_toS8(s[1])
+	pow1 = chr_halfHex_toS8(s[2])
+	pow0 = chr_halfHex_toS8(s[3])
 	if pow0 == -1 or pow1 == -1 \
 	or pow2 == -1 or pow3 == -1:
 		print("Unconvertible hex string \"" + s + "\" into numerical value.")
@@ -104,18 +104,18 @@ def str_hex_toS2(s):
 		pow3 << 12 | pow2 << 8 | \
 		pow1 <<  4 | pow0
 
-def str_hex_toS4(s):
+def str_hex_toS32(s):
 	if len(s) != 8:
-		print("Hex string \"" + s + "\" must be only 8 characters to be converted into s4.")
+		print("Hex string \"" + s + "\" must be only 8 characters to be converted into s32.")
 		exit(1)
-	pow7 = chr_halfHex_toS1(s[0])
-	pow6 = chr_halfHex_toS1(s[1])
-	pow5 = chr_halfHex_toS1(s[2])
-	pow4 = chr_halfHex_toS1(s[3])
-	pow3 = chr_halfHex_toS1(s[4])
-	pow2 = chr_halfHex_toS1(s[5])
-	pow1 = chr_halfHex_toS1(s[6])
-	pow0 = chr_halfHex_toS1(s[7])
+	pow7 = chr_halfHex_toS8(s[0])
+	pow6 = chr_halfHex_toS8(s[1])
+	pow5 = chr_halfHex_toS8(s[2])
+	pow4 = chr_halfHex_toS8(s[3])
+	pow3 = chr_halfHex_toS8(s[4])
+	pow2 = chr_halfHex_toS8(s[5])
+	pow1 = chr_halfHex_toS8(s[6])
+	pow0 = chr_halfHex_toS8(s[7])
 	if pow0 == -1 or pow1 == -1 \
 	or pow2 == -1 or pow3 == -1 \
 	or pow4 == -1 or pow5 == -1 \
@@ -128,26 +128,26 @@ def str_hex_toS4(s):
 		pow3 << 12 | pow2 <<  8 | \
 		pow1 <<  4 | pow0
 
-def str_hex_toS8(s):
+def str_hex_toS64(s):
 	if len(s) != 16:
-		print("Hex string \"" + s + "\" must be only 16 characters to be converted into s8.")
+		print("Hex string \"" + s + "\" must be only 16 characters to be converted into s64.")
 		exit(1)
-	powF = chr_halfHex_toS1(s[ 0])
-	powE = chr_halfHex_toS1(s[ 1])
-	powD = chr_halfHex_toS1(s[ 2])
-	powC = chr_halfHex_toS1(s[ 3])
-	powB = chr_halfHex_toS1(s[ 4])
-	powA = chr_halfHex_toS1(s[ 5])
-	pow9 = chr_halfHex_toS1(s[ 6])
-	pow8 = chr_halfHex_toS1(s[ 7])
-	pow7 = chr_halfHex_toS1(s[ 8])
-	pow6 = chr_halfHex_toS1(s[ 9])
-	pow5 = chr_halfHex_toS1(s[10])
-	pow4 = chr_halfHex_toS1(s[11])
-	pow3 = chr_halfHex_toS1(s[12])
-	pow2 = chr_halfHex_toS1(s[13])
-	pow1 = chr_halfHex_toS1(s[14])
-	pow0 = chr_halfHex_toS1(s[15])
+	powF = chr_halfHex_toS8(s[ 0])
+	powE = chr_halfHex_toS8(s[ 1])
+	powD = chr_halfHex_toS8(s[ 2])
+	powC = chr_halfHex_toS8(s[ 3])
+	powB = chr_halfHex_toS8(s[ 4])
+	powA = chr_halfHex_toS8(s[ 5])
+	pow9 = chr_halfHex_toS8(s[ 6])
+	pow8 = chr_halfHex_toS8(s[ 7])
+	pow7 = chr_halfHex_toS8(s[ 8])
+	pow6 = chr_halfHex_toS8(s[ 9])
+	pow5 = chr_halfHex_toS8(s[10])
+	pow4 = chr_halfHex_toS8(s[11])
+	pow3 = chr_halfHex_toS8(s[12])
+	pow2 = chr_halfHex_toS8(s[13])
+	pow1 = chr_halfHex_toS8(s[14])
+	pow0 = chr_halfHex_toS8(s[15])
 	if pow0 == -1 or pow1 == -1 \
 	or pow2 == -1 or pow3 == -1 \
 	or pow4 == -1 or pow5 == -1 \
@@ -176,7 +176,7 @@ def str_hex_toS8(s):
 # -------- DECIMAL --------
 
 #conversions
-def chr_dec_toS1(c):
+def chr_dec_toS8(c):
 	if c == '0':
 		return 0
 	if c == '1':
@@ -200,16 +200,16 @@ def chr_dec_toS1(c):
 	return -1 #`ff
 
 #signed
-MAX_LEN_DEC_S1 =  3 #(2** 7).toStr().length
-MAX_LEN_DEC_S2 =  5 #(2**15).toStr().length
-MAX_LEN_DEC_S4 = 10 #(2**31).toStr().length
-MAX_LEN_DEC_S8 = 19 #(2**63).toStr().length
+MAX_LEN_DEC_S8  =  3 #(2** 7/2).toStr().length
+MAX_LEN_DEC_S16 =  5 #(2**15/2).toStr().length
+MAX_LEN_DEC_S32 = 10 #(2**31/2).toStr().length
+MAX_LEN_DEC_S64 = 19 #(2**63/2).toStr().length
 
 #unsigned
-MAX_LEN_DEC_U1 =  3 #(2** 8).toStr().length
-MAX_LEN_DEC_U2 =  5 #(2**16).toStr().length
-MAX_LEN_DEC_U4 = 10 #(2**32).toStr().length
-MAX_LEN_DEC_U8 = 20 #(2**64).toStr().length
+MAX_LEN_DEC_U8  =  3 #(2** 8 -1).toStr().length
+MAX_LEN_DEC_U16 =  5 #(2**16 -1).toStr().length
+MAX_LEN_DEC_U32 = 10 #(2**32 -1).toStr().length
+MAX_LEN_DEC_U64 = 20 #(2**64 -1).toStr().length
 def str_dec_toNum(s, sMaxLen, uMaxLen):
 	if len(s) == 0:
 		print("Empty string cannot be converted into numerical value.")
@@ -233,7 +233,7 @@ def str_dec_toNum(s, sMaxLen, uMaxLen):
 	pow     = 1
 	result  = 0
 	for i in range(realLength):
-		d       = chr_dec_toS1(s[lastIdx-i])
+		d       = chr_dec_toS8(s[lastIdx-i])
 		if d == -1:
 			print("Unconvertible decimal string \"" + s + "\" into numerical value.")
 			exit(1)
@@ -245,14 +245,14 @@ def str_dec_toNum(s, sMaxLen, uMaxLen):
 		result *= -1
 	return result
 
-def str_dec_toS1(s):
-	return str_dec_toNum(s, MAX_LEN_DEC_S1, MAX_LEN_DEC_U1)
-
-def str_dec_toS2(s):
-	return str_dec_toNum(s, MAX_LEN_DEC_S2, MAX_LEN_DEC_U2)
-
-def str_dec_toS4(s):
-	return str_dec_toNum(s, MAX_LEN_DEC_S4, MAX_LEN_DEC_U4)
-
 def str_dec_toS8(s):
 	return str_dec_toNum(s, MAX_LEN_DEC_S8, MAX_LEN_DEC_U8)
+
+def str_dec_toS16(s):
+	return str_dec_toNum(s, MAX_LEN_DEC_S16, MAX_LEN_DEC_U16)
+
+def str_dec_toS32(s):
+	return str_dec_toNum(s, MAX_LEN_DEC_S32, MAX_LEN_DEC_U32)
+
+def str_dec_toS64(s):
+	return str_dec_toNum(s, MAX_LEN_DEC_S64, MAX_LEN_DEC_U8)

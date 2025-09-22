@@ -36,15 +36,15 @@ STR__HEXADECIMAL_LOWERCASE = string.hexdigits[:-6]
 
 #local-python version of atm
 ATM__BOO = 0
-ATM__S1  = 1
-ATM__U1  = 2
-ATM__S2  = 3
-ATM__U2  = 4
-ATM__S4  = 5
-ATM__U4  = 6
-ATM__S8  = 7
-ATM__U8  = 8
-ATM__PTR = 9
+ATM__S8  = 1
+ATM__U8  = 2
+ATM__S16 = 3
+ATM__U16 = 4
+ATM__S32 = 5
+ATM__U32 = 6
+ATM__S64 = 7
+ATM__U64 = 8
+ATM__REF = 9
 ATM__CHR = 10
 ATM__STR = 11
 ATM__CALL     = 12

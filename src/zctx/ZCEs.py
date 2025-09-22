@@ -240,21 +240,21 @@ class value:
 				dataStr = "true"
 
 		#numerical
-		elif sbj.vdata.id == ATM__S1:
-			dataStr = 'S' + hexOnN(sbj.vdata.data, 2)
-		elif sbj.vdata.id == ATM__U1:
-			dataStr = 'U' + hexOnN(sbj.vdata.data, 2)
-		elif sbj.vdata.id == ATM__S2:
-			dataStr = 'S' + hexOnN(sbj.vdata.data, 4)
-		elif sbj.vdata.id == ATM__U2:
-			dataStr = 'U' + hexOnN(sbj.vdata.data, 4)
-		elif sbj.vdata.id == ATM__S4:
-			dataStr = 'S' + hexOnN(sbj.vdata.data, 8)
-		elif sbj.vdata.id == ATM__U4:
-			dataStr = 'U' + hexOnN(sbj.vdata.data, 8)
 		elif sbj.vdata.id == ATM__S8:
-			dataStr = 'S' + hexOnN(sbj.vdata.data, 16)
+			dataStr = 'S' + hexOnN(sbj.vdata.data, 2)
 		elif sbj.vdata.id == ATM__U8:
+			dataStr = 'U' + hexOnN(sbj.vdata.data, 2)
+		elif sbj.vdata.id == ATM__S16:
+			dataStr = 'S' + hexOnN(sbj.vdata.data, 4)
+		elif sbj.vdata.id == ATM__U16:
+			dataStr = 'U' + hexOnN(sbj.vdata.data, 4)
+		elif sbj.vdata.id == ATM__S32:
+			dataStr = 'S' + hexOnN(sbj.vdata.data, 8)
+		elif sbj.vdata.id == ATM__U32:
+			dataStr = 'U' + hexOnN(sbj.vdata.data, 8)
+		elif sbj.vdata.id == ATM__S64:
+			dataStr = 'S' + hexOnN(sbj.vdata.data, 16)
+		elif sbj.vdata.id == ATM__U64:
 			dataStr = 'U' + hexOnN(sbj.vdata.data, 16)
 		elif sbj.vdata.id == ATM__CHR:
 			dataStr = '\'' + sbj.vdata.data + '\''

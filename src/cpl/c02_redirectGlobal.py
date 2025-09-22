@@ -108,7 +108,7 @@ def processTypeDcl(ZCI):
 	#process type content: structure syntax
 	if ZCI.get() == '{':
 		ZCIDebug(ZCI, "Type declaration is via structure syntax.", printLine=False)
-		newTypeInst.dcnCommon.size   = ZCI.zCtx.ptrSize
+		newTypeInst.dcnCommon.size   = ZCI.zCtx.refSize
 		newTypeInst.dcnCommon.nature = NATURE__STC
 
 		#reading fields
@@ -179,21 +179,21 @@ def processEnmDcl(ZCI, scope):
 	#compute which type will be used
 	ZCIDeepDebug(ZCI, "Enumerate length: " + str(len(fields)), printLine=False)
 	if len(fields) <= 0x1_00:
-		ZCIDeepDebug(ZCI, "Enumerate length indexing can be contained in U1 => using that type for them.", printLine=False)
-		t = ZCI.zCtx.rootTypes[RT__U1]
+		ZCIDeepDebug(ZCI, "Enumerate length indexing can be contained in U8 => using that type for them.", printLine=False)
+		t = ZCI.zCtx.rootTypes[RT__U8]
 	elif len(fields) <= 0x1_00_00:
-		ZCIDeepDebug(ZCI, "Enumerate length indexing can be contained in U2 => using that type for them.", printLine=False)
-		t = ZCI.zCtx.rootTypes[RT__U2]
+		ZCIDeepDebug(ZCI, "Enumerate length indexing can be contained in U16 => using that type for them.", printLine=False)
+		t = ZCI.zCtx.rootTypes[RT__U16]
 	elif len(fields) <= 0x1_00_00_00_00:
-		ZCIDeepDebug(ZCI, "Enumerate length indexing can be contained in U4 => using that type for them.")
-		t = zCtx.rootTypes[RT__U4]
+		ZCIDeepDebug(ZCI, "Enumerate length indexing can be contained in U32 => using that type for them.")
+		t = zCtx.rootTypes[RT__U32]
 	else:
 		ZCIError(ZCI, "Too much fields in enumerate (congrats for reaching that error, how did you managed to get it ?).")
 
 	#fullfill fields
 	for f in range(len(fields)):
 		fields[f].Type  = t
-		fields[f].value = value(t, atm(ATM__PTR, f), Cst=True) #value stored as it was a ptr to be cashted into type t
+		fields[f].value = value(t, atm(ATM__REF, f), Cst=True) #value stored as it was a ref to be cashted into type t
 
 	#create enumerate
 	enmDI = dataItem(t, fullName, True, None, Cst=True, fields=fields)
@@ -311,9 +311,26 @@ def processFctDcl(ZCI):
 	for p in params:
 		f.scope.dataItems.append(p)
 
-	#store result into cpl fcts
-	ZCI.zCtx.cpl.fcts.append(f)
-	ZCIDeepDebug(ZCI, "Added to CPL data: " + f.toStr(ZCI), printSubCtxs=False, printLine=False)
+	#check whether we have generic types in params => not to be stored as regular fct but as a GENERIC fct <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED GENERICS FOR THE MOMENT
+	#typKw     = ZCI.zCtx.typKeyword
+	#isGeneric = False
+	#for p in params:
+	#	if isGeneric:
+	#		break
+	#	isGeneric = ZCI.checkIDRecursivelyInType(p.Type, typKw)
+
+	#non-generic => non-generic return type required
+	#if not isGeneric and retType != TYPE_ID__UNKNOWN:
+	#	if ZCI.checkIDRecursivelyInType(retType, typKw):
+	#		ZCIError(ZCI, "Cannot have generic return type from non-generic function (DCL_FCT).")
+
+	#store result into cpl
+	if False: #isGeneric:
+		ZCI.zCtx.cpl.gencFcts.append(f)
+		ZCIDeepDebug(ZCI, "Added to cpl data as generic: " + f.toStr(ZCI), printSubCtxs=False, printLine=False)
+	else:
+		ZCI.zCtx.cpl.fcts.append(f)
+		ZCIDeepDebug(ZCI, "Added to cpl data as regular: " + f.toStr(ZCI), printSubCtxs=False, printLine=False)
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "function declaration ZCI (DCL_FCT).")
@@ -354,9 +371,9 @@ def processDclDat(ZCI, scope, inGblScp, isCst, forbidTypKeyword=True):
 	di = readDataItem(ZCI, "Data item declaration (DCL_DAT).", scope, cstInitialValueOnly=inGblScp)
 
 	#check the use of "typ" keyword in dcl type (this is only possible in declinations btw: "ref[typ] a = ...")
-	if forbidTypKeyword:
-		if ZCI.checkIDRecursivelyInType(di.Type, ZCI.zCtx.typKeyword):
-			ZCIError(ZCI, "Cannot use keyword \"typ\" as type in data item declaration here.")
+	#if forbidTypKeyword:
+	#	if ZCI.checkIDRecursivelyInType(di.Type, ZCI.zCtx.typKeyword):
+	#		ZCIError(ZCI, "Cannot use keyword \"typ\" as type in data item declaration here.") <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED "typé KEYWORD FOR THE MOMENT
 
 	#don't allow the use of module notation in name when declaring !
 	givenModPrefix = extractModPrefix(di.name)

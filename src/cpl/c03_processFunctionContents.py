@@ -161,7 +161,7 @@ def c03_processFunctionContents(zCtx):
 					#2.5 - Constant data item declaration
 					if str_cmp("cst", firstWord):
 						jumpBlankZone(ZCI, "Constant keyword in data item declaration ZCI (DCL_DAT).")
-						processDclDat(ZCI, f.scope, False, True, forbidTypKeyword=False) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FOR THE MOMENT, EVERYBODY CAN FREELY USE "typ" KEYWORD IN FCT CONTENT
+						processDclDat(ZCI, f.scope, False, True) #, forbidTypKeyword=False) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< FOR THE MOMENT, DISABLED THE USE OF "typ" KW
 						continue
 
 

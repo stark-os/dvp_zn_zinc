@@ -25,8 +25,8 @@ def parseLiteralIntOrFloat(ZCI):
 	#first character is important (in all cases, must be a decimal digit)
 	if c in STR__DECIMAL:
 		ZCIDeepDebug(ZCI, "2nd analysis: Integer or float detected.", printLine=False)
-		resType  = ZCI.zCtx.rootTypes[RT__S4] #default case, considering an S4
-		resAtmID = ATM__S4
+		resType  = ZCI.zCtx.rootTypes[RT__S32] #default case, considering an S32
+		resAtmID = ATM__S32
 
 		#non-zero => literal decimal
 		if c != '0':
@@ -37,8 +37,8 @@ def parseLiteralIntOrFloat(ZCI):
 		else:
 			if ZCI.inc(): #lonely '0'
 				return value(
-					ZCI.zCtx.rootTypes[RT__S4],
-					atm(ATM__S4, 0),
+					ZCI.zCtx.rootTypes[RT__S32],
+					atm(ATM__S32, 0),
 					True
 				)
 
@@ -75,27 +75,27 @@ def parseLiteralIntOrFloat(ZCI):
 		if c == 'u':
 			ZCI.inc()
 			if c == 's':
-				resType  = ZCI.zCtx.rootTypes[RT__U2]
-				resAtmID = ATM__U2
+				resType  = ZCI.zCtx.rootTypes[RT__U16]
+				resAtmID = ATM__U16
 				ZCI.inc()
 			elif c == 'l':
-				resType  = ZCI.zCtx.rootTypes[RT__U8]
-				resAtmID = ATM__U8
+				resType  = ZCI.zCtx.rootTypes[RT__U64]
+				resAtmID = ATM__U64
 				ZCI.inc()
 			else:
-				resType  = ZCI.zCtx.rootTypes[RT__U4]
-				resAtmID = ATM__U4
+				resType  = ZCI.zCtx.rootTypes[RT__U32]
+				resAtmID = ATM__U32
 		elif c == 's':
-			resType  = ZCI.zCtx.rootTypes[RT__S2]
-			resAtmID = ATM__S2
+			resType  = ZCI.zCtx.rootTypes[RT__S16]
+			resAtmID = ATM__S16
 			ZCI.inc()
 		elif c == 'l':
-			resType  = ZCI.zCtx.rootTypes[RT__S8]
-			resAtmID = ATM__S8
+			resType  = ZCI.zCtx.rootTypes[RT__S64]
+			resAtmID = ATM__S64
 			ZCI.inc()
 
 		#having unsigned terminator on negative value
-		if resIsNegative and resAtmID in (ATM__U2, ATM__U4, ATM__U8):
+		if resIsNegative and resAtmID in (ATM__U16, ATM__U32, ATM__U64):
 			ZCIError("Cannot have terminator on negative value.")
 
 
@@ -103,65 +103,65 @@ def parseLiteralIntOrFloat(ZCI):
 		#STEP 3: Check digit number depending on expected ranges
 
 		#32b arch does not allow long values (64b)
-		if ZCI.zCtx.cpl.opts["ARCH"] != "64" and resAtmID in (ATM__S8, ATM__U8):
+		if ZCI.zCtx.cpl.opts["ARCH"] != "64" and resAtmID in (ATM__S64, ATM__U64):
 			ZCIError("Cannot have 64b values when targetting 32b architecture (8 bytes integer).")
 
 		#check if too much digits have been given: binary
 		if resDigitPower == 2:
-			if resAtmID in (ATM__S2, ATM__U2):
-				if len(resText) > MAX_BINARY_DIGITS_ALLOWED__U2:
-					ZCIError(ZCI, "Too much digits given in 2 bytes literal binary value (maximum " + MAX_BINARY_DIGITS_ALLOWED__U2 + " allowed).")
-			elif resAtmID in (ATM__S4, ATM__U4):
-				if len(resText) > MAX_BINARY_DIGITS_ALLOWED__U4:
-					ZCIError(ZCI, "Too much digits given in 4 bytes literal binary value (maximum " + MAX_BINARY_DIGITS_ALLOWED__U4 + " allowed).")
-			else: #if resAtmID in (ATM__S8, ATM__U8):
-				if len(resText) > MAX_BINARY_DIGITS_ALLOWED__U8:
-					ZCIError(ZCI, "Too much digits given in 8 bytes literal binary value (maximum " + MAX_BINARY_DIGITS_ALLOWED__U8 + " allowed).")
+			if resAtmID in (ATM__S16, ATM__U16):
+				if len(resText) > MAX_BINARY_DIGITS_ALLOWED__U16:
+					ZCIError(ZCI, "Too much digits given in 2 bytes literal binary value (maximum " + MAX_BINARY_DIGITS_ALLOWED__U16 + " allowed).")
+			elif resAtmID in (ATM__S32, ATM__U32):
+				if len(resText) > MAX_BINARY_DIGITS_ALLOWED__U32:
+					ZCIError(ZCI, "Too much digits given in 4 bytes literal binary value (maximum " + MAX_BINARY_DIGITS_ALLOWED__U32 + " allowed).")
+			else: #if resAtmID in (ATM__S64, ATM__U64):
+				if len(resText) > MAX_BINARY_DIGITS_ALLOWED__U64:
+					ZCIError(ZCI, "Too much digits given in 8 bytes literal binary value (maximum " + MAX_BINARY_DIGITS_ALLOWED__U64 + " allowed).")
 
 		#check if too much digits have been given: octal
 		elif resDigitPower == 8:
-			if resAtmID in (ATM__S2, ATM__U2):
-				if len(resText) > MAX_OCTAL_DIGITS_ALLOWED__U2:
-					ZCIError(ZCI, "Too much digits given in 2 bytes literal octal value (maximum " + MAX_OCTAL_DIGITS_ALLOWED__U2 + " allowed).")
-			elif resAtmID in (ATM__S4, ATM__U4):
-				if len(resText) > MAX_OCTAL_DIGITS_ALLOWED__U4:
-					ZCIError(ZCI, "Too much digits given in 4 bytes literal octal value (maximum " + MAX_OCTAL_DIGITS_ALLOWED__U4 + " allowed).")
-			else: #if resAtmID in (ATM__S8, ATM__U8):
-				if len(resText) > MAX_OCTAL_DIGITS_ALLOWED__U8:
-					ZCIError(ZCI, "Too much digits given in 8 bytes literal octal value (maximum " + MAX_OCTAL_DIGITS_ALLOWED__U8 + " allowed).")
+			if resAtmID in (ATM__S16, ATM__U16):
+				if len(resText) > MAX_OCTAL_DIGITS_ALLOWED__U16:
+					ZCIError(ZCI, "Too much digits given in 2 bytes literal octal value (maximum " + MAX_OCTAL_DIGITS_ALLOWED__U16 + " allowed).")
+			elif resAtmID in (ATM__S32, ATM__U32):
+				if len(resText) > MAX_OCTAL_DIGITS_ALLOWED__U32:
+					ZCIError(ZCI, "Too much digits given in 4 bytes literal octal value (maximum " + MAX_OCTAL_DIGITS_ALLOWED__U32 + " allowed).")
+			else: #if resAtmID in (ATM__S64, ATM__U64):
+				if len(resText) > MAX_OCTAL_DIGITS_ALLOWED__U64:
+					ZCIError(ZCI, "Too much digits given in 8 bytes literal octal value (maximum " + MAX_OCTAL_DIGITS_ALLOWED__U64 + " allowed).")
 
 		#check if too much digits have been given: hexadecimal
 		elif resDigitPower == 16:
-			if resAtmID in (ATM__S2, ATM__U2):
-				if len(resText) > MAX_HEXADECIMAL_DIGITS_ALLOWED__U2:
-					ZCIError(ZCI, "Too much digits given in 2 bytes literal hexadecimal value (maximum " + MAX_HEXADECIMAL_DIGITS_ALLOWED__U2 + " allowed).")
-			elif resAtmID in (ATM__S4, ATM__U4):
-				if len(resText) > MAX_HEXADECIMAL_DIGITS_ALLOWED__U4:
-					ZCIError(ZCI, "Too much digits given in 4 bytes literal hexadecimal value (maximum " + MAX_HEXADECIMAL_DIGITS_ALLOWED__U4 + " allowed).")
-			else: #if resAtmID in (ATM__S8, ATM__U8):
-				if len(resText) > MAX_HEXADECIMAL_DIGITS_ALLOWED__U8:
-					ZCIError(ZCI, "Too much digits given in 8 bytes literal hexadecimal value (maximum " + MAX_HEXADECIMAL_DIGITS_ALLOWED__U8 + " allowed).")
+			if resAtmID in (ATM__S16, ATM__U16):
+				if len(resText) > MAX_HEXADECIMAL_DIGITS_ALLOWED__U16:
+					ZCIError(ZCI, "Too much digits given in 2 bytes literal hexadecimal value (maximum " + MAX_HEXADECIMAL_DIGITS_ALLOWED__U16 + " allowed).")
+			elif resAtmID in (ATM__S32, ATM__U32):
+				if len(resText) > MAX_HEXADECIMAL_DIGITS_ALLOWED__U32:
+					ZCIError(ZCI, "Too much digits given in 4 bytes literal hexadecimal value (maximum " + MAX_HEXADECIMAL_DIGITS_ALLOWED__U32 + " allowed).")
+			else: #if resAtmID in (ATM__S64, ATM__U64):
+				if len(resText) > MAX_HEXADECIMAL_DIGITS_ALLOWED__U64:
+					ZCIError(ZCI, "Too much digits given in 8 bytes literal hexadecimal value (maximum " + MAX_HEXADECIMAL_DIGITS_ALLOWED__U64 + " allowed).")
 
 		#check if too much digits have been given: decimal
 		else:
-			if resAtmID == ATM__S2:
-				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__S2:
-					ZCIError(ZCI, "Too much digits given in 2 bytes literal signed decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__S2 + " allowed).")
-			elif resAtmID == ATM__S4:
-				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__S4:
-					ZCIError(ZCI, "Too much digits given in 4 bytes literal signed decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__S4 + " allowed).")
-			elif resAtmID == ATM__S8:
-				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__S8:
-					ZCIError(ZCI, "Too much digits given in 8 bytes literal signed decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__S8 + " allowed).")
-			elif resAtmID == ATM__U2:
-				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__U2:
-					ZCIError(ZCI, "Too much digits given in 2 bytes literal unsigned decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__U2 + " allowed).")
-			elif resAtmID == ATM__U4:
-				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__U4:
-					ZCIError(ZCI, "Too much digits given in 4 bytes literal unsigned decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__U4 + " allowed).")
-			else: #if resAtmID == ATM__U8:
-				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__U8:
-					ZCIError(ZCI, "Too much digits given in 8 bytes literal unsigned decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__U8 + " allowed).")
+			if resAtmID == ATM__S16:
+				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__S16:
+					ZCIError(ZCI, "Too much digits given in 2 bytes literal signed decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__S16 + " allowed).")
+			elif resAtmID == ATM__S32:
+				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__S32:
+					ZCIError(ZCI, "Too much digits given in 4 bytes literal signed decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__S32 + " allowed).")
+			elif resAtmID == ATM__S64:
+				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__S64:
+					ZCIError(ZCI, "Too much digits given in 8 bytes literal signed decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__S64 + " allowed).")
+			elif resAtmID == ATM__U16:
+				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__U16:
+					ZCIError(ZCI, "Too much digits given in 2 bytes literal unsigned decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__U16 + " allowed).")
+			elif resAtmID == ATM__U32:
+				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__U32:
+					ZCIError(ZCI, "Too much digits given in 4 bytes literal unsigned decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__U32 + " allowed).")
+			else: #if resAtmID == ATM__U64:
+				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__U64:
+					ZCIError(ZCI, "Too much digits given in 8 bytes literal unsigned decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__U64 + " allowed).")
 
 
 
@@ -171,17 +171,17 @@ def parseLiteralIntOrFloat(ZCI):
 		resNbr  = 0 #here, we must use a ulng for storage in Z <<<<<<<<<<<<<<<<<<<
 		lastIdx = len(resText)-1
 		for r in range(len(resText)):
-			resNbr += chr_halfHex_toS1(resText[r]) * (resDigitPower**(lastIdx-r))
+			resNbr += chr_halfHex_toS8(resText[r]) * (resDigitPower**(lastIdx-r))
 
 
 
 		#STEP 4: Floating point possibility
 
 		#only for decimal without terminator
-		if resDigitPower == 10 and resAtmID == ATM__S4 and c == '.':
+		if resDigitPower == 10 and resAtmID == ATM__S32 and c == '.':
 			resAsFloat = float(resNbr) #<<<<<<<<<<<<<<<<<<<<<<<<<<< switch from ulng to dbl storage
-			resType    = ZCI.zCtx.rootTypes[RT__F4]
-			resAtmID   = ATM__F4
+			resType    = ZCI.zCtx.rootTypes[RT__F32]
+			resAtmID   = ATM__F32
 
 			#nothing after point => incomplete
 			if ZCI.inc():
@@ -191,13 +191,13 @@ def parseLiteralIntOrFloat(ZCI):
 			afterPoint = readNbrAsRawText(ZCI, STR__DECIMAL)
 			lastIdx    = len(resText)-1
 			for r in range(len(resText)):
-				resFloatingNbr += chr_dec_toS1(afterPoint[r]) * 1/(10**(lastIdx-r))
+				resFloatingNbr += chr_dec_toS8(afterPoint[r]) * 1/(10**(lastIdx-r))
 
 			#long float terminator
 			if ZCI.get() == 'l':
 				ZCI.inc()
-				resType  = ZCI.zCtx.rootTypes[RT__F8]
-				resAtmID = ATM__F8
+				resType  = ZCI.zCtx.rootTypes[RT__F64]
+				resAtmID = ATM__F64
 
 				#32b arch does not allow long values (64b)
 				if ZCI.zCtx.cpl.opts["ARCH"] != "64":
@@ -371,8 +371,8 @@ def secondAnalysis(ZCI, vap2info):
 			while ZCI.get() in HEX_DIGITS_LOWERCASE:
 				sequence.append(
 					value(
-						ZCI.zCtx.rootTypes[RT__S1],
-						atm(ATM__S1, readHexByte(ZCI)),
+						ZCI.zCtx.rootTypes[RT__S8],
+						atm(ATM__S8, readHexByte(ZCI)),
 						True
 					)
 				)
@@ -384,15 +384,15 @@ def secondAnalysis(ZCI, vap2info):
 				ZCIError(ZCI, "2nd analysis: Missing valid hexadecimal characters in multi-bytes notation.")
 
 			#finish result
-			res = value(ZCI.zCtx.rootTypes[RT__PTR], atm(ATM__LST_VALUE, sequence), True)
+			res = value(ZCI.zCtx.rootTypes[RT__REF], atm(ATM__LST_VALUE, sequence), True)
 			ZCIDeepDebug(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in MULTI-BYTE NOTATION:\n" + res.toStr(ZCI))
 			return res
 
 		#single-byte sequence
 		ZCIDeepDebug(ZCI, "2nd analysis: Reading hexadecimal value in single-byte notation.")
 		res = value(
-			ZCI.zCtx.rootTypes[RT__S1],
-			atm(ATM__S1, readHexByte(ZCI)),
+			ZCI.zCtx.rootTypes[RT__S8],
+			atm(ATM__S8, readHexByte(ZCI)),
 			True
 		)
 		ZCI.inc()
@@ -519,13 +519,13 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 		ZCIDeepDebug(ZCI,"2nd analysis: FSZ resulted into fsz(" + unprefixizeMod(tInst.name) + ") = " + str(size))
 		if ZCI.zCtx.cpl.opts["ARCH"] == 64:
 			return value(
-				ZCI.zCtx.rootTypes[RT__U8],
-				atm(ATM__U8, size),
+				ZCI.zCtx.rootTypes[RT__U64],
+				atm(ATM__U64, size),
 				True
 			)
 		return value(
-			ZCI.zCtx.rootTypes[RT__U4],
-			atm(ATM__U4, size),
+			ZCI.zCtx.rootTypes[RT__U32],
+			atm(ATM__U32, size),
 			True
 		)
 
@@ -543,8 +543,8 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 		#result
 		ZCIDeepDebug(ZCI, "2nd analysis: FRF resulted into call to frf()") #<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
 		return value(
-			ZCI.zCtx.rootTypes[RT__PTR],
-			atm(ATM__PTR, 0),
+			ZCI.zCtx.rootTypes[RT__REF],
+			atm(ATM__REF, 0),
 			True #<<<<<<<<<<<<<<<<<<< this will depend on the data item targetted (static => cst adr, else variable)
 		)
 
@@ -715,7 +715,6 @@ def applySecondAnalysis(currentPOCall, originalZCI, vap2info): #originalZCI only
 		atm(ATM__CALL, call(operatorFullName, paramValues, matchingFct.retType)),
 		False
 	)
-
 
 
 
