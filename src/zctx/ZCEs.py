@@ -190,6 +190,27 @@ class scp:
 		sbj.dataItems = None #lst[dataItem]
 		sbj.parent    = None #scp
 
+	def toStr(sbj, ZCI, depth=0):
+		depthSpace = TERM__OUTPUT_TAB * depth
+		dataStr  = "SCOPE{\n"
+		dataStr += depthSpace + TERM__OUTPUT_TAB + "exes:[\n"
+		for e in sbj.exes:
+			if e.id == ATM__CALL:
+				dataStr += depthSpace + TERM__OUTPUT_TAB + e.toStr(ZCI, depth=depth+1) + ",\n"
+			elif e.id == ATM__ASG:
+				dataStr += depthSpace + TERM__OUTPUT_TAB + e.toStr(ZCI, depth=depth+1) + ",\n"
+#			elif e.id == ATM__STM: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
+#				dataStr += depthSpace + TERM__OUTPUT_TAB + e.toStr(ZCI) + ",\n"
+			else:
+				ZCIInternal(ZCI, "Got invalid atom ID in scope exes [" + str(e.id) + "].")
+		dataStr += depthSpace + TERM__OUTPUT_TAB + "],\n"
+		dataStr += depthSpace + TERM__OUTPUT_TAB + "dataItems:[\n"
+		for di in sbj.dataItems:
+			dataStr += depthSpace + TERM__OUTPUT_TAB + TERM__OUTPUT_TAB + di.toStr(ZCI) + ",\n"
+		dataStr += depthSpace + TERM__OUTPUT_TAB + "],\n"
+		dataStr += depthSpace + "}"
+		return dataStr
+
 def newScp(parent=None):
 	res           = scp()
 	res.exes      = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
@@ -276,8 +297,7 @@ class value:
 
 		#invalid
 		else:
-			print("[INTERNAL] Invalid vdata stored inside value (id:" + str(sbj.vdata.id) + ").")
-			exit(1)
+			ZCIInternal(ZCI, "Invalid vdata stored inside value (id:" + str(sbj.vdata.id) + ").")
 		return "VALUE{type:\"" + ZCI.getTypeNameFromID(sbj.Type) + "\",cst:" + str(sbj.Cst) + ",data:" + dataStr + "}"
 
 
@@ -405,6 +425,9 @@ class asg:
 		sbj.dst = dst #dataItem
 		sbj.src = src #value
 
+	def toStr(sbj, ZCI, depth=0):
+		return "ASG{dst:" + sbj.dst.toStr(ZCI) + ",src:" + sbj.src.toStr(ZCI, depth=depth+1) + "}"
+
 
 
 #statements
@@ -426,6 +449,19 @@ class fct:
 		sbj.params  = None #lst[dataItem]
 		sbj.scope   = None
 		sbj.content = None #lst[ZCI]
+
+	def toStr(sbj, ZCI, depth=0):
+		depthSpace = TERM__OUTPUT_TAB * depth
+		dataStr  = "FCT{\n"
+		dataStr += depthSpace + TERM__OUTPUT_TAB + "name:" + sbj.name + ",\n"
+		dataStr += depthSpace + TERM__OUTPUT_TAB + "retType:" + ZCI.getTypeNameFromID(sbj.retType) + ",\n"
+		dataStr += depthSpace + TERM__OUTPUT_TAB + "params:[\n"
+		for p in sbj.params:
+			dataStr += depthSpace + TERM__OUTPUT_TAB + TERM__OUTPUT_TAB + p.toStr(ZCI) + ",\n"
+		dataStr += depthSpace + TERM__OUTPUT_TAB + "],\n"
+		dataStr += depthSpace + TERM__OUTPUT_TAB + "scope:" + sbj.scope.toStr(ZCI, depth=depth+1) + ",\n"
+		dataStr += depthSpace + "}"
+		return dataStr
 
 def newFct(name, retType, params, gblScp, content): #global scope must be given to create its own scopes as children
 	res         = fct()

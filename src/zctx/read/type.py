@@ -9,7 +9,7 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 
 	#read raw type name (actually, it also includes explicit module prefix if any... so not really "raw")
 	ZCIKindIfError_forMissingName = None
-	if errorIfNotExisting:
+	if errorIfNotExisting and ZCIKindIfError is not None:
 		ZCIKindIfError_forMissingName = "Type name in " + ZCIKindIfError
 	tRawName = readName(ZCI, ZCIKindIfError_forMissingName, parseModPrefixes=True, modPrefixes_asHeaderOnly=True)
 

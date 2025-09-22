@@ -442,19 +442,19 @@ def secondAnalysis(ZCI, vap2info):
 
 
 
-	# V] !VFC OR DATA ITEM NAME
+	# V] VFC/!VFC OR DATA ITEM NAME
 
 	#regular name found
 	prefixedName = readName(ZCI, None, parseModPrefixes=True, modPrefixes_asHeaderOnly=True)
 	if len(prefixedName) != 0:
 
-		#followed by parentheses => !VFC
+		#followed by parentheses => VFC/!VFC
 		if ZCI.get() == '(':
-			ZCIDeepDebug(ZCI, "2nd analysis: !VFC detected.")
+			ZCIDeepDebug(ZCI, "2nd analysis: VFC/!VFC detected.")
 
 			#cstOnly => not allowed
 			if vap2info.cstOnly:
-				ZCIError(ZCI, "2nd analysis: Only constant values allowed here (got a !VFC => variable return value).")
+				ZCIError(ZCI, "2nd analysis: Only constant values allowed here (got a VFC/!VFC => variable return value).")
 
 			#prepare fct name
 			fctName = getFctNameFromPrefixedName(ZCI, prefixedName)
@@ -470,7 +470,7 @@ def secondAnalysis(ZCI, vap2info):
 				False
 			)
 
-		#just a regular name actually
+		#just a regular name actually => DI NAME
 		di = getDataItemFromPrefixedName(prefixedName, vap2info.scope)
 		if di is None:
 			ZCIError(ZCI, "2nd analysis: Cannot find data item " + unprefixizeAnyName(prefixedName) + " in current scope or higher.")
@@ -535,7 +535,7 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 		ZCI.inc()
 
 		#target data item
-		prefixedName = readName(ZCI, "2nd analysis: Missing data item name for reference operator '@' (FRF).", parseModPrefix=True, modPrefixes_asHeaderOnly=True)
+		prefixedName = readName(ZCI, "2nd analysis: Missing data item name for reference operator '@' (FRF).", parseModPrefixes=True, modPrefixes_asHeaderOnly=True)
 		di           = getDataItemFromPrefixedName(prefixedName, vap2info.scope)
 		if di is None:
 			ZCIError(ZCI, "2nd analysis: Unable to find data item given " + prefixedName + " (2nd analysis, concerning reference operator '@' FRF).")
@@ -586,11 +586,11 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 			ZCIError(ZCI, "2nd analysis: Can only operate field access operator (FFA) on data item names.")
 
 		#get the complete chain of accessed fields
-		FAChain         = [atm(ATM__str, res.vdata.data.name)] #store the NAME of the first data item parsed (in 2nd analysis)
+		FAChain         = [atm(ATM__STR, res.vdata.data.name)] #store the NAME of the first data item parsed (in 2nd analysis)
 		latestChunkType = res.vdata.data.Type
 		isCst           = res.vdata.data.Cst
 		while not ZCI.reachedEnd():
-			newChunkName = readName(ZCI, "[2nd analysis] Missing second operand after field access operator (FFA).", parseModPrefix=True, modPrefixes_asHeaderOnly=True)
+			newChunkName = readName(ZCI, "[2nd analysis] Missing second operand after field access operator (FFA).", parseModPrefixes=True, modPrefixes_asHeaderOnly=True)
 
 			#case 1: following parentheses => METHOD call (and not function call)
 			if ZCI.get() == '(':
@@ -607,7 +607,7 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 			#case 2: else => stc/enm field
 			else:
 				latestChunkType = getTypeFieldFromName(ZCI, latestChunkType, newChunkName).Type
-				FAChain.append( atm(ATM__str, newChunkName) )
+				FAChain.append( atm(ATM__STR, newChunkName) )
 
 			#another field => continue
 			if ZCI.get() != '.':

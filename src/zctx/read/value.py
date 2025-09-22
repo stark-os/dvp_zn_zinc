@@ -1,4 +1,4 @@
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/value_2ndAnalysis.py
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/value.py
 
 #tool for reading value sequences
 def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
@@ -88,7 +88,7 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 
 
 
-#value analysis process, main entry point (VAP)
+#value analysis process (VAP), main entry point
 def readValue(ZCI, ZCIKindIfError, scope, cstOnly=False):
 	ZCIDeepDebug(ZCI, "Reading value.")
 
