@@ -210,7 +210,10 @@ MAX_LEN_DEC_U8  =  3 #(2** 8 -1).toStr().length
 MAX_LEN_DEC_U16 =  5 #(2**16 -1).toStr().length
 MAX_LEN_DEC_U32 = 10 #(2**32 -1).toStr().length
 MAX_LEN_DEC_U64 = 20 #(2**64 -1).toStr().length
-def str_dec_toNum(s, sMaxLen, uMaxLen):
+def str_dec_toUM(s, sMaxLen, uMaxLen, forbidNegative=False):
+	maxLenAllowed = uMaxLen #using unsigned limit by default
+
+	#empty string
 	if len(s) == 0:
 		print("Empty string cannot be converted into numerical value.")
 		exit(1)
@@ -218,8 +221,14 @@ def str_dec_toNum(s, sMaxLen, uMaxLen):
 	#negativity
 	realLength    = len(s)
 	negative      = (s[0] == '-')
-	maxLenAllowed = uMaxLen
 	if negative:
+
+		#no negation allowed
+		if forbidNegative:
+			print("Negative number is forbidden here.")
+			exit(1)
+
+		#negative => use signed limit instead
 		realLength   -= 1
 		maxLenAllowed = sMaxLen
 
@@ -233,7 +242,7 @@ def str_dec_toNum(s, sMaxLen, uMaxLen):
 	pow     = 1
 	result  = 0
 	for i in range(realLength):
-		d       = chr_dec_toS8(s[lastIdx-i])
+		d = chr_dec_toS8(s[lastIdx-i])
 		if d == -1:
 			print("Unconvertible decimal string \"" + s + "\" into numerical value.")
 			exit(1)
@@ -246,13 +255,13 @@ def str_dec_toNum(s, sMaxLen, uMaxLen):
 	return result
 
 def str_dec_toS8(s):
-	return str_dec_toNum(s, MAX_LEN_DEC_S8, MAX_LEN_DEC_U8)
+	return str_dec_toUM(s, MAX_LEN_DEC_S8, MAX_LEN_DEC_U8)
 
 def str_dec_toS16(s):
-	return str_dec_toNum(s, MAX_LEN_DEC_S16, MAX_LEN_DEC_U16)
+	return str_dec_toUM(s, MAX_LEN_DEC_S16, MAX_LEN_DEC_U16)
 
 def str_dec_toS32(s):
-	return str_dec_toNum(s, MAX_LEN_DEC_S32, MAX_LEN_DEC_U32)
+	return str_dec_toUM(s, MAX_LEN_DEC_S32, MAX_LEN_DEC_U32)
 
 def str_dec_toS64(s):
-	return str_dec_toNum(s, MAX_LEN_DEC_S64, MAX_LEN_DEC_U8)
+	return str_dec_toUM(s, MAX_LEN_DEC_S64, MAX_LEN_DEC_U8)

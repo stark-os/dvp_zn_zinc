@@ -1,12 +1,12 @@
 # -------- TOOLS --------
 
 #create combination list of degree N dynamically !WARNING: Pretty high complexity !
-def Combinations__addDegree(currentCombinations, additionnalList):
-	combinationsNbr = len(currentCombinations)
+def Combinations__addDegree(curCombinations, additionnalList):
+	combinationsNbr = len(curCombinations)
 	if combinationsNbr == 0:
 		initialCombinationDegree = 0
 	else:
-		initialCombinationDegree = len(currentCombinations[0])
+		initialCombinationDegree = len(curCombinations[0])
 
 	#for each element to add
 	for ae in range(len(additionnalList)):
@@ -16,12 +16,12 @@ def Combinations__addDegree(currentCombinations, additionnalList):
 			for c in range(combinationsNbr):
 				l = []
 				for e in range(initialCombinationDegree): #!WARNING: This is a CUSTOM COPY ! We copy initial combinations PARTIALLY !
-					l.append(currentCombinations[c][e])
-				currentCombinations.append(l)
+					l.append(curCombinations[c][e])
+				curCombinations.append(l)
 
-		#adding current additionnal element to each newly copied combination
+		#adding cur additionnal element to each newly copied combination
 		for c in range(combinationsNbr):
-			currentCombinations[ae * combinationsNbr + c].append(additionnalList[ae])
+			curCombinations[ae * combinationsNbr + c].append(additionnalList[ae])
 
 
 

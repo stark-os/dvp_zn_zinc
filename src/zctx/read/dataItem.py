@@ -1,16 +1,16 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/dataItem.py
 
 #WARNING! Returns data item WITHOUT ANY prefix
-def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUnsolvableType=False):
-	ZCIDeepDebug(ZCI, "Reading data item.", printLine=False)
+def readDataItem(ZCI, ZCIKindIfErr, scope, cstInitialValueOnly=False, allowUnsolvableType=False):
+	ZCIDeepDbg(ZCI, "Reading data item.", prtLine=False)
 
 	#read type (if any. Else, continue as nothing happened)
-	Type = readType(ZCI, "data item declarator, in " + ZCIKindIfError, errorIfNotExisting=False)
+	Type = readType(ZCI, "data item declarator, in " + ZCIKindIfErr, errorIfNotExisting=False)
 	if Type != TYPE_ID__UNKNOWN:
 		jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 
 	#read name
-	name = readName(ZCI, "data item name", parseModPrefixes=True, modPrefixes_asHeaderOnly=True)
+	name = readName(ZCI, "data item name", parseModPfxes=True, modPfxes_asHeaderOnly=True)
 
 	#default initial value: uninitialized
 	initialized  = False
@@ -25,27 +25,27 @@ def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUns
 	sym = readSymbol(ZCI)
 	if sym != SYMBOL__NOT_FOUND: #found a symbol
 		if sym != SYMBOL__ASG:
-			ZCIError(ZCI, "Invalid symbol given here, can only have assignment.")
+			ZCIErr(ZCI, "Invalid symbol given here, can only have assignment.")
 		ZCI.forward(SYMBOL_LENGTHS[SYMBOL__ASG])
 
 		#read given initial value
 		initialized = True
 		optionalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
-		initialValue = readValue(ZCI, ZCIKindIfError, scope, cstOnly=cstInitialValueOnly)
+		initialValue = readValue(ZCI, ZCIKindIfErr, scope, cstOnly=cstInitialValueOnly)
 
 		#solve type if missing using initialValue
 		if Type == TYPE_ID__UNKNOWN:
 			Type = initialValue.Type
-			ZCIDeepDebug(ZCI, "Solving missing type using initial value given \"" + ZCI.getTypeInstanceFromID(Type).name + "\".")
+			ZCIDeepDbg(ZCI, "Solving missing type using initial value given \"" + ZCI.getTypeInstanceFromID(Type).name + "\".")
 	optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 	#missing Type still not solved
 	if Type == TYPE_ID__UNKNOWN:
 		if not allowUnsolvableType:
-			ZCIError(ZCI, "Unsolvable type to given element \"" + name + "\" (required either explicitely or implicity using initial value).")
+			ZCIErr(ZCI, "Unsolvable type to given element \"" + name + "\" (required either explicitely or implicity using initial value).")
 
 	#result
-	ZCIDeepDebug(ZCI, "Ended reading data item.")
+	ZCIDeepDbg(ZCI, "Ended reading data item.")
 	return dataItem(Type, name, initialized, initialValue)
 
 
@@ -53,11 +53,11 @@ def readDataItem(ZCI, ZCIKindIfError, scope, cstInitialValueOnly=False, allowUns
 #read dataitem sequence
 # Given ZCI must be at an opening includer character.
 def readDataItemSequence(
-	ZCI, ZCIKindIfError, scope,
+	ZCI, ZCIKindIfErr, scope,
 	cstValuesOnly = False, allowUnsolvableTypes = False,
 	allowEmpty    = False
 ):
-	ZCIDeepDebug(ZCI, "Reading sequence of data item(s).")
+	ZCIDeepDbg(ZCI, "Reading sequence of data item(s).")
 
 	#initial conditions
 	if ZCI.get() not in INCLUDERS.keys():
@@ -72,9 +72,9 @@ def readDataItemSequence(
 	if ZCI.ctx.icontent.idx == peerIdx:
 		if allowEmpty:
 			ZCI.inc()
-			ZCIDeepDebug(ZCI, "Data item sequence is empty (allowed here) => ending reading here.")
+			ZCIDeepDbg(ZCI, "Data item sequence is empty (allowed here) => ending reading here.")
 			return dis
-		ZCIError(ZCI, "Missing at least one data item declaration in " + ZCIKindIfError)
+		ZCIErr(ZCI, "Missing at least one data item declaration in " + ZCIKindIfErr)
 
 	#read sequence
 	while True:
@@ -82,13 +82,13 @@ def readDataItemSequence(
 
 			#read & store data item
 			di = readDataItem(
-				ZCI, ZCIKindIfError, scope,
+				ZCI, ZCIKindIfErr, scope,
 				cstInitialValueOnly = cstValuesOnly,
 				allowUnsolvableType = allowUnsolvableTypes
 			)
 			checkAlreadyDeclaredDataItemOrField(ZCI, di, dis)
 			dis.append(di)
-			ZCIDeepDebug(ZCI, "Got data item " + di.toStr(ZCI))
+			ZCIDeepDbg(ZCI, "Got data item " + di.toStr(ZCI))
 
 			#must be followed by coma or closing peer
 			optionalBlanks(ZCI, None)
@@ -99,11 +99,11 @@ def readDataItemSequence(
 				ZCI.inc()
 				break
 			if next != ',':
-				ZCIError(ZCI, "Invalid element " + next + " given in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[peerIdx] + "').")
+				ZCIErr(ZCI, "Invalid element " + next + " given in data item sequence (expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[peerIdx] + "').")
 			ZCI.inc()
 
 	#return result
-	ZCIDeepDebug(ZCI, "Ended reading sequence of data item(s).")
+	ZCIDeepDbg(ZCI, "Ended reading sequence of data item(s).")
 	return dis
 
 

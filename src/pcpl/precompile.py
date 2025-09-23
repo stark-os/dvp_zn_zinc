@@ -5,9 +5,9 @@
 # -------- IMPORTATIONS --------
 
 #precompilation steps
-from pcpl.p1_commentsPItemsText import *
-from pcpl.p2_applyConfiguration import *
-from pcpl.p3_splitZCIsAndImport import *
+from pcpl.p1_commentsAndText import *
+from pcpl.p2_directives      import *
+from pcpl.p3_ZCSAndImp       import *
 
 
 
@@ -20,12 +20,10 @@ from pcpl.p3_splitZCIsAndImport import *
 def precompile(zCtx):
 
 	#step p1
-	p1_commentsPItemsText(zCtx)
+	p1_commentsAndText(zCtx)
 
 	#step p2
-	p2_applyConfiguration(zCtx)
+	p2_directives(zCtx)
 
 	#step p3
-	#zCtx.debugMode     = DBG_MODES[DBG__P3] #<<<<<<<<<<<<<<<<<<<<< SHOULD WORK IN Z BUT HERE... YOU KNOW, PYTHON...
-	#zCtx.deepDebugMode = DEEP_DBG_MODES[DBG__P3]
-	return p3_splitZCIsAndImport(zCtx)
+	return p3_ZCSAndImp(zCtx)

@@ -31,34 +31,6 @@ from cpl.compile     import *
 
 
 
-# -------- DECLARATIONS --------
-
-#debug
-DBG__INIT = 0 #global enm
-DBG__P3   = 1
-DBG__C01  = 2
-DBG__C02  = 3
-DBG__C03  = 4
-DBG_MODES = { #these 2 are to be global VARIABLE dataitems (static)
-	DBG__INIT:False,
-	DBG__P3  :False,
-	DBG__C01 :False,
-	DBG__C02 :True,
-	DBG__C03 :True
-}
-DEEP_DBG_MODES = {
-	DBG__INIT:False,
-	DBG__P3  :False,
-	DBG__C01 :False,
-	DBG__C02 :True,
-	DBG__C03 :True
-}
-
-
-
-
-
-
 # -------- EXECUTION --------
 
 #main
@@ -101,8 +73,6 @@ def main():
 	outputFilename = path_name(os.path.basename(filepath)) + ".nc"
 
 	#z code context
-	config.COMMENT_CHARACTER         = '%'
-	config.ADDITIONAL_SPACES_ALLOWED = False
 	zCtx = newZCtx(
 		filepath,
 		LLIInvFilepath,
@@ -111,21 +81,30 @@ def main():
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
 
 		#debug
-		dbgMode     = DBG_MODES[DBG__INIT],
-		deepDbgMode = DEEP_DBG_MODES[DBG__INIT]
+		dbgMode = (
+			False, #INIT
+			False,  #P1
+			False, #P2
+			False, #P3
+			False, #C01
+			True,  #C02
+			True   #C03
+		), deepDbgMode = (
+			False, #INIT
+			False,  #P1
+			False, #P2
+			False, #P3
+			False, #C01
+			True,  #C02
+			True   #C03
+		), stepByStep = True
 	)
-	if (
-		True in (
-			list(DBG_MODES.values()) + list(DEEP_DBG_MODES.values())
-		)
-	) and not os.path.isdir("debug"):
-		os.mkdir("debug")
 
 	#precompile
 	zCtx.ZCIs = precompile(zCtx)
 
 	#compile
-	compile(zCtx, DBG_MODES, DEEP_DBG_MODES) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< debug stuff should not be passed as parameters, they are global & variable (static)
+	compile(zCtx)
 	writeFile(outputFilename, zCtx.cpl.txtRes)
 
 #run main

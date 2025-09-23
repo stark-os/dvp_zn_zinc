@@ -5,16 +5,16 @@
 # -------- IMPORTATIONS --------
 
 #sys
-import sys
+import os, sys
 
 #std
 from std.path import *
 
 #internal
-from zctx                       import *
-from pcpl.p1_commentsPItemsText import *
-from pcpl.p2_applyConfiguration import *
-from pcpl.p3_splitZCIsAndImport import *
+from zctx import *
+from pcpl.p1_commentsAndText import *
+from pcpl.p2_directives      import *
+from pcpl.p3_ZCSAndImp       import *
 
 
 
@@ -25,14 +25,14 @@ from pcpl.p3_splitZCIsAndImport import *
 
 #prepare a raw parsed ZCI into just the minimum required (useless blanks + expand imports if needed)
 #result can be several ZCIs so we directly add them to the result list given as parameter
-def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPrefix=None):
-	if modPrefix is None:
-		modPrefix = ""
-	ZCI.modPrefix = modPrefix
+def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPfx=None):
+	if modPfx is None:
+		modPfx = ""
+	ZCI.modPfx = modPfx
 
 	#strip sides
 	ZCI.strip()
-	ZCIDeepDebug(ZCI, "Stripped blanks from ZCI \"" + ZCI.textFormat() + '\"', printSubCtxs=False, printLine=False)
+	ZCIDeepDbg(ZCI, "Stripped blanks from ZCI \"" + ZCI.textFormat() + '\"', prtSubCtxs=False, prtLine=False)
 
 
 
@@ -44,17 +44,17 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPrefix=None):
 
 	#not long enough to be an import => regular ZCI
 	if len(ZCI.txt) < 4:
-		ZCIDeepDebug(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
+		ZCIDeepDbg(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
 		result.append(ZCI)
 		return
 
 	#import ZCI : process it NOW
 	if ZCI.txt.startswith("imp") and ZCI.txt[3] in BLANKS:
-		ZCIDeepDebug(ZCI, "Detected as importation ZCI => processing it now.")
+		ZCIDeepDbg(ZCI, "Detected as importation ZCI => processing it now.")
 
 		#importations not allowed
-		if not allowImpExpansion or len(modPrefix) != 0:
-			ZCIError(ZCI, "Invalid ZCS: Import ZCIs are only allowed in global scope outside any module.")
+		if not allowImpExpansion or len(modPfx) != 0:
+			ZCIErr(ZCI, "Invalid ZCS: Import ZCIs are only allowed in global scope outside any module.")
 
 		#jump required blank zone
 		ZCI.forward(3)                                          #We can foward & jump here because we will not store that ZCI, it will only be used for expanding its importation.
@@ -63,19 +63,19 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPrefix=None):
 		#importation path
 		path = readName(ZCI, "File path in import ZCI (EXT_IMP).", blacklist=BLANKS_EXTENDED) #same note as before
 		if not ZCI.reachedEnd():
-			ZCIError(ZCI, "Too much elements in import ZCI (EXT_IMP); should stop here.")
+			ZCIErr(ZCI, "Too much elements in import ZCI (EXT_IMP); should stop here.")
 
-		#process import : Will add every ZCI of the imported file instead of the current one
+		#process import : Will add every ZCI of the imported file instead of the cur one
 		if zCtx__openNewSubCtx(ZCI.zCtx, path):
 
 			#precompile imported file
-			p1_commentsPItemsText(ZCI.zCtx) #these 3 calls should be replaced by a precompile(zCtx) call but python doesn't manage parent-file importation well so...
-			p2_applyConfiguration(ZCI.zCtx) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TO CHANGE
-			result += p3_splitZCIsAndImport(ZCI.zCtx)
+			p1_commentsAndText(ZCI.zCtx)   #these 4 calls should be replaced by a precompile(zCtx) call but python doesn't manage parent-file importation well so...
+			p2_directives(ZCI.zCtx) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TO CHANGE
+			result += p3_ZCSAndImp(ZCI.zCtx)
 		return
 
 	#not an import => regular ZCI
-	ZCIDeepDebug(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
+	ZCIDeepDbg(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
 	result.append(ZCI)
 
 
@@ -89,8 +89,8 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPrefix=None):
 INT_MAX = sys.maxsize
 
 #split raw text into ZCI list (ZCS)
-def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPrefix=None, maxIdxAllowed=INT_MAX):
-	zCtx.deepDebug("Extracting ZCIs inside given context.", printSubCtxs=True)
+def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, maxIdxAllowed=INT_MAX):
+	zCtx.deepDbg("Extracting ZCIs inside given context.", prtSubCtxs=True)
 	if subCtxs is None:
 		subCtxs = zCtx.subCtxs
 
@@ -129,8 +129,8 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPrefix=None, maxId
 		if c == ';' or c == '\n':
 			if len(ZCI.txt) != 0: #tiny optimization
 				ZCI.stopIdx = ctx.icontent.idx - 1
-				ZCIDeepDebug(ZCI, "Extracted raw ZCI text \"" + ZCI.textFormat() + '\"')
-				stripAndAppendZCI(ZCI, ZCIs, allowImpExpansion=gbl, modPrefix=modPrefix)
+				ZCIDeepDbg(ZCI, "Extracted raw ZCI text \"" + ZCI.textFormat() + '\"')
+				stripAndAppendZCI(ZCI, ZCIs, allowImpExpansion=gbl, modPfx=modPfx)
 
 			#next ZCI
 			ZCI = None
@@ -152,19 +152,19 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPrefix=None, maxId
 				zCtx.internal("Processing the same ZCI includer twice.")
 
 			#get every pairs until end of our includer
-			currentPairs = ctx.getPairsUntilCorrespondingPeer(allowedPairs=INCLUDERS)
-			if currentPairs == PARSING_CTX__INCONSISTENT_INCLUDER_PARSING:
-				zCtx.error("Invalid ZCS: Inconsistent use of includers inside block (opening/closing).")
-			if currentPairs == PARSING_CTX__PEER_NOT_FOUND:
-				zCtx.error("Invalid ZCS: Missing closing includer '" + INCLUDERS[c] + "'.")
+			curPairs = ctx.getPairsUntilCorrespondingPeer(allowedPairs=INCLUDERS)
+			if curPairs == PARSING_CTX__INCONSISTENT_INCLUDER_PARSING:
+				zCtx.err("Invalid ZCS: Inconsistent use of includers inside block (opening/closing).")
+			if curPairs == PARSING_CTX__PEER_NOT_FOUND:
+				zCtx.err("Invalid ZCS: Missing closing includer '" + INCLUDERS[c] + "'.")
 
 			#add these pairs to our ZCI so we can find them more easily if further compilation steps
-			for p in currentPairs.keys():
-				ZCI.pairs[p] = currentPairs[p]
+			for p in curPairs.keys():
+				ZCI.pairs[p] = curPairs[p]
 
 			#includers boudaries
 			opening = ctx.icontent.idx
-			closing = currentPairs[opening]
+			closing = curPairs[opening]
 
 			#store raw includer text into ZCI
 			ZCI.txt += str_sub(ctx.icontent.s, opening, closing)
@@ -178,7 +178,7 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPrefix=None, maxId
 
 		#5: ending includer found (alone)
 		if c in INCLUDERS.values():
-			zCtx.error("Lonely ending includer found, missing its opening one before.")
+			zCtx.err("Lonely ending includer found, missing its opening one before.")
 
 
 
@@ -188,7 +188,7 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPrefix=None, maxId
 	#also add last ZCI remaining
 	if ZCI is not None:
 		ZCI.stopIdx = ctx.icontent.idx
-		stripAndAppendZCI(ZCI, ZCIs, allowImpExpansion=gbl, modPrefix=modPrefix)
+		stripAndAppendZCI(ZCI, ZCIs, allowImpExpansion=gbl, modPfx=modPfx)
 
 	#return result
 	return ZCIs
@@ -196,30 +196,32 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPrefix=None, maxId
 
 
 #main
-def p3_splitZCIsAndImport(zCtx):
-	zCtx.debugSepLine()
-	zCtx.debug("============================================================================")
-	zCtx.debug("=================== P3 SPLIT ZCIs AND IMPORT : beginning ===================")
-	zCtx.debug("============================================================================")
-	zCtx.debug("FILE: " + zCtx.ctx.filepath + "\n\n\n\n")
-	zCtx.deepDebugPause()
+def p3_ZCSAndImp(zCtx):
+	zCtx.step = STEP.P3
+	zCtx.dbgSepLine()
+	zCtx.dbg("============================================================================")
+	zCtx.dbg("======================= P3 ZCS AND IMPs : beginning ========================")
+	zCtx.dbg("============================================================================")
+	zCtx.dbg("FILE: " + zCtx.ctx.filepath)
+	zCtx.deepDbgPause()
 
 	#extract global scope ZCIs
 	ZCIs = extractZCIsFromCtx(zCtx, zCtx.ctx, gbl=True)
 
 	#debug
-	zCtx.debug("======================================================================")
-	zCtx.debug("=================== P3 SPLIT ZCIs AND IMPORT : end ===================")
-	zCtx.debug("======================================================================")
-	zCtx.debug("FILE: " + zCtx.ctx.filepath + "\n\n\n\n")
-	zCtx.debugSepLine()
-	zCtx.deepDebugPause()
+	zCtx.dbg("============================================================================")
+	zCtx.dbg("========================== P3 ZCS AND IMPs : end ===========================")
+	zCtx.dbg("============================================================================")
+	zCtx.dbg("FILE: " + zCtx.ctx.filepath)
+	zCtx.dbgSepLine()
+	zCtx.deepDbgPause()
 
 	#debug
-	if zCtx.debugMode:
+	if zCtx.dbgMode[zCtx.step]:
+		prepareDbgDir()
 		dumpZCIs(ZCIs, "debug/" + path_name(zCtx.ctx.filename) + ".p3.json")
 
-	#no need current context anymore (end of precompilation by the way)
+	#no need cur context anymore (end of precompilation by the way)
 	zCtx__closeCurrentCtx(zCtx)
 
 	#return list of precompiled ZCIs

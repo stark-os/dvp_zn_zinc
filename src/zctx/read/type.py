@@ -3,25 +3,25 @@
 # ABSTRACT ZCEs PARSING TOOLS
 
 #expecting a Z type
-def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
-	ZCIDeepDebug(ZCI, "Reading type.", printLine=False)
+def readType(ZCI, ZCIKindIfErr, errorIfNotExisting=True):
+	ZCIDeepDbg(ZCI, "Reading type.", prtLine=False)
 	initialZCICtx = ZCI.ctx.copy()
 
 	#read raw type name (actually, it also includes explicit module prefix if any... so not really "raw")
-	ZCIKindIfError_forMissingName = None
-	if errorIfNotExisting and ZCIKindIfError is not None:
-		ZCIKindIfError_forMissingName = "Type name in " + ZCIKindIfError
-	tRawName = readName(ZCI, ZCIKindIfError_forMissingName, parseModPrefixes=True, modPrefixes_asHeaderOnly=True)
+	ZCIKindIfErr_forMissingName = None
+	if errorIfNotExisting and ZCIKindIfErr is not None:
+		ZCIKindIfErr_forMissingName = "Type name in " + ZCIKindIfErr
+	tRawName = readName(ZCI, ZCIKindIfErr_forMissingName, parseModPfxes=True, modPfxes_asHeaderOnly=True)
 
 	#module-realted / global
 	if initialZCICtx.get() == '^':
-		tModPrefix = extractModPrefix(tRawName)               #save its module prefix elsewhere
-		tRawName   = str_sub(tRawName, start=len(tModPrefix)) # + cut it from "rawName" to keep only the REAL RAW NAME
+		tModPfx = extractModPfx(tRawName)               #save its module prefix elsewhere
+		tRawName   = str_sub(tRawName, start=len(tModPfx)) # + cut it from "rawName" to keep only the REAL RAW NAME
 	else:
-		tModPrefix = "G"
+		tModPfx = "G"
 
 	#build full type name (forced "undeclinated" for the moment)
-	tUndecFullName = tModPrefix + 'U' + tRawName
+	tUndecFullName = tModPfx + 'U' + tRawName
 
 
 
@@ -31,16 +31,16 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 
 		#case 1: type not found => error
 		if errorIfNotExisting:
-			ZCIError(ZCI, "Type " + unprefixizeMod(tModPrefix) + tRawName.replace("__", '_') + " does not exist.")
+			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist.")
 
 		#case 2: maybe it was not a type at all
-		ZCIDeepDebug(ZCI, "Type " + unprefixizeMod(tModPrefix) + tRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", printLine=False)
+		ZCIDeepDbg(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", prtLine=False)
 		ZCI.resetCtx(initialZCICtx)
-		ZCIDeepDebug(ZCI, "Restoring ZCI context to that position => Ended reading Z type.")
+		ZCIDeepDbg(ZCI, "Restoring ZCI context to that position => Ended reading Z type.")
 		return TYPE_ID__UNKNOWN
 
 	#got it
-	ZCIDeepDebug(ZCI, "Undeclinated type \"" + tUndecFullName + "\" targetted.")
+	ZCIDeepDbg(ZCI, "Undeclinated type \"" + tUndecFullName + "\" targetted.")
 
 
 
@@ -53,16 +53,16 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 		#undeclinable type
 		tUndecInst = ZCI.getTypeInstanceFromID(tID)
 		if tUndecInst.dcnCommon.dcnDeg == 0:
-			ZCIError(ZCI, "Type " + unprefixizeMod(tModPrefix) + tRawName.replace("__", '_') + " is not declinable (null declination degree).")
+			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " is not declinable (null declination degree).")
 
 		#read declination types one by one
-		ZCIDeepDebug(ZCI, "Type is declinated, reading declination types.", printLine=False)
+		ZCIDeepDbg(ZCI, "Type is declinated, reading declination types.", prtLine=False)
 		dcns = [] #lst[int]
 		while True:
 			optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 			#read & append next declination type (recursive call). Don't check if already exitsing in dcns, we can have the same type twice, thrice and so on...
-			dcns.append(readType(ZCI, ZCIKindIfError))
+			dcns.append(readType(ZCI, ZCIKindIfErr))
 
 			#must be followed by coma or closing peer
 			optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
@@ -73,14 +73,14 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 				ZCI.inc()
 				break
 			elif next != ',':
-				ZCIError(ZCI, "Invalid element given " + next + " in declination types sequence (expected coma separator ',' or closing bracket ']').")
+				ZCIErr(ZCI, "Invalid element given " + next + " in declination types sequence (expected coma separator ',' or closing bracket ']').")
 			ZCI.inc()
 
 		#debug
-		ZCIDeepDebug(ZCI, "Found declination types [", printLine=False)
+		ZCIDeepDbg(ZCI, "Found declination types [", prtLine=False)
 		for d in dcns:
-			ZCIDeepDebug(ZCI, TERM__OUTPUT_TAB + ZCI.getTypeNameFromID(d) + ",", printLine=False)
-		ZCIDeepDebug(ZCI, "].", printLine=False)
+			ZCIDeepDbg(ZCI, TERM__OUTPUT_TAB + ZCI.getTypeNameFromID(d) + ",", prtLine=False)
+		ZCIDeepDbg(ZCI, "].", prtLine=False)
 
 		#one declination does not exist => our current type can't exist
 		for d in dcns:
@@ -89,12 +89,12 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 
 		#check declination length
 		if len(dcns) < tUndecInst.dcnCommon.dcnDeg:
-			ZCIError(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required).")
+			ZCIErr(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required).")
 		elif len(dcns) > tUndecInst.dcnCommon.dcnDeg:
-			ZCIError(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required).")
+			ZCIErr(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required).")
 
-		#re-build full type name including declinations this time (tModulePrefix can be set to "G" by the way, same logic as undeclinated types)
-		tDecFullName = tModPrefix + 'D' + tRawName
+		#re-build full type name including declinations this time (tModulePfx can be set to "G" by the way, same logic as undeclinated types)
+		tDecFullName = tModPfx + 'D' + tRawName
 		for d in dcns:
 			tDecFullName += '_' + ZCI.getTypeNameFromID(d)
 
@@ -107,10 +107,10 @@ def readType(ZCI, ZCIKindIfError, errorIfNotExisting=True):
 			tID           = ZCI.zCtx.cpl.newTyp(tDecFullName, dcnCommon=tUndecInst.dcnCommon) #share the same dcnCommon (affecting the undeclinated instance will affect every declination)
 			tDecInst      = ZCI.getTypeInstanceFromID(tID)
 			tDecInst.dcns = dcns
-			ZCIDebug(ZCI, "First call of declination \"" + tDecFullName + "\" from type \"" + tUndecFullName + "\", adding it.")
+			ZCIDbg(ZCI, "First call of declination \"" + tDecFullName + "\" from type \"" + tUndecFullName + "\", adding it.")
 
 	#final result
-	ZCIDeepDebug(ZCI, "Ended reading type.")
+	ZCIDeepDbg(ZCI, "Ended reading type.")
 	return tID
 
 

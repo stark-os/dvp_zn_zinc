@@ -5,14 +5,14 @@
 #ZCI
 class zci:
 	def __init__(sbj, zCtx):
-		sbj.zCtx      = zCtx
-		sbj.subCtxs   = None
-		sbj.ctx       = None
-		sbj.pairs     = None
-		sbj.modPrefix = None
-		sbj.startIdx  = None
-		sbj.stopIdx   = None
-		sbj.txt       = ""
+		sbj.zCtx     = zCtx
+		sbj.subCtxs  = None
+		sbj.ctx      = None
+		sbj.pairs    = None
+		sbj.modPfx   = None
+		sbj.startIdx = None
+		sbj.stopIdx  = None
+		sbj.txt      = ""
 
 	def updateText(sbj):
 		startIdx = sbj.startIdx
@@ -51,7 +51,7 @@ class zci:
 	def copy(sbj, ctxCopy=None): #this copy mainly affects ZCI ctx rather than the other fields
 		if ctxCopy is None:
 			ctxCopy   = sbj.ctx.copy()
-		copy          = newZCI(sbj.zCtx, lst_copy(sbj.subCtxs), modPrefix=sbj.modPrefix, pairs=sbj.pairs)
+		copy          = newZCI(sbj.zCtx, lst_copy(sbj.subCtxs), modPfx=sbj.modPfx, pairs=sbj.pairs)
 		copy.startIdx = sbj.startIdx
 		copy.stopIdx  = sbj.stopIdx
 		copy.txt      = sbj.txt
@@ -85,7 +85,7 @@ class zci:
 
 	def toStr(sbj):
 		return \
-			"{mod:\"" + sbj.modPrefix + \
+			"{mod:\"" + sbj.modPfx + \
 			"\",ctx:\"" + sbj.ctx.toStr() + \
 			"\",ctx.icontent.idx:" + str(sbj.ctx.icontent.idx) + \
 			",startIdx:" + str(sbj.startIdx) + \
@@ -117,7 +117,7 @@ class zci:
 	#std (generated at compile time in Z, normally under atm format with subatoms etc...)
 	def toAtm(sbj):
 		return {
-			'mod': sbj.modPrefix,
+			'mod': sbj.modPfx,
 			'ctx': sbj.ctx.toStr(),
 			#'ctx.icontent.idx': sbj.ctx.icontent.idx,
 			#'startIdx': sbj.startIdx,
@@ -128,21 +128,21 @@ class zci:
 
 
 
-def newZCI(zCtx, subCtxs, modPrefix=None, pairs=None):
-	if modPrefix is None:
-		modPrefix = ""
+def newZCI(zCtx, subCtxs, modPfx=None, pairs=None):
+	if modPfx is None:
+		modPfx = ""
 	if pairs is None:
 		pairs = {}
 	if lst_isEmpty(subCtxs):
 		print("[INTERNAL] Cannot instantiate a ZCI with no subCtxs.")
 		exit(1)
-	res           = zci(zCtx)
-	res.subCtxs   = subCtxs
-	res.ctx       = subCtxs[-1]
-	res.pairs     = pairs
-	res.modPrefix = modPrefix
-	res.startIdx  = res.ctx.icontent.idx #current position is where our ZCI starts
-	res.stopIdx   = res.startIdx
+	res          = zci(zCtx)
+	res.subCtxs  = subCtxs
+	res.ctx      = subCtxs[-1]
+	res.pairs    = pairs
+	res.modPfx   = modPfx
+	res.startIdx = res.ctx.icontent.idx #current position is where our ZCI starts
+	res.stopIdx  = res.startIdx
 	return res
 
 def dumpZCIs(ZCIs, filename, oneLine=True):
@@ -383,10 +383,10 @@ class opSeq:
 
 #type for holding some VAP 2nd analysis information
 class vap2:
-	def __init__(sbj, ZCIKindIfError, scope, cstOnly):
-		sbj.ZCIKindIfError = ZCIKindIfError
-		sbj.scope          = scope
-		sbj.cstOnly        = cstOnly
+	def __init__(sbj, ZCIKindIfErr, scope, cstOnly):
+		sbj.ZCIKindIfErr = ZCIKindIfErr
+		sbj.scope        = scope
+		sbj.cstOnly      = cstOnly
 
 
 

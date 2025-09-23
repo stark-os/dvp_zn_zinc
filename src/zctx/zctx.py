@@ -6,12 +6,24 @@
 def newZCtx(
 	filepath, LLIInvFilepath,
 	pcpl_cfg, pcpl_itm,
-	cpl_opt,  dbgMode=False, deepDbgMode=False
+	cpl_opt,
+	dbgMode=None, deepDbgMode=None, stepByStep=False
 ):
+	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Phythonic
+	if dbgMode is None:
+		dbgMode = (False,) * 6 #len(enm DBG)
+	if deepDbgMode is None:
+		deepDbgMode = (False,) * 6
+
+	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< real init
 	res                = zctx()
 	res.LLIInvFilepath = LLIInvFilepath
-	res.debugMode      = dbgMode
-	res.deepDebugMode  = deepDbgMode
+	res.step           = STEP.INIT
+
+	#debug
+	res.dbgMode      = dbgMode
+	res.deepDbgMode  = deepDbgMode
+	res.stepByStep   = stepByStep
 
 	#every imported context & the current one
 	res.initialCtx   = ParsingCtx(filepath, readFile(filepath))
@@ -20,13 +32,14 @@ def newZCtx(
 	res.subCtxs      = [] #subcontexts currently in use
 	res.subCtxs.append(res.initialCtx)
 
-	#check CPL options
-	res.checkCplOpt(cpl_opt)
-
-	#data
+	#actual data holders
 	res.ZCIs = None
 	res.pcpl = newPcplDat(pcpl_cfg, pcpl_itm)
 	res.cpl  = newCplDat(cpl_opt)
+
+	#check PCPL cfgs & CPL opts
+	res.checkPcplCfg(res.pcpl)
+	res.checkCplOpt(cpl_opt)
 
 	#"typ" keyword: virtual type that seems to work like a regular one for the moment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
 	#res.typKeyword = res.cpl.newTyp("GUtyp")
@@ -82,14 +95,14 @@ def newZCtx(
 class zctx:
 	def __init__(sbj):
 		sbj.LLIInvFilepath = None
-		sbj.debugMode      = None
-		sbj.deepDebugMode  = None
+		sbj.dbgMode        = None
+		sbj.deepDbgMode    = None
 
 		#every imported context & the current one
-		sbj.initialCtx   = None
-		sbj.ctx          = None
-		sbj.imported     = None
-		sbj.subCtxs      = None
+		sbj.initialCtx = None
+		sbj.ctx        = None
+		sbj.imported   = None
+		sbj.subCtxs    = None
 
 		#real memory items <<<<<<<<<<<<<<<<<<<<<< to be stored into an enm
 		sbj.SIZE__U8  = 1
@@ -102,8 +115,8 @@ class zctx:
 
 		#types
 		#sbj.typKeyword = 0 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
-		sbj.flyType    = 1
-		sbj.rootTypes  = None
+		sbj.flyType   = 1
+		sbj.rootTypes = None
 
 		#data
 		sbj.ZCIs = None
@@ -119,7 +132,7 @@ class zctx:
 		try:
 			LLICfg = config.read(sbj.LLIInvFilepath)
 		except:
-			sbj.error("Problem while extracting configuration from LLI inventory file " + sbj.LLIInvFilepath, printSubCtxs=False, printLine=False)
+			sbj.err("Problem while extracting configuration from LLI inventory file " + sbj.LLIInvFilepath, prtSubCtxs=False, prtLine=False)
 
 		#for each function given
 		for fName in LLICfg.keys():
@@ -135,7 +148,7 @@ class zctx:
 
 				#"void" keyword is allowed, but every other undefined type must raise an error
 				if tID == TYPE_ID__UNKNOWN and paramsTexts[p] != "void":
-					sbj.error("Undefined type " + paramsTexts[p] + " given as parameter for function " + fName + " in LLI configuration file " + sbj.LLIInvFilepath, printSubCtxs=False, printLine=False)
+					sbj.err("Undefined type " + paramsTexts[p] + " given as parameter for function " + fName + " in LLI configuration file " + sbj.LLIInvFilepath, prtSubCtxs=False, prtLine=False)
 
 				#retType
 				if p == 0:
@@ -144,7 +157,7 @@ class zctx:
 				#params
 				else:
 					if tID == TYPE_ID__UNKNOWN:
-						sbj.error("Cannot have \"void\" as parameter type for function " + fName + " (only allowed in return type), in LLI configuration file " + sbj.LLIInvFilepath, printSubCtxs=False, printLine=False)
+						sbj.err("Cannot have \"void\" as parameter type for function " + fName + " (only allowed in return type), in LLI configuration file " + sbj.LLIInvFilepath, prtSubCtxs=False, prtLine=False)
 					params.append( dataItem(tID, str(DEFAULT_NAME_CHARSET[p]), False, None) )
 
 			#add function

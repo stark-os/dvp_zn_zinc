@@ -8,17 +8,20 @@ class pcplDat:
 		sbj.itms = itms
 		sbj.cfgs = cfgs
 
+		#max complexity allowed in directives
+		sbj.directivesMaxComplexity = PCPL__DIRECTIVES_MAX_COMPLEXITY
+
 def newPcplDat(cfgs, itms):
-	formatted_cfgs = {}
+	formattedCfgs = {}
 	for c in cfgs.keys():
 		v = cfgs[c]
 		if v == "ON":
-			formatted_cfgs[c] = True
+			formattedCfgs[c] = True
 		elif v == "OFF":
-			formatted_cfgs[c] = False
+			formattedCfgs[c] = False
 		else:
 			raise ValueError("Invalid value \"" + v + "\" given to precompiler configuration \"" + c + "\".")
-	return pcplDat(formatted_cfgs, itms)
+	return pcplDat(formattedCfgs, itms)
 
 
 
@@ -33,12 +36,12 @@ class cplDat:
 		sbj.opts = None
 
 		#z abstract elements
-		sbj.modPrefixes = None #lst[str]
-		sbj.types       = None #lst[int]
-		sbj.gblScp      = None
-		sbj.fcts        = None #lst[fct]
-		#sbj.gencFcts    = None #lst[fct] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
-		sbj.linkedLibs  = None #lst[]
+		sbj.modPfxes   = None #lst[str]
+		sbj.types      = None #lst[int]
+		sbj.gblScp     = None
+		sbj.fcts       = None #lst[fct]
+		#sbj.gencFcts   = None #lst[fct] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
+		sbj.linkedLibs = None #lst[]
 
 		#program concrete elements
 		#sbj.dataRes = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
@@ -65,12 +68,12 @@ def newCplDat(opts):
 	res.opts = opts
 
 	#z abstract elements
-	res.modPrefixes   = [] #lst[str]
-	res.types         = []
-	res.gblScp        = newScp()
-	res.fcts          = [] #lst[fct]
-	#res.gencFcts     = [] #lst[fct] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< disabled for the moment
-	res.linkedLibs    = [] #lst[]
+	res.modPfxes   = [] #lst[str]
+	res.types      = []
+	res.gblScp     = newScp()
+	res.fcts       = [] #lst[fct]
+	#res.gencFcts   = [] #lst[fct] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< disabled for the moment
+	res.linkedLibs = [] #lst[]
 
 	#program concrete elements
 	#result.dataResult = program() <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
@@ -79,7 +82,7 @@ def newCplDat(opts):
 
 
 #create a fake ZCI with targetted type as text to be read, and then read that type
-def createFakeZCIAndReadCommonType(originalZCI, commonTypeFullName, ZCIKindIfError):
+def createFakeZCIAndReadCommonType(originalZCI, commonTypeFullName, ZCIKindIfErr):
 	fakeZCI              = originalZCI.copy()
 	fakeZCI.ctx.icontent = istr(commonTypeFullName)
 	fakeZCI.startIdx     = 0
@@ -87,7 +90,7 @@ def createFakeZCIAndReadCommonType(originalZCI, commonTypeFullName, ZCIKindIfErr
 	fakeZCI.updateText()
 
 	#try to find out a type
-	return readType(fakeZCI, ZCIKindIfError)
+	return readType(fakeZCI, ZCIKindIfErr)
 
 
 

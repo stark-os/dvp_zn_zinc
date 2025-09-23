@@ -41,7 +41,7 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 		if ZCI.ctx.icontent.idx >= peerIdx: #should never be greater (could have set an internal error here)
 			break
 		if ZCI.get() == ',':
-			ZCIError(ZCI, "Missing element given in value sequence (\"VALUE\" or \"NAME = VALUE\" expected).")
+			ZCIErr(ZCI, "Missing element given in value sequence (\"VALUE\" or \"NAME = VALUE\" expected).")
 
 		#read value
 		v = readValue(ZCI, "Field VALUE in structure definition.", scope, cstOnly=cstOnly)
@@ -49,7 +49,7 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 		#solve name if not explicitely given
 		if len(fieldName) == 0:
 			if givenFieldsIdx >= len(tgtFields):
-				ZCIError(ZCI, "Too much fields given in value sequence (max " + str(len(tgtFields)) + " fields allowed, " + str(givenFieldsIdx) + " given).")
+				ZCIErr(ZCI, "Too much fields given in value sequence (max " + str(len(tgtFields)) + " fields allowed, " + str(givenFieldsIdx) + " given).")
 
 			#use the next field in logical order
 			fieldName       = tgtFields[givenFieldsIdx].name
@@ -57,7 +57,7 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 
 		#set value to corresponding field
 		if givenFields[fieldName] is not None:
-			ZCIError(ZCI, "Value for field " + fieldName + " is already set (reading value sequence).")
+			ZCIErr(ZCI, "Value for field " + fieldName + " is already set (reading value sequence).")
 		givenFields[fieldName] = v
 
 		#must be followed by coma or closing brace
@@ -69,7 +69,7 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 			ZCI.inc()
 			break
 		if next != ',':
-			ZCIError(ZCI, "Invalid element " + next + " given in value sequence, following a field value (2nd analysis, expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[peerIdx] + "').")
+			ZCIErr(ZCI, "Invalid element " + next + " given in value sequence, following a field value (2nd analysis, expected coma separator ',' or closing includer '" + ZCI.ctx.icontent.s[peerIdx] + "').")
 		ZCI.inc()
 
 	#fill missing fields with their default value
@@ -79,8 +79,8 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 
 			#set default value if no one given
 			if not di.initialized:
-				ZCIError(ZCI, "Value required for field " + f + " in value sequence (no default value set for that field)")
-			ZCIDeepDebug(ZCI, "No value given for field " + f + " in value sequence (=> set default value: " + di.initialValue.toStr(ZCI))
+				ZCIErr(ZCI, "Value required for field " + f + " in value sequence (no default value set for that field)")
+			ZCIDeepDbg(ZCI, "No value given for field " + f + " in value sequence (=> set default value: " + di.initialValue.toStr(ZCI))
 			givenFields[f] = di.initialValue
 
 	#return completed result
@@ -89,16 +89,16 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 
 
 #value analysis process (VAP), main entry point
-def readValue(ZCI, ZCIKindIfError, scope, cstOnly=False):
-	ZCIDeepDebug(ZCI, "Reading value.")
+def readValue(ZCI, ZCIKindIfErr, scope, cstOnly=False):
+	ZCIDeepDbg(ZCI, "Reading value.")
 
 	#1st analysis: ODP
 	firstAnalysisRes = ODP(ZCI)
 	ZCI.forwardUntil(firstAnalysisRes.maxStopIdx+1)
 
 	#apply 2nd analysis recursively in ODP result
-	secondAnalysisRes = applySecondAnalysis(firstAnalysisRes.mainPOCall, ZCI, vap2(ZCIKindIfError, scope, cstOnly)) #here, ZCI is given for error messages only
-	ZCIDeepDebug(ZCI, "Ended reading value.")
+	secondAnalysisRes = applySecondAnalysis(firstAnalysisRes.mainPOCall, ZCI, vap2(ZCIKindIfErr, scope, cstOnly)) #here, ZCI is given for error messages only
+	ZCIDeepDbg(ZCI, "Ended reading value.")
 	return secondAnalysisRes
 
 

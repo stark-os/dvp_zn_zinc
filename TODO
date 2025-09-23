@@ -1,20 +1,66 @@
->>>>>>>>>>>>>>>>>> IMPORTANT
-[ DEBUG ] ...
-    At /home/starkiant/Documents/Codage/Z/zcc/src/main.z:49:12
-    At /home/starkiant/Documents/Codage/Z/zcc/src/zcc/zcc.z:4:12
-    At /home/starkiant/Documents/Codage/Z/zcc/src/zcc/general.z:38:39
-    At /usr/share/stdz/out/src/default.z:1:13
-    At /usr/share/stdz/out/src/core/all.z:4:10
-    At /usr/share/stdz/out/src/core/error.z:47:7
-    At /usr/share/stdz/out/src/core/io.z:71:16 <<<<<<<<<<<<<<<<<<<<<<<<<< INCONSISTENT
-        unt_l length = 0l
+- Add some debug traces in step P1
 
----------------------^
+- Add #FOR, #SET/#!SET, #ATH pcpl directives.
+  Resolve them as much as possible using wait-for-another algorithm.
+  Change <> into #item_name directly in PCPL item parsing.
 
 
 
+- Implement:
+    > FORGET tab DEFINITIONS FOR THE MOMENT, NOT EVEN USED AS DEPENDENCY !!!
+
+    > lst (only with refs)
+
+    > lvlXTabY_u8/16/32/64 (shortcut into lXtY_u8/16/32/64)
+      in which X is the LEVEL. Define some levels from 0 to LVLTAB_MAX_LEVEL_ALLOWED (PCPL item defined in cfg)
+      and Y is the chunk size.
+
+    > lvlTabY_u8/16/32/64 (shortcut into lt_u8/16/32/64)
+      which are the same but with dynamic chunk size => probably means we will have to store length of each subtable ?
+
+    > tab_u8/16/32/64 (shortcut into t_u8/16/32/64)
+      that are actually children of lvl0Tab_u8/16/32/64 (dyn chunk size)
+
+    > LvlTabY_u8/16/32/64 (shortcut into ltY_u8/16/32/64)
+      in which Y is DLT__CHKSZ, pcpl itm going
+
+    > Default available types includes:
+      chunk-size: 32, 64 (+ custom)
+      levels: 0-levelMax
+      levelMax: 4 for everyone for the moment, but make this constant specific for the targetted type (u8/16/32/64)
+
+lvl3Tab64_u8 a = ^Lvl3Tab64_u8.new()
+
+l3t64_u8 a = ^L3T64_u8.new()
+
+l3t_u8 a = ^L3T_u8.new(chkSz) //custom chunk size
+
+l3t_ref a = ^L3T_ref.new(chkSz)
+
+lvlTab64_u8 a = ^Lvl3Tab64_u8.new()
+
+lt64_u8 a = ^LT64_u8.new() //dynamic level (initial is 0)
+
+lt_u8   a = ^LT_u8.new(chkSz) //dynamic level, custom chunk size
+
+lt_ref  a = ^LT_ref.new(chkSz)
+
+    => USE A LOT OF PCPL DIRECTIVES, ESPECIALLY IN dynamic LTs !!!
+    (obviously, for each, create their s8/16/32/64 and f32/64 alternatives as children of the u's)
 
 
+
+- Implement:
+    > type ^Txt.word that is almost a table but with fixed length: 8B
+      (when it grows longer => becomes a phrase
+    > type ^Txt.phrase that is a l1t_u8
+    > typ str { enm ^Txt.KINDS kind, ref dat }
+      That manages all of them so that it is transparent for the user.
+
+
+
+- Generic fct/ope are disabled.
+  We may not need them at all if using #FOR, #SET, #ATH pcpl directives.
 
 
 
@@ -22,6 +68,8 @@
     "mod ALPHA { a = ^ABC.^.^DEF.^.^GHI.b }"
      => "a = ^ABC.^ALPHA.^DEF.^ALPHA.^GHI.b"
      => "a = MABC_MALPHA_MDEF_MALPHA_MGHI_Eb"
+
+
 
 - For the moment, no declination indexing is taken into account in type declaration :
   We will ONLY ALLOW that indexing in declination lists !
@@ -44,8 +92,12 @@
   FORBIDDEN:
   typ j[1] { 0 k }
 
+
+
 - Several coma separators must be allowed : "(a, b,, c,)" <=> "(a, b, c,)"
   Forbidden for the moment.
+
+
 
 - Methods not using their main object can be converted to regular functions.
   Such methods are called "no-methods".
@@ -54,6 +106,8 @@
   In all cases, raise a warning if such function is detected :
       "Method TOTO can be reduced as regular function (no-method detected)."
   User must be aware of that kind of possible optimization whatever ZCC does with this.
+
+
 
 - Optimize inert arithmetic computations in compiled result.
   add ... 0x00

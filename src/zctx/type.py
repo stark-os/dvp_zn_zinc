@@ -115,18 +115,18 @@
 
 	#find THE RIGHT matching operator among, the first one among the possible names that truely exists
 	def findMatchingOperator(sbj, opeHeader, paramTypeNames):
-		sbj.deepDebug("Trying to find matching function for operator " + opeHeader + " with parameters (" + ",".join(paramTypeNames) + ").", printSubCtxs=False, printLine=False)
+		sbj.deepDbg("Trying to find matching function for operator " + opeHeader + " with parameters (" + ",".join(paramTypeNames) + ").", prtSubCtxs=False, prtLine=False)
 		existingOpeAlternatives  = sbj.listAllOperatorAlternatives(opeHeader)
 		possibleMatchingOpeNames = sbj.listAllTargettableOperatorNames(opeHeader, paramTypeNames)
 
 		#look for the 1st existing operator among those mentionned as "possible matching"
 		for p in possibleMatchingOpeNames:
-			sbj.deepDebug("Next possible matching name " + p, printSubCtxs=False, printLine=False)
+			sbj.deepDbg("Next possible matching name " + p, prtSubCtxs=False, prtLine=False)
 			for ope in existingOpeAlternatives:
 
 				#match => stop here
 				if ope.name == p:
-					sbj.deepDebug("Its a MATCH ! => using it.", printSubCtxs=False, printLine=False)
+					sbj.deepDbg("Its a MATCH ! => using it.", prtSubCtxs=False, prtLine=False)
 					return ope
 
 		#no alternative found

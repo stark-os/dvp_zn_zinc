@@ -1,68 +1,68 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/output1.py
 
 	#output
-	def internal(sbj, msg, printSubCtxs=True, printLine=True):
+	def internal(sbj, msg, prtSubCtxs=True, prtLine=True):
 		print("[INT ERR] " + msg)
-		if printSubCtxs:
+		if prtSubCtxs:
 			for ctx in sbj.subCtxs:
 				print("    At " + ctx.toStr())
-		if printLine:
+		if prtLine:
 			if sbj.ctx is None:
-				sbj.internal("No context to internal-output line from.", printSubCtxs=False, printLine=False)
-			sbj.ctx.printLineIndicator()
+				sbj.internal("No context to internal-output line from.", prtSubCtxs=False, prtLine=False)
+			sbj.ctx.prtLineIndicator()
 		import traceback #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< can be useful
 		traceback.print_stack()
 		exit(2)
 
-	def error(sbj, msg, printSubCtxs=True, printLine=True):
+	def err(sbj, msg, prtSubCtxs=True, prtLine=True):
 		print("[ ERROR ] " + msg)
-		if printSubCtxs:
+		if prtSubCtxs:
 			for ctx in sbj.subCtxs:
 				print("    At " + ctx.toStr())
-		if printLine:
+		if prtLine:
 			if sbj.ctx is None:
-				sbj.internal("No context to error-output line from.", printSubCtxs=False, printLine=False)
-			sbj.ctx.printLineIndicator()
+				sbj.internal("No context to error-output line from.", prtSubCtxs=False, prtLine=False)
+			sbj.ctx.prtLineIndicator()
 		exit(1)
 
-	def warning(sbj, msg, printSubCtxs=True, printLine=True):
+	def wrn(sbj, msg, prtSubCtxs=True, prtLine=True):
 		print("[WARNING] " + msg)
-		if printSubCtxs:
+		if prtSubCtxs:
 			for ctx in sbj.subCtxs:
 				print("    At " + ctx.toStr())
-		if printLine:
+		if prtLine:
 			if sbj.ctx is None:
-				sbj.internal("No context to warning-output line from.", printSubCtxs=False, printLine=False)
-			sbj.ctx.printLineIndicator()
+				sbj.internal("No context to warning-output line from.", prtSubCtxs=False, prtLine=False)
+			sbj.ctx.prtLineIndicator()
 
-	def debug(sbj, msg, printSubCtxs=False, printLine=False):
-		if sbj.debugMode:
+	def dbg(sbj, msg, prtSubCtxs=False, prtLine=False):
+		if sbj.dbgMode[sbj.step]:
 			print("[ DEBUG ] " + msg)
-			if printSubCtxs:
+			if prtSubCtxs:
 				for ctx in sbj.subCtxs:
 					print("    At " + ctx.toStr())
-			if printLine:
+			if prtLine:
 				if sbj.ctx is None:
-					sbj.internal("No context to debug-output line from.", printSubCtxs=False, printLine=False)
-				sbj.ctx.printLineIndicator()
+					sbj.internal("No context to debug-output line from.", prtSubCtxs=False, prtLine=False)
+				sbj.ctx.prtLineIndicator()
 
-	def deepDebug(sbj, msg, printSubCtxs=False, printLine=False):
-		if sbj.deepDebugMode:
+	def deepDbg(sbj, msg, prtSubCtxs=False, prtLine=False):
+		if sbj.deepDbgMode[sbj.step]:
 			print("[D-DEBUG] " + msg)
-			if printSubCtxs:
+			if prtSubCtxs:
 				for ctx in sbj.subCtxs:
 					print("    At " + ctx.toStr())
-			if printLine:
+			if prtLine:
 				if sbj.ctx is None:
-					sbj.internal("No context to deep-debug-output line from.", printSubCtxs=False, printLine=False)
-				sbj.ctx.printLineIndicator()
+					sbj.internal("No context to deep-debug-output line from.", prtSubCtxs=False, prtLine=False)
+				sbj.ctx.prtLineIndicator()
 
-	def debugSepLine(sbj):
-		if sbj.debugMode:
+	def dbgSepLine(sbj):
+		if sbj.dbgMode[sbj.step]:
 			Term__drawSepLine()
 
-	def deepDebugPause(sbj):
-		if sbj.deepDebugMode and deepDebug_stepByStep:
+	def deepDbgPause(sbj):
+		if sbj.deepDbgMode[sbj.step] and sbj.stepByStep:
 			print("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~", end="")
 			input()
 			print(Term__CUU1 + "                                       \r", end="")

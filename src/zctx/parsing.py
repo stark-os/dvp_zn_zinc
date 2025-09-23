@@ -12,6 +12,9 @@ def zCtx__inc(sbj):
 def zCtx__forward(sbj, step):
 	return sbj.ctx.forward(step)
 
+def zCtx__reset(sbj, newText=None):
+	sbj.ctx.reset(newText=newText)
+
 
 
 # SUBCONTEXTS
@@ -29,17 +32,17 @@ def zCtx__openNewSubCtx(zCtx, filepath):
 	realNewPath = os.path.realpath(filepath)
 	for c in zCtx.imported:
 		if realNewPath == c:
-			zCtx.deepDebug("Subctx \"" + realNewPath + "\" already openned once => skipping it.")
+			zCtx.deepDbg("Subctx \"" + realNewPath + "\" already openned once => skipping it.")
 			return False
 
 	#open new subcontext
-	zCtx.deepDebug("Opening subctx \"" + filepath + "\".")
+	zCtx.deepDbg("Opening subctx \"" + filepath + "\".")
 	try:
 		newCtx = ParsingCtx(filepath, readFile(filepath))
 	except FileNotFoundError:
-		zCtx.error("File " + filepath + " not found.")
+		zCtx.err("File " + filepath + " not found.")
 	except IsADirectoryError:
-		zCtx.error("Element " + filepath + " is a directory (expected file).")
+		zCtx.err("Element " + filepath + " is a directory (expected file).")
 
 	#not already openned => add it to importations
 	zCtx.ctx = newCtx
@@ -48,17 +51,17 @@ def zCtx__openNewSubCtx(zCtx, filepath):
 	return True
 
 def zCtx__closeCurrentCtx(zCtx): #return True if no more context remains
-	zCtx.deepDebug("Closing latest subctx.")
+	zCtx.deepDbg("Closing latest subctx.")
 	lst_pop(zCtx.subCtxs)
 
 	#no more subcontext remaining
 	if lst_isEmpty(zCtx.subCtxs):
 		zCtx.ctx = None
-		zCtx.deepDebug("No more subctx remaining.")
+		zCtx.deepDbg("No more subctx remaining.")
 		return True
 
 	#subcontexts remaining
-	zCtx.deepDebug("Back here:", printSubCtxs=True)
+	zCtx.deepDbg("Back here:", prtSubCtxs=True)
 	zCtx.ctx = lst_last(zCtx.subCtxs)
 	return False
 

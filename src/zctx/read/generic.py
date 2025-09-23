@@ -3,20 +3,20 @@
 # GENERAL PARSING TOOLS
 
 #move ctx cursor just before the first non-blank character found
-def jumpBlankZone(ZCI, missingFieldIfError, blanks=BLANKS): #!WARNING: we MUST be on a blank character before calling that function
+def jumpBlankZone(ZCI, missingFieldIfErr, blanks=BLANKS): #!WARNING: we MUST be on a blank character before calling that function
 	while not ZCI.inc():
 		if ZCI.get() not in blanks:
 			return
-	if missingFieldIfError is not None:
-		ZCIError(ZCI, "Expected something after blank zone: " + missingFieldIfError)
+	if missingFieldIfErr is not None:
+		ZCIErr(ZCI, "Expected something after blank zone: " + missingFieldIfErr)
 
-def optionalBlanks(ZCI, missingFieldIfError, blanks=BLANKS):
+def optionalBlanks(ZCI, missingFieldIfErr, blanks=BLANKS):
 	if ZCI.get() in blanks:
-		jumpBlankZone(ZCI, missingFieldIfError, blanks=blanks)
+		jumpBlankZone(ZCI, missingFieldIfErr, blanks=blanks)
 
-def endOfZCI(ZCI, ZCIKindIfError):
+def endOfZCI(ZCI, ZCIKindIfErr):
 	if not ZCI.reachedEnd():
-		ZCIError(ZCI, "Too much elements in " + ZCIKindIfError + " Should stop here.")
+		ZCIErr(ZCI, "Too much elements in " + ZCIKindIfErr + " Should stop here.")
 
 
 
@@ -31,14 +31,14 @@ def readHexByte(ZCI):
 	#read & check 1st digit
 	h1 = ZCI.get()
 	if h1 not in HEX_DIGITS_LOWERCASE:
-		ZCIError(ZCI, "Invalid first hexadecimal digit '" + h1 + "' given in byte notation.")
+		ZCIErr(ZCI, "Invalid first hexadecimal digit '" + h1 + "' given in byte notation.")
 
 	#read & check 2nd digit
 	if ZCI.inc():
-		ZCIError(ZCI, "Missing second hexadecimal digit in byte notation.")
+		ZCIErr(ZCI, "Missing second hexadecimal digit in byte notation.")
 	h0 = ZCI.get()
 	if h0 not in HEX_DIGITS_LOWERCASE:
-		ZCIError(ZCI, "Invalid second hexadecimal digit '" + h0 + "' given in byte notation.")
+		ZCIErr(ZCI, "Invalid second hexadecimal digit '" + h0 + "' given in byte notation.")
 
 	#return byte
 	return hex_toS8(h1, h0)
@@ -47,7 +47,7 @@ def readHexByte(ZCI):
 
 #try reading symbol (don't move ZCI ctx)
 def readSymbol(ZCI):
-	ZCIDeepDebug(ZCI, "Reading symbol.")
+	ZCIDeepDbg(ZCI, "Reading symbol.")
 	tmpZCI = ZCI.copy()
 	c1 = tmpZCI.get()
 
@@ -175,21 +175,21 @@ def readSymbol(ZCI):
 #     Must also include the first 2 lines of comment over it
 #
 def readName(ZCI,
-	missingFieldIfError, #null means "don't raise error if empty"
+	missingFieldIfErr, #null means "don't raise error if empty"
 	blacklist=None, whitelist=DEFAULT_NAME_CHARSET,
-	doubleUnderscores=False,
-	parseModPrefixes=False,
-	modPrefixes_asHeaderOnly=False #means "if any, it must BEGIN with it and be the only occurrence"
+	dblUnderscores=False,
+	parseModPfxes=False,
+	modPfxes_asHeaderOnly=False #means "if any, it must BEGIN with it and be the only occurrence"
 ):
-	ZCIDeepDebug(ZCI, "Reading name.")
-	if parseModPrefixes:
-		doubleUnderscores = True #doesn't make sens to double underscores in module prefixes but not in the name => force it
+	ZCIDeepDbg(ZCI, "Reading name.")
+	if parseModPfxes:
+		dblUnderscores = True #doesn't make sens to double underscores in module prefixes but not in the name => force it
 
 	#read until given blacklist/whitelist no longer matches
-	name           = ""
-	firstCharacter = True
+	name     = ""
+	firstChr = True
 	while True:
-		if not firstCharacter: #skip ZCI.inc() for first character only
+		if not firstChr: #skip ZCI.inc() for first character only
 			if ZCI.inc():
 				break
 		c = ZCI.get()
@@ -199,13 +199,13 @@ def readName(ZCI,
 		# I] MODULE PREFIX PARSING
 
 		#module prefix detection
-		if parseModPrefixes and c == '^':
+		if parseModPfxes and c == '^':
 			mods           = []
-			currentModName = ""
+			curModName = ""
 
 			#only allowing it as name header
-			if modPrefixes_asHeaderOnly and not firstCharacter:
-				ZCIError(ZCI, "Module prefixes only allowed at beginning of name here.")
+			if modPfxes_asHeaderOnly and not firstChr:
+				ZCIErr(ZCI, "Module prefixes only allowed at beginning of name here.")
 
 
 
@@ -215,14 +215,14 @@ def readName(ZCI,
 			while not ZCI.inc():
 				c = ZCI.get() #always using the same 'c'
 
-				#end of current module name
+				#end of cur module name
 				if c == '.':
-					mods.append(currentModName)
-					currentModName = ""
+					mods.append(curModName)
+					curModName = ""
 
 					#can't continue ? => ending ZCI text without giving the module element to target
 					if ZCI.inc():
-						ZCIError(ZCI, "Missing an element name to target inside that module (reached end of ZCI)")
+						ZCIErr(ZCI, "Missing an element name to target inside that module (reached end of ZCI)")
 
 					#chaining with another module name (potentially) => continue in the same loop, else => break here, we reached our next "name" character
 					c = ZCI.get()
@@ -233,22 +233,22 @@ def readName(ZCI,
 
 				#doubling underscores
 				if c == '_':
-					currentModName += '_'
+					curModName += '_'
 
 				#not part of module name => break here, that one is the next "name" character actually
 				if c not in DEFAULT_NAME_CHARSET:
 					break
 
 				#part of module name
-				currentModName += c
+				curModName += c
 
 
 
 			# I.2) SOLVE THEM
 
 			#unfinished module name access
-			if len(currentModName) != 0:
-				ZCIError(ZCI, "Missing ending dot delimiter '.' when targetting something from module.")
+			if len(curModName) != 0:
+				ZCIErr(ZCI, "Missing ending dot delimiter '.' when targetting something from module.")
 
 			#there was no module names actually, it was just a lonely '^' => do as nothing happened
 			if len(mods) == 0:
@@ -260,9 +260,9 @@ def readName(ZCI,
 
 					#no module name given => resolve implicit naming
 					if len(mods[m]) == 0:
-						if len(ZCI.modPrefix) == 0:
-							ZCIError(ZCI, "Can't resolve implicit module prefix, we are outside of any module.")
-						name += ZCI.modPrefix
+						if len(ZCI.modPfx) == 0:
+							ZCIErr(ZCI, "Can't resolve implicit module prefix, we are outside of any module.")
+						name += ZCI.modPfx
 
 					#prefixing them eitherway
 					else:
@@ -285,19 +285,19 @@ def readName(ZCI,
 
 		#allowed character => add it
 		name += c
-		if doubleUnderscores and c == '_':
+		if dblUnderscores and c == '_':
 			name += '_'
 
 		#no longer in first character (maybe, getting rid of the "if" and keeping only the assignment would be more optimized ?)
-		if firstCharacter:
-			firstCharacter = False
-	ZCIDeepDebug(ZCI, "Ended reading name.")
+		if firstChr:
+			firstChr = False
+	ZCIDeepDbg(ZCI, "Ended reading name.")
 
 	#missing name field
 	if len(name) == 0:
-		if missingFieldIfError is None:
+		if missingFieldIfErr is None:
 			return ""
-		ZCIError(ZCI, "Missing or invalid name: " + missingFieldIfError)
+		ZCIErr(ZCI, "Missing or invalid name: " + missingFieldIfErr)
 
 	#return result
 	return name
@@ -310,7 +310,7 @@ def lookForFieldsAccessInDataItem(ZCI, di): #basically, for FFA application
 
 	#as long as we try to access fields
 	while ZCI.get() == '.':
-		fieldName = readName(ZCI, "Field from data item " + unprefixize(di.name))
+		fieldName = readName(ZCI, "Field from data item " + unpfx(di.name))
 
 		#found a field with that name in our dataItem
 		fieldFound = None
@@ -319,7 +319,7 @@ def lookForFieldsAccessInDataItem(ZCI, di): #basically, for FFA application
 				fieldFound = f
 				break
 		if fieldFound is None:
-			ZCIError(ZCI, "Data item " + di.name + " has no field " + fieldName)
+			ZCIErr(ZCI, "Data item " + di.name + " has no field " + fieldName)
 
 		#update result (field access)
 		di = fieldFound
@@ -335,7 +335,7 @@ def tryReadDataItemIncludingFields(ZCI, scope):
 	starter = ZCI.get()
 
 	#read name (will have module prefix if any)
-	name = readName(ZCI, "Any data item name", parseModPrefixes=True, modPrefixes_asHeaderOnly=True),
+	name = readName(ZCI, "Any data item name", parseModPfxes=True, modPfxes_asHeaderOnly=True),
 	di   = None #just declare
 
 	#case 1: having a module prefix => looking directly in global scope

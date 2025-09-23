@@ -2,9 +2,17 @@
 
 # -------- GENERAL --------
 
-#option to be defined in src/main.z
-deepDebug_stepByStep        = True #should be a global VARIABLE dataitem
-deepDebug_stepByStepSpacing = True #same thing
+#current step <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< SHOULD BE GBL CST ENM
+class Step:
+	def __init__(sbj):
+		sbj.INIT = 0
+		sbj.P1   = 1
+		sbj.P2   = 2
+		sbj.P3   = 3
+		sbj.C01  = 4
+		sbj.C02  = 5
+		sbj.C03  = 6
+STEP = Step()
 
 #general name parsing
 NO_NAME            = -1
@@ -45,7 +53,7 @@ TYPE_FULLNAME__FMAP = "GUfmap"
 TYPE_FULLNAME__MMAP = "GUmmap"
 
 #byte notations
-BN_PREFIX = '`'
+BN_PFX = '`'
 
 #literal numeric values: binary limits
 MAX_BINARY_DIGITS_ALLOWED__U16 = 16
@@ -219,36 +227,38 @@ FCT_NAME_BLACKLIST                = BLANKS + ('(',)
 FCT_NAME_CHARSET                  = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', ':', '~', '!', '?', '&', '|', '<', '>')
 VALUE_CHARSET                     = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_BLACKLIST + ('@', '#', '$', '`') #additionnal FO + byte notation prefix
 
-#cpl opt set
-CPL_OPT_VALUES__ARCH  = 0 #architecture type
-CPL_OPT_VALUES__ONOFF = 1
-CPL_OPT_VALUES__DIGIT = 2
-CPL_OPT_VALUES__RTYPE = 3 #root type
-CPL_OPT_ALLOWED = {
-	"ARCH":                           CPL_OPT_VALUES__ARCH,
-	"INTERPRET_COMMON_STRUCTURES":    CPL_OPT_VALUES__ONOFF,
-	"MAX_INSTRUCTS_NOFUNCTION":       CPL_OPT_VALUES__DIGIT,
-	"CHECK_NULL_STC_BEFORE_METHOD":   CPL_OPT_VALUES__ONOFF,
-	"OPERATORS_SUPPORTS_INHERITANCE": CPL_OPT_VALUES__ONOFF,
-	"METHODS_SUPPORTS_INHERITANCE":   CPL_OPT_VALUES__ONOFF,
-	"EMPTY_DATA_ITEM_NULL":           CPL_OPT_VALUES__ONOFF,
-	"UNDECLINATED_IMPLICITSOURCE":    CPL_OPT_VALUES__RTYPE,
-	"LS_CNT_DIGITS":                  CPL_OPT_VALUES__DIGIT
-}
-
 #data item nature
 NATURE__PRM = 0
 NATURE__STC = 1
 NATURE__ENM = 2
 
 #statement kinds
-STM__IF_ = 0
+STM__IF  = 0
 STM__FOR = 1
 STM__WHI = 2
 STM__SWI = 3
 
+#cpl opt set
+CPL_OPT__VALUES__ARCH  = 0 #architecture type
+CPL_OPT__VALUES__ONOFF = 1
+CPL_OPT__VALUES__DIGIT = 2
+CPL_OPT__VALUES__RTYPE = 3 #root type
+CPL_OPT__ALLOWED = {
+	"ARCH":                           CPL_OPT__VALUES__ARCH,
+	"INTERPRET_COMMON_STRUCTURES":    CPL_OPT__VALUES__ONOFF,
+	"MAX_INSTRUCTS_NOFUNCTION":       CPL_OPT__VALUES__DIGIT,
+	"CHECK_NULL_STC_BEFORE_METHOD":   CPL_OPT__VALUES__ONOFF,
+	"OPERATORS_SUPPORTS_INHERITANCE": CPL_OPT__VALUES__ONOFF,
+	"METHODS_SUPPORTS_INHERITANCE":   CPL_OPT__VALUES__ONOFF,
+	"EMPTY_DATA_ITEM_NULL":           CPL_OPT__VALUES__ONOFF,
+	"UNDECLINATED_IMPLICITSOURCE":    CPL_OPT__VALUES__RTYPE,
+	"LS_CNT_DIGITS":                  CPL_OPT__VALUES__DIGIT
+}
+
 #pcpl items
-PCPL_ITEM_NAME_CHARSET = DEFAULT_NAME_CHARSET #no link, but same value
+PCPL__ITEM_NAME_CHARSET         = DEFAULT_NAME_CHARSET #no link, but same value
+PCPL__DIRECTIVES_MAX_COMPLEXITY = 10
+
 
 
 

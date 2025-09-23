@@ -150,7 +150,7 @@ class ParsingCtx:
 
 
 	#output
-	def printLineIndicator(sbj):
+	def prtLineIndicator(sbj):
 		content = sbj.icontent.s
 
 		#set beginning & end of line

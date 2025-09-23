@@ -73,9 +73,9 @@ def BN_fromChr(zCtx, c, escaping=False):
 		#undefined escape sequence
 		else:
 			if chr_isPrintable(c):
-				zCtx.error("Undefined escape sequence for character '" + c + "' (" + BN_PREFIX + chr_hex(c) + ").")
+				zCtx.err("Undefined escape sequence for character '" + c + "' (" + BN_PFX + chr_hex(c) + ").")
 			else:
-				zCtx.error("Undefined escape sequence for unprintable character : " + BN_PREFIX + chr_hex() + ".")
+				zCtx.err("Undefined escape sequence for unprintable character : " + BN_PFX + chr_hex() + ".")
 
 	#regular case
 	else:
