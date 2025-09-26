@@ -256,7 +256,7 @@ CPL_OPT__ALLOWED = {
 }
 
 #pcpl items
-PCPL__ITEM_NAME_CHARSET         = DEFAULT_NAME_CHARSET #no link, but same value
+PCPL__NAME_CHARSET              = DEFAULT_NAME_CHARSET #no link, but same value
 PCPL__DIRECTIVES_MAX_COMPLEXITY = 10
 
 

@@ -15,6 +15,9 @@ def zCtx__forward(sbj, step):
 def zCtx__reset(sbj, newText=None):
 	sbj.ctx.reset(newText=newText)
 
+def zCtx__reachedEnd(sbj):
+	return sbj.ctx.reachedEnd()
+
 
 
 # SUBCONTEXTS

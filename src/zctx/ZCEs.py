@@ -317,7 +317,7 @@ class call:
 		dataStr += depthSpace + ")->[" + ZCI.getTypeNameFromID(sbj.retType) + ']'
 		return dataStr
 
-#"potential operator call" Same things as a call except we store only 2 params and under atm types.
+#"potential operator call" Same things as a call except we store only 2 params and under atm types (and we don't care about retType).
 #                          We expect to have only zci or POCall types for these atoms.
 #                          This allows us to work with operator calls while parameters are not analyzed yet during progressive priorizing.
 class POCall:

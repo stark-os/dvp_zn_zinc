@@ -5,8 +5,9 @@
 #pcpl data
 class pcplDat:
 	def __init__(sbj, cfgs, itms):
-		sbj.itms = itms
-		sbj.cfgs = cfgs
+		sbj.inCodeItms = {}   #loaded in user code
+		sbj.inCfgItms  = itms #loaded in cfg/pcpl_itms.cfg
+		sbj.cfgs       = cfgs
 
 		#max complexity allowed in directives
 		sbj.directivesMaxComplexity = PCPL__DIRECTIVES_MAX_COMPLEXITY
