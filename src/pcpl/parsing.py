@@ -19,7 +19,7 @@ from zctx import *
 def PCPL__jumpBlankZone(zCtx, directiveName):
 
 	#expecting to still have things to read
-	if zCtx.reachedEnd():
+	if zCtx__reachedEnd(zCtx):
 		zCtx.err("Precompiler directive " + directiveName + " expected to have something else to read after here.")
 
 	#expecting to be on a blank
@@ -89,7 +89,7 @@ def PCPL__readItemValue(zCtx):
 		zCtx.err("Expecting to have a precompiler value here, got braces includer.")
 
 	#case 2: consider having literal text
-	return PCPL__solveArithmetic(zCtx, PCPL__readUntil(zCtx, BLANKS_EXTENDED))
+	return PCPL__readUntil(zCtx, BLANKS_EXTENDED)
 
 def PCPL__checkNameCharset(zCtx, name):
 	for c in name:

@@ -22,6 +22,7 @@ from zctx import *
 
 #SET
 def PCPL__processSET(zCtx):
+	zCtx.dbg("Processing PCPL directive \"SET\".", prtLine=True)
 	PCPL__jumpBlankZone(zCtx, "SET")
 
 	#read & check name given
@@ -43,12 +44,14 @@ def PCPL__processSET(zCtx):
 	zCtx.pcpl.inCodeItms[name] = valueText
 
 	#success => should return empty text BUT HERE, current zCtx.ctx is right AFTER value text (+1), and next step in main parsing loop will be to inc() => we will lose that character (which can only be a BLANK btw) => add it manually
+	zCtx.dbg("Processed PCPL directive \"SET\" => SUCCESS")
 	return zCtx__get(zCtx)
 
 
 
 #!SET
 def PCPL__processUnSET(zCtx):
+	zCtx.dbg("Processing PCPL directive \"!SET\".", prtLine=True)
 	PCPL__jumpBlankZone(zCtx, "!SET")
 
 	#read & check name given
@@ -68,12 +71,14 @@ def PCPL__processUnSET(zCtx):
 	zCtx.pcpl.inCodeItms.pop(name)
 
 	#success => should return empty text BUT HERE, current zCtx.ctx is right AFTER name (+1), and next step in main parsing loop will be to inc() => we will lose that character (which can only be a BLANK btw) => add it manually
+	zCtx.dbg("Processed PCPL directive \"!SET\" => SUCCESS")
 	return zCtx__get(zCtx)
 
 
 
 #CFG & !CFG (can't return null btw)
 def PCPL__processCFG(zCtx, negation):
+	zCtx.dbg("Processing PCPL directive \"(!)CFG\".", prtLine=True)
 	PCPL__jumpBlankZone(zCtx, "CFG")
 
 	#read & check cfg name given
@@ -97,15 +102,18 @@ def PCPL__processCFG(zCtx, negation):
 
 	#cfg active => enable block in code
 	if applyCfg:
+		zCtx.deepDbg("Processed PCPL directive \"CFG\" => SUCCESS")
 		return block
 
 	#cfg inactive => skip it (respecting line nbr by giving the same amount of line feeds)
+	zCtx.dbg("Processed PCPL directive \"!CFG\" => SUCCESS")
 	return '\n' * block.count('\n')
 
 
 
 #FOR
 def PCPL__processFOR(zCtx):
+	zCtx.dbg("Processing PCPL directive \"FOR\".", prtLine=True)
 	PCPL__jumpBlankZone(zCtx, "FOR")
 
 	#read iter var name given
@@ -146,20 +154,13 @@ def PCPL__processFOR(zCtx):
 
 	#take a look at each textValue
 	for tv in range(len(textValues)):
-		solvedTextValue = PCPL__ATH__solveArithmetic(zCtx, textValues[tv]) #try to solve arithmetically
-
-		#unsolvable => invalid
-		if solvedTextValue is None:
-			return None
-		textValues[tv]  = solvedTextValue
 
 		#sub-directive => stop here then, we must have 0 complexity
-		if tv[0] == '#':
+		if textValues[tv][0] == '#':
 			zCtx.dbg("Found a sub-directive in FOR range values => stop here, it must be solved first.")
 			return None
 
 	#finally, get concerned zone
-	zCtx__inc(zCtx) #move right after closing includer of iter range
 	PCPL__jumpBlankZone(zCtx, "FOR")
 	if zCtx__get(zCtx) != '{':
 		zCtx.err("Expecting a braces includer here to define iteration range of precompiler FOR directive.")
@@ -171,6 +172,7 @@ def PCPL__processFOR(zCtx):
 		res += "#SET " + iterVarName + " " + tv + " " #define iter var just during for each iteration
 		res += block
 		res += "#!SET " + iterVarName + " "
+	zCtx.dbg("Processed PCPL directive \"FOR\" => SUCCESS")
 	return res
 
 
@@ -181,9 +183,10 @@ def PCPL__processFOR(zCtx):
 # -------- EXECUTION --------
 
 #react to directive execution result
-def resumeAfterProcessingDirective(directiveResText, unparseableDirectives, initialCtx):
+def resumeAfterProcessingDirective(zCtx, directiveResText, unparseableDirectives, initialCtx):
 	if directiveResText is None:
-		zCtx.ctx.resetCtx(initialCtx)
+		zCtx.deepDbg("Canceling treatment fot this potential PCPL directive => FAILURE", prtLine=True)
+		zCtx__resetCtx(zCtx, initialCtx)
 		unparseableDirectives.append(initialCtx)
 		return '#'
 	return directiveResText
@@ -234,7 +237,8 @@ def tryParseDirectives(zCtx):
 
 						#CFG
 						if directiveName == "CFG":
-							output += resumeAfterProcessingDirective(
+							zCtx__inc(zCtx)
+							output += resumeAfterProcessingDirective(zCtx,
 								PCPL__processCFG(zCtx, False),
 								unparseableDirectives,
 								initialCtx
@@ -243,7 +247,8 @@ def tryParseDirectives(zCtx):
 
 						#!CFG
 						if directiveName == "!CFG":
-							output += resumeAfterProcessingDirective(
+							zCtx__inc(zCtx)
+							output += resumeAfterProcessingDirective(zCtx,
 								PCPL__processCFG(zCtx, True),
 								unparseableDirectives,
 								initialCtx
@@ -252,7 +257,8 @@ def tryParseDirectives(zCtx):
 
 						#SET
 						elif directiveName == "SET":
-							output += resumeAfterProcessingDirective(
+							zCtx__inc(zCtx)
+							output += resumeAfterProcessingDirective(zCtx,
 								PCPL__processSET(zCtx),
 								unparseableDirectives,
 								initialCtx
@@ -261,7 +267,8 @@ def tryParseDirectives(zCtx):
 
 						#!SET
 						elif directiveName == "!SET":
-							output += resumeAfterProcessingDirective(
+							zCtx__inc(zCtx)
+							output += resumeAfterProcessingDirective(zCtx,
 								PCPL__processUnSET(zCtx),
 								unparseableDirectives,
 								initialCtx
@@ -270,7 +277,8 @@ def tryParseDirectives(zCtx):
 
 						#FOR
 						elif directiveName == "FOR":
-							output += resumeAfterProcessingDirective(
+							zCtx__inc(zCtx)
+							output += resumeAfterProcessingDirective(zCtx,
 								PCPL__processFOR(zCtx),
 								unparseableDirectives,
 								initialCtx
@@ -279,7 +287,8 @@ def tryParseDirectives(zCtx):
 							continue
 
 			#any other case that could not be processed entierly => cancel parsing
-			zCtx.ctx.resetCtx(initialCtx)
+			zCtx__resetCtx(zCtx, initialCtx)
+			initialCtx = zCtx.ctx.copy() #re-make another copy (the previous one is being used now, so we need to make a second copy if we want to be able to reset again)
 
 
 
@@ -292,17 +301,18 @@ def tryParseDirectives(zCtx):
 				#2 hashes in a row => consider having an directive inside another => unparseable yet => cancel
 				if c == '#':
 					zCtx.dbg("Got 2 '#' in a row, maybe it is a directive inside another => FAILURE.")
-					output += resumeAfterProcessingDirective(None, unparseableDirectives, initialCtx)
+					output += resumeAfterProcessingDirective(zCtx, None, unparseableDirectives, initialCtx)
 					continue
 
 				#lonely hash => cancel (not a directive at all)
 				if c in BLANKS:
-					zCtx.dbg("Got lonely '#' => not even a PCPL directive.")
+					zCtx.dbg("Got lonely '#' => not even a PCPL directive (cancel without failure).")
 					output += "#" + c
 					continue
 
 				#read name or expression
-				name = PCPL__readUntil(zCtx, BLANKS+"#")
+				zCtx.deepDbg("PCPL directive seems to be a name or arithmetic expression.", prtLine=True)
+				name = PCPL__readUntil(zCtx, BLANKS+("#",))
 				if zCtx__reachedEnd(zCtx):
 					c = ""
 				else:
@@ -313,17 +323,29 @@ def tryParseDirectives(zCtx):
 					tgtText = PCPL__ATH__solveArithmetic(zCtx, name)
 
 				#case 2: item name
-				else:
+				elif c == '#':
+					c = "" #reset it so that this ending '#' will not subsist in output
+					zCtx.deepDbg("Looking for a PCPL item name.")
 					PCPL__checkNameCharset(zCtx, name) #MUST be a valid name
 					tgtText = PCPL__getItemText(zCtx, name)
+					zCtx.dbg("Targetted existing PCPL item \"" + name + "\".", prtLine=True)
+
+				#case 3: nothing relevant => cancel
+				else:
+					zCtx.dbg("Got '#' with non-arithmetic & non-name => not even a PCPL directive (cancel without failure).", prtLine=True)
+					zCtx__resetCtx(zCtx, initialCtx)
+					output += '#'
+					continue
 
 				#unparseable yet => add to list and then cancel
 				if tgtText is None:
-					output += resumeAfterProcessingDirective(None, unparseableDirectives, initialCtx)
+					zCtx.dbg("PCPL item name or arithmetic expression could not be solved => cancel (for the moment).", prtLine=True)
+					output += resumeAfterProcessingDirective(zCtx, None, unparseableDirectives, initialCtx)
 					continue
 
 				#parseable => replace PCPL instruction
 				else:
+					zCtx.dbg("PCPL item name or arithmetic expression solved => SUCCESS", prtLine=True)
 					output += tgtText
 
 		#regular code (unchanged)
@@ -351,11 +373,16 @@ def p2_directives(zCtx):
 	zCtx.dbg("1st try for parsing PCPL directives.")
 	unparseableDirectives = tryParseDirectives(zCtx) #includes zCtx.reset() at the end
 
+	#deep debug
+	if zCtx.deepDbgMode[zCtx.step]:
+		prepareDbgDir()
+		writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p2.1stTry.z", zCtx.ctx.icontent.s)
+
 	#remaining directives to be resolved
 	retry = 0
 	while len(unparseableDirectives) != 0:
 
-		#macimum retries reached
+		#maximum retries reached
 		if retry >= zCtx.pcpl.directivesMaxComplexity:
 			zCtx.err("Unable to solve complexity of precompiler directives, can be cyclic dependencies or requireing more that the cur number of retries allowed:" + str(zCtx.pcpl.directivesMaxComplexity))
 
@@ -364,10 +391,10 @@ def p2_directives(zCtx):
 		unparseableDirectives = tryParseDirectives(zCtx)
 		retry += 1
 
-	#debug
-	if zCtx.dbgMode[zCtx.step]:
-		prepareDbgDir()
-		writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p2.z", output)
+		#deep debug
+		if zCtx.deepDbgMode[zCtx.step]:
+			prepareDbgDir()
+			writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p2.retry" + str(retry) + ".z", zCtx.ctx.icontent.s)
 
 	#debug
 	zCtx.dbg("============================================================================")

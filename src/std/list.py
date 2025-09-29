@@ -26,3 +26,8 @@ def lst_copy(l): #only copying refs
 	for e in l:
 		newL.append(e)
 	return newL
+
+def lst_shift(l, shift, start=0):
+	while start < len(l):
+		l[start] += shift
+		start += 1

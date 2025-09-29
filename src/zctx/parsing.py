@@ -12,6 +12,10 @@ def zCtx__inc(sbj):
 def zCtx__forward(sbj, step):
 	return sbj.ctx.forward(step)
 
+def zCtx__resetCtx(sbj, newCtx):
+	sbj.ctx         = newCtx
+	sbj.subCtxs[-1] = newCtx
+
 def zCtx__reset(sbj, newText=None):
 	sbj.ctx.reset(newText=newText)
 

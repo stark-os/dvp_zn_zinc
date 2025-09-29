@@ -32,20 +32,104 @@ class PCPL__ATH__token:
 		sbj.isOpe     = isOpe
 		sbj.textValue = textValue
 
-class PCPL__ATH__opeCall: #<=> POCall for PCPL (tiny bit simplified here)
-	def __init__(sbj, opeText, firstOperand, secondOperand):
-		sbj.opeText       = opeText
-		sbj.firstOperand  = #lst[tokens]
-		sbj.secondOperand = #lst[tokens]
 
 
 
 
 
+# -------- COMPUTATIONS --------
 
-# -------- SPECIFIC COMPUTATIONS --------
+#operand text check
+def PCPL__ATH__checkOperand(zCtx, opa, allowFloat): #ret true if invalid
 
-#...
+	#sub-directive => stop here, it must be decomposed first to allow 0 additional complexity level
+	if '#' in opa:
+		zCtx.dbg("Found a PCPL sub-directive => cancel arithmetic resolution.")
+		return True
+
+	#invalid 1st chr (negative sign)
+	c = 0
+	if opa[0] == '-':
+		c = 1
+
+	#invalid charset
+	foundDot = not allowFloat #considering we already found a dot if we expect to read an integer (<=> don't allow any dot in integers)
+	while c < len(opa):
+
+		#only 1 dot allowed in number
+		if opa[c] == '.':
+			if foundDot:
+				return True
+			foundDot = True
+
+		#must be a digit
+		elif opa[c] not in string.digits:
+			zCtx.dbg("Invalid character '" + opa[c] + "' at index " + str(c) + " in operand => cancel arithmetic resolution.")
+			return True
+
+		#increment
+		c += 1
+
+	#no problem found
+	return False
+
+#main entry point for computation
+def PCPL__ATH__computeOperation(zCtx, ope, firstOpa, secondOpa, computeAsFloat):
+
+	#check operands
+	if PCPL__ATH__checkOperand(zCtx, firstOpa, computeAsFloat):
+		return None
+	if PCPL__ATH__checkOperand(zCtx, secondOpa, computeAsFloat):
+		return None
+
+	#floats
+	if computeAsFloat:
+
+		#read them
+		firstOpaValue  = float(firstOpa) #<<<<<<<<<<<<<<<<<<<<<<<<<<< in Z, use dbl to store them
+		secondOpaValue = float(secondOpa)
+
+		#proceed to appropriate computation
+		if ope == '-':
+			return str(firstOpaValue - secondOpaValue)
+		elif ope == '+':
+			return str(firstOpaValue + secondOpaValue)
+		elif ope == '*':
+			return str(firstOpaValue * secondOpaValue)
+		elif ope == '/':
+			return str(firstOpaValue / secondOpaValue)
+		elif ope == '&':
+			return str(firstOpaValue & secondOpaValue)
+		elif ope == '|':
+			return str(firstOpaValue | secondOpaValue)
+		elif ope == '^':
+			return str(firstOpaValue ^ secondOpaValue)
+
+	#integers
+	else:
+
+		#read them
+		firstOpaValue  = str_dec_toS64(firstOpa)  #<<<<<<<<<<<<<<<<<<<<<<< in Z, use lng to store them
+		secondOpaValue = str_dec_toS64(secondOpa)
+
+		#proceed to appropriate computation <<<<<<<<<<<<<<<<<<<<<<<<< would have more sens in Z (other operators will be targetted)
+		if ope == '-':
+			return str(firstOpaValue - secondOpaValue)
+		elif ope == '+':
+			return str(firstOpaValue + secondOpaValue)
+		elif ope == '*':
+			return str(int(firstOpaValue * secondOpaValue))
+		elif ope == '/':
+			return str(int(firstOpaValue / secondOpaValue))
+		elif ope == '&':
+			return str(firstOpaValue & secondOpaValue)
+		elif ope == '|':
+			return str(firstOpaValue | secondOpaValue)
+		elif ope == '^':
+			return str(firstOpaValue ^ secondOpaValue)
+
+	#no operator matching
+	zCtx.internal("Unknown operand '" + ope + "' invoked in PCPL computation.")
 
 
 
@@ -150,8 +234,9 @@ def PCPL__ATH__mergeNegativeSignsAndCheckConsistency(zCtx, tokens):
 		tokens[i].textValue = '-' + tokens[i].textValue
 
 	#remove negative signs that has been set then
-	for i in concernedIdxs.reverse(): #!WARNING: ONLY WORKS BECAUSE concernedIdx IS FILLED WITH INCREASING VALUES !!!
-		tokens.pop(i)
+	concernedIdxs.reverse()
+	for i in concernedIdxs: #!WARNING: ONLY WORKS BECAUSE concernedIdx IS FILLED WITH INCREASING VALUES !!!
+		tokens.pop(i-1)
 
 
 
@@ -168,26 +253,9 @@ def PCPL__ATH__mergeNegativeSignsAndCheckConsistency(zCtx, tokens):
 
 # -------- MAIN EXECUTION --------
 
-
-def PCPL__ATH__tokensToOpeCall(tgtRank, tokens):
-
-	#lone token
-	if len(tokens) == 1:
-		return 
-
-	#
-	opeNbr    = (len(tokens)-1)/2 #nbr of operators among the given tokens
-	tgtTokens = []                #tokens of the targetted operators
-	for o in range(opeNbr):
-		curTk = tokens[o+1]
-		if tokens[o+1] in tgtRank:
-			tgtTokens.append(tokens[o+1])
-
-
-
 #potentially got an arithmetic expression instead of a regular text => try to solve it first
 def PCPL__ATH__solveArithmetic(zCtx, text):
-	zCtx.deepDbg("Potential arithmetic expression detected.")
+	zCtx.deepDbg("Arithmetic expression detected.")
 	tokens = PCPL__ATH__tokenizeExpression(text)
 
 	#debug
@@ -213,15 +281,50 @@ def PCPL__ATH__solveArithmetic(zCtx, text):
 
 
 
-	#STEP 2: process each operator rank
+	#STEP 2: compute each operator by rank
 	for rank in PCPL__ATH__OPERATOR_RANKS:
-		res = PCPL__ATH__tokensToOpeCall(rank, tokens)
 
-	
+		#first, get the list of each concerned operator for this rank
+		opeNbr     = int( (len(tokens)-1)/2 ) #nbr of operators among the given tokens
+		tgtOpeIdxs = []
+		for o in range(opeNbr):
+			curOpeIdx = 2*o + 1
+			if tokens[curOpeIdx].textValue in rank:
+				tgtOpeIdxs.append(curOpeIdx)
 
-	#case 1: sub-directive (stop here, it must be decomposed first to allow 0 additional complexity level)
-	elif c == '#':
-		zCtx.dbg("Found a PCPL sub-directive => stop parsing current one")
+		#then, for each of them, compute them with their nearest neighbor
+		for i in range(len(tgtOpeIdxs)):
+			opeIdx  = tgtOpeIdxs[i]
+			opa1Idx = opeIdx-1
+			opa2Idx = opeIdx+1
 
-	return text
+			#compute
+			ope       = tokens[opeIdx].textValue[0]
+			opa1      = tokens[opa1Idx].textValue
+			opa2      = tokens[opa2Idx].textValue
+			floatness = ('.' in opa1)
+			res = PCPL__ATH__computeOperation(zCtx, ope, opa1, opa2, floatness)
 
+			#invalid res from computation => invalid arithmetic expression
+			if res is None:
+				return None
+			zCtx.deepDbg("Computation " + ope + " between " + opa1 + " and " + opa2 + " resulted into " + res + " with floatness[" + str(floatness) + "]")
+
+			#store result at operator position
+			tokens[opeIdx].textValue = res
+			tokens.pop(opa2Idx) #operands have been computed, removing them
+			tokens.pop(opa1Idx)
+
+			#shift every other indexes to align we previous pops !WARNING: This works only because tgtOpeIdxs is filled with idxs in ascending order !!!
+			lst_shift(tgtOpeIdxs, -2, start=i)
+
+	#we should have only one token now
+	if len(tokens) != 1:
+		tokensText = ""
+		for t in tokens:
+			tokensText += "{ope:" + str(t.isOpe) + ",\"" + t.textValue + "\"},"
+		zCtx.internal("Got more than 1 token at the end of PCPL arithmetic resolution " + tokensText)
+
+	#res in last token
+	zCtx.deepDbg("Arithmetic expression resulted into value \"" + tokens[0].textValue + "\" (ATH success).")
+	return tokens[0].textValue

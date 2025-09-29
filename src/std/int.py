@@ -264,4 +264,4 @@ def str_dec_toS32(s):
 	return str_dec_toUM(s, MAX_LEN_DEC_S32, MAX_LEN_DEC_U32)
 
 def str_dec_toS64(s):
-	return str_dec_toUM(s, MAX_LEN_DEC_S64, MAX_LEN_DEC_U8)
+	return str_dec_toUM(s, MAX_LEN_DEC_S64, MAX_LEN_DEC_U64)
