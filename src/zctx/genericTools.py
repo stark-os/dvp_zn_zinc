@@ -50,7 +50,7 @@ def getGblScpFromScope(scope):
 
 #reeeeeeeeeeeally useful !!! Allows you to get a data item among those existing from the given scope, but only by giving the USER PREFIXED NAME: "^a.^b.c" => "Ma_Mb_Ec", "a" => "GEa" or "La", even working with function pointers
 def getDataItemFromPfxName(pfxName, scope):
-	modPrefix = extractModPfx(pfxName)
+	modPfx = extractModPfx(pfxName)
 
 	#case 1: module-related global element targetted
 	if len(modPfx) != 0:

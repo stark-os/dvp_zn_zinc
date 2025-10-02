@@ -1,18 +1,10 @@
-- Add some debug traces in step P1
-
-- Add #FOR, #SET/#!SET, #ATH pcpl directives.
-  Resolve them as much as possible using wait-for-another algorithm.
-  Change <> into #item_name directly in PCPL item parsing.
-
-
-
 - Implement:
     > FORGET tab DEFINITIONS FOR THE MOMENT, NOT EVEN USED AS DEPENDENCY !!!
 
     > lst (only with refs)
 
     > lvlXTabY_u8/16/32/64 (shortcut into lXtY_u8/16/32/64)
-      in which X is the LEVEL. Define some levels from 0 to LVLTAB_MAX_LEVEL_ALLOWED (PCPL item defined in cfg)
+      in which X is the LEVEL. Define some levels (given in LVLTAB_LVLS PCPL item defined in cfg)
       and Y is the chunk size.
 
     > lvlTabY_u8/16/32/64 (shortcut into lt_u8/16/32/64)
@@ -60,7 +52,7 @@ lt_ref  a = ^LT_ref.new(chkSz)
 
 
 - Generic fct/ope are disabled.
-  We may not need them at all if using #FOR, #SET, #ATH pcpl directives.
+  We may not need them at all if using pcpl directives.
 
 
 

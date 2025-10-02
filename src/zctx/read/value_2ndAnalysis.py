@@ -102,9 +102,16 @@ def parseLiteralIntOrFloat(ZCI):
 
 		#STEP 3: Check digit number depending on expected ranges
 
-		#32b arch does not allow long values (64b)
-		if ZCI.zCtx.cpl.opts["ARCH"] != "64" and resAtmID in (ATM__S64, ATM__U64):
-			ZCIErr("Cannot have 64b values when targetting 32b architecture (8 bytes integer).")
+		#32b arch does not allow 64b values => AUTO CASHT
+		if ZCI.zCtx.cpl.opts["ARCH"] != "64":
+			if resAtmID in ATM__S64:
+				ZCIWrn(ZCI, "Auto cashting long signed integer value into 32b (targetting 32b arch).")
+				resAtmID = ATM__S32
+				resType  = ZCI.zCtx.rootTypes[RT__S32]
+			if resAtmID in ATM__U64:
+				ZCIWrn(ZCI, "Auto cashting long unsigned integer value into 32b (targetting 32b arch).")
+				resAtmID = ATM__U32
+				resType  = ZCI.zCtx.rootTypes[RT__U32]
 
 		#check if too much digits have been given: binary
 		if resDigitPower == 2:
@@ -199,9 +206,11 @@ def parseLiteralIntOrFloat(ZCI):
 				resType  = ZCI.zCtx.rootTypes[RT__F64]
 				resAtmID = ATM__F64
 
-				#32b arch does not allow long values (64b)
+				#32b arch does not allow 64b values => AUTO CASHT
 				if ZCI.zCtx.cpl.opts["ARCH"] != "64":
-					ZCIErr("Cannot have 64b values when targetting 32b architecture (8 bytes floating point).")
+					ZCIWrn(ZCI, "Auto cashting long float value into 32b float (targetting 32b arch).")
+					resType  = ZCI.zCtx.rootTypes[RT__F32]
+					resAtmID = ATM__F32
 
 
 
@@ -457,7 +466,7 @@ def secondAnalysis(ZCI, vap2info):
 				ZCIErr(ZCI, "2nd analysis: Only constant values allowed here (got a VFC/!VFC => variable return value).")
 
 			#prepare fct name
-			fctName = getFctNameFromPfxedName(ZCI, pfxName)
+			fctName = getFctNameFromPfxName(ZCI, pfxName)
 
 			#parse & check call elements given
 			parsedCall = checkAll_thenReadParams_thenCreateCall(ZCI, fctName, vap2info.scope, vap2info.cstOnly)
@@ -471,7 +480,7 @@ def secondAnalysis(ZCI, vap2info):
 			)
 
 		#just a regular name actually => DI NAME
-		di = getDataItemFromPfxedName(pfxName, vap2info.scope)
+		di = getDataItemFromPfxName(pfxName, vap2info.scope)
 		if di is None:
 			ZCIErr(ZCI, "2nd analysis: Cannot find data item " + unpfxMod(pfxName) + " in cur scope or higher.")
 
@@ -536,7 +545,7 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 
 		#target data item
 		pfxName = readName(ZCI, "2nd analysis: Missing data item name for reference operator '@' (FRF).", parseModPfxes=True, modPfxes_asHeaderOnly=True)
-		di           = getDataItemFromPfxedName(pfxName, vap2info.scope)
+		di           = getDataItemFromPfxName(pfxName, vap2info.scope)
 		if di is None:
 			ZCIErr(ZCI, "2nd analysis: Unable to find data item given " + pfxName + " (2nd analysis, concerning reference operator '@' FRF).")
 
@@ -597,7 +606,7 @@ def secondAnalysisIncludingFOs(ZCI, vap2info):
 				isCst = False #got a method call => value is no longer constant
 
 				#parse call
-				newChunkName = getFctNameFromPfxedName(ZCI, newChunkName, methodOf=latestChunkType)
+				newChunkName = getFctNameFromPfxName(ZCI, newChunkName, methodOf=latestChunkType)
 				newChunk     = checkAll_thenReadParams_thenCreateCall(ZCI, newChunkName, vap2info.scope, vap2info.cstOnly)
 
 				#update latest chunk type & add to chain

@@ -448,7 +448,7 @@ def processRemainingZCI(ZCI, scope, forbidTypKeywordInDatDcl=True):
 			return
 
 		#already have a data item with that name => ASG_ASG then
-		di = getDataItemFromPfxedName(name, scope)
+		di = getDataItemFromPfxName(name, scope)
 		if di is not None:
 
 			#forward right before value

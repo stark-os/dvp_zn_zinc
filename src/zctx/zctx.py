@@ -4,7 +4,7 @@
 
 #z code context
 def newZCtx(
-	filepath, LLIInvFilepath,
+	filepath,
 	pcpl_cfg, pcpl_itm,
 	cpl_opt,
 	dbgMode=None, deepDbgMode=None, stepByStep=False
@@ -16,9 +16,8 @@ def newZCtx(
 		deepDbgMode = (False,) * 6
 
 	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< real init
-	res                = zctx()
-	res.LLIInvFilepath = LLIInvFilepath
-	res.step           = STEP.INIT
+	res      = zctx()
+	res.step = STEP.INIT
 
 	#debug
 	res.dbgMode      = dbgMode
@@ -94,9 +93,10 @@ def newZCtx(
 
 class zctx:
 	def __init__(sbj):
-		sbj.LLIInvFilepath = None
-		sbj.dbgMode        = None
-		sbj.deepDbgMode    = None
+
+		#debug
+		sbj.dbgMode     = None
+		sbj.deepDbgMode = None
 
 		#every imported context & the current one
 		sbj.initialCtx = None
@@ -127,12 +127,13 @@ class zctx:
 
 	#load LLI functions
 	def loadLLIFcts(sbj):
+		LLIInvFilePath = sbj.cpl.opts['DEFAULT_LLI_INV_PATH']
 
 		#read cfg
 		try:
-			LLICfg = config.read(sbj.LLIInvFilepath)
+			LLICfg = config.read(LLIInvFilePath)
 		except:
-			sbj.err("Problem while extracting configuration from LLI inventory file " + sbj.LLIInvFilepath, prtSubCtxs=False, prtLine=False)
+			sbj.err("Problem while extracting configuration from LLI inventory file " + LLIInvFilePath, prtSubCtxs=False, prtLine=False)
 
 		#for each function given
 		for fName in LLICfg.keys():
@@ -148,7 +149,7 @@ class zctx:
 
 				#"void" keyword is allowed, but every other undefined type must raise an error
 				if tID == TYPE_ID__UNKNOWN and paramsTexts[p] != "void":
-					sbj.err("Undefined type " + paramsTexts[p] + " given as parameter for function " + fName + " in LLI configuration file " + sbj.LLIInvFilepath, prtSubCtxs=False, prtLine=False)
+					sbj.err("Undefined type " + paramsTexts[p] + " given as parameter for function " + fName + " in LLI configuration file " + LLIInvFilePath, prtSubCtxs=False, prtLine=False)
 
 				#retType
 				if p == 0:
@@ -157,7 +158,7 @@ class zctx:
 				#params
 				else:
 					if tID == TYPE_ID__UNKNOWN:
-						sbj.err("Cannot have \"void\" as parameter type for function " + fName + " (only allowed in return type), in LLI configuration file " + sbj.LLIInvFilepath, prtSubCtxs=False, prtLine=False)
+						sbj.err("Cannot have \"void\" as parameter type for function " + fName + " (only allowed in return type), in LLI configuration file " + LLIInvFilePath, prtSubCtxs=False, prtLine=False)
 					params.append( dataItem(tID, str(DEFAULT_NAME_CHARSET[p]), False, None) )
 
 			#add function

@@ -12,6 +12,9 @@ class pcplDat:
 		#max complexity allowed in directives
 		sbj.directivesMaxComplexity = PCPL__DIRECTIVES_MAX_COMPLEXITY
 
+		#cur nbr of failures found in one try of parsing
+		sbj.failures = 0
+
 def newPcplDat(cfgs, itms):
 	formattedCfgs = {}
 	for c in cfgs.keys():

@@ -42,40 +42,12 @@ def main():
 		exit(1)
 	filepath = sys.argv[1]
 
-	#args: LLI inventory filepath (optional)
-	LLIInvFilepath = ""
-	if len(sys.argv) >= 3:
-		LLIInvFilepath = sys.argv[2]
-
-	#default path instead
-	else:
-		LLILclFilepath = pCXD + "/cfg/LLI.cfg"
-		print("No LLI inventory file given")
-		print("  => look for a default LLI at PATH mentionned in local " + LLILclFilepath)
-
-		#parse local LLI cfg
-		try:
-			LLILclCfg = config.read(LLILclFilepath)
-		except:
-			print("zcc: Unable to read local LLI configuration file " + LLILclFilepath)
-			exit(1)
-
-		#local cfg missing field
-		try:
-			LLIInvFilepath = LLILclCfg['PATH'] + "/cfg/inventory.cfg"
-		except:
-			print("zcc: No LLI path defined in cfg/LLI.cfg (\"PATH\" field required).")
-			exit(1)
-		print("Default LLI PATH set, and found LLI at that location.")
-		print("  => Using its default inventory " + LLIInvFilepath)
-
 	#prepare output filename
 	outputFilename = path_name(os.path.basename(filepath)) + ".nc"
 
 	#z code context
 	zCtx = newZCtx(
 		filepath,
-		LLIInvFilepath,
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
 		config.read(CXD + "/../cfg/pcpl_itm.cfg", comment_character='%', additionnalSpacesAllowed=False),
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),

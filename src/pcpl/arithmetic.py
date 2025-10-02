@@ -170,6 +170,15 @@ def PCPL__ATH__tokenizeExpression(text):
 			#then add that operator
 			tokens.append( PCPL__ATH__token(True, c) )
 
+		#blanks are to be ignored BUT THEY SERVE AS SEPARATOR BETWEEN TOKENS TOO !!!
+		elif c in BLANKS:
+
+			#did we have some text to store before => do it
+			if len(curText) != 0:
+				tokens.append( PCPL__ATH__token(False, curText) )
+				curText = ""
+			continue
+
 		#not an operator => store into text
 		else:
 			curText += c

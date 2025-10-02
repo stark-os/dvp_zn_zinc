@@ -39,8 +39,14 @@ def PCPL__jumpBlankZone(zCtx, directiveName):
 
 
 #blocks
-def PCPL__readIncluderBlock(zCtx): #result will be the INTERNAL content of includer, so openning & closing chr are NOT INCLUDED
-	curPairs = zCtx.ctx.getPairsUntilCorrespondingPeer(allowedPairs={'{':'}'})
+def PCPL__readIncluderBlock(zCtx, opening='{'): #result will be the INTERNAL content of includer, so openning & closing chr are NOT INCLUDED
+	if zCtx__get(zCtx) != opening:
+		zCtx.err("Expected an openning '" + opening + "' includer here.")
+
+	#find corresponding peer
+	curPairs = zCtx.ctx.getPairsUntilCorrespondingPeer(
+		allowedPairs= { opening: INCLUDERS[opening] }
+	)
 
 	#error cases, limited though: only 1 includer type taken into account => cannot have inconsistency
 	if curPairs == PARSING_CTX__PEER_NOT_FOUND:
@@ -89,7 +95,12 @@ def PCPL__readItemValue(zCtx):
 		zCtx.err("Expecting to have a precompiler value here, got braces includer.")
 
 	#case 2: consider having literal text
-	return PCPL__readUntil(zCtx, BLANKS_EXTENDED)
+	txt = PCPL__readUntil(zCtx, BLANKS_EXTENDED)
+
+	#sub directive => can't process now
+	if '#' in txt:
+		return None
+	return txt
 
 def PCPL__checkNameCharset(zCtx, name):
 	for c in name:
