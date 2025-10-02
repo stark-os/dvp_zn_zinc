@@ -290,14 +290,14 @@ def processFctDcl(ZCI):
 
 	#content
 	ZCIDeepDbg(ZCI, "Extracting function \"" + fullName + "\"'s content.")
+	MAX = ZCI.pairs[ZCI.ctx.icontent.idx]
 	content = extractZCIsFromCtx(
 		ZCI.zCtx,
 		ZCI.ctx, subCtxs=ZCI.subCtxs,
-		gbl           = False,
-		modPfx        = ZCI.modPfx,
-		maxIdxAllowed = ZCI.pairs[ZCI.ctx.icontent.idx]-1
+		gbl     = False,
+		modPfx  = ZCI.modPfx,
+		wallIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
 	)
-	ZCI.inc()
 	ZCIDeepDbg(ZCI, "End of extraction for function \"" + fullName + "\".")
 
 	#create fct instance

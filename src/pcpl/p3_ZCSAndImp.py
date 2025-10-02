@@ -89,7 +89,7 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPfx=None):
 INT_MAX = sys.maxsize
 
 #split raw text into ZCI list (ZCS)
-def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, maxIdxAllowed=INT_MAX):
+def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, wallIdx=INT_MAX): #wallIdx is the ending chr for ZCI extraction: it is not to be included in ZCI, but if reached, we must end right AFTER it.
 	zCtx.deepDbg("Extracting ZCIs inside given context.", prtSubCtxs=True)
 	if subCtxs is None:
 		subCtxs = zCtx.subCtxs
@@ -98,6 +98,7 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, maxIdxAl
 	ZCI          = None
 	skipLineFeed = False
 	peerIdx      = 0
+	reachedWall  = 0
 
 	#parsing byte per byte
 	ZCIs = []
@@ -105,9 +106,8 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, maxIdxAl
 		c = ctx.get()
 
 		#given limit reached => also stop but cur ZCI must have current chr added too
-		if ctx.icontent.idx >= maxIdxAllowed:
-			if ZCI is not None:
-				ZCI.txt += c
+		if ctx.icontent.idx >= wallIdx:
+			reachedWall = 1
 			break
 
 		#initialize next ZCI to that position in ctx
@@ -190,8 +190,11 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, maxIdxAl
 
 	#also add last ZCI remaining
 	if ZCI is not None:
-		ZCI.stopIdx = ctx.icontent.idx
+		ZCI.stopIdx = ctx.icontent.idx - reachedWall #reached wall => decrease to be right before wallIdx (we don't want the wall to be included in the last ZCI)
 		stripAndAppendZCI(ZCI, ZCIs, allowImpExpansion=gbl, modPfx=modPfx)
+
+	#we want to be right AFTER the wall (do nothing if no wall has been reached)
+	ctx.forward(reachedWall)
 
 	#return result
 	return ZCIs

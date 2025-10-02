@@ -132,9 +132,9 @@ def c01_unmodulize(zCtx):
 			modZCIs = extractZCIsFromCtx(
 				zCtx,
 				ZCI.ctx, subCtxs=ZCI.subCtxs,
-				gbl           = True,
-				modPfx        = modPfx,
-				maxIdxAllowed = modContent_stopIdx-1 #actually, we must skip the real modContent_stopIdx, it refers to the ending includer of module content (=> not interesting).
+				gbl     = True,
+				modPfx  = modPfx,
+				wallIdx = modContent_stopIdx
 			)
 
 			#remove cur ZCI in general ZCtx
