@@ -123,6 +123,9 @@ def processTypeDcl(ZCI):
 		#update stcSize
 		newTypeInst.computeStcSize(ZCI.zCtx.cpl.types)
 
+		#set REF as parent
+		newTypeInst.dcnCommon.parent = ZCI.zCtx.rootTypes[RT__REF]
+
 	#process type content: type-copy syntax
 	else:
 		ZCIDbg(ZCI, "Type declaration is via type-copy syntax.", prtLine=False)
