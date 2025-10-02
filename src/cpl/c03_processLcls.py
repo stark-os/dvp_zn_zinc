@@ -85,7 +85,7 @@ def c03_processLcls(zCtx):
 		#process content
 		for ZCI in f.content:
 			initialCtx = ZCI.ctx.copy()
-			ZCIDeepDbg(ZCI, "Treating local ZCI \"" + ZCI.textFormat() + '\"', prtSubCtxs=True)
+			ZCIDeepDbg(ZCI, "Treating local ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
 
 			#read 1st ZCI word
 			firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)

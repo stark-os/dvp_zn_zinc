@@ -32,7 +32,7 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPfx=None):
 
 	#strip sides
 	ZCI.strip()
-	ZCIDeepDbg(ZCI, "Stripped blanks from ZCI \"" + ZCI.textFormat() + '\"', prtSubCtxs=False, prtLine=False)
+	ZCIDeepDbg(ZCI, "Stripped blanks from ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=False, prtLine=False)
 
 
 
@@ -69,8 +69,8 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPfx=None):
 		if zCtx__openNewSubCtx(ZCI.zCtx, path):
 
 			#precompile imported file
-			p1_commentsAndText(ZCI.zCtx)   #these 4 calls should be replaced by a precompile(zCtx) call but python doesn't manage parent-file importation well so...
-			p2_directives(ZCI.zCtx) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TO CHANGE
+			p1_commentsAndText(ZCI.zCtx)     #these 4 calls should be replaced by a precompile(zCtx) call but python doesn't manage parent-file importation well so...
+			p2_directives(ZCI.zCtx)          #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TO CHANGE
 			result += p3_ZCSAndImp(ZCI.zCtx)
 		return
 
@@ -102,9 +102,13 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, maxIdxAl
 	#parsing byte per byte
 	ZCIs = []
 	while not ctx.inc():
-		if ctx.icontent.idx > maxIdxAllowed:
-			break
 		c = ctx.get()
+
+		#given limit reached => also stop but cur ZCI must have current chr added too
+		if ctx.icontent.idx >= maxIdxAllowed:
+			if ZCI is not None:
+				ZCI.txt += c
+			break
 
 		#initialize next ZCI to that position in ctx
 		if ZCI is None:
@@ -129,7 +133,6 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, maxIdxAl
 		if c == ';' or c == '\n':
 			if len(ZCI.txt) != 0: #tiny optimization
 				ZCI.stopIdx = ctx.icontent.idx - 1
-				ZCIDeepDbg(ZCI, "Extracted raw ZCI text \"" + ZCI.textFormat() + '\"')
 				stripAndAppendZCI(ZCI, ZCIs, allowImpExpansion=gbl, modPfx=modPfx)
 
 			#next ZCI

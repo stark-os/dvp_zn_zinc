@@ -238,7 +238,7 @@ def unknownValueErrIn2ndAnalysis(ZCI):
 	ZCIErr(ZCI, "Unknown value given (2nd analysis, not respecting any format supported by VAP).")
 
 def secondAnalysis(ZCI, vap2info):
-	ZCIDeepDbg(ZCI, "2nd analysis: Reading ZCI fragment \"" + ZCI.textFormat() + "\" to apply second analysis on it.")
+	ZCIDeepDbg(ZCI, "2nd analysis: Reading ZCI fragment \"" + ZCI.txtFormat() + "\" to apply second analysis on it.")
 	res = None
 	c = ZCI.get()
 
@@ -325,7 +325,7 @@ def secondAnalysis(ZCI, vap2info):
 		#table with only one element => explicit priorization
 		if targettedEnd == ')' and not targettingMap and len(subValues) == 1:
 			res = subValues[0]
-			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in EXPLICIT PRIORIZATION:\n" + res.toStr(ZCI))
+			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in EXPLICIT PRIORIZATION:\n" + res.toStr(ZCI))
 			return res
 
 		#finishing result: maps
@@ -353,7 +353,7 @@ def secondAnalysis(ZCI, vap2info):
 			res = value(targettedType, atm(ATM__LST_VALUE, subValues), True)
 
 		#return result
-		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION:\n" + res.toStr(ZCI))
+		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION:\n" + res.toStr(ZCI))
 		return res
 
 	#having found a colon but wasn't a map => no pattern matches such a thing
@@ -394,7 +394,7 @@ def secondAnalysis(ZCI, vap2info):
 
 			#finish result
 			res = value(ZCI.zCtx.rootTypes[RT__REF], atm(ATM__LST_VALUE, sequence), True)
-			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in MULTI-BYTE NOTATION:\n" + res.toStr(ZCI))
+			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in MULTI-BYTE NOTATION:\n" + res.toStr(ZCI))
 			return res
 
 		#single-byte sequence
@@ -405,7 +405,7 @@ def secondAnalysis(ZCI, vap2info):
 			True
 		)
 		ZCI.inc()
-		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in SINGLE-BYTE NOTATION:\n" + res.toStr(ZCI))
+		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in SINGLE-BYTE NOTATION:\n" + res.toStr(ZCI))
 		return res
 
 
@@ -415,7 +415,7 @@ def secondAnalysis(ZCI, vap2info):
 	#parsing is quite complex => has been taken away in another method
 	v = parseLiteralIntOrFloat(ZCI)
 	if v is not None:
-		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in INTEGER/FLOAT:\n" + v.toStr(ZCI))
+		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in INTEGER/FLOAT:\n" + v.toStr(ZCI))
 		return v
 
 
@@ -446,7 +446,7 @@ def secondAnalysis(ZCI, vap2info):
 			atm(ATM__FMAP_STR_VALUE, givenFields),
 			True
 		)
-		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in STRUCTURE DEFINITION:\n" + res.toStr(ZCI))
+		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in STRUCTURE DEFINITION:\n" + res.toStr(ZCI))
 		return res
 
 
@@ -472,7 +472,7 @@ def secondAnalysis(ZCI, vap2info):
 			parsedCall = checkAll_thenReadParams_thenCreateCall(ZCI, fctName, vap2info.scope, vap2info.cstOnly)
 
 			#return complete value (call)
-			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in !VFC:\n" + res.toStr(ZCI))
+			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in !VFC:\n" + res.toStr(ZCI))
 			return value(
 				parsedCall.retType,
 				atm(ATM__CALL, parsedCall),
@@ -494,7 +494,7 @@ def secondAnalysis(ZCI, vap2info):
 			atm(ATM__DATAITEM, di),
 			di.Cst
 		)
-		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.textFormat() + "\", resulted in DATA ITEM:\n" + res.toStr(ZCI))
+		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in DATA ITEM:\n" + res.toStr(ZCI))
 		return res
 
 

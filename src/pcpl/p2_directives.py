@@ -152,7 +152,7 @@ def PCPL__processFOR(zCtx):
 	iterRange = PCPL__readIncluderBlock(zCtx)
 
 	#read each value given in iter range
-	textValues  = []
+	txtValues  = []
 	curIdx      = -1
 	iIterRange  = istr(iterRange)
 	afterBlanks = True
@@ -166,18 +166,18 @@ def PCPL__processFOR(zCtx):
 
 		#add new text value
 		if afterBlanks:
-			textValues.append("")
+			txtValues.append("")
 			curIdx += 1
 			afterBlanks = False
 
-		#add cur chr to cur textValue
-		textValues[curIdx] += c
+		#add cur chr to cur txtValue
+		txtValues[curIdx] += c
 
-	#take a look at each textValue
-	for tv in range(len(textValues)):
+	#take a look at each txtValue
+	for tv in range(len(txtValues)):
 
 		#sub-directive => stop here then, we must have 0 complexity
-		if textValues[tv][0] == '#':
+		if txtValues[tv][0] == '#':
 			zCtx.dbg("Found a sub-directive in FOR range values => stop here, it must be solved first.")
 			zCtx.pcpl.failures += 1
 			return None
@@ -190,7 +190,7 @@ def PCPL__processFOR(zCtx):
 
 	#proceed to code duplication for each iteration
 	res = ""
-	for tv in textValues:
+	for tv in txtValues:
 		res += "#SET " + iterVarName + " " + tv + " " #define iter var just during for each iteration
 		res += block
 		res += "#!SET " + iterVarName + " "

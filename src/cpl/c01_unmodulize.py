@@ -57,7 +57,7 @@ def c01_unmodulize(zCtx):
 	_ZCIsLen = len(zCtx.ZCIs) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only exists here in python, won't be useful in Z (we got .length)
 	while z < _ZCIsLen:
 		ZCI = zCtx.ZCIs[z]
-		ZCIDeepDbg(ZCI, "Treating global ZCI \"" + ZCI.textFormat() + '\"', prtSubCtxs=True)
+		ZCIDeepDbg(ZCI, "Treating global ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
 
 		#too short => skip it
 		if len(ZCI.txt) < 5:

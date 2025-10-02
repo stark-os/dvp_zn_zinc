@@ -80,7 +80,7 @@ class zci:
 
 
 	#debug output
-	def textFormat(sbj):
+	def txtFormat(sbj):
 		return sbj.txt.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
 
 	def toStr(sbj):
@@ -90,7 +90,7 @@ class zci:
 			"\",ctx.icontent.idx:" + str(sbj.ctx.icontent.idx) + \
 			",startIdx:" + str(sbj.startIdx) + \
 			",stopIdx:" + str(sbj.stopIdx) + \
-			",txt:\"" + sbj.textFormat() + \
+			",txt:\"" + sbj.txtFormat() + \
 			"\",pairs:\"" + str(sbj.pairs).replace(' ', '') + \
 			"\"}"
 
@@ -122,7 +122,7 @@ class zci:
 			#'ctx.icontent.idx': sbj.ctx.icontent.idx,
 			#'startIdx': sbj.startIdx,
 			#'stopIdx': sbj.stopIdx,
-			'txt': sbj.textFormat(),
+			'txt': sbj.txtFormat(),
 			'pairs': str(sbj.pairs).replace(' ', '')
 		}
 
@@ -339,7 +339,7 @@ class POCall:
 		firstOperandText = "null"
 		if sbj.firstOperand is not None:
 			if sbj.firstOperand.id == ATM__ZCI:
-				firstOperandText = '\"' + sbj.firstOperand.data.textFormat() + '\"'
+				firstOperandText = '\"' + sbj.firstOperand.data.txtFormat() + '\"'
 			elif sbj.firstOperand.id == ATM__POCALL:
 				firstOperandText = sbj.firstOperand.data.toStr(depth+1)
 
@@ -347,7 +347,7 @@ class POCall:
 		secondOperandText = "null"
 		if sbj.secondOperand is not None:
 			if sbj.secondOperand.id == ATM__ZCI:
-				secondOperandText = '\"' + sbj.secondOperand.data.textFormat() + '\"'
+				secondOperandText = '\"' + sbj.secondOperand.data.txtFormat() + '\"'
 			elif sbj.secondOperand.id == ATM__POCALL:
 				secondOperandText = sbj.secondOperand.data.toStr(depth+1)
 
@@ -373,7 +373,7 @@ class opSeq:
 	def toStr(sbj):
 		operandsText = ""
 		for a in sbj.operands:
-			operandsText += '\"' + a.textFormat() + "\","
+			operandsText += '\"' + a.txtFormat() + "\","
 		operatorsText = ""
 		for o in sbj.operators:
 			operatorsText += OPERATOR_NAMES[o] + ','

@@ -28,9 +28,9 @@ PCPL__ATH__OPERATOR_RANKS = (
 
 #token
 class PCPL__ATH__token:
-	def __init__(sbj, isOpe, textValue):
+	def __init__(sbj, isOpe, txtValue):
 		sbj.isOpe     = isOpe
-		sbj.textValue = textValue
+		sbj.txtValue = txtValue
 
 
 
@@ -196,13 +196,13 @@ def PCPL__ATH__tokenizeExpression(text):
 def PCPL__ATH__mergeNegativeSignsAndCheckConsistency(zCtx, tokens):
 
 	#STEP 1: first element
-	if tokens[0].textValue == '-':
+	if tokens[0].txtValue == '-':
 		if tokens[1].isOpe:
 			PCPL__ATH__inconsistencyError(zCtx, False) #following another operator
 
 		#apply negativity on the following one
 		else:
-			tokens[1].textValue = '-' + tokens[1].textValue
+			tokens[1].txtValue = '-' + tokens[1].txtValue
 			tokens              = tokens[1:] #cut 1st element (negative sign)
 
 
@@ -219,7 +219,7 @@ def PCPL__ATH__mergeNegativeSignsAndCheckConsistency(zCtx, tokens):
 
 			#2 consecutive operators
 			if t1.isOpe:
-				if t2.textValue == '-' and not negSignToAttach: #allowed if the next one is a negative sign => to be attached to next literal (must not be already waiting for attachment)
+				if t2.txtValue == '-' and not negSignToAttach: #allowed if the next one is a negative sign => to be attached to next literal (must not be already waiting for attachment)
 					negSignToAttach = True
 
 				#else, inconsistency
@@ -240,7 +240,7 @@ def PCPL__ATH__mergeNegativeSignsAndCheckConsistency(zCtx, tokens):
 
 	#attach negative signs then
 	for i in concernedIdxs:
-		tokens[i].textValue = '-' + tokens[i].textValue
+		tokens[i].txtValue = '-' + tokens[i].txtValue
 
 	#remove negative signs that has been set then
 	concernedIdxs.reverse()
@@ -270,14 +270,14 @@ def PCPL__ATH__solveArithmetic(zCtx, text):
 	#debug
 	tokensText = ""
 	for t in tokens:
-		tokensText += "{ope:" + str(t.isOpe) + ",\"" + t.textValue + "\"},"
+		tokensText += "{ope:" + str(t.isOpe) + ",\"" + t.txtValue + "\"},"
 	zCtx.deepDbg("Arithmetic tokenization resulted into [" + tokensText + "].")
 
 	#simpler case: lone token => not a real expression actually, can be treated directly
 	if len(tokens) == 1:
 		if tokens[0].isOpe: #lone operator => incomplete expression
 			zCtx.err("Incomplete precompiler arithmetic expression given (lone operator found).")
-		return tokens[0].textValue #lone literal => no need to go deeper
+		return tokens[0].txtValue #lone literal => no need to go deeper
 
 
 
@@ -286,7 +286,7 @@ def PCPL__ATH__solveArithmetic(zCtx, text):
 
 	#can result in having a lone token actually
 	if len(tokens) == 1:
-		return tokens[0].textValue
+		return tokens[0].txtValue
 
 
 
@@ -298,7 +298,7 @@ def PCPL__ATH__solveArithmetic(zCtx, text):
 		tgtOpeIdxs = []
 		for o in range(opeNbr):
 			curOpeIdx = 2*o + 1
-			if tokens[curOpeIdx].textValue in rank:
+			if tokens[curOpeIdx].txtValue in rank:
 				tgtOpeIdxs.append(curOpeIdx)
 
 		#then, for each of them, compute them with their nearest neighbor
@@ -308,9 +308,9 @@ def PCPL__ATH__solveArithmetic(zCtx, text):
 			opa2Idx = opeIdx+1
 
 			#compute
-			ope       = tokens[opeIdx].textValue[0]
-			opa1      = tokens[opa1Idx].textValue
-			opa2      = tokens[opa2Idx].textValue
+			ope       = tokens[opeIdx].txtValue[0]
+			opa1      = tokens[opa1Idx].txtValue
+			opa2      = tokens[opa2Idx].txtValue
 			floatness = ('.' in opa1)
 			res = PCPL__ATH__computeOperation(zCtx, ope, opa1, opa2, floatness)
 
@@ -320,7 +320,7 @@ def PCPL__ATH__solveArithmetic(zCtx, text):
 			zCtx.deepDbg("Computation " + ope + " between " + opa1 + " and " + opa2 + " resulted into " + res + " with floatness[" + str(floatness) + "]")
 
 			#store result at operator position
-			tokens[opeIdx].textValue = res
+			tokens[opeIdx].txtValue = res
 			tokens.pop(opa2Idx) #operands have been computed, removing them
 			tokens.pop(opa1Idx)
 
@@ -331,9 +331,9 @@ def PCPL__ATH__solveArithmetic(zCtx, text):
 	if len(tokens) != 1:
 		tokensText = ""
 		for t in tokens:
-			tokensText += "{ope:" + str(t.isOpe) + ",\"" + t.textValue + "\"},"
+			tokensText += "{ope:" + str(t.isOpe) + ",\"" + t.txtValue + "\"},"
 		zCtx.internal("Got more than 1 token at the end of PCPL arithmetic resolution " + tokensText)
 
 	#res in last token
-	zCtx.deepDbg("Arithmetic expression resulted into value \"" + tokens[0].textValue + "\" (ATH success).")
-	return tokens[0].textValue
+	zCtx.deepDbg("Arithmetic expression resulted into value \"" + tokens[0].txtValue + "\" (ATH success).")
+	return tokens[0].txtValue

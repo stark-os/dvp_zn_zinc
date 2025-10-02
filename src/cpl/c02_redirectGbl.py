@@ -420,6 +420,7 @@ def processVFC(ZCI, scope, inGblScp):
 
 #remaining ZCIs can be DCL_DAT, ASG_ASG or VFC_VFC (the last one only allowed in local scope)
 def processRemainingZCI(ZCI, scope, forbidTypKeywordInDatDcl=True):
+	ZCIDeepDbg(ZCI, ">>>>>>>>>>>>>>>>>>>>>>>>> ZCI:\n  " + ZCI.toStr() + "\n\"" + ZCI.txt + "\"\n\"" + ZCI.ctx.icontent.s[ZCI.startIdx-200:ZCI.ctx.icontent.idx+1] + "§" + ZCI.ctx.icontent.s[ZCI.ctx.icontent.idx] + "§" + ZCI.ctx.icontent.s[ZCI.ctx.icontent.idx+1:ZCI.stopIdx+201] + "\"")
 
 	#being in global scope affects further behaviors
 	inGblScp = False
@@ -482,7 +483,7 @@ def c02_redirectGbl(zCtx):
 	#analyse every global ZCI
 	for ZCI in zCtx.ZCIs:
 		initialCtx = ZCI.ctx.copy()
-		ZCIDeepDbg(ZCI, "Treating global ZCI \"" + ZCI.textFormat() + '\"', prtSubCtxs=True)
+		ZCIDeepDbg(ZCI, "Treating global ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
 
 		#read 1st ZCI word
 		firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)
