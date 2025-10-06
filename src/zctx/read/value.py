@@ -1,7 +1,7 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/value.py
 
 #tool for reading value sequences
-def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
+def readValSeq(ZCI, tgtFields, scope, cstOnly=False):
 
 	#initial conditions
 	if ZCI.get() not in INCLUDERS.keys():
@@ -28,13 +28,13 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 			optionalBlanks(tmpCopy, None)
 
 			#no assignment symbol => that was not a "NAME = VALUE" notation => reset everything, we will read again the whole thing as "VALUE" notation
-			if readSymbol(tmpCopy) != SYMBOL__ASG:
+			if readSym(tmpCopy) != SYM__ASG:
 				fieldName = ""
 
 			#assignment symbol => alright! let's move our ZCI then
 			else:
 				ZCI.forwardAlike(tmpCopy)
-				ZCI.forward(SYMBOL_LENGTHS[SYMBOL__ASG])
+				ZCI.forward(SYM_LENGTHS[SYM__ASG])
 				optionalBlanks(ZCI, "Value after assignment symbol in \"NAME = VALUE\" association (reading value sequence, field " + fieldName + ").")
 
 		#value empty or simply not given
@@ -44,7 +44,7 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 			ZCIErr(ZCI, "Missing element given in value sequence (\"VALUE\" or \"NAME = VALUE\" expected).")
 
 		#read value
-		v = readValue(ZCI, "Field VALUE in structure definition.", scope, cstOnly=cstOnly)
+		v = readVal(ZCI, "Field VALUE in structure definition.", scope, cstOnly=cstOnly)
 
 		#solve name if not explicitely given
 		if len(fieldName) == 0:
@@ -78,10 +78,10 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 			di = tgtFields[f]
 
 			#set default value if no one given
-			if not di.initialized:
+			if not di.inited:
 				ZCIErr(ZCI, "Value required for field " + f + " in value sequence (no default value set for that field)")
-			ZCIDeepDbg(ZCI, "No value given for field " + f + " in value sequence (=> set default value: " + di.initialValue.toStr(ZCI))
-			givenFields[f] = di.initialValue
+			ZCIDeepDbg(ZCI, "No value given for field " + f + " in value sequence (=> set default value: " + di.initVal.toStr())
+			givenFields[f] = di.initVal
 
 	#return completed result
 	return givenFields
@@ -89,7 +89,7 @@ def readValueSequence(ZCI, tgtFields, scope, cstOnly=False):
 
 
 #value analysis process (VAP), main entry point
-def readValue(ZCI, ZCIKindIfErr, scope, cstOnly=False):
+def readVal(ZCI, ZCIKindIfErr, scope, cstOnly=False):
 	ZCIDeepDbg(ZCI, "Reading value.")
 
 	#1st analysis: ODP
@@ -97,7 +97,7 @@ def readValue(ZCI, ZCIKindIfErr, scope, cstOnly=False):
 	ZCI.forwardUntil(firstAnalysisRes.maxStopIdx+1)
 
 	#apply 2nd analysis recursively in ODP result
-	secondAnalysisRes = applySecondAnalysis(firstAnalysisRes.mainPOCall, ZCI, vap2(ZCIKindIfErr, scope, cstOnly)) #here, ZCI is given for error messages only
+	secondAnalysisRes = applySecondAnalysis(firstAnalysisRes.mainPOCall, ZCI, vap2info(ZCIKindIfErr, scope, cstOnly)) #here, ZCI is given for error messages only
 	ZCIDeepDbg(ZCI, "Ended reading value.")
 	return secondAnalysisRes
 

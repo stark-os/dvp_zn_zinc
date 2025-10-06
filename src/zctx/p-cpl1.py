@@ -40,12 +40,11 @@ class cplDat:
 		sbj.opts = None
 
 		#z abstract elements
-		sbj.modPfxes   = None #lst[str]
-		sbj.types      = None #lst[int]
-		sbj.gblScp     = None
-		sbj.fcts       = None #lst[fct]
-		#sbj.gencFcts   = None #lst[fct] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
-		sbj.linkedLibs = None #lst[]
+		sbj.modPfxes = None #lst[str]
+		sbj.types    = None #lst[int]
+		sbj.gblScp   = None
+		sbj.fcts     = None #lst[fct]
+		sbj.lnkLibs  = None #lst[]
 
 		#program concrete elements
 		#sbj.dataRes = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
@@ -72,12 +71,11 @@ def newCplDat(opts):
 	res.opts = opts
 
 	#z abstract elements
-	res.modPfxes   = [] #lst[str]
-	res.types      = []
-	res.gblScp     = newScp()
-	res.fcts       = [] #lst[fct]
-	#res.gencFcts   = [] #lst[fct] #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< disabled for the moment
-	res.linkedLibs = [] #lst[]
+	res.modPfxes = [] #lst[str]
+	res.types    = []
+	res.gblScp   = newScp()
+	res.fcts     = [] #lst[fct]
+	res.lnkLibs  = [] #lst[str]
 
 	#program concrete elements
 	#result.dataResult = program() <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
@@ -86,12 +84,12 @@ def newCplDat(opts):
 
 
 #create a fake ZCI with targetted type as text to be read, and then read that type
-def createFakeZCIAndReadCommonType(originalZCI, commonTypeFullName, ZCIKindIfErr):
-	fakeZCI              = originalZCI.copy()
+def createFakeZCIAndReadCommonType(oriZCI, commonTypeFullName, ZCIKindIfErr):
+	fakeZCI              = oriZCI.copy()
 	fakeZCI.ctx.icontent = istr(commonTypeFullName)
 	fakeZCI.startIdx     = 0
 	fakeZCI.stopIdx      = len(commonTypeFullName)-1
-	fakeZCI.updateText()
+	fakeZCI.updateTxt()
 
 	#try to find out a type
 	return readType(fakeZCI, ZCIKindIfErr)

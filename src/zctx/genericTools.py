@@ -24,21 +24,21 @@ def getTypeFieldFromName(ZCI, tgtTypeID, tgtFieldName):
 # -------- DATA ITEMS RELATED TOOLS --------
 
 #data items
-def checkAlreadyDeclaredDataItemOrField(ZCI, di, dis):
+def checkAlreadyDeclaredDatItmOrField(ZCI, di, dis):
 	for other in dis:
 		if other.name == di.name:
 			ZCIErr(ZCI, "Data item or field with name \"" + di.name + "\" already declared.")
 
 #get correct data item prefix depending on current ZCI scope
-def getDataItemModPfxFromScope(ZCI, scope):
+def getDatItmModPfxFromScope(ZCI, scope):
 	if scope == ZCI.zCtx.cpl.gblScp:
 		if len(ZCI.modPfx) != 0:
 			return ZCI.modPfx + 'E' #global "MODULE ELEMENT"
 		return "GE" #global "ELEMENT"
 	return "L" #local (can only be an "ELEMENT")
 
-def getDataItemFromScope(exactName, scope):
-	for di in scope.dataItems:
+def getDatItmFromScope(exactName, scope):
+	for di in scope.datItms:
 		if di.name == exactName:
 			return di
 	return None
@@ -49,33 +49,33 @@ def getGblScpFromScope(scope):
 	return getGblScpFromScope(scope.parent)
 
 #reeeeeeeeeeeally useful !!! Allows you to get a data item among those existing from the given scope, but only by giving the USER PREFIXED NAME: "^a.^b.c" => "Ma_Mb_Ec", "a" => "GEa" or "La", even working with function pointers
-def getDataItemFromPfxName(pfxName, scope):
+def getDatItmFromPfxName(pfxName, scope):
 	modPfx = extractModPfx(pfxName)
 
 	#case 1: module-related global element targetted
 	if len(modPfx) != 0:
 		scope   = getGblScpFromScope(scope) #no matter which scope we are currently into, using a module notation means "go take me a module-related GLOBAL element"
 		rawName = str_sub(pfxName, start=len(modPfx))
-		res     = getDataItemFromScope(modPfx + 'E' + rawName, scope)
+		res     = getDatItmFromScope(modPfx + 'E' + rawName, scope)
 
 		#last option: module function name
 		if res is None:
-			return getDataItemFromScope(modPfx + 'F' + rawName, scope)
+			return getDatItmFromScope(modPfx + 'F' + rawName, scope)
 		return res
 
 	#case 2: non-module global element targetted
 	if scope.parent is None:
-		res = getDataItemFromScope("GE" + pfxName, scope) #scope can only be the global one here
+		res = getDatItmFromScope("GE" + pfxName, scope) #scope can only be the global one here
 
 		#last option: non-module function name
 		if res is None:
-			return getDataItemFromScope("GF" + pfxName, scope) #same thing
+			return getDatItmFromScope("GF" + pfxName, scope) #same thing
 		return res
 
 	#case 3: local scope element targetted
-	res = getDataItemFromScope('L' + pfxName, scope)
+	res = getDatItmFromScope('L' + pfxName, scope)
 	if res is None:
-		return getDataItemFromPfxName(pfxName, scope.parent) #recursive call on higher scope
+		return getDatItmFromPfxName(pfxName, scope.parent) #recursive call on higher scope
 	return res
 
 
@@ -85,7 +85,7 @@ def getDataItemFromPfxName(pfxName, scope):
 
 # -------- FUNCTIONS & METHODS RELATED TOOLS --------
 
-#similar to getDataItemFromPrefixedName() but returns a NAME instead of a function
+#similar to getDatItmFromPrefixedName() but returns a NAME instead of a function
 def getFctNameFromPfxName(ZCI, pfxName, methodOf=TYPE_ID__UNKNOWN):
 	modPfx  = extractModPfx(pfxName)
 	rawName = str_sub(pfxName, start=len(modPfx))
@@ -125,10 +125,10 @@ def checkAll_thenReadParams_thenCreateCall(ZCI, exactName, scope, cstOnly, noVFC
 		ZCIErr(ZCI, "Can't have void returning function call here (only !VFC allowed).")
 
 	#read params
-	params = readValueSequence(ZCI, tgtFct.params, scope, cstOnly=cstOnly)
+	paramVals = readValueSequence(ZCI, tgtFct.params, scope, cstOnly=cstOnly)
 
 	#create call
-	return call(exactName, params, tgtFct.retType)
+	return call(exactName, paramVals, tgtFct.retType)
 
 
 
@@ -189,18 +189,17 @@ def extractModPfx(name):
 	return modPfx
 
 def cutDcnFromTypeName(exactTypeName):
-	rawName = exactTypeName #not affected for non-module types
 
-	#module prefixes causes problems for next step
+	#keep mod pfx aside
 	hasModPfx = (exactTypeName[0] == 'M')
 	if hasModPfx:
-		modPfx  = extractModPfx(exactTypeName)
-		rawName = str_sub(exactTypeName, start=len(modPfx)) #not exactly raw here because starting with declination indicator 'U' or 'D'
+		modPfx        = extractModPfx(exactTypeName)
+		exactTypeName = str_sub(exactTypeName, start=len(modPfx)) #here starting with dcn indicator 'U' or 'D'
 
-	#now, compute to cut the rest of the name with separators (which can only corresponds to declinations)
+	#now, compute to cut the rest of the name with separators (which can only corresponds to dcns)
 	res = ""
 	onUnderscore = False
-	for c in rawName:
+	for c in exactTypeName:
 		if onUnderscore:
 
 			#pair of underscores => regular underscore in type name
@@ -208,7 +207,7 @@ def cutDcnFromTypeName(exactTypeName):
 				onUnderscore = False
 				res += '_'
 
-			#single underscore => declination delimiter
+			#single underscore => dcn delimiter
 			else:
 				break
 		else:
@@ -221,7 +220,7 @@ def cutDcnFromTypeName(exactTypeName):
 			else:
 				res += c
 
-	#restore module prefix if it has been taken off
+	#restore mod pfx if it has been taken off
 	if hasModPfx:
 		res = modPfx + res
 	return res
@@ -233,9 +232,57 @@ def unpfxAnyName(name): #GE<name> => <name>, M<mod>_E<name> => ^<mod>.<name>, ..
 	pfx = extractModPfx(name)
 	return unpfxMod(pfx) + str_sub(name, len(pfx)).replace("__", '_')
 
+'''
+def unpfxTypeName(exactTypeName):
+	nameWithoutDcns = cutDcnFromTypeName(exactTypeName) #exact one without DCNS for the moment
+
+	#keep mod pfx aside
+	hasModPfx = (nameWithoutDcns[0] == 'M')
+	if hasModPfx:
+		modPfx          = extractModPfx(exactTypeNameWithoutDcns)
+		nameWithoutDcns = str_sub(exactTypeNameWithoutDcns, start=len(modPfx)) #here starting with dcn indicator 'U' or 'D'
+
+	#reconstitute dcns as in user code
+	dcnsTxt = ""
+	dcnsGap = len(exactTypeName) - len(nameWithoutDcns)
+	if dcnsGap != 0:
+		dcnsTxt = '['
+		onUnderscore = False
+		for i in range(dcnsGap):
+			c = exactTypeName[len(nameWithoutDcns)+i]
+			if onUnderscore:
+
+				#pair of underscores => regular underscore in type name
+				if c == '_':
+					onUnderscore = False
+					dcnsTxt += '_'
+
+				#single underscore => dcn delimiter
+				else:
+					dcnsTxt += ','
+			else:
+
+				#found underscore => check following character
+				if c == '_':
+					onUnderscore = True
+
+				#regular character => add it to dcn name
+				else:
+					dcnsTxt += c
+		if dcnsTxt[-1] == ',':
+			dcnsTxt = dcnsTxt[:-1]
+		dcnsTxt += ']'
+
+	#res
+	res = ""
+	if hasModPfx:
+		res = unpfxMod(modPfx)
+	return res + nameWithoutDcns + dcns
+'''
+
 #read a number as raw text (similar to zctx.readName but simpler and overall: skipping underscores!)
 def readNbrAsText(ZCI, allowedCharset):
-	resultText = ZCI.get()
+	resTxt = ZCI.get()
 	ZCI.inc()
 
 	#read until non-charset character found
@@ -251,17 +298,17 @@ def readNbrAsText(ZCI, allowedCharset):
 		if c not in allowedCharset:
 			break
 
-		#else, add to result
-		resultText += c
+		#else, add to res
+		resTxt += c
 		ZCI.inc()
-	return resultText
+	return resTxt
 
 
 
 #debug dir
 def prepareDbgDir():
-	if not os.path.isdir("debug"):
-		os.mkdir("debug")
+	if not os.path.isdir("dbg"):
+		os.mkdir("dbg")
 
 
 

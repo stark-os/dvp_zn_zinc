@@ -9,7 +9,7 @@ def newZCtx(
 	cpl_opt,
 	dbgMode=None, deepDbgMode=None, stepByStep=False
 ):
-	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Phythonic
+	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Pythonic
 	if dbgMode is None:
 		dbgMode = (False,) * 6 #len(enm DBG)
 	if deepDbgMode is None:
@@ -39,9 +39,6 @@ def newZCtx(
 	#check PCPL cfgs & CPL opts
 	res.checkPcplCfg(res.pcpl)
 	res.checkCplOpt(cpl_opt)
-
-	#"typ" keyword: virtual type that seems to work like a regular one for the moment <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
-	#res.typKeyword = res.cpl.newTyp("GUtyp")
 
 	#"fly" virtual type that also seems to work like a regular one for the moment
 	res.flyType    = res.cpl.newTyp("GUfly")
@@ -114,7 +111,6 @@ class zctx:
 		sbj.refSize = 0
 
 		#types
-		#sbj.typKeyword = 0 #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
 		sbj.flyType   = 1
 		sbj.rootTypes = None
 
@@ -137,19 +133,19 @@ class zctx:
 
 		#for each function given
 		for fName in LLICfg.keys():
-			paramsTexts = LLICfg[fName].split(',')
+			paramsTxts = LLICfg[fName].split(',')
 
 			#get type of each parameter
 			retType = TYPE_ID__UNKNOWN
-			params  = [] #lst[dataItem]
-			for p in range(len(paramsTexts)):
+			params  = [] #lst[datItm]
+			for p in range(len(paramsTxts)):
 
 				#get type ID (should be a root type if no other default type is loaded yet)
-				tID = sbj.getTypeIDFromName(paramsTexts[p])
+				tID = sbj.getTypeIDFromName(paramsTxts[p])
 
 				#"void" keyword is allowed, but every other undefined type must raise an error
-				if tID == TYPE_ID__UNKNOWN and paramsTexts[p] != "void":
-					sbj.err("Undefined type " + paramsTexts[p] + " given as parameter for function " + fName + " in LLI configuration file " + LLIInvFilePath, prtSubCtxs=False, prtLine=False)
+				if tID == TYPE_ID__UNKNOWN and paramsTxts[p] != "void":
+					sbj.err("Undefined type " + paramsTxts[p] + " given as parameter for function " + fName + " in LLI configuration file " + LLIInvFilePath, prtSubCtxs=False, prtLine=False)
 
 				#retType
 				if p == 0:
@@ -159,12 +155,10 @@ class zctx:
 				else:
 					if tID == TYPE_ID__UNKNOWN:
 						sbj.err("Cannot have \"void\" as parameter type for function " + fName + " (only allowed in return type), in LLI configuration file " + LLIInvFilePath, prtSubCtxs=False, prtLine=False)
-					params.append( dataItem(tID, str(DEFAULT_NAME_CHARSET[p]), False, None) )
+					params.append( datItm(tID, str(DEFAULT_NAME_CHARSET[p]), False, None) )
 
-			#add function
-			sbj.cpl.fcts.append(
-				newFct(fName, retType, params, sbj.cpl.gblScp, None) #null content means "Will be loaded at LLI bridging time"
-			)
+			#add function, null content means "Will be loaded at LLI bridging time"
+			sbj.cpl.fcts.append( newFct(fName, retType, params, sbj.cpl.gblScp) )
 
 
 

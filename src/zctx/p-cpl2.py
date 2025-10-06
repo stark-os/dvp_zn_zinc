@@ -2,14 +2,11 @@
 
 	#user dynamic access pcpl cfg
 	def checkPcplCfg(sbj, pcpl):
-		maxComplexityKey = "DIRECTIVES_MAX_COMPLEXITY_LEVEL"
-
-		#check each cofg
 		for k in pcpl.cfgs.keys():
 
 			#maximum complexity level allowed in directives
-			if k == maxComplexityKey:
-				sbj.dbg("PCPL cfg \"DIRECTIVES_MAX_COMPLEXITY_LEVEL\" defined in pcpl_cfg.cfg => using it instead of the default one: " + str(PCPL__DIRECTIVES_MAX_COMPLEXITY))
+			if k == PCPL__DIRECTIVES_MAX_COMPLEXITY_KEY:
+				sbj.dbg("PCPL cfg \"" + PCPL__DIRECTIVES_MAX_COMPLEXITY_KEY + "\" defined in pcpl_cfg.cfg => using it instead of the default one: " + str(PCPL__DIRECTIVES_MAX_COMPLEXITY))
 				sbj.directivesMaxComplexity = str_dec_toUM(pcpl.cfgs[maxComplexityKey], 0, sys.maxsize, forbidNegative=True) #should use INT_MAX here
 
 

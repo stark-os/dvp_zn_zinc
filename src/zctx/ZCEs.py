@@ -14,7 +14,7 @@ class zci:
 		sbj.stopIdx  = None
 		sbj.txt      = ""
 
-	def updateText(sbj):
+	def updateTxt(sbj):
 		startIdx = sbj.startIdx
 		if startIdx == -1:
 			startIdx = 0
@@ -61,7 +61,7 @@ class zci:
 	#WARNING! Must be used with ctx.icontent.idx at startIdx position !
 	#ctx will be forwarded if necessary (beginning strip).
 	def strip(sbj):
-		sbj.updateText()
+		sbj.updateTxt()
 
 		#strip beginning
 		beginningShift = str_getBeginningStripIndex(sbj.txt, charset=BLANKS_EXTENDED)
@@ -83,16 +83,18 @@ class zci:
 	def txtFormat(sbj):
 		return sbj.txt.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n")
 
-	def toStr(sbj):
-		return \
-			"{mod:\"" + sbj.modPfx + \
-			"\",ctx:\"" + sbj.ctx.toStr() + \
-			"\",ctx.icontent.idx:" + str(sbj.ctx.icontent.idx) + \
-			",startIdx:" + str(sbj.startIdx) + \
-			",stopIdx:" + str(sbj.stopIdx) + \
-			",txt:\"" + sbj.txtFormat() + \
-			"\",pairs:\"" + str(sbj.pairs).replace(' ', '') + \
-			"\"}"
+	def toStr(sbj, depth=0):
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		res  = "\n" + d0 + "_:\"zci\"\n"
+		res += d0 + "modPfx:\"" + sbj.modPfx + "\"\n"
+		res += d0 + "ctx:\"" + sbj.ctx.toStr() + "\"\n"
+		res += d0 + "ctx.icontent.idx:" + str(sbj.ctx.icontent.idx) + "\n"
+		res += d0 + "startIdx:" + str(sbj.startIdx) + "\n"
+		res += d0 + "stopIdx:" + str(sbj.stopIdx) + "\n"
+		res += d0 + "txt:\"" + sbj.txtFormat() + "\n"
+		res += d0 + "pairs:" + str(sbj.pairs).replace(' ', '') + "\n"
+		return res + dm1
 
 
 
@@ -112,6 +114,9 @@ class zci:
 	def listAllOperatorAlternatives(sbj, opeTrigram):
 		return sbj.zCtx.listAllOperatorAlternatives(opeTrigram)
 
+	def deepDbgPause(sbj):
+		return sbj.zCtx.deepDbgPause()
+
 
 
 	#std (generated at compile time in Z, normally under atm format with subatoms etc...)
@@ -119,9 +124,6 @@ class zci:
 		return {
 			'mod': sbj.modPfx,
 			'ctx': sbj.ctx.toStr(),
-			#'ctx.icontent.idx': sbj.ctx.icontent.idx,
-			#'startIdx': sbj.startIdx,
-			#'stopIdx': sbj.stopIdx,
 			'txt': sbj.txtFormat(),
 			'pairs': str(sbj.pairs).replace(' ', '')
 		}
@@ -147,9 +149,9 @@ def newZCI(zCtx, subCtxs, modPfx=None, pairs=None):
 
 def dumpZCIs(ZCIs, filename, oneLine=True):
 	if oneLine:
-		output = "[\n"
+		output = "["
 		for ZCI in ZCIs:
-			output += TERM__OUTPUT_TAB + ZCI.toStr() + ",\n"
+			output += TERM__OUTPUT_TAB + ZCI.toStr() + ","
 		output += "]"
 	else:
 		outputLst = []
@@ -169,7 +171,7 @@ class typ_dcnCommon: #common data among every declination of a type
 
 		#stc related
 		sbj.nature  = NATURE__PRM
-		sbj.fields  = None #lst[dataItem]
+		sbj.fields  = None #lst[datItm]
 		sbj.stcSize = 0
 
 class typ:
@@ -186,36 +188,30 @@ class typ:
 #scope
 class scp:
 	def __init__(sbj):
-		sbj.exes      = None #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
-		sbj.dataItems = None #lst[dataItem]
-		sbj.parent    = None #scp
+		sbj.exes    = None #lst[atm] #can have either asg, jmp, call (=vfc) or stm inside, all mixed of course.
+		sbj.datItms = None #lst[datItm]
+		sbj.parent  = None #scp
 
-	def toStr(sbj, ZCI, depth=0):
-		depthSpace = TERM__OUTPUT_TAB * depth
-		dataStr  = "SCOPE{\n"
-		dataStr += depthSpace + TERM__OUTPUT_TAB + "exes:[\n"
+	def toStr(sbj, depth=0):
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		d1   = d0  + TERM__OUTPUT_TAB
+		res  = "\n" + d0 + "_:\"scp\"\n"
+		res += d0 + "exes:["
 		for e in sbj.exes:
-			if e.id == ATM__CALL:
-				dataStr += depthSpace + TERM__OUTPUT_TAB + e.toStr(ZCI, depth=depth+1) + ",\n"
-			elif e.id == ATM__ASG:
-				dataStr += depthSpace + TERM__OUTPUT_TAB + e.toStr(ZCI, depth=depth+1) + ",\n"
-#			elif e.id == ATM__STM: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-#				dataStr += depthSpace + TERM__OUTPUT_TAB + e.toStr(ZCI) + ",\n"
-			else:
-				ZCIInternal(ZCI, "Got invalid atom ID in scope exes [" + str(e.id) + "].")
-		dataStr += depthSpace + TERM__OUTPUT_TAB + "],\n"
-		dataStr += depthSpace + TERM__OUTPUT_TAB + "dataItems:[\n"
-		for di in sbj.dataItems:
-			dataStr += depthSpace + TERM__OUTPUT_TAB + TERM__OUTPUT_TAB + di.toStr(ZCI) + ",\n"
-		dataStr += depthSpace + TERM__OUTPUT_TAB + "],\n"
-		dataStr += depthSpace + "}"
-		return dataStr
+			res += d1 + e.toStr(depth=depth+1) + ","
+		res += "]\n"
+		res += d0 + "datItms:["
+		for di in sbj.datItms:
+			res += d1 + di.toStr(depth=depth+1) + ","
+		res += "]\n"
+		return res + dm1
 
 def newScp(parent=None):
-	res           = scp()
-	res.exes      = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
-	res.dataItems = [] #lst[dataItem]
-	res.parent    = parent
+	res         = scp()
+	res.exes    = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
+	res.datItms = [] #lst[dataItem]
+	res.parent  = parent
 	return res
 
 
@@ -226,137 +222,78 @@ def newScp(parent=None):
 # -------- VAP RELATED --------
 
 #value
-class value:
-	def __init__(sbj, Type, vdata, Cst):
-		sbj.Type  = Type
-		sbj.vdata = vdata  #atm #can be either a root type (literal), str (name) or call.
-		sbj.Cst   = Cst
+class val:
+	def __init__(sbj, Type, vdat, Cst):
+		sbj.Type = Type
+		sbj.vdat = vdat  #atm #can be either a root type (literal), str (name) or call.
+		sbj.Cst  = Cst
 
-	def toStr(sbj, ZCI, depth=0): #I know, having a ZCI is sad here, makes not very much sens... but we need type instances (through ZCI.zCtx.cpl) to display type NAME (more readable than the ID)
-		depthSpace = TERM__OUTPUT_TAB * depth
-		if sbj.vdata.id == ATM__BOO:
-			dataStr = "false"
-			if sbj.vdata:
-				dataStr = "true"
-
-		#numerical
-		elif sbj.vdata.id == ATM__S8:
-			dataStr = 'S' + hexOnN(sbj.vdata.data, 2)
-		elif sbj.vdata.id == ATM__U8:
-			dataStr = 'U' + hexOnN(sbj.vdata.data, 2)
-		elif sbj.vdata.id == ATM__S16:
-			dataStr = 'S' + hexOnN(sbj.vdata.data, 4)
-		elif sbj.vdata.id == ATM__U16:
-			dataStr = 'U' + hexOnN(sbj.vdata.data, 4)
-		elif sbj.vdata.id == ATM__S32:
-			dataStr = 'S' + hexOnN(sbj.vdata.data, 8)
-		elif sbj.vdata.id == ATM__U32:
-			dataStr = 'U' + hexOnN(sbj.vdata.data, 8)
-		elif sbj.vdata.id == ATM__S64:
-			dataStr = 'S' + hexOnN(sbj.vdata.data, 16)
-		elif sbj.vdata.id == ATM__U64:
-			dataStr = 'U' + hexOnN(sbj.vdata.data, 16)
-		elif sbj.vdata.id == ATM__CHR:
-			dataStr = '\'' + sbj.vdata.data + '\''
-		elif sbj.vdata.id == ATM__STR: #this case covers both literal string & name. In all cases, toStr() will output a double-quoted result.
-			dataStr = '\"' + sbj.vdata.data + '\"'
-
-		#common data structures (all stored as lst)
-		elif sbj.vdata.id == ATM__LST_VALUE:
-			dataStr = "[\n"
-			for e in sbj.vdata.data:
-				dataStr += depthSpace + TERM__OUTPUT_TAB + e.toStr(ZCI) + ",\n"
-			dataStr += depthSpace + "]"
-
-		#temporary storage format of FFA chain <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TEMPORARY
-		elif sbj.vdata.id == ATM__LST_ATM:
-			dataStr = "[\n"
-			for e in sbj.vdata.data:
-				if e.id == ATM__CALL:
-					dataStr += depthSpace + TERM__OUTPUT_TAB + e.data.toStr(ZCI, depth=depth+1) + ",\n"
-				elif e.id == ATM__STR:
-					dataStr += depthSpace + TERM__OUTPUT_TAB + "\"" + e.data + "\",\n"
-				else:
-					ZCIInternal(ZCI, "Got an value.vdata of type lst[atm], but one of these atoms has unexpected ID [" + str(e.id) + "].")
-			dataStr += depthSpace + "]"
-
-		#calls
-		elif sbj.vdata.id == ATM__CALL:
-			dataStr = sbj.vdata.data.toStr(ZCI, depth=depth)
-
-		#data items
-		elif sbj.vdata.id == ATM__DATAITEM:
-			dataStr = sbj.vdata.data.toStr(ZCI)
-
-		#structure definition (fields)
-		elif sbj.vdata.id == ATM__FMAP_STR_VALUE:
-			dataStr = "\"fmap[str][value]{\n"
-			for k in sbj.vdata.data.keys():
-				dataStr += depthSpace + TERM__OUTPUT_TAB + '\"' + k + "\": " + sbj.vdata.data[k].toStr(ZCI, depth+1) + ',\n' #recursive call
-			dataStr += depthSpace + '}'
-
-		#invalid
-		else:
-			ZCIInternal(ZCI, "Invalid vdata stored inside value (id:" + str(sbj.vdata.id) + ").")
-		return "VALUE{type:\"" + ZCI.getTypeNameFromID(sbj.Type) + "\",cst:" + str(sbj.Cst) + ",data:" + dataStr + "}"
+	def toStr(sbj, depth=0):
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		res  = "\n" + d0 + "_:\"val\"\n"
+		res += d0 + "cst:" + str(sbj.Cst) + "\n"
+		res += d0 + "type:" + str(sbj.Type) + "\n"
+		res += d0 + "vdat:" + sbj.vdat.toStr(depth=depth+1) + "\n"
+		return res + dm1
 
 
 
 #calls
 class call:
-	def __init__(sbj, name, params, retType):
-		sbj.name    = name
-		sbj.params  = params #lst[value]
-		sbj.retType = retType
+	def __init__(sbj, name, paramVals, retType):
+		sbj.name      = name
+		sbj.paramVals = paramVals #lst[val]
+		sbj.retType   = retType
 
-	def toStr(sbj, ZCI, depth=0): #same reason as for values, ZCI is required...
-		depthSpace = TERM__OUTPUT_TAB * depth
-		dataStr  = "\"CALL " + sbj.name + "(\n"
-		for p in sbj.params:
-			dataStr += depthSpace + TERM__OUTPUT_TAB + p.toStr(ZCI) + ',\n'
-		dataStr += depthSpace + ")->[" + ZCI.getTypeNameFromID(sbj.retType) + ']'
-		return dataStr
+	def toStr(sbj, depth=0):
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		d1   = d0  + TERM__OUTPUT_TAB
+		res  = "\n" + d0 + "_:\"call\"\n"
+		res += d0 + "name:\"" + sbj.name + "\"\n"
+		res += d0 + "retType:" + str(sbj.retType) + "\n"
+		res += d0 + "paramVals:["
+		for p in sbj.paramVals:
+			res += d1 + p.toStr(depth=depth+1) + ","
+		res += d0 + "]\n"
+		return res + dm1
 
 #"potential operator call" Same things as a call except we store only 2 params and under atm types (and we don't care about retType).
 #                          We expect to have only zci or POCall types for these atoms.
 #                          This allows us to work with operator calls while parameters are not analyzed yet during progressive priorizing.
 class POCall:
-	def __init__(sbj, firstOperand, secondOperand):
-		sbj.name          = None          #str, makes no sens to give a correct value on stc creation because we will set it depending on whether a next operand exists (so we don't know at creation time)
-		sbj.operatorIdx   = 0             #same thing
-		sbj.firstOperand  = firstOperand  #atm
-		sbj.secondOperand = secondOperand #atm
+	def __init__(sbj, opand1, opand2):
+		sbj.name   = None   #str, makes no sens to give a correct value on stc creation because we will set it depending on whether a next operand exists (so we don't know at creation time)
+		sbj.opeIdx = 0      #same thing
+		sbj.opand1 = opand1 #atm
+		sbj.opand2 = opand2 #atm
 
 	def toStr(sbj, depth=0):
-		depthSpacing = TERM__OUTPUT_TAB * depth
 
-		#name
-		nameStr = "null"
+		#null name
+		str_name = "null"
 		if sbj.name is not None:
-			nameStr = '"' + sbj.name + '"'
+			str_name = "\"" + sbj.name + "\""
 
-		#1st operand
-		firstOperandText = "null"
-		if sbj.firstOperand is not None:
-			if sbj.firstOperand.id == ATM__ZCI:
-				firstOperandText = '\"' + sbj.firstOperand.data.txtFormat() + '\"'
-			elif sbj.firstOperand.id == ATM__POCALL:
-				firstOperandText = sbj.firstOperand.data.toStr(depth+1)
+		#null 1st operand
+		str_opand1 = "null"
+		if sbj.opand1 is not None:
+			str_opand1 = sbj.opand1.toStr(depth=depth+1)
 
-		#2nd operand
-		secondOperandText = "null"
-		if sbj.secondOperand is not None:
-			if sbj.secondOperand.id == ATM__ZCI:
-				secondOperandText = '\"' + sbj.secondOperand.data.txtFormat() + '\"'
-			elif sbj.secondOperand.id == ATM__POCALL:
-				secondOperandText = sbj.secondOperand.data.toStr(depth+1)
+		#null 2nd operand
+		str_opand2 = "null"
+		if sbj.opand2 is not None:
+			str_opand2 = sbj.opand2.toStr(depth=depth+1)
 
-		#final string
-		return "{\n" + \
-			depthSpacing + TERM__OUTPUT_TAB + "name:" + nameStr + ",\n" + \
-			depthSpacing + TERM__OUTPUT_TAB + "firstOperand:" + firstOperandText + ",\n" + \
-			depthSpacing + TERM__OUTPUT_TAB + "secondOperand:" + secondOperandText + "\n" + \
-			depthSpacing + "}"
+		#toStr
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		res  = "\n" + d0 + "_:\"POCall\"\n"
+		res += d0 + "name:\"" + str_name + "\"\n"
+		res += d0 + "opand1:" + str_opand1 + "\n"
+		res += d0 + "opand2:" + str_opand2 + "\n"
+		return res + dm1
 
 class ODPRes:
 	def __init__(sbj, maxStopIdx, mainPOCall):
@@ -364,25 +301,32 @@ class ODPRes:
 		sbj.mainPOCall = mainPOCall
 
 class opSeq:
-	def __init__(sbj, stopIdx, operands, operators, operatorIdxes):
-		sbj.stopIdx       = stopIdx
-		sbj.operands      = operands  #lst[zci]
-		sbj.operators     = operators #lst (lst[ubyt] cause enm will be stored)
-		sbj.operatorIdxes = operatorIdxes
+	def __init__(sbj, stopIdx, opands, opes, opeIdxes):
+		sbj.stopIdx  = stopIdx
+		sbj.opands   = opands  #lst[zci]
+		sbj.opes     = opes    #lst (lst[ubyt] cause enm will be stored)
+		sbj.opeIdxes = opeIdxes
 
 	def toStr(sbj):
-		operandsText = ""
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		d1   = d0  + TERM__OUTPUT_TAB
+		res  = "\n" + d0 + "_:\"opSeq\"\n"
+		res += d0 + "stopIdx:" + str(sbj.stopIdx) + "\n"
+		res += d0 + "opands:[\n"
 		for a in sbj.operands:
-			operandsText += '\"' + a.txtFormat() + "\","
-		operatorsText = ""
+			res += d1 + '\"' + a.txtFormat() + "\",\n"
+		res += "]\n"
+		res += d0 + "opes:["
 		for o in sbj.operators:
-			operatorsText += OPERATOR_NAMES[o] + ','
-		return "{stopIdx:" + str(sbj.stopIdx) + ",operands:[" + operandsText + "],operators:[" + operatorsText + "]}"
+			res += '\"' + OPERATOR_NAMES[o] + "\","
+		res += "]\n"
+		return res + dm1
 
 
 
 #type for holding some VAP 2nd analysis information
-class vap2:
+class vap2info:
 	def __init__(sbj, ZCIKindIfErr, scope, cstOnly):
 		sbj.ZCIKindIfErr = ZCIKindIfErr
 		sbj.scope        = scope
@@ -391,26 +335,40 @@ class vap2:
 
 
 #dataItem
-class dataItem:
-	def __init__(sbj, Type, name, initialized, initialValue, Cst=False, fields=None):
-		sbj.Type         = Type
-		sbj.name         = name
-		sbj.initialized  = initialized
-		sbj.initialValue = initialValue #value
-		sbj.Cst          = Cst
-		sbj.fields       = fields #lst[dataItem]
+class datItm:
+	def __init__(sbj, Type, name, inited, initVal, Cst=False, fields=None):
+		sbj.Type    = Type
+		sbj.name    = name
+		sbj.inited  = inited
+		sbj.initVal = initVal #val
+		sbj.Cst     = Cst
+		sbj.fields  = fields #lst[datItm]
 
-	def toStr(sbj, ZCI): #same reason as for values, we need a ZCI...
-		initialValueStr = "null"
-		if sbj.initialValue is not None:
-			initialValueStr = sbj.initialValue.toStr(ZCI)
-		fieldsText = "null"
+	def toStr(sbj, depth=0):
+		dm1 = TERM__OUTPUT_TAB * (depth-1)
+		d0  = TERM__OUTPUT_TAB *  depth
+
+		#null init val
+		str_initVal = "null"
+		if sbj.initVal is not None:
+			str_initVal = sbj.initVal.toStr(depth=depth+1)
+
+		#null fields
+		str_fields = "null"
 		if sbj.fields is not None:
-			fieldsText = "[\n"
+			str_fields = "["
 			for f in sbj.fields:
-				fieldsText += TERM__OUTPUT_TAB + f.toStr(ZCI) + ",\n"
-			fieldsText += "]"
-		return "DATAITEM{type:\"" + ZCI.getTypeNameFromID(sbj.Type) + "\",name:\"" + sbj.name + "\",initialized:" + str(sbj.initialized) + ",initialValue:" + initialValueStr + ",Cst:" + str(sbj.Cst) + ",fields:" + fieldsText + "}"
+				str_fields += d0 + f.toStr(depth=depth+1) + ","
+			str_fields += d0 + "]"
+
+		#toStr
+		res  = "\n" + d0 + "_:\"datItm\"\n"
+		res += d0 + "type:" + str(sbj.Type) + "\n"
+		res += d0 + "name:\"" + str(sbj.name) + "\"\n"
+		res += d0 + "inited:" + str(sbj.inited) + "\n"
+		res += d0 + "initVal:" + str_initVal + "\n"
+		res += d0 + "fields:" + str_fields + "\n"
+		return res + dm1
 
 
 
@@ -422,54 +380,168 @@ class dataItem:
 #assignment
 class asg:
 	def __init__(sbj, dst, src):
-		sbj.dst = dst #dataItem
-		sbj.src = src #value
+		sbj.dst = dst #datItm
+		sbj.src = src #val
 
-	def toStr(sbj, ZCI, depth=0):
-		return "ASG{dst:" + sbj.dst.toStr(ZCI) + ",src:" + sbj.src.toStr(ZCI, depth=depth+1) + "}"
+	def toStr(sbj, depth=0):
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		res  = "\n" + d0 + "_:\"asg\"\n"
+		res += d0 + "dst:" + sbj.dst.toStr(depth=depth+1) + "\n"
+		res += d0 + "src:" + sbj.src.toStr(depth=depth+1) + "\n"
+		return res + dm1
 
 
 
 #statements
-class stm:
+class stm_if:
 	def __init__(sbj):
-		sbj.kind  = None
-		sbj.scope = None
+		sbj.conds  = [] #lst[val]
+		sbj.scopes = []
 
-def newStm(kind, parentScp):
-	res       = stm()
-	res.kind  = kind
-	res.scope = newScp(parent=parentScp)
-	return res
+	def toStr(sbj, depth=0):
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		d1   = d0  + TERM__OUTPUT_TAB
+		res  = "\n" + d0 + "_:\"if\"\n"
+		res += d0 + "conds:["
+		for c in sbj.conds:
+			res += d1 + c.toStr(depth=depth+1) + ","
+		res += "]\n"
+		res += d0 + "scopes:["
+		for s in sbj.scopes:
+			res += d1 + s.toStr(depth=depth+1) + ","
+		res += "]\n"
+		return res + dm1
 
+class stm_for:
+	def __init__(sbj):
+		sbj.iterDatItm = None
+		sbj.iterCond   = None #val
+		sbj.iterExe    = None #exe
+		sbj.scope      = None
+
+	def toStr(sbj, depth=0):
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		res  = "\n" + d0 + "_:\"for\"\n"
+		res += d0 + "iterDatItm:" + sbj.iterDatItm.toStr(depth=depth+1) + "\n"
+		res += d0 + "iterCond:" + sbj.iterCond.toStr(depth=depth+1) + "\n"
+		res += d0 + "iterExe:" + sbj.iterExe.toStr(depth=depth+1) + "\n"
+		res += d0 + "scope:" + sbj.iterDatItm.toStr(depth=depth+1) + "\n"
+		return res + dm1
+
+class stm_whi:
+	def __init__(sbj):
+		sbj.iterCond = None #val
+		sbj.scope    = None
+
+	def toStr(sbj, depth=0):
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		res  = "\n" + d0 + "_:\"whi\"\n"
+		res += d0 + "iterCond:" + sbj.iterCond.toStr(depth=depth+1) + "\n"
+		res += d0 + "scope:" + sbj.iterDatItm.toStr(depth=depth+1) + "\n"
+		return res + dm1
+
+class stm_swi:
+	def __init__(sbj):
+		sbj.tgt    = None #val
+		sbj.cases  = [] #lst[val]
+		sbj.scopes = []
+
+	def toStr(sbj, depth=0):
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		d1   = d0  + TERM__OUTPUT_TAB
+		res  = "\n" + d0 + "_:\"swi\"\n"
+		res += d0 + "tgt:" + sbj.tgt.toStr(depth=depth+1) + "\n"
+		res += d0 + "cases:["
+		for c in sbj.cases:
+			res += d1 + c.toStr(depth=depth+1) + ","
+		res += "]\n"
+		res += d0 + "scopes:["
+		for s in sbj.scopes:
+			res += d1 + s.toStr(depth=depth+1) + ","
+		res += "]\n"
+		return res + dm1
+
+
+
+#jumps
+class jmp:
+	def __init__(sbj, kind, retVal=None):
+		sbj.kind   = kind
+		sbj.retVal = retVal #val
+
+	def toStr(sbj, depth=0):
+
+		#null retVal
+		str_retVal = "null"
+		if sbj.retVal is not None:
+			str_retVal = sbj.retVal.toStr(depth=depth+1)
+
+		#get kind
+		str_kind = "UNDEFINED"
+		if sbj.kind == JMP__BRK:
+			str_kind = "\"brk\""
+		elif sbj.kind == JMP__CTN:
+			str_kind = "\"ctn\""
+		elif sbj.kind == JMP__RET:
+			str_kind = "\"ret\""
+
+		#toStr
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		res  = "\n" + d0 + "_:\"jmp\"\n"
+		res += d0 + "kind:" + str_kind + "\n"
+		res += d0 + "retVal:" + str_retVal + "\n"
+		return res + dm1
+
+
+
+#functions
 class fct:
 	def __init__(sbj):
 		sbj.name    = None
 		sbj.retType = 0
-		sbj.params  = None #lst[dataItem]
+		sbj.params  = None #lst[datItm]
 		sbj.scope   = None
+		sbj.method  = False
 		sbj.content = None #lst[ZCI]
 
-	def toStr(sbj, ZCI, depth=0):
-		depthSpace = TERM__OUTPUT_TAB * depth
-		dataStr  = "FCT{\n"
-		dataStr += depthSpace + TERM__OUTPUT_TAB + "name:" + sbj.name + ",\n"
-		dataStr += depthSpace + TERM__OUTPUT_TAB + "retType:" + ZCI.getTypeNameFromID(sbj.retType) + ",\n"
-		dataStr += depthSpace + TERM__OUTPUT_TAB + "params:[\n"
-		for p in sbj.params:
-			dataStr += depthSpace + TERM__OUTPUT_TAB + TERM__OUTPUT_TAB + p.toStr(ZCI) + ",\n"
-		dataStr += depthSpace + TERM__OUTPUT_TAB + "],\n"
-		dataStr += depthSpace + TERM__OUTPUT_TAB + "scope:" + sbj.scope.toStr(ZCI, depth=depth+1) + ",\n"
-		dataStr += depthSpace + "}"
-		return dataStr
+	def toStr(sbj, depth=0):
+		dm1  = TERM__OUTPUT_TAB * (depth-1)
+		d0   = TERM__OUTPUT_TAB *  depth
+		d1   = d0  + TERM__OUTPUT_TAB
 
-def newFct(name, retType, params, gblScp, content): #global scope must be given to create its own scopes as children
+		#null content
+		str_content = "null"
+		if sbj.content is not None:
+			str_content = "["
+			for c in sbj.content:
+				str_content += d1 + c.toStr(depth=depth+1) + ","
+			str_content += "]"
+
+		#toStr
+		res  = "\n" + d0 + "_:\"fct\"\n"
+		res += d0 + "name:\"" + sbj.name + "\"\n"
+		res += d0 + "retType:" + str(sbj.retType) + "\n"
+		res += d0 + "method:" + str(sbj.method) + "\n"
+		res += d0 + "params:["
+		for p in sbj.params:
+			res += d1 + p.toStr(depth=depth+1) + ","
+		res += "]\n"
+		res += d0 + "content:" + str_content + "\n"
+		res += d0 + "scope:" + sbj.scope.toStr(depth=depth+1) + "\n"
+		return res + dm1
+
+def newFct(name, retType, params, gblScp): #global scope must be given to create its own scopes as children
 	res         = fct()
 	res.name    = name
 	res.retType = retType
 	res.params  = params
 	res.scope   = newScp(parent=gblScp) #create its own independant scope which holds a link to the parent one (that must be "global" btw)
-	res.content = content
 	return res
 
 

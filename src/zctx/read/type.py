@@ -3,20 +3,20 @@
 # ABSTRACT ZCEs PARSING TOOLS
 
 #expecting a Z type
-def readType(ZCI, ZCIKindIfErr, errorIfNotExisting=True):
+def readType(ZCI, ZCIKindIfErr, errIfNotExisting=True):
 	ZCIDeepDbg(ZCI, "Reading type.", prtLine=False)
 	initialZCICtx = ZCI.ctx.copy()
 
 	#read raw type name (actually, it also includes explicit module prefix if any... so not really "raw")
 	ZCIKindIfErr_forMissingName = None
-	if errorIfNotExisting and ZCIKindIfErr is not None:
+	if errIfNotExisting and ZCIKindIfErr is not None:
 		ZCIKindIfErr_forMissingName = "Type name in " + ZCIKindIfErr
 	tRawName = readName(ZCI, ZCIKindIfErr_forMissingName, parseModPfxes=True, modPfxes_asHeaderOnly=True)
 
 	#module-realted / global
 	if initialZCICtx.get() == '^':
-		tModPfx = extractModPfx(tRawName)               #save its module prefix elsewhere
-		tRawName   = str_sub(tRawName, start=len(tModPfx)) # + cut it from "rawName" to keep only the REAL RAW NAME
+		tModPfx  = extractModPfx(tRawName)               #save its module prefix elsewhere
+		tRawName = str_sub(tRawName, start=len(tModPfx)) # + cut it from "rawName" to keep only the REAL RAW NAME
 	else:
 		tModPfx = "G"
 
@@ -30,7 +30,7 @@ def readType(ZCI, ZCIKindIfErr, errorIfNotExisting=True):
 	if tID == TYPE_ID__UNKNOWN:
 
 		#case 1: type not found => error
-		if errorIfNotExisting:
+		if errIfNotExisting:
 			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist.")
 
 		#case 2: maybe it was not a type at all

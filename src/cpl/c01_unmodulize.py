@@ -169,4 +169,4 @@ def c01_unmodulize(zCtx):
 	#debug output file
 	if zCtx.dbgMode[zCtx.step]:
 		prepareDbgDir()
-		dumpZCIs(zCtx.ZCIs, "debug/" + path_name(zCtx.initialCtx.filename) + ".c01.dl", oneLine=False)
+		dumpZCIs(zCtx.ZCIs, "dbg/" + path_name(zCtx.initialCtx.filename) + ".c01.dl", oneLine=False)

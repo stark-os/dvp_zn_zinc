@@ -225,7 +225,7 @@ def p3_ZCSAndImp(zCtx):
 	#debug
 	if zCtx.dbgMode[zCtx.step]:
 		prepareDbgDir()
-		dumpZCIs(ZCIs, "debug/" + path_name(zCtx.ctx.filename) + ".p3.json")
+		dumpZCIs(ZCIs, "dbg/" + path_name(zCtx.ctx.filename) + ".p3.dl")
 
 	#no need cur context anymore (end of precompilation by the way)
 	zCtx__closeCurrentCtx(zCtx)

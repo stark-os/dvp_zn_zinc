@@ -244,7 +244,7 @@ def p1_commentsAndText(zCtx):
 	#debug
 	if zCtx.dbgMode[zCtx.step]:
 		prepareDbgDir()
-		writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p1.z", output)
+		writeFile("dbg/" + path_name(zCtx.ctx.filename) + ".p1.z", output)
 
 	#output now replaces previous file content : original => p1 version stored in memory (for further steps)
 	zCtx__reset(zCtx, newText=output)

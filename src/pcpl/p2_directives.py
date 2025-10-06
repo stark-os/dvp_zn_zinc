@@ -400,7 +400,7 @@ def p2_directives(zCtx):
 	#deep debug
 	if zCtx.deepDbgMode[zCtx.step]:
 		prepareDbgDir()
-		writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p2.1stTry.z", zCtx.ctx.icontent.s)
+		writeFile("dbg/" + path_name(zCtx.ctx.filename) + ".p2.1stTry.z", zCtx.ctx.icontent.s)
 
 	#remaining directives to be solved
 	retry = 0
@@ -418,7 +418,7 @@ def p2_directives(zCtx):
 		#deep debug
 		if zCtx.deepDbgMode[zCtx.step]:
 			prepareDbgDir()
-			writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p2.retry" + str(retry) + ".z", zCtx.ctx.icontent.s)
+			writeFile("dbg/" + path_name(zCtx.ctx.filename) + ".p2.retry" + str(retry) + ".z", zCtx.ctx.icontent.s)
 
 	#debug
 	zCtx.dbg("============================================================================")
@@ -431,4 +431,4 @@ def p2_directives(zCtx):
 	#debug
 	if zCtx.dbgMode[zCtx.step]:
 		prepareDbgDir()
-		writeFile("debug/" + path_name(zCtx.ctx.filename) + ".p2.z", zCtx.ctx.icontent.s)
+		writeFile("dbg/" + path_name(zCtx.ctx.filename) + ".p2.z", zCtx.ctx.icontent.s)

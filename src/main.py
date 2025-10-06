@@ -55,16 +55,16 @@ def main():
 		#debug
 		dbgMode = (
 			False, #INIT
-			True,  #P1
-			True, #P2
+			False, #P1
+			False, #P2
 			False, #P3
 			False, #C01
 			True,  #C02
 			True   #C03
 		), deepDbgMode = (
 			False, #INIT
-			True,  #P1
-			True, #P2
+			False, #P1
+			False, #P2
 			False, #P3
 			False, #C01
 			True,  #C02

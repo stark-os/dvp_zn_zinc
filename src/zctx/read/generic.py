@@ -46,124 +46,124 @@ def readHexByte(ZCI):
 
 
 #try reading symbol (don't move ZCI ctx)
-def readSymbol(ZCI):
+def readSym(ZCI):
 	ZCIDeepDbg(ZCI, "Reading symbol.")
 	tmpZCI = ZCI.copy()
 	c1 = tmpZCI.get()
 
 	#1-character symbol
 	if c1 == '~':
-		return SYMBOL__SIN
+		return SYM__SIN
 	elif c1 == '/':
-		return SYMBOL__ADI
+		return SYM__ADI
 	elif c1 == '+':
-		return SYMBOL__BAD
+		return SYM__BAD
 	elif c1 == '%':
-		return SYMBOL__AMO
+		return SYM__AMO
 	elif c1 == '^':
-		return SYMBOL__LXO
+		return SYM__LXO
 	elif c1 == '#':
-		return SYMBOL__FSZ
+		return SYM__FSZ
 	elif c1 == '@':
-		return SYMBOL__FRF
+		return SYM__FRF
 	elif c1 == '$':
-		return SYMBOL__FCA
+		return SYM__FCA
 	elif c1 == '.':
-		return SYMBOL__FFA
+		return SYM__FFA
 
 	#multi-character symbol: starting with '!'
 	elif c1 == '!':
 		tmpZCI.inc()
 		c2 = tmpZCI.get()
 		if c2 == '=':
-			return SYMBOL__CNE
+			return SYM__CNE
 		elif c2 == '?':
-			return SYMBOL__INA
-		return SYMBOL__SNO
+			return SYM__INA
+		return SYM__SNO
 
 	#multi-character symbol: starting with '*'
 	elif c1 == '*':
 		if tmpZCI.inc():
-			return SYMBOL__AMU
+			return SYM__AMU
 		if tmpZCI.get() == '*':
-			return SYMBOL__APO
-		return SYMBOL__AMU
+			return SYM__APO
+		return SYM__AMU
 
 	#multi-character symbol: starting with '&'
 	elif c1 == '&':
 		if tmpZCI.inc():
-			return SYMBOL__LAN #ending with lonely '&'
+			return SYM__LAN #ending with lonely '&'
 		if tmpZCI.get() == '&':
-			return SYMBOL__DAN
-		return SYMBOL__LAN
+			return SYM__DAN
+		return SYM__LAN
 
 	#multi-character symbol: starting with '|'
 	elif c1 == '|':
 		tmpZCI.inc()
 		c2 = tmpZCI.get()
 		if c2 == '|':
-			return SYMBOL__DOR
+			return SYM__DOR
 		elif c2 == '<':
 			if tmpZCI.inc():
-				return SYMBOL__LOR
+				return SYM__LOR
 			if tmpZCI.get() == '<':
-				return SYMBOL__LLB
-		return SYMBOL__LOR
+				return SYM__LLB
+		return SYM__LOR
 
 	#multi-character symbol: starting with '-'
 	elif c1 == '-':
 		tmpZCI.inc()
 		if tmpZCI.get() == '>':
 			if tmpZCI.inc():
-				return SYMBOL__BSU
+				return SYM__BSU
 			if tmpZCI.get() == '>':
-				return SYMBOL__LRR
-		return SYMBOL__BSU
+				return SYM__LRR
+		return SYM__BSU
 
 	#multi-character symbol: starting with '<'
 	elif c1 == '<':
 		if tmpZCI.inc():
-			return SYMBOL__CLT
+			return SYM__CLT
 		c2 = tmpZCI.get()
 		if c2 == '=':
-			return SYMBOL__CLE
+			return SYM__CLE
 		elif c2 == '<':
 			if tmpZCI.inc():
-				return SYMBOL__LLS
+				return SYM__LLS
 			if tmpZCI.get() == '-':
-				return SYMBOL__LLR
-			return SYMBOL__LLS
-		return SYMBOL__CLT
+				return SYM__LLR
+			return SYM__LLS
+		return SYM__CLT
 
 	#multi-character symbol: starting with '>'
 	elif c1 == '>':
 		if tmpZCI.inc():
-			return SYMBOL__CGT
+			return SYM__CGT
 		c2 = tmpZCI.get()
 		if c2 == '=':
-			return SYMBOL__CGE
+			return SYM__CGE
 		elif c2 == '>':
 			if tmpZCI.inc():
-				return SYMBOL__LRS
+				return SYM__LRS
 			if tmpZCI.get() == '|':
-				return SYMBOL__LRB
-			return SYMBOL__LRS
-		return SYMBOL__CGT
+				return SYM__LRB
+			return SYM__LRS
+		return SYM__CGT
 
 	#multi-character symbol: starting with '='
 	elif c1 == '=':
 		if tmpZCI.inc():
-			return SYMBOL__ASG
+			return SYM__ASG
 		if tmpZCI.get() == '=':
-			return SYMBOL__CEQ
-		return SYMBOL__ASG
+			return SYM__CEQ
+		return SYM__ASG
 
 	#multi-character symbol: starting with '?'
 	elif c1 == '?':
-		return SYMBOL__IAM
+		return SYM__IAM
 
 	#no match
-	return SYMBOL__NOT_FOUND
+	return SYM__NOT_FOUND
 
 
 
@@ -304,7 +304,7 @@ def readName(ZCI,
 
 
 
-def lookForFieldsAccessInDataItem(ZCI, di): #basically, for FFA application
+def lookForFieldsAccessInDatItm(ZCI, di): #basically, for FFA application
 	if di is None:
 		return None
 
@@ -331,7 +331,7 @@ def lookForFieldsAccessInDataItem(ZCI, di): #basically, for FFA application
 
 #WARNING! This function is not to be used as part of ODP (symbol '^' should never refer to XOR operator)
 #         Technically, we should only use it in 2nd analysis.
-def tryReadDataItemIncludingFields(ZCI, scope):
+def tryReadDatItmIncludingFields(ZCI, scope):
 	starter = ZCI.get()
 
 	#read name (will have module prefix if any)
@@ -340,17 +340,17 @@ def tryReadDataItemIncludingFields(ZCI, scope):
 
 	#case 1: having a module prefix => looking directly in global scope
 	if starter == '^':
-		for ldi in ZCI.zCtx.cpl.gblScp.dataItems:
+		for ldi in ZCI.zCtx.cpl.gblScp.datItms:
 			if name == ldi.name: #name should exactly correspond (full name given from readName in case of module prefix)
 				di = ldi
 				break
 
 	#case 2: no module prefix => getting through every local elements until non-module global ones
 	else:
-		di = getDataItem(name, scope)
+		di = getDatItm(name, scope)
 
 	#field access if any
-	return lookForFieldsAccessInDataItem(ZCI, di)
+	return lookForFieldsAccessInDatItm(ZCI, di)
 
 
 

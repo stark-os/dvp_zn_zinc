@@ -69,11 +69,8 @@
 				sfx += '_' + combination[d]
 			alternatives.append(exactNameWithoutDcns + sfx)
 
-		#second: parents (or multi-type keyword if no one)
-		if tInst.dcnCommon.parent is None:
-			pass
-			#alternatives.append("GUtyp") #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DON'T ALLOW "typ" kw use for the moment
-		else:
+		#second: parents
+		if tInst.dcnCommon.parent is not None:
 			alternatives += sbj.getTypeMatchingAlternativeNames( sbj.getTypeNameFromID(tInst.dcnCommon.parent) )
 		return alternatives
 
