@@ -126,8 +126,8 @@ def processTypeDcl(ZCI):
 		#update stcSize
 		newTypeInst.computeStcSize(ZCI.zCtx.cpl.types)
 
-		#set REF as parent
-		newTypeInst.dcnCommon.parent = ZCI.zCtx.rootTypes[RT__REF]
+		#set REF as parent <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED
+		#newTypeInst.dcnCommon.parent = ZCI.zCtx.rootTypes[RT__REF]
 
 	#process type content: type-copy syntax
 	else:
@@ -210,7 +210,7 @@ def processEnmDcl(ZCI, scope, tgtFct=None):
 
 	#create enumerate
 	enmDI = datItm(t, fullName, True, None, Cst=True, fields=fields)
-	checkAlreadyDeclaredDataItemOrField(ZCI, enmDI, scope.datItms)
+	checkAlreadyDeclaredDatItmOrField(ZCI, enmDI, scope.datItms)
 	scope.datItms.append(enmDI)
 
 	#end of ZCI expected
@@ -269,6 +269,11 @@ def processFctDcl_partial(ZCI, parsingFwd=False):
 	#case 1: regular function
 	if not isOpe:
 
+		#name must be in valid charset then
+		for c in rawName:
+			if c not in DEFAULT_NAME_CHARSET:
+				ZCIErr(ZCI, "Invalid character \'" + c + "\' in function name.")
+
 		#additionnal check: name availability !HERE, WE WANT TO GUARANTEE NO CONFUSION BETWEEN GBL DI NAMES & FCT NAMES. USER CODE CAN HAVE AMBIGUITY, BUT Z NOTATION CAN'T: THIS IS WHY WE USE A "TMP PREFIXED NOTATION" TO CHECK THEM TEMPORARILY.
 		if not isMethod:
 			equivalentDIName = getDatItmModPfxFromScope(ZCI, ZCI.zCtx.cpl.gblScp)
@@ -294,6 +299,7 @@ def processFctDcl_partial(ZCI, parsingFwd=False):
 
 	#check if function/method/operator already exists
 	if getFctFromName(ZCI, fullName) is not None:
+		ZCIWrn(ZCI, "Available functions/methods/operators declared since now " + listAllExistingFct(ZCI.zCtx))
 		ZCIErr(ZCI, "Already have a function/method/operator with name " + fullName)
 
 	#create fct instance (set VOID retType for the moment)
@@ -375,8 +381,11 @@ def processFwdDcl(ZCI):
 	ZCIDeepDbg(ZCI, "Return type detected \"" + ZCI.getTypeNameFromID(retType) + "\".")
 
 	#look for src fct
-	srcFullName = getFctNameFromPfxName(ZCI, pfxName, methodOf=fwdType)
-	srcF        = getFctFromName(ZCI, srcFullName)
+	for alt in ZCI.zCtx.getTypeAlternatives(fwdType):
+		srcFullName = getFctNameFromPfxName(ZCI, pfxName, methodOf=alt)
+		srcF        = getFctFromName(ZCI, srcFullName)
+		if srcF is not None:
+			break
 	if srcF is None:
 		ZCIErr(ZCI, "Unable to find source function \"" + srcFullName + "\" to forward from (DCL_FWD).")
 
@@ -390,10 +399,11 @@ def processFwdDcl(ZCI):
 		ZCIErr(ZCI, "Can only forward functions with exact same number of parameters (expected " + str(len(srcF.params)) + ", got " + str(len(dstF.params)) + ", in DCL_FWD).")
 	for p in range(len(srcF.params)):
 		if p != 0:
+
+			#error cases
 			if dstF.params[p].name != srcF.params[p].name:
-				ZCIErr(ZCI, "Can only forward functions with exact same parameters (expected name \"" + srcF.params[p].name + "\" as parameter " + str(p+1) + ", got \"" + dstF.params[p].name + "\", in DCL_FWD).")
-			if dstF.params[p].Type != srcF.params[p].Type:
-				ZCIErr(ZCI, "Can only forward functions with exact same parameters (expected type \"" + ZCI.getTypeNameFromID(srcF.params[p].Type) + "\" as parameter " + str(p+1) + ", got \"" + ZCI.getTypeNameFromID(dstF.params[p].Type) + "\", in DCL_FWD).")
+				ZCIErr(ZCI, "Can only forward functions with same parameters names (expected \"" + srcF.params[p].name + "\" as parameter " + str(p+1) + ", got \"" + dstF.params[p].name + "\", in DCL_FWD).")
+			paramTypeSizesMustMatch(ZCI, "in function forwarding (DCL_FWD).", p, dstF.params[p].Type, srcF.params[p].Type)
 
 		#add param values
 		paramVals.append(
@@ -471,12 +481,7 @@ def processDclDat(ZCI, scope, tgtFct, isCst):
 	ZCIDbg(ZCI, "Processing data item declaration " + scpTxt + " (DCL_DAT).", prtLine=False)
 
 	#read the whole ZCI from the start
-	di = readDatItm(ZCI, "Data item declaration " + scpTxt + " (DCL_DAT).", scope, cstInitValOnly=cstInitValOnly)
-
-	#don't allow the use of module notation in name when declaring !
-	givenModPfx = extractModPfx(di.name)
-	if len(givenModPfx) != 0:
-		ZCIErr(ZCI, "Cannot use module notation in name when declaring a data item " + scpTxt + " (DCL_DAT detected, you should declare inside a module instead).")
+	di = readDatItm(ZCI, "Data item declaration " + scpTxt + " (DCL_DAT).", scope, cstInitValOnly=cstInitValOnly, allowModPfxInName=False)
 
 	#set some important info to the NEWLY CREATED data item
 	di.name = getDatItmModPfxFromScope(ZCI, scope) + di.name

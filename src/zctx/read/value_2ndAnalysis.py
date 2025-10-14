@@ -36,7 +36,7 @@ def parseLiteralIntOrFloat(ZCI):
 		#zero => can be anything
 		else:
 			if ZCI.inc(): #lonely '0'
-				return value(
+				return val(
 					ZCI.zCtx.rootTypes[RT__S32],
 					atm(ATM__S32, 0),
 					True
@@ -221,7 +221,7 @@ def parseLiteralIntOrFloat(ZCI):
 				resAsFloat = -1.0*resAsFloat
 
 			#end of value parsing (floating point)
-			return value(resType, atm(resAtmID, resFloatingNbr), True)
+			return val(resType, atm(resAtmID, resFloatingNbr), True)
 
 		#end of value parsing (integer)
 		if resIsNegative:
@@ -423,10 +423,10 @@ def secondAnalysis(ZCI, v2i):
 	# IV] LITERAL: STRUCTURE DEFINITION
 
 	#try reading a type
-	tID   = readType(ZCI, None, errIfNotExisting=False)
-	tInst = ZCI.getTypeInstanceFromID(tID)
+	tID = readType(ZCI, None, errIfNotExisting=False)
 	if tID != TYPE_ID__UNKNOWN:
 		ZCIDeepDbg(ZCI, "2nd analysis: Structure definition detected.")
+		tInst = ZCI.getTypeInstanceFromID(tID)
 
 		#must be a structure
 		if tInst.dcnCommon.nature != NATURE__STC:
@@ -482,7 +482,8 @@ def secondAnalysis(ZCI, v2i):
 		#just a regular name actually => DI NAME
 		di = getDatItmFromPfxName(pfxName, v2i.scope)
 		if di is None:
-			ZCIErr(ZCI, "2nd analysis: Cannot find data item " + unpfxMod(pfxName) + " in cur scope or higher.")
+			ZCIWrn(ZCI, "Maybe you wanted to target a type among the available " + ZCI.zCtx.listTypeNames(), prtSubCtxs=False, prtLine=False)
+			ZCIErr(ZCI, "2nd analysis: Cannot find data item " + pfxName + " in current scope or higher.")
 
 		#cstOnly => not allowed
 		if v2i.cstOnly and not di.Cst:
@@ -584,7 +585,7 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 		res.Type = readType(ZCI, v2i.ZCIKindIfErr)
 
 		#overwrite result type
-		ZCIDeepDbg(ZCI, "2nd analysis: FCA operator applied type " + unpfxMod(ZCI.getTypeNameFromID(Type)) + " on value " + res.toStr())
+		ZCIDeepDbg(ZCI, "2nd analysis: FCA operator applied type " + unpfxMod(ZCI.getTypeNameFromID(res.Type)) + " on value " + res.toStr())
 
 	#field access (FFA)
 	elif following == '.':
@@ -697,12 +698,15 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i): #oriZCI only used for error acc
 
 	#set operator parameters
 	paramVals      = []
+	paramTypeIDs   = []
 	paramTypeNames = []
 	if opand1Val is not None:
 		paramVals.append(                               opand1Val       )
+		paramTypeIDs.append(                            opand1Val.Type  )
 		paramTypeNames.append( oriZCI.getTypeNameFromID(opand1Val.Type) )
 	if opand2Val is not None:
 		paramVals.append(                               opand2Val       )
+		paramTypeIDs.append(                            opand2Val.Type  )
 		paramTypeNames.append( oriZCI.getTypeNameFromID(opand2Val.Type) )
 
 	#solve name
@@ -711,11 +715,12 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i): #oriZCI only used for error acc
 		opeFullName += '_' + p
 
 	#check for every operator alternative
-	matchingFct = oriZCI.zCtx.findMatchingOperator('O' + curPOCall.name, paramTypeNames)
+	matchingFct = oriZCI.zCtx.findMatchingOperator(opeFullName, paramTypeIDs, paramTypeNames)
 
 	#still no one found
 	if matchingFct is None:
 		oriZCI.forwardUntil(curPOCall.opeIdx)
+		ZCIWrn(oriZCI, "Available combinations for this operator are " + oriZCI.zCtx.listAllExistingOpeNames(opeFullName), prtSubCtxs=False, prtLine=False)
 		ZCIErr(oriZCI, "No operator " + curPOCall.name + " matching for parameters (" + ','.join(paramTypeNames) + ").")
 
 	#result

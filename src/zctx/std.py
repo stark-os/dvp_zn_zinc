@@ -75,9 +75,7 @@ class atm:
 
 
 	def toStr(sbj, depth=0):
-		dm1 = TERM__OUTPUT_TAB * (depth-1)
 		d0  = TERM__OUTPUT_TAB *  depth
-		d1  = d0  + TERM__OUTPUT_TAB
 		res = "\n" + d0 + "_:\"atm\"\n"
 		res += d0 + "id:" + str(sbj.id) + "\n"
 
@@ -94,47 +92,47 @@ class atm:
 		#boolean
 		elif sbj.id == ATM__BOO:
 			if sbj.dat:
-				res += "dat:true\n"
-			res += "dat:false\n"
+				res += "dat:true"
+			res += "dat:false"
 
 		#numerical
 		elif sbj.id == ATM__S8:
-			res += d0 + "dat:\"S" + hexOnN(sbj.dat, 2) + "\"\n"
+			res += d0 + "dat:\"S" + hexOnN(sbj.dat, 2) + '\"'
 		elif sbj.id == ATM__U8:
-			res += d0 + "dat:\"U" + hexOnN(sbj.dat, 2) + "\"\n"
+			res += d0 + "dat:\"U" + hexOnN(sbj.dat, 2) + '\"'
 		elif sbj.id == ATM__S16:
-			res += d0 + "dat:\"S" + hexOnN(sbj.dat, 4) + "\"\n"
+			res += d0 + "dat:\"S" + hexOnN(sbj.dat, 4) + '\"'
 		elif sbj.id == ATM__U16:
-			res += d0 + "dat:\"U" + hexOnN(sbj.dat, 4) + "\"\n"
+			res += d0 + "dat:\"U" + hexOnN(sbj.dat, 4) + '\"'
 		elif sbj.id == ATM__S32:
-			res += d0 + "dat:\"S" + hexOnN(sbj.dat, 8) + "\"\n"
+			res += d0 + "dat:\"S" + hexOnN(sbj.dat, 8) + '\"'
 		elif sbj.id == ATM__U32:
-			res += d0 + "dat:\"U" + hexOnN(sbj.dat, 8) + "\"\n"
+			res += d0 + "dat:\"U" + hexOnN(sbj.dat, 8) + '\"'
 		elif sbj.id == ATM__S64:
-			res += d0 + "dat:\"S" + hexOnN(sbj.dat, 16) + "\"\n"
+			res += d0 + "dat:\"S" + hexOnN(sbj.dat, 16) + '\"'
 		elif sbj.id == ATM__U64:
-			res += d0 + "dat:\"U" + hexOnN(sbj.dat, 16) + "\"\n"
+			res += d0 + "dat:\"U" + hexOnN(sbj.dat, 16) + '\"'
 		elif sbj.id == ATM__REF:
-			res += d0 + "dat:\"R" + hexOnN(sbj.dat, 16) + "\"\n"
+			res += d0 + "dat:\"R" + hexOnN(sbj.dat, 16) + '\"'
 
 		#lists
-		elif sbj.id in (ATM__LST_VALUE, ATM__LST_ATM, ATM__LST):
+		elif sbj.id in (ATM__LST_VAL, ATM__LST_ATM, ATM__LST):
 			res += d0 + "dat:["
 			for e in sbj.dat:
-				res += d1 + e.toStr(depth=depth+1) + ","
-			res += "]\n"
+				res += e.toStr(depth=depth+1) + ","
+			res += '\n' + d0 + ']'
 
 		#fmaps
-		elif sbj.id == ATM__FMAP_STR_VALUE:
+		elif sbj.id == ATM__FMAP_STR_VAL:
 			res += d0 + "dat:{\n"
 			for k in sbj.dat.keys():
-				res += d1 + '\"' + k + "\":" + sbj.dat[k].toStr(depth=depth+1) + ',' #recursive call
-			res += "}\n"
+				res += '\"' + k + "\":" + sbj.dat[k].toStr(depth=depth+1) + ',' #recursive call
+			res += '\n' + d0 + '}'
 
 		#text
 		elif sbj.id == ATM__CHR:
-			res += d0 + "dat:'" + sbj.dat + "'\n"
+			res += d0 + "dat:'" + sbj.dat + '\''
 		elif sbj.id == ATM__STR:
-			res += d0 + "dat:\"" + sbj.dat + "\"\n"
-		return res + dm1
+			res += d0 + "dat:\"" + sbj.dat + '"'
+		return res
 

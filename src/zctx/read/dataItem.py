@@ -1,7 +1,7 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/dataItem.py
 
 #WARNING! Returns data item WITHOUT ANY prefix
-def readDatItm(ZCI, ZCIKindIfErr, scope, cstInitValOnly=False, allowUnsolvableType=False):
+def readDatItm(ZCI, ZCIKindIfErr, scope, cstInitValOnly=False, allowUnsolvableType=False, allowModPfxInName=True):
 	ZCIDeepDbg(ZCI, "Reading data item.", prtLine=False)
 
 	#read type (if any. Else, continue as nothing happened)
@@ -10,7 +10,7 @@ def readDatItm(ZCI, ZCIKindIfErr, scope, cstInitValOnly=False, allowUnsolvableTy
 		jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 
 	#read name
-	name = readName(ZCI, "data item name", parseModPfxes=True, modPfxes_asHeaderOnly=True)
+	name = readName(ZCI, "data item name", parseModPfxes=allowModPfxInName, modPfxes_asHeaderOnly=allowModPfxInName)
 
 	#default initial value: uninitialized
 	inited  = False

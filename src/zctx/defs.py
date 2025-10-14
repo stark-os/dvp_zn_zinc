@@ -166,7 +166,7 @@ OPERATOR_FCTNAME2SYMBOL = {
 	"+"  : SYM__BAD, "-"   : SYM__BSU, #BO
 	"&"  : SYM__LAN, "|"   : SYM__LOR, "^": SYM__LXO, #LO
 	"<<" : SYM__LLS, ">>"  : SYM__LRS,
-	"<<|": SYM__LLB, "|>>" : SYM__LRB,
+	"|<<": SYM__LLB, ">>|" : SYM__LRB,
 	"<<-": SYM__LLR, "->>" : SYM__LRR,
 	"==" : SYM__CEQ, "!="  : SYM__CNE, #CO
 	"<"  : SYM__CLT, ">"   : SYM__CGT,
@@ -260,7 +260,6 @@ CPL_OPT__ALLOWED = {
 PCPL__NAME_CHARSET                  = DEFAULT_NAME_CHARSET #no link, but same value
 PCPL__DIRECTIVES_MAX_COMPLEXITY     = 10
 PCPL__DIRECTIVES_MAX_COMPLEXITY_KEY = "DIRECTIVES_MAX_COMPLEXITY_LEVEL"
-
 
 
 

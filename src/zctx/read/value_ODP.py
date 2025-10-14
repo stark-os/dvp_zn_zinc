@@ -172,7 +172,7 @@ def progressivePriorizing(zCtx, curOpSeq, monoOpand): #WARNING! DO NOT USE WITH 
 	cur = res
 
 	#for each remaining operand, make function calls (Potential Operator Call)
-	while len(curOpSeq.operands) != 0:
+	while len(curOpSeq.opands) != 0:
 		cur.name   = OPERATOR_NAMES[curOpSeq.opes.pop()]
 		cur.opeIdx = curOpSeq.opeIdxes.pop()
 		cur.opand1 = atm(

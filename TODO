@@ -51,6 +51,10 @@ lt_ref  a = ^LT_ref.new(chkSz)
 
 
 
+- Change ^LLI.^Operator into ^LLI.^Ope (in LLI filenames + content and also in stdz_types).
+
+
+
 - Generic fct/ope are disabled.
   We may not need them at all if using pcpl directives.
 

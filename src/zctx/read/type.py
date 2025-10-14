@@ -31,6 +31,7 @@ def readType(ZCI, ZCIKindIfErr, errIfNotExisting=True):
 
 		#case 1: type not found => error
 		if errIfNotExisting:
+			ZCIWrn(ZCI, "Available types are " + ZCI.zCtx.listTypeNames())
 			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist.")
 
 		#case 2: maybe it was not a type at all
@@ -115,8 +116,12 @@ def readType(ZCI, ZCIKindIfErr, errIfNotExisting=True):
 
 
 
-
-
+#size match
+def paramTypeSizesMustMatch(ZCI, ZCIKindIfErr, paramNbr, type1, type2):
+	t1Inst = ZCI.getTypeInstanceFromID(type1)
+	t2Inst = ZCI.getTypeInstanceFromID(type2)
+	if t1Inst.dcnCommon.size != t2Inst.dcnCommon.size:
+		ZCIErr(ZCI, "Incompatible type sizes between type \"" + t1Inst.name + "\" with size " + str(t1Inst.dcnCommon.size) + " as parameter " + str(paramNbr) + " and \"" + t2Inst.name + "\" with size " + str(t2Inst.dcnCommon.size) + ", " + ZCIKindIfErr)
 
 
 

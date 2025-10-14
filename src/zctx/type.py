@@ -1,6 +1,6 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/type.py
 
-# -------- TYPE RELATED TOOLS --------
+	# -------- TYPE RELATED TOOLS --------
 
 	#access using zCtx
 	def getTypeInstanceFromID(sbj, id):
@@ -41,97 +41,50 @@
 
 
 
-	#operator matching !WARNING: High complexity !!!
-	def getTypeMatchingAlternativeNames(sbj, tgtTypeName):
-		alternatives = [tgtTypeName]
-		tInst        = sbj.getTypeInstanceFromName(tgtTypeName)
+	#inheritance !WARNING: A bit of complexity !!!
+	def getTypeAlternatives(sbj, tgtType):
+		alternatives = [tgtType]
+		tInst        = sbj.getTypeInstanceFromID(tgtType)
 
-		#first: declinations
-		dcnNames                  = [] #in Z, better with tabs: tab[lst[str]] dcnNames = ^Tab.new(tInst.dcns.length)
+		#step 1: get individual combinations for each declination
 		dcnIndividualCombinations = []
-		for dcn in range(len(tInst.dcns)):
-			dcnName = sbj.getTypeNameFromID(tInst.dcns[dcn])
-			dcnNames.append(name)
+		for dcn in tInst.dcns:
+			dcnIndividualCombinations.append( sbj.getTypeAlternatives(dcn) )
 
-			#get individual combinations for each declination
-			dcnIndividualCombinations.append( sbj.getTypeMatchingAlternativeNames(dcnName) )
-
-		#get combinations of these individuals together <---------------- !WARNING: Pretty complex stuff here !
+		#step 2: combine them together <---------------- !WARNING: Pretty complex stuff here !
 		dcnCollectiveCombinations = Combinations__makeAll(dcnIndividualCombinations)
 
-		#get some information to reconstitute declination names (here, we keep the starting 'D' in rawName)
-		exactNameWithoutDcns = cutDcnFromTypeName(tgtTypeName)
+		#step 3: cut declinations from name (here, we keep the starting 'D'/'U' in rawName)
+		exactNameWithoutDcns = undblUnderscores(
+			cutDcnFromTypeName( sbj.getTypeNameFromID(tgtType) )
+		)
 
-		#add dcn related alternatives
+		#step 4: gather dcn-related alternatives
 		for combination in dcnCollectiveCombinations:
 			sfx = ""
 			for d in range(len(tInst.dcns)):
-				sfx += '_' + combination[d]
-			alternatives.append(exactNameWithoutDcns + sfx)
+				sfx += '_' + sbj.getTypeNameFromID(combination[d])
 
-		#second: parents
+			#add this dcn-related alternative as ID
+			alternatives.append( sbj.getTypeIDFromName(exactNameWithoutDcns + sfx) )
+
+		#step 5: add also parent's alternatives
 		if tInst.dcnCommon.parent is not None:
-			alternatives += sbj.getTypeMatchingAlternativeNames( sbj.getTypeNameFromID(tInst.dcnCommon.parent) )
+			alternatives += sbj.getTypeAlternatives(tInst.dcnCommon.parent)
 		return alternatives
 
+	def getTypeAlternativeNames(sbj, tgtType):
+		altIDs   = sbj.getTypeAlternatives(tgtType)
+		altNames = []
+		for i in altIDs:
+			altNames.append(sbj.getTypeNameFromID(i))
+		return altNames
 
+	def listTypeNames(sbj):
+		typeNames = []
+		for t in sbj.cpl.types:
+			n = unpfxTypeName(sbj, t.name)[0]
+			typeNames.append(n)
 
-	#list every EXISTING operator of specified kind
-	def listAllOperatorAlternatives(sbj, opeHeader):
-		l = []
-		for f in sbj.cpl.fcts:
-			if f.name.startswith(opeHeader):
-				l.append(f)
-		return l
-
-
-
-	#list every operator name that can ever exist to match with the given parameters
-	def listAllTargettableOperatorNames(sbj, opeHeader, paramTypeNames):
-
-		#get alternatives for each parameter individually
-		paramIndividualAlternatives = []
-		for p in paramTypeNames:
-			paramIndividualAlternatives.append( sbj.getTypeMatchingAlternativeNames(p) )
-
-		#get every combination of them together
-		paramAlternativesTogether = Combinations__makeAll(paramIndividualAlternatives)
-
-		#get every operator name corresponding to these combinations
-		possibleOpeNames = []
-		for combination in paramAlternativesTogether:
-			sfx = ""
-			for n in range(len(paramTypeNames)):
-				sfx += '_' + combination[n]
-			possibleOpeNames.append(opeHeader + sfx)
-
-		#result
-		return possibleOpeNames
-
-
-
-	#find THE RIGHT matching operator among, the first one among the possible names that truely exists
-	def findMatchingOperator(sbj, opeHeader, paramTypeNames):
-		sbj.deepDbg("Trying to find matching function for operator " + opeHeader + " with parameters (" + ",".join(paramTypeNames) + ").", prtSubCtxs=False, prtLine=False)
-		existingOpeAlternatives  = sbj.listAllOperatorAlternatives(opeHeader)
-		possibleMatchingOpeNames = sbj.listAllTargettableOperatorNames(opeHeader, paramTypeNames)
-
-		#look for the 1st existing operator among those mentionned as "possible matching"
-		for p in possibleMatchingOpeNames:
-			sbj.deepDbg("Next possible matching name " + p, prtSubCtxs=False, prtLine=False)
-			for ope in existingOpeAlternatives:
-
-				#match => stop here
-				if ope.name == p:
-					sbj.deepDbg("Its a MATCH ! => using it.", prtSubCtxs=False, prtLine=False)
-					return ope
-
-		#no alternative found
-		return None
-
-
-
-
-
-
-
+		#pretty display
+		return strLst_toDsp(typeNames)

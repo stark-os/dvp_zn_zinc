@@ -130,12 +130,22 @@ def checkAll_thenReadParams_thenCreateCall(ZCI, exactName, scope, cstOnly, noVFC
 	#create call
 	return call(exactName, paramVals, tgtFct.retType)
 
+def listAllExistingFct(zCtx):
+	nl = []
+	for f in zCtx.cpl.fcts:
+		nl.append(f.name)
+	return strLst_toDsp(nl)
+
 
 
 
 
 
 # -------- TEXT FORMAT RELATED TOOLS --------
+
+#undouble underscores
+def undblUnderscores(s):
+	return s.replace("__", '_')
 
 #unprefixing module prefixes especially
 def unpfxMod(modPfx):
@@ -152,13 +162,13 @@ def extractModPfx(name):
 		return ""
 
 	#get only module prefix from name
-	modPfx          = "M"
-	foundUnderscore = False
+	modPfx       = "M"
+	onUnderscore = False
 	for c in name[1:]:
 
 		#previous character was an underscore => potential end of module prefix
-		if foundUnderscore:
-			foundUnderscore = False
+		if onUnderscore:
+			onUnderscore = False
 
 			#- double underscore => regular text, ignore it
 			#- end of module prefix, but another one follows => still in it
@@ -168,7 +178,7 @@ def extractModPfx(name):
 
 		#previous character was not an underscore => we are in module prefix, sure at 100%
 		elif c == '_':
-			foundUnderscore = True
+			onUnderscore = True
 
 		#in module prefix
 		modPfx += c
@@ -184,28 +194,44 @@ def extractModPfx(name):
 
 	#error case : should never occur. It would mean we made s-thing wrong when transforming module notation into module prefix
 	if uNbr%2 == 0:
-		print("[INTERNAL] Invalid module prefix '" + modPrefix + "' extracted from name '" + name + "' (ending with even number of underscores).")
+		print("[INTERNAL] Invalid module prefix '" + modPfx + "' extracted from name '" + name + "' (ending with even number of underscores).")
 		exit(1)
 	return modPfx
 
-def cutDcnFromTypeName(exactTypeName):
 
-	#keep mod pfx aside
-	hasModPfx = (exactTypeName[0] == 'M')
-	if hasModPfx:
-		modPfx        = extractModPfx(exactTypeName)
-		exactTypeName = str_sub(exactTypeName, start=len(modPfx)) #here starting with dcn indicator 'U' or 'D'
+
+#unprefixing anything <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< MAYBE MAKE IT EFFICIENT ENOUGH SO THAT WE CAN GET RID OF UNPREFIXIZEMODULE & EXTRACTMODULEPREFIX ?
+def unpfxAnyName(name): #GE<name> => <name>, M<mod>_E<name> => ^<mod>.<name>, ...
+	pfx = extractModPfx(name)
+	return unpfxMod(pfx) + str_sub(name, len(pfx)).replace("__", '_')
+
+
+
+#type unprefixing
+def cutModPfxFromTypeName(exactName): #also return modPfx, #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< IN Z, WE WOULD NOT HAVE TO RETURN exactName BECAUSE WE ALTER ITS INTERNAL FIELDS
+	modPfx = "G"
+	if exactName[0] == 'M':
+		modPfx    = extractModPfx(exactName)
+		exactName = str_sub(exactName, start=len(modPfx)) #here starting with dcn indicator 'U' or 'D'
+	else:
+		exactName = exactName[1:] #same thing
+	return modPfx, exactName
+
+def cutDcnFromTypeName(exactName):
+
+	#keep mod pfx aside to parse correctly the rest (we will restore it at the end)
+	modPfx, exactName = cutModPfxFromTypeName(exactName)
 
 	#now, compute to cut the rest of the name with separators (which can only corresponds to dcns)
 	res = ""
 	onUnderscore = False
-	for c in exactTypeName:
+	for c in exactName:
 		if onUnderscore:
 
-			#pair of underscores => regular underscore in type name
+			#pair of underscores => regular underscore in type name (preserve the pair!)
 			if c == '_':
 				onUnderscore = False
-				res += '_'
+				res += "__"
 
 			#single underscore => dcn delimiter
 			else:
@@ -220,65 +246,49 @@ def cutDcnFromTypeName(exactTypeName):
 			else:
 				res += c
 
-	#restore mod pfx if it has been taken off
-	if hasModPfx:
-		res = modPfx + res
-	return res
+	#result
+	if len(modPfx) == 0: #keep modPfx as it was originally
+		modPfx = 'G'
+	return modPfx + res
+
+def unpfxTypeName(zCtx, exactName):
+
+	#get base type without declinations
+	undcnName = cutDcnFromTypeName(exactName)
+
+	#get remaining type name to analyse (for declinations)
+	remaining = exactName[len(undcnName)+1:] #we must skip the potential 1st underscore after undcnName if something is remaining (=> +1)
+
+	#get modPfx
+	modPfx, undcnName = cutModPfxFromTypeName(undcnName)
+
+	#set undcnName as "undeclinated" to find its dcnDeg
+	dcned = (undcnName[0] == 'D')
+	#undcnName[0] = 'U' #the Z way
+	undcnName    = 'U' + undcnName[1:] #the Python way
+	dcnDeg       = zCtx.getTypeInstanceFromName(modPfx + undcnName).dcnCommon.dcnDeg
+
+	#look for decinations to read inside (recursive work)
+	dcnTxt = ""
+	if dcnDeg != 0 and dcned and len(remaining) != 0:
+		dcnTxt += '['
+		for d in range(dcnDeg):
+			dcnName, remaining = unpfxTypeName(zCtx, remaining)
+			dcnTxt += dcnName + ','
+		dcnTxt = dcnTxt[:-1] + ']'
+
+	#result
+	return (
+		unpfxMod(modPfx) + undblUnderscores(undcnName[1:]) + dcnTxt,
+		remaining
+	)
 
 
 
-#unprefixing anything <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< MAYBE MAKE IT EFFICIENT ENOUGH SO THAT WE CAN GET RID OF UNPREFIXIZEMODULE & EXTRACTMODULEPREFIX ?
-def unpfxAnyName(name): #GE<name> => <name>, M<mod>_E<name> => ^<mod>.<name>, ...
-	pfx = extractModPfx(name)
-	return unpfxMod(pfx) + str_sub(name, len(pfx)).replace("__", '_')
 
-'''
-def unpfxTypeName(exactTypeName):
-	nameWithoutDcns = cutDcnFromTypeName(exactTypeName) #exact one without DCNS for the moment
 
-	#keep mod pfx aside
-	hasModPfx = (nameWithoutDcns[0] == 'M')
-	if hasModPfx:
-		modPfx          = extractModPfx(exactTypeNameWithoutDcns)
-		nameWithoutDcns = str_sub(exactTypeNameWithoutDcns, start=len(modPfx)) #here starting with dcn indicator 'U' or 'D'
 
-	#reconstitute dcns as in user code
-	dcnsTxt = ""
-	dcnsGap = len(exactTypeName) - len(nameWithoutDcns)
-	if dcnsGap != 0:
-		dcnsTxt = '['
-		onUnderscore = False
-		for i in range(dcnsGap):
-			c = exactTypeName[len(nameWithoutDcns)+i]
-			if onUnderscore:
-
-				#pair of underscores => regular underscore in type name
-				if c == '_':
-					onUnderscore = False
-					dcnsTxt += '_'
-
-				#single underscore => dcn delimiter
-				else:
-					dcnsTxt += ','
-			else:
-
-				#found underscore => check following character
-				if c == '_':
-					onUnderscore = True
-
-				#regular character => add it to dcn name
-				else:
-					dcnsTxt += c
-		if dcnsTxt[-1] == ',':
-			dcnsTxt = dcnsTxt[:-1]
-		dcnsTxt += ']'
-
-	#res
-	res = ""
-	if hasModPfx:
-		res = unpfxMod(modPfx)
-	return res + nameWithoutDcns + dcns
-'''
+# ---------------- OTHER ----------------
 
 #read a number as raw text (similar to zctx.readName but simpler and overall: skipping underscores!)
 def readNbrAsText(ZCI, allowedCharset):
@@ -310,15 +320,22 @@ def prepareDbgDir():
 	if not os.path.isdir("dbg"):
 		os.mkdir("dbg")
 
+def strLst_toDsp(sl):
 
+	#get longest str to display
+	maxLen = 0
+	for s in sl:
+		if len(s) > maxLen:
+			maxLen = len(s)
 
+	#compute optimal modulo depending on terminal width
+	dspModulo = int( (Term__width()-len(TERM__OUTPUT_TAB))/(maxLen+3) )
 
-
-
-
-
-
-
-
-
-
+	#create text list
+	res = "["
+	for i in range(len(sl)):
+		s = sl[i]
+		if i%dspModulo == 0:
+			res += '\n' + TERM__OUTPUT_TAB
+		res += '\"' + s + "\"," + ' '*(maxLen-len(s))
+	return res + "\n]"

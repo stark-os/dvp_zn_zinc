@@ -11,9 +11,9 @@ def ZCIErr(ZCI, msg, prtSubCtxs=True, prtLine=True):
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.err(msg, prtSubCtxs, prtLine)
 
-def ZCIWarn(ZCI, msg, prtSubCtxs=True, prtLine=True):
+def ZCIWrn(ZCI, msg, prtSubCtxs=True, prtLine=True):
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
-	ZCI.zCtx.warn(msg, prtSubCtxs, prtLine)
+	ZCI.zCtx.wrn(msg, prtSubCtxs, prtLine)
 
 def ZCIDbg(ZCI, msg, prtSubCtxs=False, prtLine=True):
 	prevSubCtxs = ZCI.zCtx.subCtxs

@@ -17,12 +17,12 @@ from cpl.c02_redirectGbl import *
 
 #if - elf - els
 def processIfStm(ZCI, tgtFct, scope):
-	ZCIDbg(ZCI, "Processing IF STM in function " + tgtFct.name, printLine=False)
+	ZCIDbg(ZCI, "Processing IF STM in function " + tgtFct.name, prtLine=False)
 	jumpBlankZone(ZCI, None)
 
 	#read condition
 	res = stm_if()
-	v   = readValue(ZCI, "condition in IF statement (STM_IF_).")
+	v   = readVal(ZCI, "condition in IF statement (STM_IF_).")
 	res.conds.append(v)
 	ZCIDeepDbg(ZCI, "Added IF statement condition: " + v.toStr())
 
@@ -93,13 +93,13 @@ def processWhiStm(ZCI, scope, tgtFct):
 
 #return keyword
 def processRetJmp(ZCI, scope, tgtFct):
-	ZCIDbg(ZCI, "Processing RET JMP in function " + tgtFct.name, printLine=False)
+	ZCIDbg(ZCI, "Processing RET JMP in function " + tgtFct.name, prtLine=False)
 	jumpBlankZone(ZCI, None)
 
 	#try read ret val if given
 	retVal = None
 	if not ZCI.reachedEnd():
-		retVal = readVal(ZCI, "Return value in function " + tgtFct.name + " (JMP_RET).")
+		retVal = readVal(ZCI, "Return value in function " + tgtFct.name + " (JMP_RET).", scope)
 
 	#retVal must match with fct ret requirements (void/!void)
 	if f.retType == TYPE_ID__UNKNOWN:
@@ -246,7 +246,7 @@ def c03_processLcls(zCtx):
 			continue
 
 		#process fct scope & remove its content ZCIs
-		f.scope.exes = readLclScope(f.content, f)
+		readLclScope(f.content, f.scope, f)
 		f.content = None
 
 	#debug

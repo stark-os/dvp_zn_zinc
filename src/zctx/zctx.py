@@ -40,9 +40,6 @@ def newZCtx(
 	res.checkPcplCfg(res.pcpl)
 	res.checkCplOpt(cpl_opt)
 
-	#"fly" virtual type that also seems to work like a regular one for the moment
-	res.flyType    = res.cpl.newTyp("GUfly")
-
 	#create a list to hold root types. This is purely a simplification tool in zCtx.
 	res.rootTypes = [0,0,0, 0,0,0, 0,0,0, 0,0,0] #can be already declared as a fixed-size table (length: 12)
 
@@ -111,7 +108,6 @@ class zctx:
 		sbj.refSize = 0
 
 		#types
-		sbj.flyType   = 1
 		sbj.rootTypes = None
 
 		#data
