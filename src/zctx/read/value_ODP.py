@@ -126,7 +126,7 @@ def monoOperandOpSeqConcatenation(zCtx, curOpSeq):
 	#check other operands (not necessary, internal consistency check only)
 	for a in curOpSeq.opands:
 		if a.stopIdx - a.startIdx >= 0:
-			zCtx.internal("Non-empty operand found in mono-operand operating sequence (last element excepted).")
+			zCtx.int("Non-empty operand found in mono-operand operating sequence (last element excepted).")
 
 	#deep debug: before
 	zCtx.deepDbg("ODP-2: Applying mono-operand operating sequence concatenation on " + curOpSeq.toStr())
@@ -155,7 +155,7 @@ def monoOperandOpSeqConcatenation(zCtx, curOpSeq):
 #transform an operating sequence into a single POCall (destroying the given opSeq!)
 def progressivePriorizing(zCtx, curOpSeq, monoOpand): #WARNING! DO NOT USE WITH SO !!!
 	if len(curOpSeq.opands) == 0:
-		zCtx.internal("Got no operand in operating sequence when running progressive priorizing.")
+		zCtx.int("Got no operand in operating sequence when running progressive priorizing.")
 
 	#mono-operand operating sequence => redirect to the adapted equivalent
 	if monoOpand:

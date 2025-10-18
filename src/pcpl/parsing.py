@@ -67,7 +67,7 @@ def PCPL__readIncluderBlock(zCtx, opening='{'): #result will be the INTERNAL con
 		block += c
 
 	#should never occur
-	zCtx.internal("Reached end of PCPL braces includer block without having errors when getting corresponding pairs.")
+	zCtx.int("Reached end of PCPL braces includer block without having errors when getting corresponding pairs.")
 
 def PCPL__readUntil(zCtx, stopCharset):
 	block = zCtx__get(zCtx)

@@ -46,25 +46,23 @@ def parseLiteralIntOrFloat(ZCI):
 			c = ZCI.get()
 			if c == 'b':
 				if ZCI.inc():
-					ZCIErr("Incomplete literal number given, binary notation must be followed by a digit sequence.")
+					ZCIErr(ZCI, "Incomplete literal number given, binary notation must be followed by a digit sequence.")
 				resDigitPower = 2
 				resText       = readNbrAsRawText(ZCI, STR__BINARY)
 			elif c == 'o':
 				if ZCI.inc():
-					ZCIErr("Incomplete literal number given, octal notation must be followed by a digit sequence.")
+					ZCIErr(ZCI, "Incomplete literal number given, octal notation must be followed by a digit sequence.")
 				resDigitPower = 8
 				resText       = readNbrAsRawText(ZCI, STR__OCTAL)
 			elif c == 'x':
 				if ZCI.inc():
-					ZCIErr("Incomplete literal number given, hexadecimal notation must be followed by a digit sequence.")
+					ZCIErr(ZCI, "Incomplete literal number given, hexadecimal notation must be followed by a digit sequence.")
 				resDigitPower = 16
 				resText       = readNbrAsRawText(ZCI, STR__HEXADECIMAL_LOWERCASE)
-			else:
-				ZCIErr("Invalid character '" + c + "' given for literal numeric notation (allowed are 'b', 'o', 'x').")
 
 		#weird cases: negative sign on non-decimal
 		if resIsNegative and resDigitPower != 10:
-			ZCIErr("Cannot apply negativity on a non-decimal literal notation.")
+			ZCIErr(ZCI, "Cannot apply negativity on a non-decimal literal notation.")
 
 
 
@@ -74,6 +72,7 @@ def parseLiteralIntOrFloat(ZCI):
 		c = ZCI.get()
 		if c == 'u':
 			ZCI.inc()
+			c = ZCI.get()
 			if c == 's':
 				resType  = ZCI.zCtx.rootTypes[RT__U16]
 				resAtmID = ATM__U16
@@ -96,7 +95,7 @@ def parseLiteralIntOrFloat(ZCI):
 
 		#having unsigned terminator on negative value
 		if resIsNegative and resAtmID in (ATM__U16, ATM__U32, ATM__U64):
-			ZCIErr("Cannot have terminator on negative value.")
+			ZCIErr(ZCI, "Cannot have terminator on negative value.")
 
 
 
@@ -192,7 +191,7 @@ def parseLiteralIntOrFloat(ZCI):
 
 			#nothing after point => incomplete
 			if ZCI.inc():
-				ZCIErr("Incomplete floating point notation, missing value after point.")
+				ZCIErr(ZCI, "Incomplete floating point notation, missing value after point.")
 
 			#read after point
 			afterPoint = readNbrAsRawText(ZCI, STR__DECIMAL)
@@ -312,7 +311,7 @@ def secondAnalysis(ZCI, v2i):
 			next = ZCI.get()
 			if next == tgtEnd:
 				if ZCI.ctx.icontent.idx != peerIdx:
-					ZCIInternal(ZCI, "2nd analysis: Ending value sequence inside includer with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.idx) + " instead of targetted " + str(peerIdx) + ").")
+					ZCIInt(ZCI, "2nd analysis: Ending value sequence inside includer with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.idx) + " instead of targetted " + str(peerIdx) + ").")
 				ZCI.inc()
 				break
 			if next != ',':
@@ -367,13 +366,13 @@ def secondAnalysis(ZCI, v2i):
 	#prefix found
 	if c == BN_PFX:
 		if ZCI.inc():
-			ZCIErr(ZCI, "2nd analysis: Missing content after byte notation.")
+			ZCIErr(ZCI, "2nd analysis: Missing content after byte notation" + v2i.ZCIKindIfErr_ending)
 
 		#multi-byte sequence
 		if ZCI.get() == BN_PFX:
 			ZCIDeepDbg(ZCI, "2nd analysis: Reading hexadecimal value in multi-bytes notation.")
 			if ZCI.inc():
-				ZCIErr(ZCI, "2nd analysis: Missing content after multiple-bytes notation.")
+				ZCIErr(ZCI, "2nd analysis: Missing content after multiple-bytes notation" + v2i.ZCIKindIfErr_ending)
 
 			#prepare sequence
 			seq = [] #lst[value]
@@ -390,7 +389,7 @@ def secondAnalysis(ZCI, v2i):
 
 			#missing characters
 			if len(seq) == 0:
-				ZCIErr(ZCI, "2nd analysis: Missing valid hexadecimal characters in multi-bytes notation.")
+				ZCIErr(ZCI, "2nd analysis: Missing valid hexadecimal characters in multi-bytes notation" + v2i.ZCIKindIfErr_ending)
 
 			#finish result
 			res = val(ZCI.zCtx.rootTypes[RT__REF], atm(ATM__LST_VAL, seq), True)
@@ -426,19 +425,23 @@ def secondAnalysis(ZCI, v2i):
 	tID = readType(ZCI, None, errIfNotExisting=False)
 	if tID != TYPE_ID__UNKNOWN:
 		ZCIDeepDbg(ZCI, "2nd analysis: Structure definition detected.")
+
+		#dcn keyword
+		if tID == ZCI.zCtx.gncDcnType or tID in ZCI.zCtx.spcDcnTypes:
+			ZCIErr(ZCI, "2nd analysis: Can't use structure definition with any \"dcn\" keyword" + v2i.ZCIKindIfErr_ending)
 		tInst = ZCI.getTypeInstanceFromID(tID)
 
 		#must be a structure
 		if tInst.dcnCommon.nature != NATURE__STC:
-			ZCIErr(ZCI, "2nd analysis: Only structure types are allowed as type definition value.")
+			ZCIErr(ZCI, "2nd analysis: Only structure types are allowed as type definition value" + v2i.ZCIKindIfErr_ending)
 
 		#continue parsing to get its fields
 		optionalBlanks(ZCI, "2nd analysis: Value parsing (structure definition with type \"" + tInst.name + "\" detected).")
 		if ZCI.get() != '{':
-			ZCIErr(ZCI, "2nd analysis: Expected a braces includer for structure definition value.")
+			ZCIErr(ZCI, "2nd analysis: Expected a braces includer for structure definition value" + v2i.ZCIKindIfErr_ending)
 
 		#read given values between braces includer
-		givenFields = readValSeq(ZCI, tInst.dcnCommon.fields, v2i.scope, cstOnly=v2i.cstOnly)
+		givenFields = readValSeq(ZCI, v2i.ZCIKindIfErr, tInst.dcnCommon.fields, v2i.scope, cstOnly=v2i.cstOnly)
 
 		#return complete fields map as value
 		res = val(
@@ -454,8 +457,8 @@ def secondAnalysis(ZCI, v2i):
 	# V] VFC/!VFC OR DATA ITEM NAME
 
 	#regular name found
-	pfxName = readName(ZCI, None, parseModPfxes=True, modPfxes_asHeaderOnly=True)
-	if len(pfxName) != 0:
+	modPfx, rawName = readName(ZCI, None, parseModPfxes=True)
+	if len(rawName) != 0:
 
 		#followed by parentheses => VFC/!VFC
 		if ZCI.get() == '(':
@@ -463,13 +466,14 @@ def secondAnalysis(ZCI, v2i):
 
 			#cstOnly => not allowed
 			if v2i.cstOnly:
-				ZCIErr(ZCI, "2nd analysis: Only constant values allowed here (got a VFC/!VFC => variable return value).")
-
-			#prepare fct name
-			fctName = getFctNameFromPfxName(ZCI, pfxName)
+				ZCIErr(ZCI, "2nd analysis: Only constant values allowed here (got a VFC/!VFC => variable return value)" + v2i.ZCIKindIfErr_ending)
 
 			#parse & check call elements given
-			parsedCall = checkAll_thenReadParams_thenCreateCall(ZCI, fctName, v2i.scope, v2i.cstOnly)
+			parsedCall = checkAll_thenReadParams_thenCreateCall(ZCI,
+				v2i.ZCIKindIfErr,
+				modPfx,    rawName,
+				v2i.scope, v2i.cstOnly
+			)
 
 			#return complete value (call)
 			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in !VFC:\n" + res.toStr())
@@ -480,14 +484,15 @@ def secondAnalysis(ZCI, v2i):
 			)
 
 		#just a regular name actually => DI NAME
-		di = getDatItmFromPfxName(pfxName, v2i.scope)
+		di = getDatItmFromScopeAndParents(modPfx, rawName, v2i.scope)
 		if di is None:
 			ZCIWrn(ZCI, "Maybe you wanted to target a type among the available " + ZCI.zCtx.listTypeNames(), prtSubCtxs=False, prtLine=False)
-			ZCIErr(ZCI, "2nd analysis: Cannot find data item " + pfxName + " in current scope or higher.")
+			ZCIWrn(ZCI, "Maybe you wanted to target a data item among the available " + listDatItmNamesAvailable(v2i.scope), prtSubCtxs=False, prtLine=False)
+			ZCIErr(ZCI, "2nd analysis: Cannot find data item " + unpfxMod(modPfx) + rawName + " in current scope or higher" + v2i.ZCIKindIfErr_ending)
 
 		#cstOnly => not allowed
 		if v2i.cstOnly and not di.Cst:
-			ZCIErr(ZCI, "2nd analysis: Only constant values allowed here (got a variable data item).")
+			ZCIErr(ZCI, "2nd analysis: Only constant values allowed here (got a variable data item)" + v2i.ZCIKindIfErr_ending)
 
 		#return datItm found
 		res = val(
@@ -545,10 +550,10 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 		ZCI.inc()
 
 		#target data item
-		pfxName = readName(ZCI, "2nd analysis: Missing data item name for reference operator '@' (FRF).", parseModPfxes=True, modPfxes_asHeaderOnly=True)
-		di      = getDatItmFromPfxName(pfxName, v2i.scope)
+		modPfx, rawName = readName(ZCI, "2nd analysis: Missing data item name for reference operator '@' (FRF).", parseModPfxes=True)
+		di              = getDatItmFromScopeAndParents(modPfx, rawName, v2i.scope)
 		if di is None:
-			ZCIErr(ZCI, "2nd analysis: Unable to find data item given " + pfxName + " (2nd analysis, concerning reference operator '@' FRF).")
+			ZCIErr(ZCI, "2nd analysis: Unable to find data item given " + unpfxMod(modPfx) + rawName + " (2nd analysis, concerning reference operator '@' FRF)" + v2i.ZCIKindIfErr_ending)
 
 		#result
 		ZCIDeepDbg(ZCI, "2nd analysis: FRF resulted into call to frf()") #<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
@@ -585,7 +590,7 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 		res.Type = readType(ZCI, v2i.ZCIKindIfErr)
 
 		#overwrite result type
-		ZCIDeepDbg(ZCI, "2nd analysis: FCA operator applied type " + unpfxMod(ZCI.getTypeNameFromID(res.Type)) + " on value " + res.toStr())
+		ZCIDeepDbg(ZCI, "2nd analysis: FCA operator applied type " + unpfxType(ZCI.getTypeNameFromID(res.Type)) + " on value " + res.toStr())
 
 	#field access (FFA)
 	elif following == '.':
@@ -593,22 +598,28 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 
 		#invalid element to operate FFA onto
 		if res.vdata.id != ATM__DATITM:
-			ZCIErr(ZCI, "2nd analysis: Can only operate field access operator (FFA) on data item names.")
+			ZCIErr(ZCI, "2nd analysis: Can only operate field access operator (FFA) on data item names" + v2i.ZCIKindIfErr_ending)
 
 		#get the complete chain of accessed fields
 		FAChain       = [atm(ATM__STR, res.vdat.dat.name)] #store the NAME of the first data item parsed (in 2nd analysis)
 		latestChkType = res.vdat.dat.Type
 		isCst         = res.vdat.dat.Cst
 		while not ZCI.reachedEnd():
-			newChkName = readName(ZCI, "[2nd analysis] Missing second operand after field access operator (FFA).", parseModPfxes=True, modPfxes_asHeaderOnly=True)
+
+			#read name & prepare extraction of modPfx
+			newChk_modPfx, newChk_rawName = readName(ZCI, "[2nd analysis] Missing second operand after field access operator (FFA).", parseModPfxes=True)
 
 			#case 1: following parentheses => METHOD call (and not function call)
 			if ZCI.get() == '(':
 				isCst = False #got a method call => value is no longer constant
 
 				#parse call
-				newChkName = getFctNameFromPfxName(ZCI, newChkName, methodOf=latestChkType)
-				newChk     = checkAll_thenReadParams_thenCreateCall(ZCI, newChkName, v2i.scope, v2i.cstOnly)
+				newChk = checkAll_thenReadParams_thenCreateCall(
+					ZCI,           v2i.ZCIKindIfErr,
+					newChk_modPfx, newChk_rawName,
+					v2i.scope,     v2i.cstOnly,
+					methodOf = latestChkType
+				)
 
 				#update latest chunk type & add to chain
 				latestChkType = newChk.retType
@@ -616,7 +627,13 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 
 			#case 2: else => stc/enm field
 			else:
-				latestChkType = getTypeFieldFromName(ZCI, latestChkType, newChkName).Type
+
+				#error case
+				if newChk_modPfx != "G":
+					ZCIErr(ZCI, "Can't use module prefix when trying to access enm/stc field (field \"" + newChk_rawName + "\" from module " + unpfxMod(newChk_modPfx) + ")" + v2i.ZCIKindIfErr_ending)
+
+				#update latest chunk type & add to chain
+				latestChkType = getTypeFieldFromName(ZCI, latestChkType, newChk_rawName).Type
 				FAChain.append( atm(ATM__STR, newChkName) )
 
 			#another field => continue
@@ -633,7 +650,7 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 
 	#too much content in VALUE ZCE
 	if not ZCI.reachedEnd():
-		ZCIErr(ZCI, "Too much elements in VALUE ZCE (2nd analysis, parsing including FOs).")
+		ZCIErr(ZCI, "Too much elements in VALUE ZCE (2nd analysis, parsing including FOs)" + v2i.ZCIKindIfErr_ending)
 
 	#success
 	return res
@@ -657,7 +674,7 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i): #oriZCI only used for error acc
 
 		#should never happen
 		else:
-			ZCIInternal(oriZCI, "Found a non-POCall & non-ZCI atom in ODP result.")
+			ZCIInt(oriZCI, "Found a non-POCall & non-ZCI atom in ODP result.")
 
 	#process 2nd operand
 	opand2Val = None
@@ -673,7 +690,7 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i): #oriZCI only used for error acc
 
 		#should never happen
 		else:
-			ZCIInternal(oriZCI, "Found a non-POCall & non-ZCI atom in ODP result.")
+			ZCIInt(oriZCI, "Found a non-POCall & non-ZCI atom in ODP result.")
 
 
 
@@ -689,7 +706,7 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i): #oriZCI only used for error acc
 
 		#should never occur
 		if tgt is None:
-			ZCIInternal(oriZCI, "Found null-name POCall with 2 null or 2 non-null operands (inconsistent result from ODP).")
+			ZCIInt(oriZCI, "Found null-name POCall with 2 null or 2 non-null operands (inconsistent result from ODP).")
 		return tgt
 
 
@@ -697,6 +714,7 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i): #oriZCI only used for error acc
 	#2ND CASE: OPERATOR CALL
 
 	#set operator parameters
+	opeHeader      = 'O' + curPOCall.name
 	paramVals      = []
 	paramTypeIDs   = []
 	paramTypeNames = []
@@ -709,24 +727,19 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i): #oriZCI only used for error acc
 		paramTypeIDs.append(                            opand2Val.Type  )
 		paramTypeNames.append( oriZCI.getTypeNameFromID(opand2Val.Type) )
 
-	#solve name
-	opeFullName = 'O' + curPOCall.name
-	for p in paramTypeNames:
-		opeFullName += '_' + p
-
 	#check for every operator alternative
-	matchingFct = oriZCI.zCtx.findMatchingOperator(opeFullName, paramTypeIDs, paramTypeNames)
+	matchingFct = zCtx__findMatchingOperator(oriZCI.zCtx, opeHeader, paramTypeIDs, paramTypeNames)
 
 	#still no one found
 	if matchingFct is None:
 		oriZCI.forwardUntil(curPOCall.opeIdx)
-		ZCIWrn(oriZCI, "Available combinations for this operator are " + oriZCI.zCtx.listAllExistingOpeNames(opeFullName), prtSubCtxs=False, prtLine=False)
-		ZCIErr(oriZCI, "No operator " + curPOCall.name + " matching for parameters (" + ','.join(paramTypeNames) + ").")
+		ZCIWrn(oriZCI, "Available combinations for this operator are " + zCtx__listAllExistingOpeNames(oriZCI.zCtx, opeHeader), prtSubCtxs=False, prtLine=False)
+		ZCIErr(oriZCI, "No operator " + curPOCall.name + " matching for parameters (" + ','.join(paramTypeNames) + ")" + v2i.ZCIKindIfErr_ending)
 
 	#result
 	return val(
 		matchingFct.retType,
-		atm(ATM__CALL, call(opeFullName, paramVals, matchingFct.retType)),
+		atm(ATM__CALL, call(opeHeader + '_' + '_'.join(paramTypeNames), paramVals, matchingFct.retType)),
 		False
 	)
 

@@ -1,14 +1,14 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/output1.py
 
 	#output
-	def internal(sbj, msg, prtSubCtxs=True, prtLine=True):
+	def int(sbj, msg, prtSubCtxs=True, prtLine=True):
 		print("[INT ERR] " + msg)
 		if prtSubCtxs:
 			for ctx in sbj.subCtxs:
 				print("    At " + ctx.toStr())
 		if prtLine:
 			if sbj.ctx is None:
-				sbj.internal("No context to internal-output line from.", prtSubCtxs=False, prtLine=False)
+				sbj.int("No context to internal-output line from.", prtSubCtxs=False, prtLine=False)
 			sbj.ctx.prtLineIndicator()
 		import traceback #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< can be useful
 		traceback.print_stack()
@@ -21,7 +21,7 @@
 				print("    At " + ctx.toStr())
 		if prtLine:
 			if sbj.ctx is None:
-				sbj.internal("No context to error-output line from.", prtSubCtxs=False, prtLine=False)
+				sbj.int("No context to error-output line from.", prtSubCtxs=False, prtLine=False)
 			sbj.ctx.prtLineIndicator()
 		exit(1)
 
@@ -32,7 +32,7 @@
 				print("    At " + ctx.toStr())
 		if prtLine:
 			if sbj.ctx is None:
-				sbj.internal("No context to warning-output line from.", prtSubCtxs=False, prtLine=False)
+				sbj.int("No context to warning-output line from.", prtSubCtxs=False, prtLine=False)
 			sbj.ctx.prtLineIndicator()
 
 	def dbg(sbj, msg, prtSubCtxs=False, prtLine=False):
@@ -43,7 +43,7 @@
 					print("    At " + ctx.toStr())
 			if prtLine:
 				if sbj.ctx is None:
-					sbj.internal("No context to debug-output line from.", prtSubCtxs=False, prtLine=False)
+					sbj.int("No context to debug-output line from.", prtSubCtxs=False, prtLine=False)
 				sbj.ctx.prtLineIndicator()
 
 	def deepDbg(sbj, msg, prtSubCtxs=False, prtLine=False):
@@ -54,7 +54,7 @@
 					print("    At " + ctx.toStr())
 			if prtLine:
 				if sbj.ctx is None:
-					sbj.internal("No context to deep-debug-output line from.", prtSubCtxs=False, prtLine=False)
+					sbj.int("No context to deep-debug-output line from.", prtSubCtxs=False, prtLine=False)
 				sbj.ctx.prtLineIndicator()
 
 	def dbgSepLine(sbj):

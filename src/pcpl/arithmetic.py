@@ -129,7 +129,7 @@ def PCPL__ATH__computeOperation(zCtx, ope, firstOpa, secondOpa, computeAsFloat):
 			return str(firstOpaValue ^ secondOpaValue)
 
 	#no operator matching
-	zCtx.internal("Unknown operand '" + ope + "' invoked in PCPL computation.")
+	zCtx.int("Unknown operand '" + ope + "' invoked in PCPL computation.")
 
 
 
@@ -332,7 +332,7 @@ def PCPL__ATH__solveArithmetic(zCtx, text):
 		tokensText = ""
 		for t in tokens:
 			tokensText += "{ope:" + str(t.isOpe) + ",\"" + t.txtValue + "\"},"
-		zCtx.internal("Got more than 1 token at the end of PCPL arithmetic resolution " + tokensText)
+		zCtx.int("Got more than 1 token at the end of PCPL arithmetic resolution " + tokensText)
 
 	#res in last token
 	zCtx.deepDbg("Arithmetic expression resulted into value \"" + tokens[0].txtValue + "\" (ATH success).")

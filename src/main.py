@@ -51,6 +51,7 @@ def main():
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
 		config.read(CXD + "/../cfg/pcpl_itm.cfg", comment_character='%', additionnalSpacesAllowed=False),
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
+		CPL__MODE_EXE,
 
 		#debug
 		dbgMode = (
@@ -59,7 +60,7 @@ def main():
 			False, #P2
 			False, #P3
 			False, #C01
-			True,  #C02
+			True, #C02
 			True   #C03
 		), deepDbgMode = (
 			False, #INIT
@@ -67,9 +68,9 @@ def main():
 			False, #P2
 			False, #P3
 			False, #C01
-			True,  #C02
+			True, #C02
 			True   #C03
-		), stepByStep = True
+		), stepByStep = False
 	)
 
 	#precompile

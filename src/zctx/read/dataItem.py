@@ -1,16 +1,35 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/dataItem.py
 
 #WARNING! Returns data item WITHOUT ANY prefix
-def readDatItm(ZCI, ZCIKindIfErr, scope, cstInitValOnly=False, allowUnsolvableType=False, allowModPfxInName=True):
+def readDatItm(ZCI,
+	ZCIKindIfErr, scope,
+	cstInitValOnly      = False,
+	allowUnsolvableType = False, forbidDcnKwInTypeDcns   = True,
+	allowModPfxInName   = True,  dcnKwLstToReplaceInType = None
+):
 	ZCIDeepDbg(ZCI, "Reading data item.", prtLine=False)
 
+	#sub-error indication
+	ZCIKindIfErr_ending = "."
+	if ZCIKindIfErr is not None:
+		ZCIKindIfErr_ending = ", in " + ZCIKindIfErr
+
 	#read type (if any. Else, continue as nothing happened)
-	Type = readType(ZCI, "data item declarator, in " + ZCIKindIfErr, errIfNotExisting=False)
+	Type = readType(ZCI,
+		"data item declarator" + ZCIKindIfErr_ending,
+		errIfNotExisting  = False,
+		forbidDcnKwInDcns = forbidDcnKwInTypeDcns,
+		dcnKwLstToReplace = dcnKwLstToReplaceInType
+	)
 	if Type != TYPE_ID__UNKNOWN:
 		jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 
 	#read name
-	name = readName(ZCI, "data item name", parseModPfxes=allowModPfxInName, modPfxes_asHeaderOnly=allowModPfxInName)
+	modPfx, name = readName(ZCI, "data item name" + ZCIKindIfErr_ending, parseModPfxes=allowModPfxInName)
+
+	#add modPfx if asked
+	if allowModPfxInName and modPfx[0] != 'G':
+		name = modPfx + name
 
 	#default initial value: uninitialized
 	inited  = False
@@ -25,13 +44,13 @@ def readDatItm(ZCI, ZCIKindIfErr, scope, cstInitValOnly=False, allowUnsolvableTy
 	sym = readSym(ZCI)
 	if sym != SYM__NOT_FOUND: #found a symbol
 		if sym != SYM__ASG:
-			ZCIErr(ZCI, "Invalid symbol given here, can only have assignment.")
+			ZCIErr(ZCI, "Invalid symbol given here, can only have assignment" + ZCIKindIfErr_ending)
 		ZCI.forward(SYM_LENGTHS[SYM__ASG])
 
 		#read given initial value
-		inited = True
 		optionalBlanks(ZCI, None) #no line feed allowed between type-name-initialValue
 		initVal = readVal(ZCI, ZCIKindIfErr, scope, cstOnly=cstInitValOnly)
+		inited  = True
 
 		#solve type if missing using initialValue
 		if Type == TYPE_ID__UNKNOWN:
@@ -42,7 +61,7 @@ def readDatItm(ZCI, ZCIKindIfErr, scope, cstInitValOnly=False, allowUnsolvableTy
 	#missing Type still not solved
 	if Type == TYPE_ID__UNKNOWN:
 		if not allowUnsolvableType:
-			ZCIErr(ZCI, "Unsolvable type to given element \"" + name + "\" (required either explicitely or implicity using initial value).")
+			ZCIErr(ZCI, "Unsolvable type to given element \"" + name + "\" (required either explicitely or implicity using initial value)" + ZCIKinfIfErr_ending)
 
 	#result
 	ZCIDeepDbg(ZCI, "Ended reading data item.")
@@ -54,14 +73,15 @@ def readDatItm(ZCI, ZCIKindIfErr, scope, cstInitValOnly=False, allowUnsolvableTy
 # Given ZCI must be at an opening includer character.
 def readDatItmSeq(
 	ZCI, ZCIKindIfErr, scope,
-	cstValsOnly = False, allowUnsolvableTypes = False,
-	allowEmpty  = False
+	allowUnsolvableTypes     = False, cstValsOnly = False,
+	forbidDcnKwInTypeDcns    = True,  allowEmpty  = False,
+	dcnKwLstToReplaceInTypes = None
 ):
 	ZCIDeepDbg(ZCI, "Reading sequence of data item(s).")
 
 	#initial conditions
 	if ZCI.get() not in INCLUDERS.keys():
-		ZCIInternal(ZCI, "Must be at the beginning of an includer to read data item sequence.")
+		ZCIInt(ZCI, "Must be at the beginning of an includer to read data item sequence.")
 	initialIdx = ZCI.ctx.icontent.idx
 	peerIdx    = ZCI.pairs[initialIdx]
 	ZCI.inc()
@@ -83,8 +103,10 @@ def readDatItmSeq(
 			#read & store data item
 			di = readDatItm(
 				ZCI, ZCIKindIfErr, scope,
-				cstInitValOnly      = cstValsOnly,
-				allowUnsolvableType = allowUnsolvableTypes
+				cstInitValOnly          = cstValsOnly,
+				allowUnsolvableType     = allowUnsolvableTypes,
+				forbidDcnKwInTypeDcns   = forbidDcnKwInTypeDcns,
+				dcnKwLstToReplaceInType = dcnKwLstToReplaceInTypes
 			)
 			checkAlreadyDeclaredDatItmOrField(ZCI, di, dis)
 			dis.append(di)
@@ -95,7 +117,7 @@ def readDatItmSeq(
 			next = ZCI.get()
 			if next in INCLUDERS.values():
 				if ZCI.ctx.icontent.idx != peerIdx:
-					ZCIInternal(ZCI, "Ending data item sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.idx) + " instead of targetted " + str(peerIdx) + ").")
+					ZCIInt(ZCI, "Ending data item sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.idx) + " instead of targetted " + str(peerIdx) + ").")
 				ZCI.inc()
 				break
 			if next != ',':

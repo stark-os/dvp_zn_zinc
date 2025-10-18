@@ -178,15 +178,15 @@ def readName(ZCI,
 	missingFieldIfErr, #null means "don't raise error if empty"
 	blacklist=None, whitelist=DEFAULT_NAME_CHARSET,
 	dblUnderscores=False,
-	parseModPfxes=False,
-	modPfxes_asHeaderOnly=False #means "if any, it must BEGIN with it and be the only occurrence"
+	parseModPfxes=False
 ):
 	ZCIDeepDbg(ZCI, "Reading name.")
 	if parseModPfxes:
 		dblUnderscores = True #doesn't make sens to double underscores in module prefixes but not in the name => force it
 
 	#read until given blacklist/whitelist no longer matches
-	name     = ""
+	modPfx   = "G"
+	rawName  = ""
 	firstChr = True
 	while True:
 		if not firstChr: #skip ZCI.inc() for first character only
@@ -200,12 +200,15 @@ def readName(ZCI,
 
 		#module prefix detection
 		if parseModPfxes and c == '^':
-			mods           = []
+			modPfx     = "" #no longer out-of-mod
+			mods       = []
 			curModName = ""
 
 			#only allowing it as name header
-			if modPfxes_asHeaderOnly and not firstChr:
-				ZCIErr(ZCI, "Module prefixes only allowed at beginning of name here.")
+			if not firstChr:
+				if missingFieldIfErr is None:
+					return ("", "")
+				ZCIErr(ZCI, "Module prefixes only allowed at beginning of name here, in " + missingFieldIfErr)
 
 
 
@@ -222,7 +225,9 @@ def readName(ZCI,
 
 					#can't continue ? => ending ZCI text without giving the module element to target
 					if ZCI.inc():
-						ZCIErr(ZCI, "Missing an element name to target inside that module (reached end of ZCI)")
+						if missingFieldIfErr is None:
+							return ("", "")
+						ZCIErr(ZCI, "Missing an element name to target inside that module (reached end of ZCI), in " + missingFieldIfErr)
 
 					#chaining with another module name (potentially) => continue in the same loop, else => break here, we reached our next "name" character
 					c = ZCI.get()
@@ -248,11 +253,14 @@ def readName(ZCI,
 
 			#unfinished module name access
 			if len(curModName) != 0:
-				ZCIErr(ZCI, "Missing ending dot delimiter '.' when targetting something from module.")
+				if missingFieldIfErr is None:
+					return ("", "")
+				ZCIErr(ZCI, "Missing ending dot delimiter '.' when targetting something from module, in " + missingFieldIfErr)
 
 			#there was no module names actually, it was just a lonely '^' => do as nothing happened
 			if len(mods) == 0:
-				name += '^'
+				modPfx   = "G"
+				rawName += '^'
 
 			#at least one module name => add it/them to name
 			else:
@@ -261,12 +269,14 @@ def readName(ZCI,
 					#no module name given => resolve implicit naming
 					if len(mods[m]) == 0:
 						if len(ZCI.modPfx) == 0:
-							ZCIErr(ZCI, "Can't resolve implicit module prefix, we are outside of any module.")
-						name += ZCI.modPfx
+							if missingFieldIfErr is None:
+								return ("", "")
+							ZCIErr(ZCI, "Can't resolve implicit module prefix, we are outside of any module, in " + missingFieldIfErr)
+						modPfx += ZCI.modPfx
 
 					#prefixing them eitherway
 					else:
-						name += 'M' + mods[m] + '_'
+						modPfx += 'M' + mods[m] + '_'
 
 			#reached end of ZCI => regular end of name
 			if ZCI.reachedEnd():
@@ -284,23 +294,23 @@ def readName(ZCI,
 			break
 
 		#allowed character => add it
-		name += c
+		rawName += c
 		if dblUnderscores and c == '_':
-			name += '_'
+			rawName += '_'
 
 		#no longer in first character (maybe, getting rid of the "if" and keeping only the assignment would be more optimized ?)
 		if firstChr:
 			firstChr = False
 	ZCIDeepDbg(ZCI, "Ended reading name.")
 
-	#missing name field
-	if len(name) == 0:
+	#missing raw name field
+	if len(rawName) == 0:
 		if missingFieldIfErr is None:
-			return ""
-		ZCIErr(ZCI, "Missing or invalid name: " + missingFieldIfErr)
+			return ("", "")
+		ZCIErr(ZCI, "Missing or invalid name, in " + missingFieldIfErr)
 
 	#return result
-	return name
+	return (modPfx, rawName)
 
 
 
@@ -310,7 +320,7 @@ def lookForFieldsAccessInDatItm(ZCI, di): #basically, for FFA application
 
 	#as long as we try to access fields
 	while ZCI.get() == '.':
-		fieldName = readName(ZCI, "Field from data item " + unpfx(di.name))
+		fieldName = readName(ZCI, "Field from data item " + unpfx(di.name))[1]
 
 		#found a field with that name in our dataItem
 		fieldFound = None
@@ -326,34 +336,3 @@ def lookForFieldsAccessInDatItm(ZCI, di): #basically, for FFA application
 
 	#return result (whenever it has changed or not)
 	return di
-
-
-
-#WARNING! This function is not to be used as part of ODP (symbol '^' should never refer to XOR operator)
-#         Technically, we should only use it in 2nd analysis.
-def tryReadDatItmIncludingFields(ZCI, scope):
-	starter = ZCI.get()
-
-	#read name (will have module prefix if any)
-	name = readName(ZCI, "Any data item name", parseModPfxes=True, modPfxes_asHeaderOnly=True),
-	di   = None #just declare
-
-	#case 1: having a module prefix => looking directly in global scope
-	if starter == '^':
-		for ldi in ZCI.zCtx.cpl.gblScp.datItms:
-			if name == ldi.name: #name should exactly correspond (full name given from readName in case of module prefix)
-				di = ldi
-				break
-
-	#case 2: no module prefix => getting through every local elements until non-module global ones
-	else:
-		di = getDatItm(name, scope)
-
-	#field access if any
-	return lookForFieldsAccessInDatItm(ZCI, di)
-
-
-
-
-
-

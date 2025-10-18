@@ -136,7 +136,7 @@ def readLclScope(ZCIs, scope, tgtFct): #tgtFct is for debug
 		ZCIDeepDbg(ZCI, "Treating local ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
 
 		#read 1st ZCI word
-		firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)
+		firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)[1]
 
 
 
@@ -183,7 +183,7 @@ def readLclScope(ZCIs, scope, tgtFct): #tgtFct is for debug
 
 			#1.3 - remaining imports (should never occur)
 			if str_cmp("imp", firstWord):
-				ZCIInternal(ZCI, "Must not have any importation remaining at that step.")
+				ZCIInt(ZCI, "Must not have any importation remaining at that step.")
 
 
 
@@ -238,16 +238,38 @@ def c03_processLcls(zCtx):
 	zCtx.dbg("=================================================================================")
 	zCtx.deepDbgPause()
 
-	#for each fct
-	for f in zCtx.cpl.fcts:
+	#get main fct if existing
+	mainFct = zCtx__getFctFromName(zCtx, "GFmain")
 
-		#skip LLI fcts
-		if f.content is None:
-			continue
+	#case 1: executable program => focus on main only
+	if zCtx.cpl.mode == CPL__MODE_EXE:
+		if mainFct is None:
+			zCtx.err("Missing \"main\" function to compile as executable.", prtSubCtxs=False, prtLine=False)
 
 		#process fct scope & remove its content ZCIs
-		readLclScope(f.content, f.scope, f)
-		f.content = None
+		readLclScope(mainFct.content, mainFct.scope, mainFct)
+		mainFct.content = None
+
+	#case 2: SDL
+	elif zCtx.cpl.mode == CPL__MODE_SDL:
+		for f in zCtx.cpl.fcts:
+
+			#target only public fct and skip LLI or already processed fcts
+			if not f.isPub or f.content is None:
+				continue
+
+			#can only process dcn-independant fcts
+			if f.dcnDep:
+				zCtx.dbg("Method \"" + f.name + "\" is public but also dcn-dependant => not processing it directly.")
+				continue
+
+			#process fct scope & remove its content ZCIs
+			readLclScope(f.content, f.scope, f)
+			f.content = None
+
+	#unknown cpl mode
+	else:
+		zCtx.int("Unknown compilation mode with id " + str(zCtx.cpl.mode), prtSubCtxs=False, prtLine=False)
 
 	#debug
 	zCtx.dbg("===========================================================================")

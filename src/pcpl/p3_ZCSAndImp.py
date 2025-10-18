@@ -61,7 +61,7 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPfx=None):
 		jumpBlankZone(ZCI, "File path in import ZCI (EXT_IMP)") # Else, we would rather keep our ZCI with a correct ctx starting at its beginning.
 
 		#importation path
-		path = readName(ZCI, "File path in import ZCI (EXT_IMP).", blacklist=BLANKS_EXTENDED) #same note as before
+		path = readName(ZCI, "File path in import ZCI (EXT_IMP).", blacklist=BLANKS_EXTENDED)[1] #same note as before
 		if not ZCI.reachedEnd():
 			ZCIErr(ZCI, "Too much elements in import ZCI (EXT_IMP); should stop here.")
 
@@ -152,7 +152,7 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, wallIdx=
 		#4: openning includer found
 		if c in INCLUDERS.keys():
 			if ctx.icontent.idx in ZCI.pairs.keys(): #already in pairs
-				zCtx.internal("Processing the same ZCI includer twice.")
+				zCtx.int("Processing the same ZCI includer twice.")
 
 			#get every pairs until end of our includer
 			curPairs = ctx.getPairsUntilCorrespondingPeer(allowedPairs=INCLUDERS)
@@ -174,7 +174,7 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, wallIdx=
 
 			#step until end of includer
 			if ctx.forward(closing - opening):
-				zCtx.internal("Could not forward to the end of includer (openning at " + str(opening) + ", closing at " + str(closing) + ").")
+				zCtx.int("Could not forward to the end of includer (openning at " + str(opening) + ", closing at " + str(closing) + ").")
 			continue
 
 

@@ -51,6 +51,12 @@ lt_ref  a = ^LT_ref.new(chkSz)
 
 
 
+- "dcn" keyword is not allowed in DCN_TYP for the moment.
+  It is feasible but quite complicated due to the depth of dcn transmission over type copies.
+  This is definitely to do one day because it is very interesting !
+
+
+
 - Change ^LLI.^Operator into ^LLI.^Ope (in LLI filenames + content and also in stdz_types).
 
 

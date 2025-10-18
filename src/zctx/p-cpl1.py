@@ -46,13 +46,16 @@ class cplDat:
 		sbj.fcts     = None #lst[fct]
 		sbj.lnkLibs  = None #lst[]
 
+		#cpl mode (exe/sdl)
+		sbj.mode = 0
+
 		#program concrete elements
 		#sbj.dataRes = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
 		sbj.txtRes  = ""
 
-	def newTyp(sbj, name, dcnDeg=0, size=0, dcns=None, dcnCommon=None):
+	def newTyp(sbj, name, dcnDeg=0, size=0, dcns=None, dcnCommon=None, isPub=False):
 		if dcnCommon is None:
-			dcnCommon = typ_dcnCommon(dcnDeg, size=size) #create a new dcnCommon by default (new type => new dcnCommon)
+			dcnCommon = typ_dcnCommon(dcnDeg, isPub, size=size) #create a new dcnCommon by default (new type => new dcnCommon)
 		if dcns is None:
 			dcns = []
 		res           = typ()
@@ -66,9 +69,10 @@ class cplDat:
 		sbj.types.append(res)
 		return typeIdx
 
-def newCplDat(opts):
+def newCplDat(opts, mode):
 	res      = cplDat()
 	res.opts = opts
+	res.mode = mode
 
 	#z abstract elements
 	res.modPfxes = [] #lst[str]

@@ -1,6 +1,6 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/type.py
 
-	# -------- TYPE RELATED TOOLS --------
+	# ---------------- TYPES RELATED TOOLS ----------------
 
 	#access using zCtx
 	def getTypeInstanceFromID(sbj, id):
@@ -88,3 +88,19 @@
 
 		#pretty display
 		return strLst_toDsp(typeNames)
+
+
+
+#type fields
+def getTypeFieldFromName(ZCI, tgtTypeID, tgtFieldName):
+	tInst = ZCI.zCtx.getTypeInstanceFromID(tgtTypeID)
+
+	#type nature check
+	if tInst.dcnCommon.nature == NATURE__PRM:
+		ZCIErr(ZCI, "Type " + unpfxMod(tInst.name) + " is a primitive type, cannot get fields from it.")
+
+	#look for the given name in type fields
+	for f in tInst.dcnCommon.fields:
+		if f.name == tgtFieldName:
+			return f
+	ZCIErr(ZCI, "Type " + unpfxMod(tInst.name) + " has no field \"" + tgtFieldName + "\".")

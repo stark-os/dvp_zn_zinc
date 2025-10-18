@@ -27,7 +27,7 @@ def processLnk(ZCI):
 	jumpBlankZone(ZCI, "File path in library linking ZCI (EXT_LNK)")
 
 	#library linking path
-	path = os.path.realpath( readName(ZCI, "File path in library linking ZCI (EXT_LNK).", blacklist=BLANKS_EXTENDED) )
+	path = os.path.realpath( readName(ZCI, "File path in library linking ZCI (EXT_LNK).", blacklist=BLANKS_EXTENDED)[1] )
 
 	#check existence
 	if not os.path.isfile(path):
@@ -53,12 +53,12 @@ def processLnk(ZCI):
 # -------- DCL_TYP --------
 
 #type declaration
-def processTypeDcl(ZCI):
+def processTypeDcl(ZCI, isPub):
 	ZCIDbg(ZCI, "Processing type declaration.", prtLine=False)
 	jumpBlankZone(ZCI, "Type name in type declaration ZCI (DCL_TYP)")
 
 	#get full type name considered as "undeclinated"
-	rawName = readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", dblUnderscores=True)
+	rawName = readName(ZCI, "Type name in type declaration ZCI (DCL_TYP).", dblUnderscores=True)[1]
 	if len(ZCI.modPfx) == 0:
 		fullName = "GU" + rawName
 	else:
@@ -87,12 +87,16 @@ def processTypeDcl(ZCI):
 
 		#non-integer dcnDeg
 		if not str_isConvertible_int(dcnDegTxt):
-			ZCIErr(ZCI, "Invalid explicit declination degree given (must be an integer).")
+			ZCIErr(ZCI, "Invalid explicit declination degree given (must be an integer, DCL_TYP).")
 
 		#negative dcnDeg
 		dcnDeg = int(dcnDegTxt)
 		if dcnDeg < 0:
-			ZCIErr(ZCI, "Invalid explicit declination degree given (must be positive).")
+			ZCIErr(ZCI, "Invalid explicit declination degree given (must be positive, DCL_TYP).")
+
+		#too big dcnDeg
+		if dcnDeg > ZCI.zCtx.dcnDegMax:
+			ZCIErr(ZCI, "Invalid explicit declination degree given (maximum " + str(ZCI.zCtx.dcnDegMax) + ", " + str(dcnDeg) + " given, DCL_TYP)")
 
 		#forward after includer
 		ZCI.forward(peerIdx - begIdx + 1)
@@ -103,31 +107,31 @@ def processTypeDcl(ZCI):
 		ZCIErr(ZCI, "Expected blank zone after type name in type declaration ZCI (DCL_TYP).")
 	jumpBlankZone(ZCI, "Type content definition in type declaration ZCI (DCL_TYP).")
 
-	#add generic type for the moment (it is incomplete: we don't know if it is a structure, if it has a parent...)
-	newTypeID   = ZCI.zCtx.cpl.newTyp(fullName, dcnDeg)
+	#add generic info of type, but it is incomplete for the moment: we don't know if it is a structure, if it has a parent...
+	newTypeID   = ZCI.zCtx.cpl.newTyp(fullName, dcnDeg, isPub=isPub)
 	newTypeInst = ZCI.getTypeInstanceFromID(newTypeID)
 	ZCIDbg(ZCI, "Explicitely added type " + newTypeInst.name + " but there are still missing information about it (incomplete for the moment).")
 
 	#process type content: structure syntax
 	if ZCI.get() == '{':
 		ZCIDbg(ZCI, "Type declaration is via structure syntax.", prtLine=False)
-		newTypeInst.dcnCommon.size   = ZCI.zCtx.refSize
 		newTypeInst.dcnCommon.nature = NATURE__STC
 
 		#reading fields
 		newTypeInst.dcnCommon.fields = readDatItmSeq(
 			ZCI, "type declaration ZCI (DCL_TYP).",
 			ZCI.zCtx.cpl.gblScp,
-			cstValsOnly = True
+			cstValsOnly           = True,
+			forbidDcnKwInTypeDcns = False
 		)
 		if len(newTypeInst.dcnCommon.fields) == 0:
-			ZCIErr(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDatItmSeq cannot return 0-length list)
+			ZCIInt(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDatItmSeq cannot return 0-length list)
 
-		#update stcSize
+		#compute size
 		newTypeInst.computeStcSize(ZCI.zCtx.cpl.types)
 
-		#set REF as parent <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED
-		#newTypeInst.dcnCommon.parent = ZCI.zCtx.rootTypes[RT__REF]
+		#set "stc" type as parent <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED
+		#newTypeInst.dcnCommon.parent = ZCI.zCtx.stcType
 
 	#process type content: type-copy syntax
 	else:
@@ -137,7 +141,7 @@ def processTypeDcl(ZCI):
 
 		#copying itself, no matter the declination (error case seems obvious, though required)
 		if parentInst.dcnCommon == newTypeInst.dcnCommon:
-			ZCIErr(ZCI, "Type cannot be declared as a copy of itself or one of its declination.")
+			ZCIErr(ZCI, "Type cannot be declared as a copy of itself or one of its declination (DCL_TYP).")
 
 		#copy every important field from parent
 		newTypeInst.dcnCommon.size   = parentInst.dcnCommon.size
@@ -158,36 +162,36 @@ def processTypeDcl(ZCI):
 # -------- DCL_ENM --------
 
 #enumerate declaration
-def processEnmDcl(ZCI, scope, tgtFct=None):
+def processEnmDcl(ZCI, scope, tgtFct=None, isPub=False):
 
 	#debug
 	scpTxt = ""
 	if tgtFct is None:
-		scpTxt = "in global scope"
+		scpTxt = ", in global scope"
 	else:
-		scpTxt = "in function " + tgtFct.name
+		scpTxt = ", in function " + unpfxFctName(ZCI.zCtx, tgtFct)
 	ZCIDbg(ZCI, "Processing enumerate declaration.", prtLine=False)
-	jumpBlankZone(ZCI, "Enumerate name in enumerate declaration " + scpTxt + " (DCL_ENM)")
+	jumpBlankZone(ZCI, "Enumerate name in enumerate declaration" + scpTxt + " (DCL_ENM)")
 
 	#get full enm name
-	rawName  = readName(ZCI, "Enumerate name in enumerate declaration " + scpTxt + " (DCL_ENM).", dblUnderscores=True)
+	rawName  = readName(ZCI, "Enumerate name in enumerate declaration" + scpTxt + " (DCL_ENM).", dblUnderscores=True)[1]
 	fullName = getDatItmModPfxFromScope(ZCI, scope) + rawName
 
 	#must be followed by braces includer
-	optionalBlanks(ZCI, "fields inside braces includer in enumerate declaration " + scpTxt + " (DCL_ENM).", blanks=BLANKS_EXTENDED)
+	optionalBlanks(ZCI, "fields inside braces includer in enumerate declaration" + scpTxt + " (DCL_ENM).", blanks=BLANKS_EXTENDED)
 	if ZCI.get() != '{':
-		ZCIErr(ZCI, "Missing fields inside braces includer in enumerate declaration " + scpTxt + " (DCL_ENM).")
+		ZCIErr(ZCI, "Missing fields inside braces includer in enumerate declaration" + scpTxt + " (DCL_ENM).")
 
 	#read fields
 	fields = readDatItmSeq(
-		ZCI, "enumerate declaration ZCI (DCL_ENM).",
+		ZCI, "enumerate declaration ZCI" + scpTxt + " (DCL_ENM).",
 		scope,
 		cstValsOnly          = True,
 		allowUnsolvableTypes = True
 	)
 	for di in fields:
 		if di.Type != TYPE_ID__UNKNOWN: #no type must be found (neither explicit type given or initial value)
-			ZCIErr(ZCI, "No explicit type or value is allowed in enumerate declaration " + scpTxt + " (DCL_ENM).")
+			ZCIErr(ZCI, "No explicit type or value is allowed in enumerate declaration" + scpTxt + " (DCL_ENM).")
 
 	#compute which type will be used
 	ZCIDeepDbg(ZCI, "Enumerate length: " + str(len(fields)), prtLine=False)
@@ -209,12 +213,12 @@ def processEnmDcl(ZCI, scope, tgtFct=None):
 		fields[f].value = val(t, atm(ATM__REF, f), Cst=True) #value stored as it was a ref to be cashted into type t
 
 	#create enumerate
-	enmDI = datItm(t, fullName, True, None, Cst=True, fields=fields)
+	enmDI = datItm(t, fullName, True, None, Cst=True, fields=fields, isPub=isPub)
 	checkAlreadyDeclaredDatItmOrField(ZCI, enmDI, scope.datItms)
 	scope.datItms.append(enmDI)
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "enumerate declaration " + scpTxt + " (DCL_ENM).")
+	endOfZCI(ZCI, "enumerate declaration" + scpTxt + " (DCL_ENM).")
 	ZCIDbg(ZCI, "Enumerate declaration processed.", prtLine=False)
 	ZCI.deepDbgPause()
 
@@ -226,25 +230,65 @@ def processEnmDcl(ZCI, scope, tgtFct=None):
 # -------- DCL_FWD - DCL_FCT --------
 
 #common parsing
-def processFctDcl_partial(ZCI, parsingFwd=False):
+def processFctDcl_partial(ZCI, isPub, fwdTypeName=None):
+	parsingFctDcl      = (fwdTypeName is None)
+	fwd_srcFctFullName = "" #ret val used only in DCL_FWD
+
+
+
+	#STEP 1: METHOD-RELATED STUFF
 
 	#function name: maybe it is type related (method) => try reading a type
-	methodType = readType(ZCI, "function name in function declaration/forwarding ZCI (DCL_FCT/DCL_FWD).", errIfNotExisting=False)
+	methodType = readType(ZCI, "function name in function declaration/forwarding ZCI (DCL_FCT/DCL_FWD).", errIfNotExisting=False, forbidDcnKwInDcns=False)
 
-	#method name must be followed by a dot
-	isMethod = (methodType != TYPE_ID__UNKNOWN)
+	#get method type name
+	dcnDep         = False
+	dcnKwLst       = None
+	methodTypeName = ""
+	isMethod       = (methodType != TYPE_ID__UNKNOWN)
 	if isMethod:
+		methodTypeInst = ZCI.getTypeInstanceFromID(methodType)
+		methodTypeName = methodTypeInst.name
+
+		#also, look whether it is dcn-dependant
+		for d in methodTypeInst.dcns:
+			if d == ZCI.zCtx.gncDcnType:
+				dcnDep   = True
+				dcnKwLst = ZCI.zCtx.spcDcnTypes #fake operations incomming: do not replace for the moment, but allow the use of "dcn#" in params
+				break
+
+		#must be followed by a dot
 		if ZCI.get() != '.':
 			ZCIErr(ZCI, "Expected a dot '.' after type given in method name.")
 		ZCI.inc()
 
+	#forward only methods
+	elif not parsingFctDcl:
+		ZCIErr(ZCI, "Can only forward methods (DCL_FWD).")
+
+
+
+	#STEP 2: MOD PFX, NAME, IS OPERATOR
+
 	#read function name
-	rawName = readName(ZCI, "function name in function declaration/forwarding ZCI (DCL_FCT/DCL_FWD).",
-		parseModPfxes         = parsingFwd, #allow mod pfx notation in fwd to be able to fwd sthing from a mod to another (or gbl...)
-		modPfxes_asHeaderOnly = parsingFwd, #but fct dcl must NOT have this feature: their SCOPE define their modPfx
-		dblUnderscores        = True,
-		whitelist             = FCT_NAME_CHARSET
+	modPfx, rawName = readName(ZCI, "function name in function declaration/forwarding ZCI (DCL_FCT/DCL_FWD).",
+		parseModPfxes = True,
+		whitelist     = FCT_NAME_CHARSET
 	)
+
+	#out-of-mod
+	if modPfx == "G":
+		isOpe = (rawName in OPERATOR_FCTNAME2SYMBOL.keys()) #out-of-mod => can be an operator
+
+	#in mod
+	else:
+		if parsingFctDcl:
+			ZCIErr(ZCI, "Function declaration name does not allow module prefixes (DCL_FCT).")
+		isOpe  = False #out-of-mod => can't be an operator
+
+
+
+	#STEP 3: PARAMS
 
 	#must be followed by parameters between parentheses includer
 	if ZCI.get() != '(':
@@ -254,8 +298,9 @@ def processFctDcl_partial(ZCI, parsingFwd=False):
 	params = readDatItmSeq(
 		ZCI, "function declaration/forwarding ZCI (DCL_FCT/DCL_FWD)",
 		ZCI.zCtx.cpl.gblScp,
-		cstValsOnly = True,
-		allowEmpty  = True
+		cstValsOnly              = True,
+		allowEmpty               = True,
+		dcnKwLstToReplaceInTypes = dcnKwLst #only effective if fct is dcn-dependent, and btw, it doesn't replace anything for the moment but only ALLOW 'dcn#' notations
 	)
 	for p in params: #add "lcl" module prefix
 		p.name = 'L' + p.name
@@ -263,39 +308,54 @@ def processFctDcl_partial(ZCI, parsingFwd=False):
 	#go to the next interesting thing (if any)
 	optionalBlanks(ZCI, None)
 
-	#targetting operator
-	isOpe = (rawName in OPERATOR_FCTNAME2SYMBOL.keys())
 
-	#case 1: regular function
-	if not isOpe:
 
-		#name must be in valid charset then
-		for c in rawName:
-			if c not in DEFAULT_NAME_CHARSET:
-				ZCIErr(ZCI, "Invalid character \'" + c + "\' in function name.")
+	#STEP 4: CHECK & BUILD FCT EXACT NAME
 
-		#additionnal check: name availability !HERE, WE WANT TO GUARANTEE NO CONFUSION BETWEEN GBL DI NAMES & FCT NAMES. USER CODE CAN HAVE AMBIGUITY, BUT Z NOTATION CAN'T: THIS IS WHY WE USE A "TMP PREFIXED NOTATION" TO CHECK THEM TEMPORARILY.
-		if not isMethod:
-			equivalentDIName = getDatItmModPfxFromScope(ZCI, ZCI.zCtx.cpl.gblScp)
-			for gdi in ZCI.zCtx.cpl.gblScp.datItms:
-				if gdi.name == equivalentDIName:
-					ZCIErr(ZCI, "Unable to declare/forward function \"" + ZCI.modPfx + rawName + "\" because a global data item with the same name already exist (avoiding confusion).")
+	#case 1: operator
+	if isOpe:
+		if isMethod:
+			ZCIErr(ZCI, "Operator functions cannot be used as methods for a given type (type " + methodTypeName + " targetted for operator " + OPERATOR_NAMES[OPERATOR_FCTNAME2SYMBOL[rawName]] + ", DCL_FCT/DCL_FWD).")
 
 		#build full fct name
-		baseName = rawName #modPfx already included while reading (DCL_FWD)
-		if not parsingFwd:
-			baseName = ZCI.modPfx + rawName #use modPfx from current SCOPE (DCL_FCT)
-		fullName = getFctNameFromPfxName(ZCI, baseName, methodOf=methodType)
-
-	#case 2: operator
-	else:
-		if isMethod:
-			ZCIErr(ZCI, "Operator functions cannot be used as methods for a given type (type " + ZCI.getTypeNameFromID(methodType) + " targetted for operator " + OPERATOR_NAMES[OPERATOR_FCTNAME2SYMBOL[rawName]] + ").")
-
-		#build full function name
 		fullName = 'O' + OPERATOR_NAMES[OPERATOR_FCTNAME2SYMBOL[rawName]]
 		for p in params:
 			fullName += '_' + ZCI.getTypeNameFromID(p.Type)
+
+	#case 2: regular fct/method
+	else:
+		for c in rawName:
+			if c not in DEFAULT_NAME_CHARSET: #regular charset as for any datItm (must be callable the same way)
+				ZCIErr(ZCI, "Invalid character \'" + c + "\' in function name (DCL_FCT/DCL_FWD).")
+
+		#method only
+		methodHeader = "F"
+		if isMethod:
+			if parsingFctDcl:
+				methodHeader       = 'T' + methodTypeName + '_'
+			else:
+				methodHeader       = 'T' + fwdTypeName + '_'
+				fwd_srcFctFullName = modPfx + 'T' + methodTypeName + '_' + rawName #also build fwd src fct name (DCL_FWD only)
+
+				#additionnal check for fwd fct: forward with same type
+				if methodTypeName == fwdTypeName:
+					ZCIErr(ZCI, "Can't forward using the same type for both source and destination (" + methodTypeName + ", DCL_FWD).")
+
+		#additionnal check for gbl fct: GUARANTEE NO CONFUSION BETWEEN GBL DI NAMES & FCT NAMES
+		else:
+			equivalentGDIName = ZCI.modPfx + 'E' + rawName
+			for gdi in ZCI.zCtx.cpl.gblScp.datItms:
+				if gdi.name == equivalentGDIName:
+					ZCIErr(ZCI, "Unable to declare function \"" + unpfxMod(ZCI.modPfx) + rawName + "\" because a global data item with the same name already exist (avoid confusion, DCL_FCT).")
+
+		#build full fct name
+		if len(ZCI.modPfx) == 0:
+			ZCI.modPfx = 'G' #overwrite ZCI info, doesn't matter here, this ZCI will no longer be parsed
+		fullName = ZCI.modPfx + methodHeader + rawName
+
+
+
+	#STEP 6: CREATE INSTANCE
 
 	#check if function/method/operator already exists
 	if getFctFromName(ZCI, fullName) is not None:
@@ -303,32 +363,36 @@ def processFctDcl_partial(ZCI, parsingFwd=False):
 		ZCIErr(ZCI, "Already have a function/method/operator with name " + fullName)
 
 	#create fct instance (set VOID retType for the moment)
-	f        = newFct(fullName, TYPE_ID__UNKNOWN, params, ZCI.zCtx.cpl.gblScp)
-	f.method = isMethod
+	f        = newFct(fullName, TYPE_ID__UNKNOWN, params, ZCI.zCtx.cpl.gblScp, methodOf=methodType)
+	f.isPub  = isPub
+	f.dcnDep = dcnDep
 	ZCI.zCtx.cpl.fcts.append(f)
 
 	#add params as available data items in fct scope
 	for p in params:
 		f.scope.datItms.append(p)
 
-	#return raw name (useful for fwd only actually)
-	return rawName
+	#return src fct full name (makes sens only in DCL_FWD)
+	return fwd_srcFctFullName
 
 
 
 
 #function declaration
-def processFctDcl(ZCI):
+def processFctDcl(ZCI, isPub):
 	ZCIDbg(ZCI, "Processing function declaration.", prtSubCtxs=True)
 
 	#parse until after params
-	processFctDcl_partial(ZCI)
+	processFctDcl_partial(ZCI, isPub)
 	f = ZCI.zCtx.cpl.fcts[-1]
 
 	#return type explicitly given => non-VOID
 	retType = TYPE_ID__UNKNOWN
 	if ZCI.get() != '{':
-		retType = readType(ZCI, "return type in function declaration/forwarding ZCI (DCL_FCT)")
+		dcnKwLst = None
+		if f.dcnDep:
+			dcnKwLst = ZCI.zCtx.spcDcnTypes #fake operation: do not replace for the moment, but allow the use of "dcn#" in retType
+		retType = readType(ZCI, "return type in function declaration ZCI (DCL_FCT)", dcnKwLstToReplace=dcnKwLst)
 
 		#move to function content
 		optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
@@ -360,40 +424,36 @@ def processFctDcl(ZCI):
 
 
 #function forwarding declaration
-def processFwdDcl(ZCI):
+def processFwdDcl(ZCI, isPub):
 	ZCIDbg(ZCI, "Processing function forwarding declaration.", prtSubCtxs=True)
 
 	#get type to forward
-	fwdType = readType(ZCI, "type to forward into, in function forwarding ZCI (DCL_FWD).")
+	fwdType     = readType(ZCI, "type to forward into, in function forwarding ZCI (DCL_FWD).", forbidDcnKwInDcns=False)
+	fwdTypeName = ZCI.getTypeNameFromID(fwdType)
 	optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 	#parse until after params
-	pfxName = processFctDcl_partial(ZCI, parsingFwd=True) #rawName returned is actually a pfxName because of Fwd specific option
-	dstF    = ZCI.zCtx.cpl.fcts[-1]
+	srcFctFullName = processFctDcl_partial(ZCI, isPub, fwdType=fwdTypeName)
+	dstF           = ZCI.zCtx.cpl.fcts[-1]
+
+	#look for src fct
+	srcF = getFctFromName(ZCI, srcFctFullName)
+	if srcF is None:
+		ZCIErr(ZCI, "Unable to find source function \"" + srcFctFullName + "\" to forward from (DCL_FWD).")
 
 	#return type explicitly given => non-VOID
 	retType = TYPE_ID__UNKNOWN
 	if not ZCI.reachedEnd():
-		retType = readType(ZCI, "return type in function forwarding ZCI (DCL_FWD)")
+		dcnKwLst = None
+		if f.dcnDep:
+			dcnKwLst = ZCI.zCtx.spcDcnTypes #fake operation: do not replace for the moment, but allow the use of "dcn#" in retType
+		retType = readType(ZCI, "return type in function forwarding ZCI (DCL_FWD)", dcnKwLstToReplace=dcnKwLst)
 
 		#move to the very end
 		optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 	ZCIDeepDbg(ZCI, "Return type detected \"" + ZCI.getTypeNameFromID(retType) + "\".")
 
-	#look for src fct
-	for alt in ZCI.zCtx.getTypeAlternatives(fwdType):
-		srcFullName = getFctNameFromPfxName(ZCI, pfxName, methodOf=alt)
-		srcF        = getFctFromName(ZCI, srcFullName)
-		if srcF is not None:
-			break
-	if srcF is None:
-		ZCIErr(ZCI, "Unable to find source function \"" + srcFullName + "\" to forward from (DCL_FWD).")
-
-	#requirement 1: must be a method
-	if not dstF.method:
-		ZCIErr(ZCI, "Can only forward METHOD functions (DCL_FWD).")
-
-	#requirement 2: must have the same exact parameters, except the 1st one (number, names, types)
+	#requirement 1: must have the same exact parameters, except the 1st one (number, names, types)
 	paramVals = []
 	if len(dstF.params) != len(srcF.params):
 		ZCIErr(ZCI, "Can only forward functions with exact same number of parameters (expected " + str(len(srcF.params)) + ", got " + str(len(dstF.params)) + ", in DCL_FWD).")
@@ -410,7 +470,7 @@ def processFwdDcl(ZCI):
 			val(dstF.retType, atm(ATM__DATITM, dstF.params[p]), dstF.params[p].Cst)
 		)
 
-	#requirement 3: must ret void if src ret void
+	#requirement 2: must ret void if src ret void
 	if retType != TYPE_ID__UNKNOWN and srcF.retType == TYPE_ID__UNKNOWN:
 		ZCIErr(ZCI, "Cannot forward as non-void because source function is void (DCL_FWD).")
 
@@ -448,51 +508,55 @@ def processAsg(ZCI, scope, tgtFct, dstDI):
 	scpTxt  = ""
 	cstOnly = False
 	if tgtFct is None:
-		scpTxt  = "in global scope"
+		scpTxt  = ", in global scope"
 		cstOnly = True
 	else:
-		scpTxt = "in function " + tgtFct.name
-	ZCIDbg(ZCI, "Processing data item assignment " + scpTxt + " (ASG_ASG).", prtLine=False)
+		scpTxt = ", in function " + unpfxFctName(ZCI.zCtx, tgtFct)
+	ZCIDbg(ZCI, "Processing data item assignment" + scpTxt + " (ASG_ASG).", prtLine=False)
 
 	#read src value to be assigned
-	srcVal = readVal(ZCI, "source value in assignment " + scpTxt + " (ASG_ASG).", scope, cstOnly=cstOnly)
+	srcVal = readVal(ZCI, "source value in assignment" + scpTxt + " (ASG_ASG).", scope, cstOnly=cstOnly)
 
 	#add execution to concerned scope
 	scope.exes.append( atm(ATM__ASG, asg(dstDI, srcVal)) )
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "data item assignment " + scpTxt + " (ASG_ASG).")
+	endOfZCI(ZCI, "data item assignment" + scpTxt + " (ASG_ASG).")
 	ZCIDbg(ZCI, "Data item assignment processed.", prtLine=False)
 	ZCI.deepDbgPause()
 
 
 
 #data item declaration (including assignment with initial value)
-def processDclDat(ZCI, scope, tgtFct, isCst):
+def processDclDat(ZCI, scope, tgtFct, isCst, isPub=False):
 
 	#debug
 	scpTxt         = ""
 	cstInitValOnly = False
 	if tgtFct is None:
-		scpTxt         = "in global scope"
+		scpTxt         = ", in global scope"
 		cstInitValOnly = True
 	else:
-		scpTxt = "in function " + tgtFct.name
-	ZCIDbg(ZCI, "Processing data item declaration " + scpTxt + " (DCL_DAT).", prtLine=False)
+		scpTxt = ", in function " + unpfxFctName(ZCI.zCtx, tgtFct)
+	ZCIDbg(ZCI, "Processing data item declaration" + scpTxt + " (DCL_DAT).", prtLine=False)
 
 	#read the whole ZCI from the start
-	di = readDatItm(ZCI, "Data item declaration " + scpTxt + " (DCL_DAT).", scope, cstInitValOnly=cstInitValOnly, allowModPfxInName=False)
+	di = readDatItm(ZCI, "Data item declaration" + scpTxt + " (DCL_DAT).", scope, cstInitValOnly=cstInitValOnly, allowModPfxInName=False)
+
+	#double underscores manually (avoids to pass another option to readDatItm, then to readName...)
+	di.name = dblUnderscores(di.name)
 
 	#set some important info to the NEWLY CREATED data item
-	di.name = getDatItmModPfxFromScope(ZCI, scope) + di.name
-	di.Cst  = isCst
+	di.name  = getDatItmModPfxFromScope(ZCI, scope) + di.name
+	di.Cst   = isCst
+	di.isPub = isPub
 
 	#add declaration to scope
 	checkAlreadyDeclaredDatItmOrField(ZCI, di, scope.datItms) #check already existing
 	scope.datItms.append(di)
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "data item declaration " + scpTxt + " (DCL_DAT).")
+	endOfZCI(ZCI, "data item declaration" + scpTxt + " (DCL_DAT).")
 	ZCIDbg(ZCI, "Data item declaration processed.", prtLine=False)
 	ZCI.deepDbgPause()
 
@@ -504,32 +568,32 @@ def processVFC(ZCI, scope, tgtFct):
 	#debug
 	scpTxt = ""
 	if tgtFct is None:
-		scpTxt = "in global scope"
+		scpTxt = ", in global scope"
 	else:
-		scpTxt = "in function " + tgtFct.name
-	ZCIDbg(ZCI, "Processing void returning function call " + scpTxt + " (VFC_VFC).", prtLine=False)
+		scpTxt = ", in function " + unpfxFctName(ZCI.zCtx, tgtFct)
+	ZCIDbg(ZCI, "Processing void returning function call" + scpTxt + " (VFC_VFC).", prtLine=False)
 
 	#local scope only
 	if tgtFct is None:
 		ZCIErr(ZCI, "Detected void returning function call in global scope but this is only allowed in local scope (VFC_VFC).")
 
 	#read ZCI content as reading a value: it MUST be a call (either operator, !VFC or VFC)
-	v = readVal(ZCI, "void returning function call " + scpTxt + " (VFC_VFC).", scope)
+	v = readVal(ZCI, "void returning function call" + scpTxt + " (VFC_VFC).", scope)
 	if v.vdat.id != ATM__CALL:
-		ZCIErr(ZCI, "Invalid ZCS, unknown ZCI given " + scpTxt + " (Expected a void returning function call, VFC_VFC).")
+		ZCIErr(ZCI, "Invalid ZCS, unknown ZCI given" + scpTxt + " (Expected a void returning function call, VFC_VFC).")
 
 	#store call in scope exe <---- Note that we don't care about the return type for the moment, it can be anything
 	scope.exes.append(v.vdat)
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "void returning function call (VFC_VFC).")
+	endOfZCI(ZCI, "void returning function call" + scpTxt + " (VFC_VFC).")
 	ZCIDbg(ZCI, "Void returning function call processed.", prtLine=False)
 	ZCI.deepDbgPause()
 
 
 
 #remaining ZCIs can be DCL_DAT, ASG_ASG or VFC_VFC (the last one only allowed in local scope)
-def processRemainingZCI(ZCI, scope, tgtFct=None):
+def processRemainingZCI(ZCI, scope, tgtFct=None, isPub=False):
 	ZCIDeepDbg(ZCI, ">>>>>>>>>>>>>>>>>>>>>>>>> ZCI:\n  " + ZCI.toStr() + "\n\"" + ZCI.txt + "\"\n\"" + ZCI.ctx.icontent.s[ZCI.startIdx-200:ZCI.ctx.icontent.idx+1] + "§" + ZCI.ctx.icontent.s[ZCI.ctx.icontent.idx] + "§" + ZCI.ctx.icontent.s[ZCI.ctx.icontent.idx+1:ZCI.stopIdx+201] + "\"")
 
 	#try reading a type (in a separated copy, in all cases we will have to read from the start)
@@ -539,11 +603,11 @@ def processRemainingZCI(ZCI, scope, tgtFct=None):
 	#starting with a type name => DCL_DAT, else => can be anything
 	if tID == TYPE_ID__UNKNOWN:
 
-		#try getting a name
-		name = readName(tmpCopy, None, parseModPfxes=True, modPfxes_asHeaderOnly=True)
+		#try getting a name, step 1: prepare for modPfx extraction
+		modPfx, rawName = readName(tmpCopy, None, parseModPfxes=True)
 
 		#no name => can only be a VFC_VFC
-		if len(name) == 0:
+		if len(rawName) == 0:
 			processVFC(ZCI, scope, tgtFct)
 			return
 
@@ -554,7 +618,7 @@ def processRemainingZCI(ZCI, scope, tgtFct=None):
 			return
 
 		#already have a data item with that name => ASG_ASG then
-		di = getDatItmFromPfxName(name, scope)
+		di = getDatItmFromScopeAndParents(modPfx, rawName, scope)
 		if di is not None:
 
 			#forward right before value
@@ -567,7 +631,7 @@ def processRemainingZCI(ZCI, scope, tgtFct=None):
 			return
 
 	#in every other cases => DCL_DAT
-	processDclDat(ZCI, scope, tgtFct, False)
+	processDclDat(ZCI, scope, tgtFct, False, isPub=isPub)
 
 
 
@@ -586,12 +650,15 @@ def c02_redirectGbl(zCtx):
 	zCtx.deepDbgPause()
 
 	#analyse every global ZCI
-	for ZCI in zCtx.ZCIs:
+	isPub = False
+	for z in range(len(zCtx.ZCIs)):
+		ZCI        = zCtx.ZCIs[z]
+		z         += 1
 		initialCtx = ZCI.ctx.copy()
 		ZCIDeepDbg(ZCI, "Treating global ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
 
 		#read 1st ZCI word
-		firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)
+		firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)[1]
 
 
 
@@ -625,7 +692,7 @@ def c02_redirectGbl(zCtx):
 
 			#1.3 - remaining imports (should never occur)
 			if str_cmp("imp", firstWord):
-				ZCIInternal(ZCI, "Must not have any importation remaining at that step.")
+				ZCIInt(ZCI, "Must not have any importation remaining at that step.")
 
 
 
@@ -634,37 +701,51 @@ def c02_redirectGbl(zCtx):
 			#trigrams requiring a following blank
 			if ZCI.txt[3] in BLANKS:
 
+				#private kw (combinable behavior)
+				if str_cmp("pub", firstWord):
+					optionalBlanks(ZCI, "Missing something after \"pub\" keyword (empty ZCI instead).")
+					isPub = True
+					z    -= 1
+					continue
+
 				#2.1 - library linking
 				if str_cmp("lnk", firstWord):
+					if isPub:
+						ZCIErr(ZCI, "Doesn't make sens to set library link \"public\".")
 					processLnk(ZCI)
 					continue
 
 				#2.2 - type declaration DCL_TYP
 				if str_cmp("typ", firstWord):
-					processTypeDcl(ZCI)
+					processTypeDcl(ZCI, isPub)
+					isPub = False
 					continue
 
 				#2.3 - Enumerate declaration DCL_ENM
 				if str_cmp("enm", firstWord):
-					processEnmDcl(ZCI, ZCI.zCtx.cpl.gblScp)
+					processEnmDcl(ZCI, ZCI.zCtx.cpl.gblScp, isPub=isPub)
+					isPub = False
 					continue
 
 				#2.4 - Function declaration
 				if str_cmp("fct", firstWord):
 					jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT).") #forward to function name directly
-					processFctDcl(ZCI)
+					processFctDcl(ZCI, isPub)
+					isPub = False
 					continue
 
 				#2.5 - Function forwarding
 				if str_cmp("fwd", firstWord):
 					jumpBlankZone(ZCI, "Type to forward into, in function forwarding ZCI (DCL_FWD).") #forward to function name directly
-					processFwdDcl(ZCI)
+					processFwdDcl(ZCI, isPub)
+					isPub = False
 					continue
 
 				#2.6 - Constant data item declaration
 				if str_cmp("cst", firstWord):
 					jumpBlankZone(ZCI, "Constant keyword in data item declaration ZCI (DCL_DAT).")
-					processDclDat(ZCI, zCtx.cpl.gblScp, None, True)
+					processDclDat(ZCI, zCtx.cpl.gblScp, None, True, isPub=isPub)
+					isPub = False
 					continue
 
 

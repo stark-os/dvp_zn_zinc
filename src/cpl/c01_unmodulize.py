@@ -81,7 +81,7 @@ def c01_unmodulize(zCtx):
 				ZCI.inc()
 
 			#read module name
-			modName = readName(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")
+			modName = readName(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")[1]
 
 			#combine with cur module (we can be in another module => this allows submodularization)
 			modPfx = ZCI.modPfx + formatModName(ZCI, modName)
@@ -121,7 +121,7 @@ def c01_unmodulize(zCtx):
 			#get module content boundaries
 			modContent_startIdx = ZCI.ctx.icontent.idx
 			if modContent_startIdx not in ZCI.pairs.keys():
-				ZCIInternal(ZCI, "Missing pair information for cur includer.")
+				ZCIInt(ZCI, "Missing pair information for cur includer.")
 			modContent_stopIdx = ZCI.pairs[modContent_startIdx]
 
 			#shift 1st character '{'

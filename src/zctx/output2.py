@@ -3,9 +3,9 @@
 # ZCI OUTPUT (cpl)
 
 #output after precompilation is closely related to ZCIs, no longer to global subCtxs
-def ZCIInternal(ZCI, msg, prtSubCtxs=True, prtLine=True):
+def ZCIInt(ZCI, msg, prtSubCtxs=True, prtLine=True):
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
-	ZCI.zCtx.internal(msg, prtSubCtxs, prtLine)
+	ZCI.zCtx.int(msg, prtSubCtxs, prtLine)
 
 def ZCIErr(ZCI, msg, prtSubCtxs=True, prtLine=True):
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)

@@ -163,15 +163,13 @@ def dumpZCIs(ZCIs, filename, oneLine=True):
 
 #types
 class typ_dcnCommon: #common data among every declination of a type
-	def __init__(sbj, dcnDeg, size=0):
+	def __init__(sbj, dcnDeg, isPub, size=0):
+		sbj.isPub  = isPub
 		sbj.parent = None
 		sbj.size   = size
 		sbj.dcnDeg = dcnDeg
-
-		#stc related
-		sbj.nature  = NATURE__PRM
-		sbj.fields  = None #lst[datItm]
-		sbj.stcSize = 0
+		sbj.nature = NATURE__PRM
+		sbj.fields = None #lst[datItm]
 
 class typ:
 	def __init__(sbj):
@@ -181,8 +179,9 @@ class typ:
 
 	def computeStcSize(sbj, types):
 		if sbj.dcnCommon.nature != NATURE__PRM:
+			sbj.dcnCommon.size = 0
 			for f in sbj.dcnCommon.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
-				sbj.dcnCommon.stcSize += types[f.Type].dcnCommon.size
+				sbj.dcnCommon.size += types[f.Type].dcnCommon.size
 
 #scope
 class scp:
@@ -321,6 +320,9 @@ class opSeq:
 class vap2info:
 	def __init__(sbj, ZCIKindIfErr, scope, cstOnly):
 		sbj.ZCIKindIfErr = ZCIKindIfErr
+		sbj.ZCIKindIfErr_ending = "."
+		if ZCIKindIfErr is not None:
+			sbj.ZCIKindIfErr_ending = ", in " + ZCIKindIfErr
 		sbj.scope        = scope
 		sbj.cstOnly      = cstOnly
 
@@ -328,7 +330,8 @@ class vap2info:
 
 #dataItem
 class datItm:
-	def __init__(sbj, Type, name, inited, initVal, Cst=False, fields=None):
+	def __init__(sbj, Type, name, inited, initVal, Cst=False, fields=None, isPub=False):
+		sbj.isPub   = isPub
 		sbj.Type    = Type
 		sbj.name    = name
 		sbj.inited  = inited
@@ -355,6 +358,7 @@ class datItm:
 
 		#toStr
 		res  = "\n" + d + "_:\"datItm\"\n"
+		res += d + "pub:" + str(sbj.isPub) + "\n"
 		res += d + "type:" + str(sbj.Type) + "\n"
 		res += d + "name:\"" + str(sbj.name) + "\"\n"
 		res += d + "inited:" + str(sbj.inited) + "\n"
@@ -487,12 +491,14 @@ class jmp:
 #functions
 class fct:
 	def __init__(sbj):
-		sbj.name    = None
-		sbj.retType = 0
-		sbj.params  = None #lst[datItm]
-		sbj.scope   = None
-		sbj.method  = False
-		sbj.content = None #lst[ZCI]
+		sbj.isPub    = False
+		sbj.name     = None
+		sbj.retType  = 0
+		sbj.params   = None #lst[datItm]
+		sbj.scope    = None
+		sbj.methodOf = 0
+		sbj.content  = None #lst[ZCI]
+		sbj.dcnDep   = False
 
 	def toStr(sbj, depth=0):
 		d    = TERM__OUTPUT_TAB * depth
@@ -507,9 +513,10 @@ class fct:
 
 		#toStr
 		res  = '\n' + d + "_:\"fct\"\n"
+		res += d + "pub:" + str(sbj.isPub) + "\n"
 		res += d + "name:\"" + sbj.name + "\"\n"
 		res += d + "retType:" + str(sbj.retType) + '\n'
-		res += d + "method:" + str(sbj.method) + '\n'
+		res += d + "methodOf:" + str(sbj.methodOf) + '\n'
 		res += d + "params:["
 		for p in sbj.params:
 			res += p.toStr(depth=depth+1) + ','
@@ -518,12 +525,13 @@ class fct:
 		res += d + "scope:" + sbj.scope.toStr(depth=depth+1)
 		return res
 
-def newFct(name, retType, params, gblScp): #global scope must be given to create its own scopes as children
-	res         = fct()
-	res.name    = name
-	res.retType = retType
-	res.params  = params
-	res.scope   = newScp(parent=gblScp) #create its own independant scope which holds a link to the parent one (that must be "global" btw)
+def newFct(name, retType, params, gblScp, methodOf=TYPE_ID__UNKNOWN): #global scope must be given to create its own scopes as children
+	res          = fct()
+	res.name     = name
+	res.retType  = retType
+	res.params   = params
+	res.scope    = newScp(parent=gblScp) #create its own independant scope which holds a link to the parent one (that must be "global" btw)
+	res.methodOf = methodOf
 	return res
 
 

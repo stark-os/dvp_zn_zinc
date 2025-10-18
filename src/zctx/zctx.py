@@ -1,12 +1,12 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/zctx.py
 
-# -------- Z CONTEXT --------
+# ---------------- Z CONTEXT ----------------
 
 #z code context
 def newZCtx(
 	filepath,
 	pcpl_cfg, pcpl_itm,
-	cpl_opt,
+	cpl_opt,  cpl_mode,
 	dbgMode=None, deepDbgMode=None, stepByStep=False
 ):
 	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Pythonic
@@ -34,7 +34,7 @@ def newZCtx(
 	#actual data holders
 	res.ZCIs = None
 	res.pcpl = newPcplDat(pcpl_cfg, pcpl_itm)
-	res.cpl  = newCplDat(cpl_opt)
+	res.cpl  = newCplDat(cpl_opt, cpl_mode)
 
 	#check PCPL cfgs & CPL opts
 	res.checkPcplCfg(res.pcpl)
@@ -46,22 +46,20 @@ def newZCtx(
 	#boolean
 	res.rootTypes[RT__BOO] = res.cpl.newTyp("GUboo", size=res.SIZE__U8)
 
-	#1 byte
+	#8bits
 	res.rootTypes[RT__S8] = res.cpl.newTyp("GUs8", size=res.SIZE__U8)
 	res.rootTypes[RT__U8] = res.cpl.newTyp("GUu8", size=res.SIZE__U8)
 
-	#2 bytes
+	#16bits
 	res.rootTypes[RT__S16] = res.cpl.newTyp("GUs16", size=res.SIZE__U16)
 	res.rootTypes[RT__U16] = res.cpl.newTyp("GUu16", size=res.SIZE__U16)
 
-	#4 bytes
+	#32bits
 	res.rootTypes[RT__S32] = res.cpl.newTyp("GUs32", size=res.SIZE__U32)
 	res.rootTypes[RT__U32] = res.cpl.newTyp("GUu32", size=res.SIZE__U32)
-
-	#4 bytes floating point
 	res.rootTypes[RT__F32] = res.cpl.newTyp("GUf32", size=res.SIZE__U32)
 
-	#8 bytes
+	#64bits
 	if cpl_opt["ARCH"] == "64":
 		res.refSize = res.SIZE__U64
 
@@ -75,10 +73,23 @@ def newZCtx(
 		#pointer (8 bytes for 64b arch)
 		res.rootTypes[RT__REF] = res.cpl.newTyp("GUref", dcnDeg=1, size=res.SIZE__U64)
 
+		#stc type
+		#res.stcType = res.cpl.newTyp("GUstc", size=res.SIZE__U32)
+
 	#reference (4 bytes for 32b arch)
 	else:
-		res.refSize = res.SIZE__U32
+		res.refSize            = res.SIZE__U32
 		res.rootTypes[RT__REF] = res.cpl.newTyp("GUref", dcnDeg=1, size=res.SIZE__U32)
+
+		#stc type
+		#res.stcType = res.cpl.newTyp("GUstc", size=res.SIZE__U32)
+
+	#dcn related
+	res.dcnDegMax   = int(cpl_opt["DCN_NBR_MAX"])
+	res.gncDcnType  = res.cpl.newTyp("GUdcn")
+	res.spcDcnTypes = []
+	for d in range(res.dcnDegMax):
+		res.spcDcnTypes.append( res.cpl.newTyp("GUdcn" + str(d)) )
 
 	#init functions
 	res.cpl.fcts = []
@@ -108,7 +119,11 @@ class zctx:
 		sbj.refSize = 0
 
 		#types
-		sbj.rootTypes = None
+		sbj.rootTypes   = None
+		#sbj.stcType   = None
+		sbj.gncDcnType  = 0
+		sbj.spcDcnTypes = None
+		sbj.dcnDegMax   = 0
 
 		#data
 		sbj.ZCIs = None

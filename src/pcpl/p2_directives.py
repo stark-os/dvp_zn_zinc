@@ -408,7 +408,7 @@ def p2_directives(zCtx):
 
 		#maximum retries reached
 		if retry >= zCtx.pcpl.directivesMaxComplexity:
-			zCtx.err("Unable to solve complexity of precompiler directives, can be cyclic dependencies or requireing more that the cur number of retries allowed:" + str(zCtx.pcpl.directivesMaxComplexity))
+			zCtx.err("Unable to solve complexity of precompiler directives, can be cyclic dependencies or requiring more that the cur number of retries allowed:" + str(zCtx.pcpl.directivesMaxComplexity))
 
 		#try again from the beginning (previous resolutions could have unlocked some other directives)
 		zCtx.dbg("Retry parsing PCPL directives: " + str(retry))
