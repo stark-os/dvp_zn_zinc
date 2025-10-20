@@ -1,7 +1,7 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/value.py
 
 #tool for reading value sequences
-def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False):
+def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToReplace=None):
 
 	#initial conditions
 	if ZCI.get() not in INCLUDERS.keys():
@@ -49,7 +49,12 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False):
 			ZCIErr(ZCI, "Missing element given in value sequence (\"VALUE\" or \"NAME = VALUE\" expected)" + ZCIKindIfErr_ending)
 
 		#read value
-		v = readVal(ZCI, "Field VALUE in structure definition" + ZCIKindIfErr_ending, scope, cstOnly=cstOnly)
+		v = readVal(ZCI,
+			"Field VALUE in structure definition" + ZCIKindIfErr_ending,
+			scope,
+			cstOnly           = cstOnly,
+			dcnKwLstToReplace = dcnKwLstToReplace
+		)
 
 		#solve name if not explicitely given
 		if len(fieldName) == 0:
@@ -94,7 +99,7 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False):
 
 
 #value analysis process (VAP), main entry point
-def readVal(ZCI, ZCIKindIfErr, scope, cstOnly=False):
+def readVal(ZCI, ZCIKindIfErr, scope, cstOnly=False, dcnKwLstToReplace=None, allowVFC=False):
 	ZCIDeepDbg(ZCI, "Reading value.")
 
 	#1st analysis: ODP
@@ -102,7 +107,12 @@ def readVal(ZCI, ZCIKindIfErr, scope, cstOnly=False):
 	ZCI.forwardUntil(firstAnalysisRes.maxStopIdx+1)
 
 	#apply 2nd analysis recursively in ODP result
-	secondAnalysisRes = applySecondAnalysis(firstAnalysisRes.mainPOCall, ZCI, vap2info(ZCIKindIfErr, scope, cstOnly)) #here, ZCI is given for error messages only
+	secondAnalysisRes = applySecondAnalysis(
+		firstAnalysisRes.mainPOCall,
+		ZCI, #for err msg only
+		vap2info(ZCIKindIfErr, scope, cstOnly, dcnKwLstToReplace),
+		allowVFC=allowVFC
+	)
 	ZCIDeepDbg(ZCI, "Ended reading value.")
 	return secondAnalysisRes
 

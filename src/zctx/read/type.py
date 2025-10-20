@@ -38,7 +38,7 @@ def readType(ZCI,
 		#case 1: type not found => error
 		if errIfNotExisting:
 			ZCIWrn(ZCI, "Available types are " + ZCI.zCtx.listTypeNames())
-			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist in " + ZCIKindIfErr)
+			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist" + ZCIKindIfErr_ending)
 
 		#case 2: maybe it was not a type at all
 		ZCIDeepDbg(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", prtLine=False)
@@ -57,7 +57,7 @@ def readType(ZCI,
 
 				#too big dcn idx given
 				if t > len(dcnKwLstToReplace):
-					ZCIErr(ZCI, "Too much degree in \"dcn#\" keyword (" + str(t) + " given, maximum " + str(len(dcnKwLstToReplace)) + " allowed), in " + ZCIKindIfErr)
+					ZCIErr(ZCI, "Too much degree in \"dcn#\" keyword (" + str(t) + " given, maximum " + str(len(dcnKwLstToReplace)) + " allowed)" + ZCIKindIfErr_ending)
 
 				#replace the original "dcn#" type by the corresponding replacement
 				else:
@@ -67,7 +67,7 @@ def readType(ZCI,
 	#generic dcn keyword
 	if tID == ZCI.zCtx.gncDcnType:
 		if forbidDcnKw:
-			ZCIErr(ZCI, "Generic \"dcn\" keyword is not allowed in type here, in " + ZCIKindIfErr)
+			ZCIErr(ZCI, "Generic \"dcn\" keyword is not allowed in type here" + ZCIKindIfErr_ending)
 
 	#got it
 	ZCIDeepDbg(ZCI, "Undeclinated type \"" + tUndecFullName + "\" targetted.")
@@ -83,7 +83,7 @@ def readType(ZCI,
 		#undeclinable type
 		tUndecInst = ZCI.getTypeInstanceFromID(tID)
 		if tUndecInst.dcnCommon.dcnDeg == 0:
-			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " is not declinable (null declination degree) " + ZCIKindIfErr)
+			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " is not declinable (null declination degree)" + ZCIKindIfErr_ending)
 
 		#read declination types one by one
 		ZCIDeepDbg(ZCI, "Type is declinated, reading declination types.", prtLine=False)
@@ -110,7 +110,7 @@ def readType(ZCI,
 				ZCI.inc()
 				break
 			elif next != ',':
-				ZCIErr(ZCI, "Invalid element given " + next + " in declination types sequence (expected coma separator ',' or closing bracket ']') in " + ZCIKindIfErr)
+				ZCIErr(ZCI, "Invalid element given " + next + " in declination types sequence (expected coma separator ',' or closing bracket ']')" + ZCIKindIfErr_ending)
 			ZCI.inc()
 
 		#debug
@@ -126,9 +126,9 @@ def readType(ZCI,
 
 		#check declination length
 		if len(dcns) < tUndecInst.dcnCommon.dcnDeg:
-			ZCIErr(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required) in " + ZCIKindIfErr)
+			ZCIErr(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required)" + ZCIKindIfErr_ending)
 		elif len(dcns) > tUndecInst.dcnCommon.dcnDeg:
-			ZCIErr(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required) in " + ZCIKindIfErr)
+			ZCIErr(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required)" + ZCIKindIfErr_ending)
 
 		#re-build full type name including declinations this time (tModulePfx can be set to "G" by the way, same logic as undeclinated types)
 		tDecFullName = tModPfx + 'D' + tRawName

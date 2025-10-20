@@ -30,7 +30,7 @@ def getGblScpFromScope(scope):
 def getDatItmFromScopeAndParents(modPfx, rawName, scope):
 
 	#in mod => gbl scope only
-	if modPfx[0] != 'G': #<=> == 'M'
+	if modPfx.startswith('M'):
 		return getDatItmFromScope(modPfx + 'E' + rawName, getGblScpFromScope(scope))
 
 	#global scope => use "G" pfx and don't look at parents

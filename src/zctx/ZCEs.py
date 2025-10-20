@@ -189,6 +189,17 @@ class scp:
 		sbj.exes    = None #lst[atm] #can have either asg, jmp, call (=vfc) or stm inside, all mixed of course.
 		sbj.datItms = None #lst[datItm]
 		sbj.parent  = None #scp
+		sbj.dcpIdx  = 0    #next available decomposition datItm index
+
+	def nextDcpDatItmName(sbj, Type):
+		dcpDI = datItm(Type, "D" + str(sbj.dcpIdx), False, None)
+
+		#add to scope directly
+		sbj.datItms.append(dcpDI)
+
+		#increment idx
+		sbj.dcpIdx += 1
+		return dcpDI
 
 	def toStr(sbj, depth=0):
 		d    = TERM__OUTPUT_TAB * depth
@@ -318,13 +329,14 @@ class opSeq:
 
 #type for holding some VAP 2nd analysis information
 class vap2info:
-	def __init__(sbj, ZCIKindIfErr, scope, cstOnly):
+	def __init__(sbj, ZCIKindIfErr, scope, cstOnly, dcnKwLstToReplace):
 		sbj.ZCIKindIfErr = ZCIKindIfErr
 		sbj.ZCIKindIfErr_ending = "."
 		if ZCIKindIfErr is not None:
 			sbj.ZCIKindIfErr_ending = ", in " + ZCIKindIfErr
-		sbj.scope        = scope
-		sbj.cstOnly      = cstOnly
+		sbj.scope             = scope
+		sbj.cstOnly           = cstOnly
+		sbj.dcnKwLstToReplace = dcnKwLstToReplace
 
 
 
@@ -499,9 +511,10 @@ class fct:
 		sbj.methodOf = 0
 		sbj.content  = None #lst[ZCI]
 		sbj.dcnDep   = False
+		sbj.dcnKwLstToReplace = None #for dcnDep fcts, when resolved
 
 	def toStr(sbj, depth=0):
-		d    = TERM__OUTPUT_TAB * depth
+		d = TERM__OUTPUT_TAB * depth
 
 		#null content
 		str_content = "null"
@@ -513,7 +526,7 @@ class fct:
 
 		#toStr
 		res  = '\n' + d + "_:\"fct\"\n"
-		res += d + "pub:" + str(sbj.isPub) + "\n"
+		res += d + "pub:" + str(sbj.isPub) + '\n'
 		res += d + "name:\"" + sbj.name + "\"\n"
 		res += d + "retType:" + str(sbj.retType) + '\n'
 		res += d + "methodOf:" + str(sbj.methodOf) + '\n'
@@ -533,7 +546,6 @@ def newFct(name, retType, params, gblScp, methodOf=TYPE_ID__UNKNOWN): #global sc
 	res.scope    = newScp(parent=gblScp) #create its own independant scope which holds a link to the parent one (that must be "global" btw)
 	res.methodOf = methodOf
 	return res
-
 
 
 

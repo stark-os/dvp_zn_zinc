@@ -39,12 +39,12 @@ def zCtx__listAllDcnsNameCombinations(sbj, typ_inst):
 	return dcnsNames
 
 #reaaaaaaaaaaaally useful too !!! Does 3 things together !
-def checkAll_thenReadParams_thenCreateCall(
-	ZCI,       ZCIKindIfErr,
+def checkAll_thenReadParams_thenCreateCall(ZCI,
+	allowVFC,  ZCIKindIfErr,
 	fctModPfx, fctRawName,
 	scope,     cstOnly,
-	noVFCAllowed = True,
-	methodOf     = TYPE_ID__UNKNOWN
+	dcnKwLstToReplace,
+	methodOf = TYPE_ID__UNKNOWN
 ):
 	#check scope: calls are only allowed in non-global scope
 	if scope == ZCI.zCtx.cpl.gblScp:
@@ -113,11 +113,16 @@ def checkAll_thenReadParams_thenCreateCall(
 		ZCIDeepDbg(ZCI, "Found matching method \"" + fctExactName + "\".", prtLine=False)
 
 	#check ret type
-	if noVFCAllowed and tgtFct.retType == TYPE_ID__UNKNOWN:
+	if not allowVFC and tgtFct.retType == TYPE_ID__UNKNOWN:
 		ZCIErr(ZCI, "Can't have void returning function call here (only !VFC allowed)" + ZCIKindIfErr_ending)
 
 	#read params
-	paramVals = readValSeq(ZCI, ZCIKindIfErr, tgtFct.params, scope, cstOnly=cstOnly)
+	paramVals = readValSeq(ZCI,
+		ZCIKindIfErr, tgtFct.params, scope,
+		cstOnly           = cstOnly,
+		dcnKwLstToReplace = dcnKwLstToReplace
+	)
+	ZCI.inc()
 
 	#create call
 	return call(fctExactName, paramVals, tgtFct.retType)
@@ -127,4 +132,3 @@ def listAllExistingFct(zCtx):
 	for f in zCtx.cpl.fcts:
 		nl.append(f.name)
 	return strLst_toDsp(nl)
-

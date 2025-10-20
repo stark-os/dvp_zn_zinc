@@ -547,13 +547,19 @@ def processDclDat(ZCI, scope, tgtFct, isCst, isPub=False):
 	di.name = dblUnderscores(di.name)
 
 	#set some important info to the NEWLY CREATED data item
-	di.name  = getDatItmModPfxFromScope(ZCI, scope) + di.name
-	di.Cst   = isCst
-	di.isPub = isPub
+	di.name   = getDatItmModPfxFromScope(ZCI, scope) + di.name
+	di.Cst    = isCst
+	di.isPub  = isPub
 
 	#add declaration to scope
 	checkAlreadyDeclaredDatItmOrField(ZCI, di, scope.datItms) #check already existing
 	scope.datItms.append(di)
+
+	#init val given => remove it and create asg at current position instead, VERY IMPORTANT !!!
+	if di.inited:
+		di.inited = False
+		scope.exes.append( atm(ATM__ASG, asg(di, di.initVal)) )
+		di.initVal = None
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "data item declaration" + scpTxt + " (DCL_DAT).")
@@ -578,12 +584,21 @@ def processVFC(ZCI, scope, tgtFct):
 		ZCIErr(ZCI, "Detected void returning function call in global scope but this is only allowed in local scope (VFC_VFC).")
 
 	#read ZCI content as reading a value: it MUST be a call (either operator, !VFC or VFC)
-	v = readVal(ZCI, "void returning function call" + scpTxt + " (VFC_VFC).", scope)
-	if v.vdat.id != ATM__CALL:
-		ZCIErr(ZCI, "Invalid ZCS, unknown ZCI given" + scpTxt + " (Expected a void returning function call, VFC_VFC).")
+	v = readVal(ZCI, "void returning function call" + scpTxt + " (VFC_VFC).", scope, allowVFC=True, dcnKwLstToReplace=tgtFct.dcnKwLstToReplace)
 
-	#store call in scope exe <---- Note that we don't care about the return type for the moment, it can be anything
-	scope.exes.append(v.vdat)
+	#case 1: FA chain => decompose it directly into scope
+	if v.vdat.id == ATM__LST_ATM:
+		scope.exes.append(
+			decomposeFAChain(ZCI, scope, v.vdat.dat, spcTxt + " (VFC_VFC).", True)
+		)
+
+	#case 2: call => add it to scope
+	elif v.vdat.id == ATM__CALL:
+		scope.exes.append(v.vdat)
+
+	#other: unknown ZCI
+	else:
+		ZCIErr(ZCI, "Invalid ZCS, unknown ZCI given" + scpTxt + " (Expected function call or field access chain, VFC_VFC).")
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "void returning function call" + scpTxt + " (VFC_VFC).")
@@ -621,7 +636,7 @@ def processRemainingZCI(ZCI, scope, tgtFct=None, isPub=False):
 		di = getDatItmFromScopeAndParents(modPfx, rawName, scope)
 		if di is not None:
 
-			#forward right before value
+			#forward right before value to assign
 			tmpCopy.forward(SYM_LENGTHS[SYM__ASG])
 			optionalBlanks(tmpCopy, None)
 
@@ -649,13 +664,20 @@ def c02_redirectGbl(zCtx):
 	zCtx.dbg("=================================================================================")
 	zCtx.deepDbgPause()
 
+	#manually set resource access
+	manualAccess_set   = False
+	manualAccess_isPub = False
+
 	#analyse every global ZCI
-	isPub = False
-	for z in range(len(zCtx.ZCIs)):
-		ZCI        = zCtx.ZCIs[z]
+	z = -1
+	while z < len(zCtx.ZCIs)-1:
 		z         += 1
+		ZCI        = zCtx.ZCIs[z]
 		initialCtx = ZCI.ctx.copy()
 		ZCIDeepDbg(ZCI, "Treating global ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
+
+		#reset cur access state for each ZCI
+		isPub = zCtx.pubByDefault
 
 		#read 1st ZCI word
 		firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)[1]
@@ -696,56 +718,83 @@ def c02_redirectGbl(zCtx):
 
 
 
-			#CASE 3 - BEGINNING WITH KEYWORD AND ALLOWED
+			#CASE 2 - BEGINNING WITH KEYWORD AND ALLOWED
 
 			#trigrams requiring a following blank
 			if ZCI.txt[3] in BLANKS:
 
-				#private kw (combinable behavior)
+				#public kw (combinable behavior)
 				if str_cmp("pub", firstWord):
+					if manualAccess_set:
+						ZCIErr(ZCI, "Already have an access modifier set for this ZCI.")
+
+					#manual access modifier
 					optionalBlanks(ZCI, "Missing something after \"pub\" keyword (empty ZCI instead).")
-					isPub = True
-					z    -= 1
+					manualAccess_set   = True
+					manualAccess_isPub = True
+					z -= 1
+					continue
+
+				#private kw (combinable behavior)
+				if str_cmp("prv", firstWord):
+					if manualAccess_set:
+						ZCIErr(ZCI, "Already have an access modifier set for this ZCI.")
+
+					#manual access modifier
+					optionalBlanks(ZCI, "Missing something after \"prv\" keyword (empty ZCI instead).")
+					manualAccess_set   = True
+					manualAccess_isPub = False
+					z -= 1
 					continue
 
 				#2.1 - library linking
 				if str_cmp("lnk", firstWord):
-					if isPub:
-						ZCIErr(ZCI, "Doesn't make sens to set library link \"public\".")
+					if manualAccess_set:
+						ZCIErr(ZCI, "Doesn't make sens to set public/private access to library link.")
 					processLnk(ZCI)
 					continue
 
 				#2.2 - type declaration DCL_TYP
 				if str_cmp("typ", firstWord):
+					if manualAccess_set:
+						isPub            = manualAccess_isPub
+						manualAccess_set = False
 					processTypeDcl(ZCI, isPub)
-					isPub = False
 					continue
 
 				#2.3 - Enumerate declaration DCL_ENM
 				if str_cmp("enm", firstWord):
+					if manualAccess_set:
+						isPub            = manualAccess_isPub
+						manualAccess_set = False
 					processEnmDcl(ZCI, ZCI.zCtx.cpl.gblScp, isPub=isPub)
-					isPub = False
 					continue
 
 				#2.4 - Function declaration
 				if str_cmp("fct", firstWord):
 					jumpBlankZone(ZCI, "Function name in function declaration ZCI (DCL_FCT).") #forward to function name directly
+					if manualAccess_set:
+						isPub            = manualAccess_isPub
+						manualAccess_set = False
 					processFctDcl(ZCI, isPub)
-					isPub = False
 					continue
 
 				#2.5 - Function forwarding
 				if str_cmp("fwd", firstWord):
 					jumpBlankZone(ZCI, "Type to forward into, in function forwarding ZCI (DCL_FWD).") #forward to function name directly
+					if manualAccess_set:
+						isPub            = manualAccess_isPub
+						manualAccess_set = False
 					processFwdDcl(ZCI, isPub)
-					isPub = False
 					continue
 
 				#2.6 - Constant data item declaration
 				if str_cmp("cst", firstWord):
 					jumpBlankZone(ZCI, "Constant keyword in data item declaration ZCI (DCL_DAT).")
+					if manualAccess_set:
+						isPub            = manualAccess_isPub
+						manualAccess_set = False
 					processDclDat(ZCI, zCtx.cpl.gblScp, None, True, isPub=isPub)
-					isPub = False
 					continue
 
 
@@ -754,7 +803,10 @@ def c02_redirectGbl(zCtx):
 
 		#reset ZCI at initial state & try parsing it, no other possibility for a global ZCI
 		ZCI.resetCtx(initialCtx)
-		processRemainingZCI(ZCI, zCtx.cpl.gblScp)
+		if manualAccess_set:
+			isPub            = manualAccess_isPub
+			manualAccess_set = False
+		processRemainingZCI(ZCI, zCtx.cpl.gblScp, isPub=isPub)
 
 	#debug
 	zCtx.dbg("===========================================================================")

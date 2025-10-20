@@ -40,6 +40,9 @@ def newZCtx(
 	res.checkPcplCfg(res.pcpl)
 	res.checkCplOpt(cpl_opt)
 
+	#pub by default
+	res.pubByDefault = (cpl_opt["DEFAULT_ACCESS_PUB"] == "ON")
+
 	#create a list to hold root types. This is purely a simplification tool in zCtx.
 	res.rootTypes = [0,0,0, 0,0,0, 0,0,0, 0,0,0] #can be already declared as a fixed-size table (length: 12)
 
@@ -129,6 +132,9 @@ class zctx:
 		sbj.ZCIs = None
 		sbj.pcpl = None
 		sbj.cpl  = None
+
+		#other
+		sbj.pubByDefault = True
 
 
 

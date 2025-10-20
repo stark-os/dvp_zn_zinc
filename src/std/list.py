@@ -31,3 +31,16 @@ def lst_shift(l, shift, start=0):
 	while start < len(l):
 		l[start] += shift
 		start += 1
+
+def lst_insertBefore(l, idx, e):
+	oldL = lst_copy(l)
+
+	#clear lst
+	for i in range(len(l)):
+		l.pop()
+
+	#fill it again, including additionnal element when asked
+	for i in range(len(oldL)):
+		if i == idx:
+			l.append(e)
+		l.append(oldL[i])

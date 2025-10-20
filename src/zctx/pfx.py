@@ -173,3 +173,17 @@ def unpfxFctName(zCtx, f):
 		methodTypePfx = unpfxTypeName(rawName)
 		rawName       = str_sub(rawName, start=len(methodTypePfx))
 	return fModPfx + methodTypePfx + rawName
+
+def unpfxDatItm(exactName):
+
+	#"L" lcl
+	if exactName.startswith('L'):
+		return ("", exactName[1:])
+
+	#"GE" gbl elm
+	if exactName.startswith('G'):
+		return ("", exactName[2:])
+
+	#"Mmod_E"
+	modPfx = extractModPfx(exactName)
+	return (modPfx, str_sub(exactName, start=len(modPfx)+1))

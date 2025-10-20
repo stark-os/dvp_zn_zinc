@@ -236,7 +236,7 @@ def parseLiteralIntOrFloat(ZCI):
 def unknownValueErrIn2ndAnalysis(ZCI):
 	ZCIErr(ZCI, "Unknown value given (2nd analysis, not respecting any format supported by VAP).")
 
-def secondAnalysis(ZCI, v2i):
+def secondAnalysis(ZCI, allowVFC, v2i):
 	ZCIDeepDbg(ZCI, "2nd analysis: Reading ZCI fragment \"" + ZCI.txtFormat() + "\" to apply second analysis on it.")
 	res = None
 	c = ZCI.get()
@@ -470,18 +470,20 @@ def secondAnalysis(ZCI, v2i):
 
 			#parse & check call elements given
 			parsedCall = checkAll_thenReadParams_thenCreateCall(ZCI,
-				v2i.ZCIKindIfErr,
+				allowVFC,  v2i.ZCIKindIfErr,
 				modPfx,    rawName,
-				v2i.scope, v2i.cstOnly
+				v2i.scope, v2i.cstOnly,
+				v2i.dcnKwLstToReplace
 			)
 
 			#return complete value (call)
-			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in !VFC:\n" + res.toStr())
-			return val(
+			res = val(
 				parsedCall.retType,
 				atm(ATM__CALL, parsedCall),
 				False
 			)
+			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in !VFC:\n" + res.toStr())
+			return res
 
 		#just a regular name actually => DI NAME
 		di = getDatItmFromScopeAndParents(modPfx, rawName, v2i.scope)
@@ -510,7 +512,7 @@ def secondAnalysis(ZCI, v2i):
 
 
 
-def secondAnalysisIncludingFOs(ZCI, v2i):
+def secondAnalysisIncludingFOs(ZCI, allowVFC, v2i):
 	starter = ZCI.get()
 
 
@@ -521,7 +523,7 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 	if starter == '#':
 		ZCIDeepDbg(ZCI, "2nd analysis: Processing FSZ operator (2nd analysis).")
 		ZCI.inc()
-		Type = readType(ZCI, v2i.ZCIKindIfErr)
+		Type = readType(ZCI, v2i.ZCIKindIfErr, v2i.dcnKwLstToReplace)
 
 		#get size
 		tInst = ZCI.getTypeInstanceFromID(Type)
@@ -568,7 +570,7 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 	# 2) SECOND ANALYSIS WITHOUT END-CHECK
 
 	#read value but don't care if there are still things to analyze
-	res = secondAnalysis(ZCI, v2i) #after this, ZCI index is right AFTER the value read
+	res = secondAnalysis(ZCI, allowVFC, v2i) #after this, ZCI index is right AFTER the value read
 	optionalBlanks(ZCI, None)
 
 	#nothing left to analyze
@@ -587,7 +589,7 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 
 		#read explicit type
 		ZCIDeepDbg(ZCI, "2nd analysis: Processing FCA operator on " + res.toStr())
-		res.Type = readType(ZCI, v2i.ZCIKindIfErr)
+		res.Type = readType(ZCI, v2i.ZCIKindIfErr, v2i.dcnKwLstToReplace)
 
 		#overwrite result type
 		ZCIDeepDbg(ZCI, "2nd analysis: FCA operator applied type " + unpfxType(ZCI.getTypeNameFromID(res.Type)) + " on value " + res.toStr())
@@ -596,32 +598,63 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 	elif following == '.':
 		ZCI.inc()
 
+
+		# STEP 1: PREPARE FOR COLLECTION OF FA CHAIN
+
+		#prepare first element
+		FAChain       = []
+		isCst         = False
+		latestChkType = 0 #<<<<<<<<<<<<<<<<<<<<<<<< just declare this one
+
+		#can start with datItm
+		if res.vdat.id == ATM__DATITM:
+			FAChain.append( atm(ATM__DATITM, res.vdat.dat) )
+			latestChkType = res.vdat.dat.Type
+			isCst         = res.vdat.dat.Cst
+
+		#or can start with !VFC
+		elif res.vdat.dat == ATM__CALL:
+			if res.vdat.dat.retType == TYPE_ID__UNKNOWN:
+				ZCIErr(ZCI, "2nd analysis: Trying to operate field access on void returning function call => forbidden" + v2i.ZCIKindIfErr_ending)
+			FAChain.append( atm(ATM__CALL, res.vdat.dat) )
+			latestChkType = res.vdat.dat.retType
+			isCst         = False
+
 		#invalid element to operate FFA onto
-		if res.vdata.id != ATM__DATITM:
-			ZCIErr(ZCI, "2nd analysis: Can only operate field access operator (FFA) on data item names" + v2i.ZCIKindIfErr_ending)
+		else:
+			ZCIErr(ZCI, "2nd analysis: Can only operate field access operator (FFA) on data item names or non-void returning function calls" + v2i.ZCIKindIfErr_ending)
+
+
+
+		#STEP 2: COLLECT FA CHAIN
 
 		#get the complete chain of accessed fields
-		FAChain       = [atm(ATM__STR, res.vdat.dat.name)] #store the NAME of the first data item parsed (in 2nd analysis)
-		latestChkType = res.vdat.dat.Type
-		isCst         = res.vdat.dat.Cst
 		while not ZCI.reachedEnd():
 
 			#read name & prepare extraction of modPfx
-			newChk_modPfx, newChk_rawName = readName(ZCI, "[2nd analysis] Missing second operand after field access operator (FFA).", parseModPfxes=True)
+			newChk_modPfx, newChk_rawName = readName(ZCI, "2nd analysis: Missing second operand after field access operator (FFA).", parseModPfxes=True)
 
 			#case 1: following parentheses => METHOD call (and not function call)
 			if ZCI.get() == '(':
-				isCst = False #got a method call => value is no longer constant
 
-				#parse call
-				newChk = checkAll_thenReadParams_thenCreateCall(
-					ZCI,           v2i.ZCIKindIfErr,
+				#err case: call from cst elm
+				if isCst:
+					ZCIErr(ZCI, "2nd analysis: Field access chain is calling methods on constant data item => forbidden" + v2i.ZCIKindIfErr_ending)
+
+				#err case: call from VFC
+				if latestChkType == TYPE_ID__UNKNOWN:
+					ZCIErr(ZCI, "2nd analysis: Cannot call method " + unpfxMod(newChk_modPfx) + newChk_rawName + " on void value" + v2i.ZCIKindIfErr_ending)
+
+				#parse method call
+				newChk = checkAll_thenReadParams_thenCreateCall(ZCI,
+					allowVFC,      v2i.ZCIKindIfErr,
 					newChk_modPfx, newChk_rawName,
 					v2i.scope,     v2i.cstOnly,
+					v2i.dcnKwLstToReplace,
 					methodOf = latestChkType
 				)
 
-				#update latest chunk type & add to chain
+				#update latest chunk type + add to chain
 				latestChkType = newChk.retType
 				FAChain.append( atm(ATM__CALL, newChk) )
 
@@ -630,9 +663,9 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 
 				#error case
 				if newChk_modPfx != "G":
-					ZCIErr(ZCI, "Can't use module prefix when trying to access enm/stc field (field \"" + newChk_rawName + "\" from module " + unpfxMod(newChk_modPfx) + ")" + v2i.ZCIKindIfErr_ending)
+					ZCIErr(ZCI, "2nd analysis: Can't use module prefix when trying to access enm/stc field (field \"" + newChk_rawName + "\" from module " + unpfxMod(newChk_modPfx) + ")" + v2i.ZCIKindIfErr_ending)
 
-				#update latest chunk type & add to chain
+				#update latest chunk type + add to chain
 				latestChkType = getTypeFieldFromName(ZCI, latestChkType, newChk_rawName).Type
 				FAChain.append( atm(ATM__STR, newChkName) )
 
@@ -640,6 +673,15 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 			if ZCI.get() != '.':
 				break
 			ZCI.inc()
+
+
+
+		#STEP 3: END OF COLLECTION
+
+		#check last elm retType if we must ret !void
+		if not allowVFC:
+			if latestChkType == TYPE_ID__UNKNOWN:
+				ZCIErr(ZCI, "2nd analysis: Method call in field access chain resulted in void value => forbiden here" + v2i.ZCIKindIfErr_ending)
 
 		#format chain under VALUE format
 		res = val(
@@ -658,7 +700,7 @@ def secondAnalysisIncludingFOs(ZCI, v2i):
 
 
 #RECURSIVE entry point for 2nd analysis (applying it on the whole ODP result)
-def applySecondAnalysis(curPOCall, oriZCI, v2i): #oriZCI only used for error accuracy
+def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only used for error accuracy
 
 	#process 1st operand
 	opand1Val = None
@@ -666,11 +708,11 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i): #oriZCI only used for error acc
 
 		#recursively solving children before
 		if curPOCall.opand1.id == ATM__POCALL:
-			opand1Val = applySecondAnalysis(curPOCall.opand1.dat, oriZCI, v2i)
+			opand1Val = applySecondAnalysis(curPOCall.opand1.dat, oriZCI, v2i) #DON'T TRANSMIT "allowVFC" !!! THIS IS RESERVED FOR THE MAIN POCALL ONLY !
 
 		#UNITARY entry point for 2nd analysis
 		elif curPOCall.opand1.id == ATM__ZCI:
-			opand1Val = secondAnalysisIncludingFOs(curPOCall.opand1.dat, v2i)
+			opand1Val = secondAnalysisIncludingFOs(curPOCall.opand1.dat, allowVFC, v2i)
 
 		#should never happen
 		else:
@@ -682,11 +724,11 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i): #oriZCI only used for error acc
 
 		#recursively solving children before
 		if curPOCall.opand2.id == ATM__POCALL:
-			opand2Val = applySecondAnalysis(curPOCall.opand2.dat, oriZCI, v2i)
+			opand2Val = applySecondAnalysis(curPOCall.opand2.dat, oriZCI, v2i) #DON'T TRANSMIT "allowVFC" !!! THIS IS RESERVED FOR THE MAIN POCALL ONLY !
 
 		#UNITARY entry point for 2nd analysis
 		elif curPOCall.opand2.id == ATM__ZCI:
-			opand2Val = secondAnalysisIncludingFOs(curPOCall.opand2.dat, v2i)
+			opand2Val = secondAnalysisIncludingFOs(curPOCall.opand2.dat, allowVFC, v2i)
 
 		#should never happen
 		else:
