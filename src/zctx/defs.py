@@ -195,7 +195,7 @@ SYM_LENGTHS = { #map[ubyt,ubyt]
 	SYM__FCA: 1, SYM__FFA: 1,
 	SYM__ASG: 1,	SYM__NOT_FOUND: 0 #other
 }
-OPERATOR_NAMES = {
+OPE_NAMES = {
 	SYM__SIN: "sin", SYM__SNO: "sno", #SO
 	SYM__DAN: "dan", SYM__DOR: "dor", #DO
 	SYM__AMU: "amu", SYM__ADI: "adi", #AO
@@ -214,6 +214,10 @@ OPERATOR_NAMES = {
 	SYM__FSZ: "fsz", SYM__FRF: "frf", #FO
 	SYM__FCA: "fca", SYM__FFA: "ffa"
 }
+MONO_OPERAND_NAMES = (
+	"sin", "sno", #SO
+	"fsz", "frf"  #FO
+)
 
 #general syntax
 BLANKS          = (' ', '\t')

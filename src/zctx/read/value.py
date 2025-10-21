@@ -102,17 +102,34 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 def readVal(ZCI, ZCIKindIfErr, scope, cstOnly=False, dcnKwLstToReplace=None, allowVFC=False):
 	ZCIDeepDbg(ZCI, "Reading value.")
 
+	#can have err => use a copy just in case
+	if ZCIKindIfErr is None:
+		tgtZCI = ZCI.copy()
+	else:
+		tgtZCI = ZCI
+
 	#1st analysis: ODP
-	firstAnalysisRes = ODP(ZCI)
-	ZCI.forwardUntil(firstAnalysisRes.maxStopIdx+1)
+	firstAnalysisRes = ODP(tgtZCI)
+	tgtZCI.forwardUntil(firstAnalysisRes.maxStopIdx+1)
 
 	#apply 2nd analysis recursively in ODP result
 	secondAnalysisRes = applySecondAnalysis(
 		firstAnalysisRes.mainPOCall,
-		ZCI, #for err msg only
+		tgtZCI, #for err msg only
 		vap2info(ZCIKindIfErr, scope, cstOnly, dcnKwLstToReplace),
 		allowVFC=allowVFC
 	)
+
+	#no value found is allowed => share the forwarding with ori ZCI
+	if ZCIKindIfErr is None:
+		if secondAnalysisRes is not None:
+			ZCI.forwardAlike(tgtZCI)
+
+	#should never happen
+	elif secondAnalysisRes is None:
+		ZCIInt(ZCI, "Having null value from 2nd analysis but we don't allow to have \"no value found\".")
+
+	#res
 	ZCIDeepDbg(ZCI, "Ended reading value.")
 	return secondAnalysisRes
 

@@ -119,32 +119,8 @@ def readType(ZCI,
 			ZCIDeepDbg(ZCI, TERM__OUTPUT_TAB + ZCI.getTypeNameFromID(d) + ",", prtLine=False)
 		ZCIDeepDbg(ZCI, "].", prtLine=False)
 
-		#one declination does not exist => our current type can't exist
-		for d in dcns:
-			if d == TYPE_ID__UNKNOWN:
-				return TYPE_ID__UNKNOWN
-
-		#check declination length
-		if len(dcns) < tUndecInst.dcnCommon.dcnDeg:
-			ZCIErr(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required)" + ZCIKindIfErr_ending)
-		elif len(dcns) > tUndecInst.dcnCommon.dcnDeg:
-			ZCIErr(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required)" + ZCIKindIfErr_ending)
-
-		#re-build full type name including declinations this time (tModulePfx can be set to "G" by the way, same logic as undeclinated types)
-		tDecFullName = tModPfx + 'D' + tRawName
-		for d in dcns:
-			tDecFullName += '_' + ZCI.getTypeNameFromID(d)
-
-		#check for that declination in currently declared types
-		tUndecID = tID
-		tID      = ZCI.getTypeIDFromName(tDecFullName)
-
-		#not found => create that declination (this new combination must exist)
-		if tID == TYPE_ID__UNKNOWN:
-			tID           = ZCI.zCtx.cpl.newTyp(tDecFullName, dcnCommon=tUndecInst.dcnCommon) #share the same dcnCommon (affecting the undeclinated instance will affect every declination)
-			tDecInst      = ZCI.getTypeInstanceFromID(tID)
-			tDecInst.dcns = dcns
-			ZCIDbg(ZCI, "First call of declination \"" + tDecFullName + "\" from type \"" + tUndecFullName + "\", adding it.")
+		#get that spc dcn, creating it if needed
+		tID = getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns)
 
 	#final result
 	ZCIDeepDbg(ZCI, "Ended reading type.")

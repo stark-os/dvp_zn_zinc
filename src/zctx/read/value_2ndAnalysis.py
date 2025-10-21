@@ -256,25 +256,29 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 	#starting with includer
 	if c in ('(', '[', '{'):
 		ZCIDeepDbg(ZCI, "2nd analysis: Includer detected => Potentially targetting tab,lst,fly,fmap,mmap.", prtLine=False)
+
 		#Seems similar to check in the whole INCLUDERS.keys() but this is not related to these actually.
 		#We are specificly targetting these 3 and not because they are includer keys but because we have specific pattern associated to them.
-		tgtType_inside = None #for maps only
+		mainStc_type = TYPE_ID__UNKNOWN
+		subStc_type1 = TYPE_ID__UNKNOWN #for maps only
+		subStc_type2 = TYPE_ID__UNKNOWN #for maps only
 		if c == '(':
 			if tgtMap:
-				tgtType        = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__FMAP, v2i.ZCIKindIfErr)
-				tgtType_inside = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__TAB,  v2i.ZCIKindIfErr) #require 2 tab for fmap initialization
+				mainStc_type = ZCI.getTypeInstanceFromName("GUfmap") #for each of them, store under UNDCN (at least for the moment)
+				subStc_type2 = ZCI.getTypeInstanceFromName("GUtab")  #require 2 tab for fmap init
 			else:
-				tgtType = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__TAB, v2i.ZCIKindIfErr)
+				mainStc_type = ZCI.getTypeInstanceFromName("GUtab")
 		elif c == '[':
 			if tgtMap:
-				tgtType        = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__MMAP, v2i.ZCIKindIfErr)
-				tgtType_inside = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__LST,  v2i.ZCIKindIfErr) #require 2 lst for mmap initialization
+				mainStc_type = ZCI.getTypeInstanceFromName("GUmmap")
+				subStc_type2 = ZCI.getTypeInstanceFromName("GUlst")  #require 2 lst for mmap init
 			else:
-				tgtType = createFakeZCIAndReadCommonType(ZCI, TYPE_FULLNAME__LST, v2i.ZCIKindIfErr)
+				mainStc_type = ZCI.getTypeInstanceFromName("GUlst")
 		elif c == '{':
 			if tgtMap:
-				ZCIErr(ZCI, "2nd analysis: Associative notation cannot be set to braces includer (\":{...}\" is linked to nothing).")
-			tgtType = createFakeZCIAndTryReadingCommonType(ZCI, TYPE_FULLNAME__FLY, v2i.ZCIKindIfErr)
+				ZCIErr(ZCI, "2nd analysis: Associative notation cannot be set to braces includer (\":{...}\" is linked to nothing)" + v2i.ZCIKindIfErr_ending)
+			#mainStc_type = ZCI.zCtx.flyType <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FOR THE MOMENT
+			ZCIErr(ZCI, "2nd analysis: Braces includer notation is not linked to anything yet" + v2i.ZCIKindIfErr_ending)
 
 		#init limits
 		peerIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
@@ -282,32 +286,63 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 		ZCI.inc()
 
 		#read subvalues as long as we have some (separated by comas)
-		subVals        = [] #lst[val]
-		subVals_inside = [] #for maps
+		subVals1      = [] #lst[val]
+		subVals2      = [] #for maps
+		subVals1_type = TYPE_ID__UNKNOWN
+		subVals2_type = TYPE_ID__UNKNOWN #for maps
 		ZCIDeepDbg(ZCI, "2nd analysis: Start reading sub values sequence.", prtLine=False)
 		while True:
+			optionalBlanks(ZCI, None, BLANKS_EXTENDED)
 
 			#read subvalue
-			optionalBlanks(ZCI, None, BLANKS_EXTENDED)
-			ZCIDeepDbg(ZCI, "2nd analysis: => Reading " + str(len(subVals)+1) + "th sub value.", prtLine=False)
-			subVals.append( readVal(ZCI, v2i.ZCIKindIfErr, v2i.scope, v2i.cstOnly) )
+			ZCIDeepDbg(ZCI, "2nd analysis: => Reading " + str(len(subVals1)+1) + "th sub value.", prtLine=False)
+			ZCIDbg(ZCI, "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT", prtLine=True)
+			v = readVal(ZCI,
+				None, v2i.scope,
+				cstOnly           = v2i.cstOnly,
+				dcnKwLstToReplace = v2i.dcnKwLstToReplace
+			)
+			ZCIDbg(ZCI, "UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU", prtLine=True)
+			if v is not None:
+				subVals1.append(v)
 
-			#read second subValue (for maps only)
-			if tgtMap:
+				#check its type also, they must all have the same one
+				if subVals1_type == TYPE_ID__UNKNOWN:
+					subVals1_type = v.Type
+				else:
+					if v.Type != subVals1_type:
+						ZCIWrn(ZCI, "2nd analysis: " + str(len(subVals1)+1) + "th value given in collection has different type than the first one given (expected " + ZCI.getTypeNameFromID(subVals1_type) + ", got " + ZCI.getTypeNameFromID(v.Type) + ")" + v2i.ZCIKindIfErr_ending)
 
-				#colon separator required
-				optionalBlanks(ZCI, None, BLANKS_EXTENDED)
-				next = ZCI.get()
-				if next != ':':
-					ZCIErr(ZCI, "2nd analysis: Invalid element " + next + " given in associative sequence (expected colon separator ':').")
-				ZCI.inc()
+				#read second subValue (for maps only)
+				if tgtMap:
 
-				#read a second subvalue (require a couple for association)
-				optionalBlanks(ZCI, None, BLANKS_EXTENDED)
-				subVals_inside.append( readVal(ZCI, v2i.ZCIKindIfErr, v2i.scope, v2i.cstOnly) )
+					#colon separator required
+					optionalBlanks(ZCI, None, BLANKS_EXTENDED)
+					next = ZCI.get()
+					if next != ':':
+						ZCIErr(ZCI, "2nd analysis: Invalid element " + next + " given in associative sequence (expected colon separator ':').")
+					ZCI.inc()
+
+					#read a second subvalue (require a couple for association)
+					optionalBlanks(ZCI, None, BLANKS_EXTENDED)
+					v = readVal(ZCI,
+						"associated value in common data structure shortcut notation" + v2i.ZCIKindIfErr_ending,
+						v2i.scope,
+						cstOnly           = v2i.cstOnly,
+						dcnKwLstToReplace = v2i.dcnKwLstToReplace
+					)
+					subVals2.append(v)
+
+					#check its type also, they must all have the same one
+					if subVals2_type == TYPE_ID__UNKNOWN:
+						subVals2_type = v.Type
+					else:
+						if v.Type != subVals2_type:
+							ZCIWrn(ZCI, "2nd analysis: " + str(len(subVals2)+1) + "th value given in collection has different type than the first one given (expected " + ZCI.getTypeNameFromID(subVals2_type) + ", got " + ZCI.getTypeNameFromID(v.Type) + ")" + v2i.ZCIKindIfErr_ending)
 
 			#look for end separator
 			optionalBlanks(ZCI, None, BLANKS_EXTENDED)
+			ZCIDbg(ZCI, "VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV", prtLine=True)
 			next = ZCI.get()
 			if next == tgtEnd:
 				if ZCI.ctx.icontent.idx != peerIdx:
@@ -315,41 +350,38 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 				ZCI.inc()
 				break
 			if next != ',':
-				ZCIErr(ZCI, "2nd analysis: Invalid element " + next + " given in value sequence between includers (expected coma separator ',' or closing includer '" + targettedEnd + "').")
+				ZCIErr(ZCI, "2nd analysis: Invalid element " + next + " given in value sequence between includers (expected coma separator ',' or closing includer '" + tgtEnd + "').")
 			ZCI.inc()
 
 		#debug
 		ZCIDeepDbg(ZCI, "2nd analysis: Stop reading sub values sequence.")
 
+		#non-empty stc => complete types with declinations
+		if len(subVals1) != 0:
+			if tgtMap:
+				subStc_type1 = getOrCreateSpcTypeDcn(ZCI, v2i.ZCIKindIfErr_ending, subStc_type2, [subVals1_type])
+				subStc_type2 = getOrCreateSpcTypeDcn(ZCI, v2i.ZCIKindIfErr_ending, subStc_type2, [subVals2_type])
+				mainStc_type = getOrCreateSpcTypeDcn(ZCI, v2i.ZCIKindIfErr_ending, mainStc_type, [subVals1_type, subVals2_type])
+			else:
+				mainStc_type = getOrCreateSpcTypeDcn(ZCI, v2i.ZCIKindIfErr_ending, mainStc_type, [subVals1_type])
+		else:
+			print("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
+
 		#table with only one element => explicit priorization
-		if tgtEnd == ')' and not tgtMap and len(subVals) == 1:
-			res = subVals[0]
+		if len(subVals1) == 1 and tgtEnd == ')' and not tgtMap:
+			res = subVals1[0]
 			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in EXPLICIT PRIORIZATION:\n" + res.toStr())
 			return res
 
 		#finishing result: maps
 		if tgtMap:
-
-			#set keys et values for map initialization
-			keys = val(
-				tgtType_inside,
-				atm(ATM__LST_VAL, subVals),
-				True
-			)
-			valuePeers = val(
-				tgtType_inside,
-				atm(ATM__LST_VAL, subVals_inside),
-				True
-			)
-			res = val(
-				tgtType,
-				atm(ATM__LST_VAL, [keys, valuePeers]),
-				True
-			)
+			keys       = val(subStc_type1, atm(ATM__LST_VAL, subVals1), True)
+			valuePeers = val(subStc_type2, atm(ATM__LST_VAL, subVals2), True)
+			res        = val(mainStc_type, atm(ATM__LST_VAL, [keys, valuePeers]), True)
 
 		#finishing result: tab, lst & fly
 		else:
-			res = val(tgtType, atm(ATM__LST_VAL, subVals), True)
+			res = val(mainStc_type, atm(ATM__LST_VAL, subVals1), True)
 
 		#return result
 		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION:\n" + res.toStr())
@@ -508,6 +540,8 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 
 	#unknown value format
+	if v2i.ZCIKindIfErr is None:
+		return None
 	unknownValueErrIn2ndAnalysis(ZCI)
 
 
@@ -571,6 +605,10 @@ def secondAnalysisIncludingFOs(ZCI, allowVFC, v2i):
 
 	#read value but don't care if there are still things to analyze
 	res = secondAnalysis(ZCI, allowVFC, v2i) #after this, ZCI index is right AFTER the value read
+
+	#no value found is acceptable => don't go further
+	if res is None and v2i.ZCIKindIfErr is None:
+		return None
 	optionalBlanks(ZCI, None)
 
 	#nothing left to analyze
@@ -741,21 +779,23 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only us
 	#null name => mono-operand mandatorily
 	if curPOCall.name is None:
 		tgt = None
-		if curPOCall.opand1 is None:
-			tgt = opand2Val
-		elif curPOCall.opand2 is None:
-			tgt = opand1Val
-
-		#should never occur
-		if tgt is None:
-			ZCIInt(oriZCI, "Found null-name POCall with 2 null or 2 non-null operands (inconsistent result from ODP).")
+		if curPOCall.opand1 is not None:
+			if curPOCall.opand2 is not None:
+				ZCIInt(oriZCI, "Found null-name POCall with 2 non-null operands (inconsistent result from ODP).")
+			else:
+				tgt = opand1Val
+		else:
+			if curPOCall.opand2 is not None:
+				tgt = opand2Val
+			elif v2i.ZCIKindIfErr is not None:
+				ZCIInt(oriZCI, "Found null-name POCall with 2 null operands, and we don't allow null from 2nd analysis here (=> probably inconsistent result from ODP).")
 		return tgt
 
 
 
 	#2ND CASE: OPERATOR CALL
 
-	#set operator parameters
+	#gather ope params info
 	opeHeader      = 'O' + curPOCall.name
 	paramVals      = []
 	paramTypeIDs   = []
@@ -768,6 +808,14 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only us
 		paramVals.append(                               opand2Val       )
 		paramTypeIDs.append(                            opand2Val.Type  )
 		paramTypeNames.append( oriZCI.getTypeNameFromID(opand2Val.Type) )
+
+	#invalid nbr of params for tgt ope
+	if len(paramTypeIDs) != 2 - int(curPOCall.name in MONO_OPERAND_NAMES):
+		if v2i.ZCIKindIfErr is None: #no value found is allowed => null
+			return None
+
+		#should never occur
+		ZCIInt(ZCI, "Got invalid nbr of operands in 2nd analysis and value can't be null (wrong ope name given ?).")
 
 	#check for every operator alternative
 	matchingFct = zCtx__findMatchingOperator(oriZCI.zCtx, opeHeader, paramTypeIDs, paramTypeNames)

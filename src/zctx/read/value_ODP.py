@@ -9,7 +9,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 	if ZCI.zCtx.deepDbgMode:
 		allowedOpesTxt = "["
 		for o in allowedOpes:
-			allowedOpesTxt += OPERATOR_NAMES[o] + ','
+			allowedOpesTxt += OPE_NAMES[o] + ','
 		allowedOpesTxt += "]"
 		ZCIDeepDbg(ZCI, "ODP-1: Reading & splitting ZCI content \"" + ZCI.txtFormat() + "\" by operators " + allowedOpesTxt)
 
@@ -70,16 +70,16 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 				itWasJustANegSign = True
 				ZCIDeepDbg(ZCI, "SPECIAL CASE IN ODP: Found operator BSU without first operand => considerated as negative sign only (no operation).")
 			else:
-				ZCIErr(ZCI, "Missing first operand to operator " + OPERATOR_NAMES[ope])
+				ZCIErr(ZCI, "Missing first operand to operator " + OPE_NAMES[ope])
 		elif ope in MONO_OPERAND:
-			ZCIErr(ZCI, "Got too much operands for single operator " + OPERATOR_NAMES[ope] + " (only 1 allowed after symbol).")
+			ZCIErr(ZCI, "Got too much operands for single operator " + OPE_NAMES[ope] + " (only 1 allowed after symbol).")
 
 		#store operand & operator
 		if not itWasJustANegSign:
 			opands.append(opand)
 			opes.append(ope)
 			opeIdxes.append(ZCI.ctx.icontent.idx)
-			ZCIDeepDbg(ZCI, "ODP-1: New operator " + OPERATOR_NAMES[ope] + " found, cur operating sequence is " + opSeq(ZCI.ctx.icontent.idx, opands, opes, opeIdxes).toStr())
+			ZCIDeepDbg(ZCI, "ODP-1: New operator " + OPE_NAMES[ope] + " found, cur operating sequence is " + opSeq(ZCI.ctx.icontent.idx, opands, opes, opeIdxes).toStr())
 
 		#moving after symbol
 		ZCI.forward(SYM_LENGTHS[ope])
@@ -99,9 +99,9 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 	if ZCI.ctx.icontent.idx == opandInitialCtx.icontent.idx:
 		lastOpe = opes[-1]
 		if lastOpe in MONO_OPERAND:
-			ZCIErr(ZCI, "Missing first (and only) operand to single operator " + OPERATOR_NAMES[lastOpe])
+			ZCIErr(ZCI, "Missing first (and only) operand to single operator " + OPE_NAMES[lastOpe])
 		else:
-			ZCIErr(ZCI, "Missing second operand to operator " + OPERATOR_NAMES[lastOpe])
+			ZCIErr(ZCI, "Missing second operand to operator " + OPE_NAMES[lastOpe])
 
 	#create last operand
 	opand          = ZCI.copy(ctxCopy=opandInitialCtx)
@@ -138,7 +138,7 @@ def monoOperandOpSeqConcatenation(zCtx, curOpSeq):
 	)
 	cur = res
 	while len(curOpSeq.opes) != 0:
-		cur.name   = OPERATOR_NAMES[curOpSeq.opes.pop(0)]
+		cur.name   = OPE_NAMES[curOpSeq.opes.pop(0)]
 		cur.opeIdx = curOpSeq.opeIdxes.pop(0)
 		cur.opand2 = atm(
 			ATM__POCALL,
@@ -173,7 +173,7 @@ def progressivePriorizing(zCtx, curOpSeq, monoOpand): #WARNING! DO NOT USE WITH 
 
 	#for each remaining operand, make function calls (Potential Operator Call)
 	while len(curOpSeq.opands) != 0:
-		cur.name   = OPERATOR_NAMES[curOpSeq.opes.pop()]
+		cur.name   = OPE_NAMES[curOpSeq.opes.pop()]
 		cur.opeIdx = curOpSeq.opeIdxes.pop()
 		cur.opand1 = atm(
 			ATM__POCALL,

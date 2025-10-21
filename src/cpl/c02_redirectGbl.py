@@ -315,10 +315,10 @@ def processFctDcl_partial(ZCI, isPub, fwdTypeName=None):
 	#case 1: operator
 	if isOpe:
 		if isMethod:
-			ZCIErr(ZCI, "Operator functions cannot be used as methods for a given type (type " + methodTypeName + " targetted for operator " + OPERATOR_NAMES[OPERATOR_FCTNAME2SYMBOL[rawName]] + ", DCL_FCT/DCL_FWD).")
+			ZCIErr(ZCI, "Operator functions cannot be used as methods for a given type (type " + methodTypeName + " targetted for operator " + OPE_NAMES[OPERATOR_FCTNAME2SYMBOL[rawName]] + ", DCL_FCT/DCL_FWD).")
 
 		#build full fct name
-		fullName = 'O' + OPERATOR_NAMES[OPERATOR_FCTNAME2SYMBOL[rawName]]
+		fullName = 'O' + OPE_NAMES[OPERATOR_FCTNAME2SYMBOL[rawName]]
 		for p in params:
 			fullName += '_' + ZCI.getTypeNameFromID(p.Type)
 

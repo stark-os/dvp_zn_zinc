@@ -87,19 +87,6 @@ def newCplDat(opts, mode):
 
 
 
-#create a fake ZCI with targetted type as text to be read, and then read that type
-def createFakeZCIAndReadCommonType(oriZCI, commonTypeFullName, ZCIKindIfErr):
-	fakeZCI              = oriZCI.copy()
-	fakeZCI.ctx.icontent = istr(commonTypeFullName)
-	fakeZCI.startIdx     = 0
-	fakeZCI.stopIdx      = len(commonTypeFullName)-1
-	fakeZCI.updateTxt()
-
-	#try to find out a type
-	return readType(fakeZCI, ZCIKindIfErr)
-
-
-
 
 
 

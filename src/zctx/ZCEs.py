@@ -107,6 +107,9 @@ class zci:
 	def getTypeNameFromID(sbj, id):
 		return sbj.zCtx.getTypeNameFromID(id)
 
+	def getTypeInstanceFromName(sbj, name):
+		return sbj.zCtx.getTypeInstanceFromName(name)
+
 	def checkIDRecursivelyInType(sbj, tID, tgtID):
 		return sbj.zCtx.checkIDRecursivelyInType(tID, tgtID)
 
@@ -321,7 +324,7 @@ class opSeq:
 		res += '\n' + d + "]\n"
 		res += d + "opes:["
 		for o in sbj.opes:
-			res += '\"' + OPERATOR_NAMES[o] + "\","
+			res += '\"' + OPE_NAMES[o] + "\","
 		res += ']'
 		return res
 

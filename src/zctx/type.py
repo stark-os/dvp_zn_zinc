@@ -104,3 +104,48 @@ def getTypeFieldFromName(ZCI, tgtTypeID, tgtFieldName):
 		if f.name == tgtFieldName:
 			return f
 	ZCIErr(ZCI, "Type " + unpfxMod(tInst.name) + " has no field \"" + tgtFieldName + "\".")
+
+
+
+#get / create specific declination for a given type
+def getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns):
+
+	#get modPfx & rawName
+	tModPfx  = ""
+	tRawName = ""
+	if tUndecInst.name[0] == 'G':
+		tModPfx  = "G"
+		tRawName = tUndecInst.name[2:]
+	else:
+		tModPfx  = unpfxMod(tUndecInst.name)
+		tRawName = str_sub(tUndecInst.name, start=len(tModPfx)+1)
+
+	#one dcn does not exist => can't make it
+	for d in dcns:
+		if d == TYPE_ID__UNKNOWN:
+			return TYPE_ID__UNKNOWN
+
+	#check declination length
+	if len(dcns) < tUndecInst.dcnCommon.dcnDeg:
+		ZCIErr(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required)" + ZCIKindIfErr_ending)
+	elif len(dcns) > tUndecInst.dcnCommon.dcnDeg:
+		ZCIErr(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required)" + ZCIKindIfErr_ending)
+
+	#re-build full type name including declinations this time (tModulePfx can be set to "G" by the way, same logic as undeclinated types)
+	tDecFullName = tModPfx + 'D' + tRawName
+	for d in dcns:
+		tDecFullName += '_' + ZCI.getTypeNameFromID(d)
+
+	#check for that declination in currently declared types
+	existingID = ZCI.getTypeIDFromName(tDecFullName)
+
+	#not found => create that declination (this new combination must exist)
+	if existingID == TYPE_ID__UNKNOWN:
+		newID         = ZCI.zCtx.cpl.newTyp(tDecFullName, dcnCommon=tUndecInst.dcnCommon) #share the same dcnCommon (affecting the undeclinated instance will affect every declination)
+		tDecInst      = ZCI.getTypeInstanceFromID(newID)
+		tDecInst.dcns = dcns
+		ZCIDbg(ZCI, "First call of declination \"" + tDecFullName + "\" from type \"" + tUndecInst.name + "\", adding it.")
+		return newID
+
+	#found => just use it
+	return existingID
