@@ -80,10 +80,34 @@
 			altNames.append(sbj.getTypeNameFromID(i))
 		return altNames
 
+	def typeIDContainsDcnKw(sbj, tID):
+		return tID in sbj.spcDcnTypes or tID == sbj.gncDcnType
+
 	def listTypeNames(sbj):
 		typeNames = []
-		for t in sbj.cpl.types:
-			n = unpfxTypeName(sbj, t.name)[0]
+		skip      = False
+		for tID in range(len(sbj.cpl.types)):
+			tInst = sbj.cpl.types[tID]
+
+			#skip dcn kw (either is or contain in dcns)
+			if sbj.typeIDContainsDcnKw(tID):
+				skip = True
+			else:
+				for d in tInst.dcns:
+					if sbj.typeIDContainsDcnKw(d):
+						skip = True
+						break
+
+			#skip mechanism
+			if skip:
+				skip = False
+				continue
+
+			#add name: enm
+			n = ""
+			if tInst.name[2] == 'N':
+				n += "(enm) "
+			n += unpfxTypeName(sbj, tInst.name)[0]
 			typeNames.append(n)
 
 		#pretty display
@@ -97,13 +121,13 @@ def getTypeFieldFromName(ZCI, tgtTypeID, tgtFieldName):
 
 	#type nature check
 	if tInst.dcnCommon.nature == NATURE__PRM:
-		ZCIErr(ZCI, "Type " + unpfxMod(tInst.name) + " is a primitive type, cannot get fields from it.")
+		ZCIErr(ZCI, "Type " + unpfxTypeName(ZCI.zCtx, tInst.name)[0] + " is a primitive type, cannot get fields from it.")
 
 	#look for the given name in type fields
 	for f in tInst.dcnCommon.fields:
 		if f.name == tgtFieldName:
 			return f
-	ZCIErr(ZCI, "Type " + unpfxMod(tInst.name) + " has no field \"" + tgtFieldName + "\".")
+	ZCIErr(ZCI, "Type " + unpfxTypeName(ZCI.zCtx, tInst.name)[0] + " has no field \"" + tgtFieldName + "\".")
 
 
 

@@ -43,7 +43,9 @@ def getDatItmFromScopeAndParents(modPfx, rawName, scope):
 		di      = getDatItmFromScope(lclName, scope)
 		if di is not None:
 			return di
-		return getDatItmFromScope(lclName, scope.parent)
+
+		#look in parent
+		return getDatItmFromScopeAndParents("", rawName, scope.parent) #modPfx given doe not matter
 
 def listDatItmNamesAvailable(scope):
 	l = []
@@ -51,7 +53,7 @@ def listDatItmNamesAvailable(scope):
 	#add lcl scopes first
 	while scope.parent is not None:
 		for di in scope.datItms:
-			l.append("(lcl) " + undblUnderscores(di.name))
+			l.append("(lcl) " + undblUnderscores(di.name[1:]))
 		scope = scope.parent
 
 	#add gbl scope then

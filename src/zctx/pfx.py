@@ -64,13 +64,6 @@ def extractModPfx(name):
 
 
 
-#unprefixing anything <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< MAYBE MAKE IT EFFICIENT ENOUGH SO THAT WE CAN GET RID OF UNPREFIXIZEMODULE & EXTRACTMODULEPREFIX ?
-def unpfxAnyName(name): #GE<name> => <name>, M<mod>_E<name> => ^<mod>.<name>, ...
-	pfx = extractModPfx(name)
-	return unpfxMod(pfx) + str_sub(name, len(pfx)).replace("__", '_')
-
-
-
 #type unprefixing
 def cutModPfxFromTypeName(exactName): #also return modPfx, #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< IN Z, WE WOULD NOT HAVE TO RETURN exactName BECAUSE WE ALTER ITS INTERNAL FIELDS
 	modPfx = "G"
@@ -116,6 +109,10 @@ def cutDcnFromTypeName(exactName):
 	return modPfx + res
 
 def unpfxTypeName(zCtx, exactName):
+
+	#enms
+	if exactName[1] == 'N':
+		return (undblUnderscores(exactName[2:]), "")
 
 	#get base type without declinations
 	undcnName = cutDcnFromTypeName(exactName)

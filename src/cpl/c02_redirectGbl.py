@@ -130,9 +130,6 @@ def processTypeDcl(ZCI, isPub):
 		#compute size
 		newTypeInst.computeStcSize(ZCI.zCtx.cpl.types)
 
-		#set "stc" type as parent <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED
-		#newTypeInst.dcnCommon.parent = ZCI.zCtx.stcType
-
 	#process type content: type-copy syntax
 	else:
 		ZCIDbg(ZCI, "Type declaration is via type-copy syntax.", prtLine=False)
@@ -193,27 +190,43 @@ def processEnmDcl(ZCI, scope, tgtFct=None, isPub=False):
 		if di.Type != TYPE_ID__UNKNOWN: #no type must be found (neither explicit type given or initial value)
 			ZCIErr(ZCI, "No explicit type or value is allowed in enumerate declaration" + scpTxt + " (DCL_ENM).")
 
-	#compute which type will be used
+	#compute which type will be used as parent
 	ZCIDeepDbg(ZCI, "Enumerate length: " + str(len(fields)), prtLine=False)
 	if len(fields) <= 0x1_00:
-		ZCIDeepDbg(ZCI, "Enumerate length indexing can be contained in U8 => using that type for them.", prtLine=False)
-		t = ZCI.zCtx.rootTypes[RT__U8]
+		ZCIDeepDbg(ZCI, "Enumerate length indexing can be contained in U8 => using that type as parent.", prtLine=False)
+		itmType = ZCI.zCtx.rootTypes[RT__U8]
 	elif len(fields) <= 0x1_00_00:
-		ZCIDeepDbg(ZCI, "Enumerate length indexing can be contained in U16 => using that type for them.", prtLine=False)
-		t = ZCI.zCtx.rootTypes[RT__U16]
+		ZCIDeepDbg(ZCI, "Enumerate length indexing can be contained in U16 => using that type as parent.", prtLine=False)
+		itmType = ZCI.zCtx.rootTypes[RT__U16]
 	elif len(fields) <= 0x1_00_00_00_00:
-		ZCIDeepDbg(ZCI, "Enumerate length indexing can be contained in U32 => using that type for them.", prtLine=False)
-		t = zCtx.rootTypes[RT__U32]
+		ZCIDeepDbg(ZCI, "Enumerate length indexing can be contained in U32 => using that type as parent.", prtLine=False)
+		itmType = zCtx.rootTypes[RT__U32]
 	else:
 		ZCIErr(ZCI, "Too much fields in enumerate " + scpTxt + " (congrats for reaching that error, how did you managed to get it ?, DCL_ENM).")
 
-	#fullfill fields
+	#fullfill fields info
 	for f in range(len(fields)):
-		fields[f].Type  = t
-		fields[f].value = val(t, atm(ATM__REF, f), Cst=True) #value stored as it was a ref to be cashted into type t
+		fields[f].Type  = itmType
+		fields[f].value = val(itmType, atm(ATM__U32, f), Cst=True)
 
-	#create enumerate
-	enmDI = datItm(t, fullName, True, None, Cst=True, fields=fields, isPub=isPub)
+	#create custom enm type
+	modPfx = ZCI.modPfx
+	if len(modPfx) == 0:
+		modPfx += 'G'
+	mainType_fullName = modPfx + 'N' + rawName
+	mainType          = ZCI.zCtx.cpl.newTyp(mainType_fullName, isPub=isPub)
+	ZCIDbg(ZCI, "Creating specific enm type \"" + mainType_fullName + "\".", prtLine=False)
+
+	#copy some info from itm type to the newly created one
+	itmTypeInst                   = ZCI.getTypeInstanceFromID(itmType)
+	mainTypeInst                  = ZCI.getTypeInstanceFromID(mainType)
+	mainTypeInst.dcnCommon.size   = itmTypeInst.dcnCommon.size
+	mainTypeInst.dcnCommon.nature = NATURE__ENM
+	mainTypeInst.dcnCommon.fields = fields #same fields for the datItm instance & enm type
+	mainTypeInst.dcnCommon.parent = itmType
+
+	#create enm
+	enmDI = datItm(mainType, fullName, True, None, Cst=True, fields=fields, isPub=isPub)
 	checkAlreadyDeclaredDatItmOrField(ZCI, enmDI, scope.datItms)
 	scope.datItms.append(enmDI)
 
@@ -609,7 +622,6 @@ def processVFC(ZCI, scope, tgtFct):
 
 #remaining ZCIs can be DCL_DAT, ASG_ASG or VFC_VFC (the last one only allowed in local scope)
 def processRemainingZCI(ZCI, scope, tgtFct=None, isPub=False):
-	ZCIDeepDbg(ZCI, ">>>>>>>>>>>>>>>>>>>>>>>>> ZCI:\n  " + ZCI.toStr() + "\n\"" + ZCI.txt + "\"\n\"" + ZCI.ctx.icontent.s[ZCI.startIdx-200:ZCI.ctx.icontent.idx+1] + "§" + ZCI.ctx.icontent.s[ZCI.ctx.icontent.idx] + "§" + ZCI.ctx.icontent.s[ZCI.ctx.icontent.idx+1:ZCI.stopIdx+201] + "\"")
 
 	#try reading a type (in a separated copy, in all cases we will have to read from the start)
 	tmpCopy = ZCI.copy()

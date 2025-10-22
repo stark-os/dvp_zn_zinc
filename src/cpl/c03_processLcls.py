@@ -22,7 +22,7 @@ def processIfStm(ZCI, tgtFct, scope):
 
 	#read condition
 	res = stm_if()
-	v   = readVal(ZCI, "condition in IF statement (STM_IF_).")
+	v   = readVal(ZCI, "condition in IF statement (STM_IF_).", scope)
 	res.conds.append(v)
 	ZCIDeepDbg(ZCI, "Added IF statement condition: " + v.toStr())
 
@@ -110,9 +110,7 @@ def processRetJmp(ZCI, scope, tgtFct):
 			ZCIErr(ZCI, "Must return a value (!void function " + tgtFct.name+ " targetted, JMP_RET).")
 
 	#add jmp
-	scope.exes.append(
-		atm(ATM__JMP, jmp(JMP__RET, retVal))
-	)
+	scope.exes.append( atm(ATM__JMP, jmp(JMP__RET, retVal)) )
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "return jump in function " + tgtFct.name + " (JMP_RET).")

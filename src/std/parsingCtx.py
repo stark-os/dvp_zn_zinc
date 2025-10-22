@@ -134,7 +134,7 @@ class ParsingCtx:
 		return sbj.icontent.forwardUntil(tgtIdx)
 
 	def forwardAlike(sbj, otherCtx):
-		return sbj.icontent.forwardUntil(otherCtx.icontent)
+		return sbj.icontent.forwardAlike(otherCtx.icontent)
 
 	def reachedEnd(sbj):
 		return sbj.icontent.reachedEnd()

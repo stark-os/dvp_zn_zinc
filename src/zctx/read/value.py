@@ -132,15 +132,3 @@ def readVal(ZCI, ZCIKindIfErr, scope, cstOnly=False, dcnKwLstToReplace=None, all
 	#res
 	ZCIDeepDbg(ZCI, "Ended reading value.")
 	return secondAnalysisRes
-
-
-
-
-
-
-
-
-
-
-
-

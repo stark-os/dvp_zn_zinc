@@ -117,15 +117,25 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 		ZCIErr(ZCI, "Can't have void returning function call here (only !VFC allowed)" + ZCIKindIfErr_ending)
 
 	#read params
-	paramVals = readValSeq(ZCI,
-		ZCIKindIfErr, tgtFct.params, scope,
+	unpfxParams = []
+	for p in tgtFct.params:
+		unpfxParams.append(datItm( p.Type, p.name[1:], p.inited, p.initVal )) #copy params but without 'L' pfx
+	paramVals_fmap = readValSeq(ZCI,
+		ZCIKindIfErr,
+		unpfxParams,
+		scope,
 		cstOnly           = cstOnly,
 		dcnKwLstToReplace = dcnKwLstToReplace
 	)
 	ZCI.inc()
 
+	#set under lst[val] for call format
+	paramVals_valLst = []
+	for p in unpfxParams:
+		paramVals_valLst.append(paramVals_fmap[p.name]) #ensure to add each param in the correct order !
+
 	#create call
-	return call(fctExactName, paramVals, tgtFct.retType)
+	return call(fctExactName, paramVals_valLst, tgtFct.retType)
 
 def listAllExistingFct(zCtx):
 	nl = []

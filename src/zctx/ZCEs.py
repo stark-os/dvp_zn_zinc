@@ -167,8 +167,8 @@ def dumpZCIs(ZCIs, filename, oneLine=True):
 #types
 class typ_dcnCommon: #common data among every declination of a type
 	def __init__(sbj, dcnDeg, isPub, size=0):
-		sbj.isPub  = isPub
 		sbj.parent = None
+		sbj.isPub  = isPub
 		sbj.size   = size
 		sbj.dcnDeg = dcnDeg
 		sbj.nature = NATURE__PRM
@@ -214,7 +214,8 @@ class scp:
 		res += d + "datItms:["
 		for di in sbj.datItms:
 			res += di.toStr(depth=depth+1) + ","
-		res += '\n' + d + ']'
+		res += '\n' + d + "]\n"
+		res += d + "dcpIdx:" + str(sbj.dcpIdx)
 		return res
 
 def newScp(parent=None):
