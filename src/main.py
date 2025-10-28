@@ -60,7 +60,7 @@ def main():
 			False, #P2
 			False, #P3
 			False, #C01
-			True, #C02
+			False, #C02
 			True   #C03
 		), deepDbgMode = (
 			False, #INIT
@@ -68,7 +68,7 @@ def main():
 			False, #P2
 			False, #P3
 			False, #C01
-			True, #C02
+			False, #C02
 			True   #C03
 		), stepByStep = False
 	)

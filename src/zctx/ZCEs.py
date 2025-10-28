@@ -192,7 +192,7 @@ class scp:
 		sbj.exes    = None #lst[atm] #can have either asg, jmp, call (=vfc) or stm inside, all mixed of course.
 		sbj.datItms = None #lst[datItm]
 		sbj.parent  = None #scp
-		sbj.dcpIdx  = 0    #next available decomposition datItm index
+		sbj.dcpIdx  = 0    #next available dcp datItm idx
 
 	def nextDcpDatItmName(sbj, Type):
 		dcpDI = datItm(Type, "D" + str(sbj.dcpIdx), False, None)

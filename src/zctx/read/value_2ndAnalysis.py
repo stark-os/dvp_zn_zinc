@@ -255,7 +255,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 	#starting with includer
 	if c in ('(', '[', '{'):
-		ZCIDeepDbg(ZCI, "2nd analysis: Includer detected => Potentially targetting tab,lst,fly,fmap,mmap.", prtLine=False)
+		ZCIDeepDbg(ZCI, "2nd analysis: Includer detected => Potentially targetting tab,lst.", prtLine=False)
 
 
 
@@ -263,46 +263,38 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 		#Seems similar to check in the whole INCLUDERS.keys() but this is not related to these actually.
 		#We are specificly targetting these 3 and not because they are includer keys but because we have specific pattern associated to them.
-		mainStc_undcnTypeName = "" #just dcl each of them
-		mainStc_typeID        = 0
-
-		#subStcs for maps only
-		subStc1_undcnTypeName = "" #just dcl each of them
-		subStc1_typeID        = 0
-		subStc2_typeID        = 0
+		mainStc_typeID = 0
+		subStc1_typeID = 0 #subStcs for maps only
+		subStc2_typeID = 0
 
 		#maps
 		if tgtMap:
+			mainStc_typeName = ""
 			if c == '(':
-				mainStc_undcnTypeName = "GUfmap"
-				subStc_undcnTypeName  = "GUtab"
+				mainStc_typeName = "fmap"
+				subStc1_typeID   = ZCI.zCtx.rootStcTypes[RST__TAB]
+				subStc2_typeID   = ZCI.zCtx.rootStcTypes[RST__TAB]
 			elif c == '[':
-				mainStc_undcnTypeName = "GUmmap"
-				subStc_undcnTypeName  = "GUlst"
+				mainStc_typeName = "mmap"
+				subStc1_typeID   = ZCI.zCtx.rootStcTypes[RST__LST]
+				subStc2_typeID   = ZCI.zCtx.rootStcTypes[RST__LST]
 			elif c == '{':
 				ZCIErr(ZCI, "2nd analysis: Associative notation on braces includer is not linked to anything yet" + v2i.ZCIKindIfErr_ending)
 
-			#subStc type must already exist yet
-			subStc1_typeID = ZCI.getTypeIDFromName(subStc_undcnTypeName)
-			subStc2_typeID = subStc1_typeID
-			if subStc1_typeID == TYPE_ID__UNKNOWN:
+			#mainStc type must already exist yet
+			mainStc_typeID = ZCI.getTypeIDFromName(mainStc_typeName)
+			if mainStc_typeID == TYPE_ID__UNKNOWN:
 				ZCIWrn(ZCI, "Here are all the available types for now " + ZCI.zCtx.listTypeNames(), prtSubCtxs=False, prtLine=False)
-				ZCIErr(ZCI, "2nd analysis: No type \"" + subStc_undcnTypeName + "\" found to be used in subvalue of common structure shortcut notation" + v2i.ZCIKindIfErr_ending)
+				ZCIErr(ZCI, "2nd analysis: No type \"" + mainStc_typeName + "\" found to be used in root structure notation" + v2i.ZCIKindIfErr_ending)
 
-		#tab, lst & fly
+		#tab, lst
 		else:
 			if c == '(':
-				mainStc_undcnTypeName = "GUtab"
+				mainStc_typeID = ZCI.zCtx.rootStcTypes[RST__TAB]
 			elif c == '[':
-				mainStc_undcnTypeName = "GUlst"
+				mainStc_typeID = ZCI.zCtx.rootStcTypes[RST__LST]
 			elif c == '{':
 				ZCIErr(ZCI, "2nd analysis: Braces includer notation is not linked to anything yet" + v2i.ZCIKindIfErr_ending)
-
-		#mainStc type must already exist yet
-		mainStc_typeID = ZCI.getTypeIDFromName(mainStc_undcnTypeName)
-		if mainStc_typeID == TYPE_ID__UNKNOWN:
-			ZCIWrn(ZCI, "Here are all the available types for now " + ZCI.zCtx.listTypeNames(), prtSubCtxs=False, prtLine=False)
-			ZCIErr(ZCI, "2nd analysis: No type \"" + mainStc_undcnTypeName + "\" found to be used in common structure shortcut notation" + v2i.ZCIKindIfErr_ending)
 
 		#init limits
 		peerIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
@@ -385,42 +377,40 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 		#STEP 3: CONCLUSION
 
-		#maps
-		if tgtMap:
+		#empty stc notation => err
+		if len(subVals1) != 0:
+			ZCIErr(ZCI, "2nd analysis: Can't have empty root structure notation" + v2i.ZCIKindIfErr_ending)
 
-			#non-empty stc => complete types with declinations
-			if len(subVals1) != 0:
-				subStc1_typeID = getOrCreateSpcTypeDcn(ZCI, #keys
-					v2i.ZCIKindIfErr_ending,
-					ZCI.getTypeInstanceFromID(subStc1_typeID),
-					[subVals1_type]
-				)
-				subStc2_typeID = getOrCreateSpcTypeDcn(ZCI, #value peers
-					v2i.ZCIKindIfErr_ending,
-					ZCI.getTypeInstanceFromID(subStc2_typeID),
-					[subVals2_type]
-				)
-				mainStc_typeID = getOrCreateSpcTypeDcn(ZCI, #main stc
-					v2i.ZCIKindIfErr_ending,
-					ZCI.getTypeInstanceFromID(mainStc_typeID),
-					[subVals1_type, subVals2_type]
-				)
+		#complete types with declinations: maps
+		if tgtMap:
+			subStc1_typeID = getOrCreateSpcTypeDcn(ZCI, #keys
+				v2i.ZCIKindIfErr_ending,
+				ZCI.getTypeInstanceFromID(subStc1_typeID),
+				[subVals1_type]
+			)
+			subStc2_typeID = getOrCreateSpcTypeDcn(ZCI, #value peers
+				v2i.ZCIKindIfErr_ending,
+				ZCI.getTypeInstanceFromID(subStc2_typeID),
+				[subVals2_type]
+			)
+			mainStc_typeID = getOrCreateSpcTypeDcn(ZCI, #main stc
+				v2i.ZCIKindIfErr_ending,
+				ZCI.getTypeInstanceFromID(mainStc_typeID),
+				[subVals1_type, subVals2_type]
+			)
 
 			#finishing result
 			keys       = val(subStc1_typeID, atm(ATM__LST_VAL, subVals1), True)
 			valuePeers = val(subStc2_typeID, atm(ATM__LST_VAL, subVals2), True)
 			res        = val(mainStc_typeID, atm(ATM__LST_VAL, [keys, valuePeers]), True)
 
-		#tab, lst & fly
+		#complete types with declinations: tab,lst
 		else:
-
-			#non-empty stc => complete types with declinations
-			if len(subVals1) != 0:
-				mainStc_typeID = getOrCreateSpcTypeDcn(ZCI,
-					v2i.ZCIKindIfErr_ending,
-					ZCI.getTypeInstanceFromID(mainStc_typeID),
-					[subVals1_type]
-				)
+			mainStc_typeID = getOrCreateSpcTypeDcn(ZCI,
+				v2i.ZCIKindIfErr_ending,
+				ZCI.getTypeInstanceFromID(mainStc_typeID),
+				[subVals1_type]
+			)
 
 			#table with only one element => explicit priorization
 			if len(subVals1) == 1 and tgtEnd == ')':
@@ -432,7 +422,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 			res = val(mainStc_typeID, atm(ATM__LST_VAL, subVals1), True)
 
 		#return result
-		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION:\n" + res.toStr())
+		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in ROOT STRUCTURE NOTATION:\n" + res.toStr())
 		return res
 
 	#having found a colon but wasn't a map => no pattern matches such a thing
@@ -471,8 +461,19 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 			if len(seq) == 0:
 				ZCIErr(ZCI, "2nd analysis: Missing valid hexadecimal characters in multi-bytes notation" + v2i.ZCIKindIfErr_ending)
 
+			#get corresponding raw type
+			rawTypeID   = 0
+			rawTypeName = "raw" + str(len(seq))
+			if rawTypeName in ZCI.zCtx.rawTypeNames.keys():
+				rawTypeID = ZCI.zCtx.rawTypeNames[rawTypeName]
+
+			#or create it if it doesn't exist yet
+			else:
+				rawTypeID = ZCI.zCtx.cpl.newTyp(rawTypeName, size=len(seq))
+				ZCI.zCtx.rawTypeNames[rawTypeName] = rawTypeID
+
 			#finish result
-			res = val(ZCI.zCtx.rootTypes[RT__REF], atm(ATM__LST_VAL, seq), True)
+			res = val(rawTypeID, atm(ATM__LST_VAL, seq), True)
 			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in MULTI-BYTE NOTATION:\n" + res.toStr())
 			return res
 

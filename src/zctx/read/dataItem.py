@@ -82,8 +82,7 @@ def readDatItmSeq(
 	#initial conditions
 	if ZCI.get() not in INCLUDERS.keys():
 		ZCIInt(ZCI, "Must be at the beginning of an includer to read data item sequence.")
-	initialIdx = ZCI.ctx.icontent.idx
-	peerIdx    = ZCI.pairs[initialIdx]
+	peerIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
 	ZCI.inc()
 
 	#emptyness

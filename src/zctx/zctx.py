@@ -44,7 +44,7 @@ def newZCtx(
 	res.pubByDefault = (cpl_opt["DEFAULT_ACCESS_PUB"] == "ON")
 
 	#create a list to hold root types. This is purely a simplification tool in zCtx.
-	res.rootTypes = [0,0,0, 0,0,0, 0,0,0, 0,0,0] #can be already declared as a fixed-size table (length: 12)
+	res.rootTypes = [0,0,0,0, 0,0,0,0, 0,0,0,0] #<-- fixed-size table
 
 	#boolean
 	res.rootTypes[RT__BOO] = res.cpl.newTyp("GUboo", size=res.SIZE__U8)
@@ -64,7 +64,6 @@ def newZCtx(
 
 	#64bits
 	if cpl_opt["ARCH"] == "64":
-		res.refSize = res.SIZE__U64
 
 		#8 bytes integer
 		res.rootTypes[RT__S64] = res.cpl.newTyp("GUs64", size=res.SIZE__U64)
@@ -76,6 +75,12 @@ def newZCtx(
 		#pointer (8 bytes for 64b arch)
 		res.rootTypes[RT__REF] = res.cpl.newTyp("GUref", dcnDeg=1, size=res.SIZE__U64)
 
+		#max prm
+		res.maxPrmType = res.rootTypes[RT__U64]
+		res.maxPrmSize = res.SIZE__U64
+		res.maxPrmZero = val(res.maxPrmType, atm(ATM__U64, 0), True)
+		res.maxPrmOne  = val(res.maxPrmType, atm(ATM__U64, 1), True)
+
 		#stc type
 		#res.stcType = res.cpl.newTyp("GUstc", size=res.SIZE__U32)
 
@@ -84,8 +89,17 @@ def newZCtx(
 		res.refSize            = res.SIZE__U32
 		res.rootTypes[RT__REF] = res.cpl.newTyp("GUref", dcnDeg=1, size=res.SIZE__U32)
 
+		#max prm
+		res.maxPrmType = res.rootTypes[RT__U32]
+		res.maxPrmSize = res.SIZE__U32
+		res.maxPrmZero = val(res.maxPrmType, atm(ATM__U32, 0), True)
+		res.maxPrmOne  = val(res.maxPrmType, atm(ATM__U32, 1), True)
+
 		#stc type
 		#res.stcType = res.cpl.newTyp("GUstc", size=res.SIZE__U32)
+
+	#init root stcs
+	res.rootStcTypes = zCtx__addRootStcs(res)
 
 	#dcn related
 	res.dcnDegMax   = int(cpl_opt["DCN_NBR_MAX"])
@@ -94,10 +108,12 @@ def newZCtx(
 	for d in range(res.dcnDegMax):
 		res.spcDcnTypes.append( res.cpl.newTyp("GUdcn" + str(d)) )
 
-	#init functions
+	#init LLI fcts
 	res.cpl.fcts = []
 	res.loadLLIFcts()
 	return res
+
+
 
 class zctx:
 	def __init__(sbj):
@@ -118,15 +134,20 @@ class zctx:
 		sbj.SIZE__U32 = 4
 		sbj.SIZE__U64 = 8
 
-		#size of the biggest primitive
-		sbj.refSize = 0
+		#biggest prm
+		sbj.maxPrmType = 0
+		sbj.maxPrmSize = 0
+		sbj.maxPrmZero = None
+		sbj.maxPrmOne  = None
 
 		#types
-		sbj.rootTypes   = None
-		#sbj.stcType   = None
-		sbj.gncDcnType  = 0
-		sbj.spcDcnTypes = None
-		sbj.dcnDegMax   = 0
+		sbj.rootTypes    = None
+		#sbj.stcType    = None
+		sbj.rootStcTypes = None
+		sbj.rawTypeNames = {} #mmap[str,ulng]
+		sbj.gncDcnType   = 0
+		sbj.spcDcnTypes  = None
+		sbj.dcnDegMax    = 0
 
 		#data
 		sbj.ZCIs = None
@@ -173,6 +194,10 @@ class zctx:
 					if tID == TYPE_ID__UNKNOWN:
 						sbj.err("Cannot have \"void\" as parameter type for function " + fName + " (only allowed in return type), in LLI configuration file " + LLIInvFilePath, prtSubCtxs=False, prtLine=False)
 					params.append( datItm(tID, str(DEFAULT_NAME_CHARSET[p]), False, None) )
+
+			#special behavior: root types fcts => REMOVE LAST PARAM FOR COMPILATION (will be added at compile time) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+			#if fName.startswith("GFtab_") or fName.startswith("GFlst_") or fName.startswith("GFdlt_"):
+			#	params = params[:-1]
 
 			#add function, null content means "Will be loaded at LLI bridging time"
 			sbj.cpl.fcts.append( newFct(fName, retType, params, sbj.cpl.gblScp) )

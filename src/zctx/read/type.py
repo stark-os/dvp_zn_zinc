@@ -122,6 +122,10 @@ def readType(ZCI,
 		#get that spc dcn, creating it if needed
 		tID = getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns)
 
+	#special case for root stcs
+	elif tID in ZCI.zCtx.rootStcTypes:
+		ZCIErr(ZCI, "Can't use undeclinated variant of root structures" + ZCIKindIfErr_ending)
+
 	#final result
 	ZCIDeepDbg(ZCI, "Ended reading type.")
 	return tID

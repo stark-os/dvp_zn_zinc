@@ -41,16 +41,17 @@ RT__U64 = 8
 RT__F32 = 9
 RT__F64 = 10
 RT__REF = 11
+#RT__STC = 12
+
+#root stc types
+RST__TAB  = 0
+RST__DLT  = 1
+RST__LST  = 2
+RST__FMAP = 3
+RST__MMAP = 4
 
 #specific type ID
 TYPE_ID__UNKNOWN = -1
-
-#common data structures (shortcut notations)
-TYPE_FULLNAME__TAB  = "GUtab"
-TYPE_FULLNAME__LST  = "GUlst"
-TYPE_FULLNAME__FLY  = "GUfly"
-TYPE_FULLNAME__FMAP = "GUfmap"
-TYPE_FULLNAME__MMAP = "GUmmap"
 
 #byte notations
 BN_PFX = '`'

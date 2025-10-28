@@ -65,6 +65,10 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 			fieldName       = tgtFields[givenFieldsIdx].name
 			givenFieldsIdx += 1
 
+		#invalid explicit field name
+		if fieldName not in givenFields.keys():
+			ZCIErr(ZCI, "No field \"" + fieldName + "\" can be targetted in value sequence" + ZCIKindIfErr_ending)
+
 		#set value to corresponding field
 		if givenFields[fieldName] is not None:
 			ZCIErr(ZCI, "Value for field " + fieldName + " is already set (reading value sequence)" + ZCIKindIfErr_ending)

@@ -146,7 +146,7 @@ def p1_commentsAndText(zCtx):
 				if c == '"':
 
 					#write length
-					output += "l0t[chr]{128l," + str(curStrLen) + "l," #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+					output += "str{lenMax=128l,len=" + str(curStrLen) + "l,dat=" #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 					#case 1: empty string (null data)
 					if curStrLen == 0:

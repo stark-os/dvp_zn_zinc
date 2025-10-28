@@ -17,6 +17,7 @@ cat $ZCTX/type.py                   >> $SRC/zctx.py
 cat $ZCTX/parsing.py                >> $SRC/zctx.py
 cat $ZCTX/output2.py                >> $SRC/zctx.py
 cat $ZCTX/datItm.py                 >> $SRC/zctx.py
+cat $ZCTX/rootStc.py                >> $SRC/zctx.py
 cat $ZCTX/fct.py                    >> $SRC/zctx.py
 cat $ZCTX/ope.py                    >> $SRC/zctx.py
 cat $ZCTX/pfx.py                    >> $SRC/zctx.py

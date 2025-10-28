@@ -72,6 +72,16 @@ def processTypeDcl(ZCI, isPub):
 		ZCIErr(ZCI, "Type " + modPfxTxt + rawName.replace("__", '_') + " already exists, can't declare a new one with the same name (DCL_TYP).")
 	ZCIDeepDbg(ZCI, "New type does not exist yet.", prtLine=False)
 
+	#special case: don't overlap "raw" types
+	if fullName.startswith("GUraw"):
+		overlap = False
+		for i in fullName[5:]:
+			if i not in string.digit:
+				break
+			overlap = True
+		if overlap:
+			ZCIErr(ZCI, "Type \"" + fullName[2:] + "\" overlap with \"raw\" types => forbidden, in type declaration ZCI (DCL_TYP).")
+
 	#explicit declination degree if any
 	dcnDeg = 0
 	if ZCI.get() == '[':
@@ -127,6 +137,11 @@ def processTypeDcl(ZCI, isPub):
 		if len(newTypeInst.dcnCommon.fields) == 0:
 			ZCIInt(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDatItmSeq cannot return 0-length list)
 
+		#special case: no "raw" type allowed
+		for di in newTypeInst.dcnCommon.fields:
+			if di.Type in ZCI.zCtx.rawTypeNames.values():
+				ZCIErr(ZCI, "Structure type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" contains a field of \"raw\" type => forbidden, in type declaration ZCI (DCL_TYP).")
+
 		#compute size
 		newTypeInst.computeStcSize(ZCI.zCtx.cpl.types)
 
@@ -135,6 +150,10 @@ def processTypeDcl(ZCI, isPub):
 		ZCIDbg(ZCI, "Type declaration is via type-copy syntax.", prtLine=False)
 		parentID   = readType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
 		parentInst = ZCI.getTypeInstanceFromID(parentID)
+
+		#special case: no "raw" type allowed
+		if parentID in ZCI.zCtx.rawTypeNames.values():
+			ZCIErr(ZCI, "Type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" is being copied from a \"raw\" type => forbidden, in type declaration ZCI (DCL_TYP).")
 
 		#copying itself, no matter the declination (error case seems obvious, though required)
 		if parentInst.dcnCommon == newTypeInst.dcnCommon:
@@ -554,7 +573,7 @@ def processDclDat(ZCI, scope, tgtFct, isCst, isPub=False):
 	ZCIDbg(ZCI, "Processing data item declaration" + scpTxt + " (DCL_DAT).", prtLine=False)
 
 	#read the whole ZCI from the start
-	di = readDatItm(ZCI, "Data item declaration" + scpTxt + " (DCL_DAT).", scope, cstInitValOnly=cstInitValOnly, allowModPfxInName=False)
+	di = readDatItm(ZCI, "data item declaration" + scpTxt + " (DCL_DAT).", scope, cstInitValOnly=cstInitValOnly, allowModPfxInName=False)
 
 	#double underscores manually (avoids to pass another option to readDatItm, then to readName...)
 	di.name = dblUnderscores(di.name)
