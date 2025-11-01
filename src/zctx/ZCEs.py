@@ -169,6 +169,7 @@ class typ_dcnCommon: #common data among every declination of a type
 	def __init__(sbj, dcnDeg, isPub, size=0):
 		sbj.parent = None
 		sbj.isPub  = isPub
+		sbj.ext    = False
 		sbj.size   = size
 		sbj.dcnDeg = dcnDeg
 		sbj.nature = NATURE__PRM
@@ -348,6 +349,7 @@ class vap2info:
 class datItm:
 	def __init__(sbj, Type, name, inited, initVal, Cst=False, fields=None, isPub=False):
 		sbj.isPub   = isPub
+		sbj.ext     = False
 		sbj.Type    = Type
 		sbj.name    = name
 		sbj.inited  = inited
@@ -375,6 +377,7 @@ class datItm:
 		#toStr
 		res  = "\n" + d + "_:\"datItm\"\n"
 		res += d + "pub:" + str(sbj.isPub) + "\n"
+		res += d + "ext:" + str(sbj.ext) + "\n"
 		res += d + "type:" + str(sbj.Type) + "\n"
 		res += d + "name:\"" + str(sbj.name) + "\"\n"
 		res += d + "inited:" + str(sbj.inited) + "\n"
@@ -508,6 +511,7 @@ class jmp:
 class fct:
 	def __init__(sbj):
 		sbj.isPub    = False
+		sbj.ext      = False
 		sbj.name     = None
 		sbj.retType  = 0
 		sbj.params   = None #lst[datItm]
@@ -531,6 +535,7 @@ class fct:
 		#toStr
 		res  = '\n' + d + "_:\"fct\"\n"
 		res += d + "pub:" + str(sbj.isPub) + '\n'
+		res += d + "ext:" + str(sbj.ext) + '\n'
 		res += d + "name:\"" + sbj.name + "\"\n"
 		res += d + "retType:" + str(sbj.retType) + '\n'
 		res += d + "methodOf:" + str(sbj.methodOf) + '\n'

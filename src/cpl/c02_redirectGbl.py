@@ -41,6 +41,9 @@ def processLnk(ZCI):
 	else:
 		ZCIDbg(ZCI, "SDL \"" + path + "\" already in linking list => skipping it.")
 
+	#load it
+	ZCI.zCtx.loadExtFP(path)
+
 	#end of ZCI expected
 	endOfZCI(ZCI, "library linking ZCI (EXT_LNK).")
 	ZCI.deepDbgPause()
@@ -209,24 +212,8 @@ def processEnmDcl(ZCI, scope, tgtFct=None, isPub=False):
 		if di.Type != TYPE_ID__UNKNOWN: #no type must be found (neither explicit type given or initial value)
 			ZCIErr(ZCI, "No explicit type or value is allowed in enumerate declaration" + scpTxt + " (DCL_ENM).")
 
-	#compute which type will be used as parent
-	ZCIDeepDbg(ZCI, "Enumerate length: " + str(len(fields)), prtLine=False)
-	if len(fields) <= 0x1_00:
-		ZCIDeepDbg(ZCI, "Enumerate length indexing can be contained in U8 => using that type as parent.", prtLine=False)
-		itmType = ZCI.zCtx.rootTypes[RT__U8]
-	elif len(fields) <= 0x1_00_00:
-		ZCIDeepDbg(ZCI, "Enumerate length indexing can be contained in U16 => using that type as parent.", prtLine=False)
-		itmType = ZCI.zCtx.rootTypes[RT__U16]
-	elif len(fields) <= 0x1_00_00_00_00:
-		ZCIDeepDbg(ZCI, "Enumerate length indexing can be contained in U32 => using that type as parent.", prtLine=False)
-		itmType = zCtx.rootTypes[RT__U32]
-	else:
-		ZCIErr(ZCI, "Too much fields in enumerate " + scpTxt + " (congrats for reaching that error, how did you managed to get it ?, DCL_ENM).")
-
-	#fullfill fields info
-	for f in range(len(fields)):
-		fields[f].Type  = itmType
-		fields[f].value = val(itmType, atm(ATM__U32, f), Cst=True)
+	#set fields
+	itmType = setEnmFieldsType(ZCI.zCtx, fields)
 
 	#create custom enm type
 	modPfx = ZCI.modPfx
@@ -244,10 +231,10 @@ def processEnmDcl(ZCI, scope, tgtFct=None, isPub=False):
 	mainTypeInst.dcnCommon.fields = fields #same fields for the datItm instance & enm type
 	mainTypeInst.dcnCommon.parent = itmType
 
-	#create enm
-	enmDI = datItm(mainType, fullName, True, None, Cst=True, fields=fields, isPub=isPub)
-	checkAlreadyDeclaredDatItmOrField(ZCI, enmDI, scope.datItms)
-	scope.datItms.append(enmDI)
+	#create enm <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< NO NEED
+	#enmDI = datItm(mainType, fullName, True, None, Cst=True, fields=fields, isPub=isPub)
+	#checkAlreadyDeclaredDatItmOrField(ZCI, enmDI, scope.datItms)
+	#scope.datItms.append(enmDI)
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "enumerate declaration" + scpTxt + " (DCL_ENM).")

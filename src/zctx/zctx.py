@@ -20,9 +20,9 @@ def newZCtx(
 	res.step = STEP.INIT
 
 	#debug
-	res.dbgMode      = dbgMode
-	res.deepDbgMode  = deepDbgMode
-	res.stepByStep   = stepByStep
+	res.dbgMode     = dbgMode
+	res.deepDbgMode = deepDbgMode
+	res.stepByStep  = stepByStep
 
 	#every imported context & the current one
 	res.initialCtx   = ParsingCtx(filepath, readFile(filepath))
@@ -108,9 +108,8 @@ def newZCtx(
 	for d in range(res.dcnDegMax):
 		res.spcDcnTypes.append( res.cpl.newTyp("GUdcn" + str(d)) )
 
-	#init LLI fcts
-	res.cpl.fcts = []
-	res.loadLLIFcts()
+	#LLI
+	res.loadExtFP(sbj.cpl.opts['LLI_DIR_PATH'] + "/core.cfg")
 	return res
 
 
@@ -156,57 +155,3 @@ class zctx:
 
 		#other
 		sbj.pubByDefault = True
-
-
-
-	#load LLI functions
-	def loadLLIFcts(sbj):
-		LLIInvFilePath = sbj.cpl.opts['DEFAULT_LLI_INV_PATH']
-
-		#read cfg
-		try:
-			LLICfg = config.read(LLIInvFilePath)
-		except:
-			sbj.err("Problem while extracting configuration from LLI inventory file " + LLIInvFilePath, prtSubCtxs=False, prtLine=False)
-
-		#for each function given
-		for fName in LLICfg.keys():
-			paramsTxts = LLICfg[fName].split(',')
-
-			#get type of each parameter
-			retType = TYPE_ID__UNKNOWN
-			params  = [] #lst[datItm]
-			for p in range(len(paramsTxts)):
-
-				#get type ID (should be a root type if no other default type is loaded yet)
-				tID = sbj.getTypeIDFromName(paramsTxts[p])
-
-				#"void" keyword is allowed, but every other undefined type must raise an error
-				if tID == TYPE_ID__UNKNOWN and paramsTxts[p] != "void":
-					sbj.err("Undefined type " + paramsTxts[p] + " given as parameter for function " + fName + " in LLI configuration file " + LLIInvFilePath, prtSubCtxs=False, prtLine=False)
-
-				#retType
-				if p == 0:
-					retType = tID
-
-				#params
-				else:
-					if tID == TYPE_ID__UNKNOWN:
-						sbj.err("Cannot have \"void\" as parameter type for function " + fName + " (only allowed in return type), in LLI configuration file " + LLIInvFilePath, prtSubCtxs=False, prtLine=False)
-					params.append( datItm(tID, str(DEFAULT_NAME_CHARSET[p]), False, None) )
-
-			#special behavior: root types fcts => REMOVE LAST PARAM FOR COMPILATION (will be added at compile time) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-			#if fName.startswith("GFtab_") or fName.startswith("GFlst_") or fName.startswith("GFdlt_"):
-			#	params = params[:-1]
-
-			#add function, null content means "Will be loaded at LLI bridging time"
-			sbj.cpl.fcts.append( newFct(fName, retType, params, sbj.cpl.gblScp) )
-
-
-
-
-
-
-
-
-

@@ -64,6 +64,9 @@ class cplDat:
 		res.dcns      = dcns #tab[typ]
 		res.dcnCommon = dcnCommon #typ_dcnCommon
 
+		#external
+		res.ext = False
+
 		#add type to CPL data
 		typeIdx = len(sbj.types)
 		sbj.types.append(res)

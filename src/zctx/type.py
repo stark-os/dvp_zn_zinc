@@ -173,3 +173,28 @@ def getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns):
 
 	#found => just use it
 	return existingID
+
+
+#enm typing
+def setEnmFieldsType(zCtx, fields):
+	zCtx.deepDbg(ZCI, "Enumerate length: " + str(len(fields)), prtSubCtxs=False, prtLine=False)
+	if len(fields) <= 0x1_00:
+		zCtx.deepDbg(ZCI, "Enumerate length indexing can be contained in U8 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		itmType = zCtx.rootTypes[RT__U8]
+	elif len(fields) <= 0x1_00_00:
+		zCtx.deepDbg(ZCI, "Enumerate length indexing can be contained in U16 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		itmType = zCtx.rootTypes[RT__U16]
+	elif len(fields) <= 0x1_00_00_00_00:
+		zCtx.deepDbg(ZCI, "Enumerate length indexing can be contained in U32 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		itmType = zCtx.rootTypes[RT__U32]
+	else:
+		zCtx.deepDbg(ZCI, "Enumerate length indexing can be contained in U64 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		itmType = zCtx.rootTypes[RT__U64]
+
+	#fullfill fields info
+	for f in range(len(fields)):
+		fields[f].Type  = itmType
+		fields[f].value = val(itmType, atm(ATM__U64, f), Cst=True)
+
+	#can be useful afterwards
+	return itmType
