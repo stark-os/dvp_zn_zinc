@@ -127,6 +127,7 @@ def unpfxTypeName(zCtx, exactName):
 	dcned = (undcnName[0] == 'D')
 	#undcnName[0] = 'U' #the Z way
 	undcnName    = 'U' + undcnName[1:] #the Python way
+	print("PPPPPPPPPPPPPPPPPPPPPPP[" + modPfx +'|'+ undcnName + "]")
 	dcnDeg       = zCtx.getTypeInstanceFromName(modPfx + undcnName).dcnCommon.dcnDeg
 
 	#look for decinations to read inside (recursive work)

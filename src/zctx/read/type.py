@@ -48,7 +48,7 @@ def readType(ZCI,
 
 
 
-	#2 - dcn / dcn# keywords
+	#2 - permission: dcn / dcn# keywords + ref
 
 	#specific dcn keyword => must be in the specified range
 	if dcnKwLstToReplace is not None:
@@ -68,6 +68,11 @@ def readType(ZCI,
 	if tID == ZCI.zCtx.gncDcnType:
 		if forbidDcnKw:
 			ZCIErr(ZCI, "Generic \"dcn\" keyword is not allowed in type here" + ZCIKindIfErr_ending)
+
+	#ref keyword
+	elif ZCI.zCtx.forbidUseRef:
+		if tID == ZCI.zCtx.refType:
+			ZCIErr(ZCI, "Use of \"ref\" type is not allowed in current compilation mode" + ZCIKindIfErr_ending)
 
 	#got it
 	ZCIDeepDbg(ZCI, "Undeclinated type \"" + tUndecFullName + "\" targetted.")

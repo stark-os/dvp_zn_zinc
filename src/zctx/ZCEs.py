@@ -195,7 +195,7 @@ class scp:
 		sbj.parent  = None #scp
 		sbj.dcpIdx  = 0    #next available dcp datItm idx
 
-	def nextDcpDatItmName(sbj, Type):
+	def nextDcpDatItm(sbj, Type):
 		dcpDI = datItm(Type, "D" + str(sbj.dcpIdx), False, None)
 
 		#add to scope directly
@@ -223,6 +223,8 @@ def newScp(parent=None):
 	res         = scp()
 	res.exes    = [] #lst[atm] #can have either asg, call (vfc in that case) or stm inside, all mixed of course.
 	res.datItms = [] #lst[dataItem]
+	res.header  = [] #lst[asg]
+	res.footer  = [] #lst[call]
 	res.parent  = parent
 	return res
 

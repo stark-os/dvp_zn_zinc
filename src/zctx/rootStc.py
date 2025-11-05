@@ -3,6 +3,7 @@
 # ---------------- ROOT STRUCTURES ----------------
 
 #add every root stc + their fcts
+'''
 def zCtx__addRootStcs(sbj):
 	rootStcTypes = [0,0,0]
 
@@ -71,3 +72,4 @@ def zCtx__addRootStcs(sbj):
 	#keep track of undcn ID
 	rootStcTypes[RST__LST] = tID
 	return rootStcTypes
+'''

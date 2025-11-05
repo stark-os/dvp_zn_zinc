@@ -6,7 +6,7 @@
 def newZCtx(
 	filepath,
 	pcpl_cfg, pcpl_itm,
-	cpl_opt,  cpl_mode,
+	cpl_opt,  cpl_info,
 	dbgMode=None, deepDbgMode=None, stepByStep=False
 ):
 	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Pythonic
@@ -34,7 +34,7 @@ def newZCtx(
 	#actual data holders
 	res.ZCIs = None
 	res.pcpl = newPcplDat(pcpl_cfg, pcpl_itm)
-	res.cpl  = newCplDat(cpl_opt, cpl_mode)
+	res.cpl  = newCplDat(cpl_opt, cpl_info)
 
 	#check PCPL cfgs & CPL opts
 	res.checkPcplCfg(res.pcpl)
@@ -72,22 +72,14 @@ def newZCtx(
 		#8 bytes floating point
 		res.rootTypes[RT__F64] = res.cpl.newTyp("GUf64", size=res.SIZE__U64)
 
-		#pointer (8 bytes for 64b arch)
-		res.rootTypes[RT__REF] = res.cpl.newTyp("GUref", dcnDeg=1, size=res.SIZE__U64)
-
 		#max prm
-		res.maxPrmType = res.rootTypes[RT__U64]
-		res.maxPrmSize = res.SIZE__U64
-		res.maxPrmZero = val(res.maxPrmType, atm(ATM__U64, 0), True)
-		res.maxPrmOne  = val(res.maxPrmType, atm(ATM__U64, 1), True)
+		res.umaxType = res.cpl.newTyp("GUumax", size=res.SIZE__U64)
+		res.umaxSize = res.SIZE__U64
+		res.umaxZero = val(res.umaxType, atm(ATM__U64, 0), True)
+		res.umaxOne  = val(res.umaxType, atm(ATM__U64, 1), True)
 
-		#stc type
-		#res.stcType = res.cpl.newTyp("GUstc", size=res.SIZE__U32)
-
-	#reference (4 bytes for 32b arch)
+	#32bits
 	else:
-		res.refSize            = res.SIZE__U32
-		res.rootTypes[RT__REF] = res.cpl.newTyp("GUref", dcnDeg=1, size=res.SIZE__U32)
 
 		#max prm
 		res.maxPrmType = res.rootTypes[RT__U32]
@@ -95,11 +87,24 @@ def newZCtx(
 		res.maxPrmZero = val(res.maxPrmType, atm(ATM__U32, 0), True)
 		res.maxPrmOne  = val(res.maxPrmType, atm(ATM__U32, 1), True)
 
-		#stc type
-		#res.stcType = res.cpl.newTyp("GUstc", size=res.SIZE__U32)
+	#refs
+	res.refType = res.cpl.newTyp("GUref", dcnDeg=1, size=res.umaxSize)
+
+	#raw
+	res.rawType = res.cpl.newTyp("GUraw")
+	rawTypeInst = res.getTypeInstanceFromID(res.rawType)
+	rawTypeInst.dcnCommon.nature = NATURE__STC
+	rawTypeInst.dcnCommon.fields = [
+		datItm(res.umaxType, "len", False, None),
+		datItm(res.umaxType, "dat", False, None)
+	]
+	rawTypeInst.computeStcSize(res.cpl.types)
+
+	#stc type
+	#res.stcType = res.cpl.newTyp("GUstc", size=res.umaxSize)
 
 	#init root stcs
-	res.rootStcTypes = zCtx__addRootStcs(res)
+	#res.rootStcTypes = zCtx__addRootStcs(res) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< let's say they must be given by user
 
 	#dcn related
 	res.dcnDegMax   = int(cpl_opt["DCN_NBR_MAX"])
@@ -109,7 +114,7 @@ def newZCtx(
 		res.spcDcnTypes.append( res.cpl.newTyp("GUdcn" + str(d)) )
 
 	#LLI
-	res.loadExtFP(sbj.cpl.opts['LLI_DIR_PATH'] + "/core.cfg")
+	res.loadExtFP(res.cpl.opts['LLI_DIR_PATH'] + "/core.sdl.cfg.TMP_FOR_Z_CPL") #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< use regular "core.cfg" at the end
 	return res
 
 
@@ -134,19 +139,22 @@ class zctx:
 		sbj.SIZE__U64 = 8
 
 		#biggest prm
-		sbj.maxPrmType = 0
-		sbj.maxPrmSize = 0
-		sbj.maxPrmZero = None
-		sbj.maxPrmOne  = None
+		sbj.umaxType = 0
+		sbj.umaxSize = 0
+		sbj.umaxZero = None
+		sbj.umaxOne  = None
 
 		#types
 		sbj.rootTypes    = None
-		#sbj.stcType    = None
-		sbj.rootStcTypes = None
-		sbj.rawTypeNames = {} #mmap[str,ulng]
-		sbj.gncDcnType   = 0
-		sbj.spcDcnTypes  = None
-		sbj.dcnDegMax    = 0
+		sbj.refType      = 0
+		sbj.rawType      = 0
+		#sbj.stcType      = None
+		#sbj.rootStcTypes = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< let's say they must be given by user
+
+		#dcn related
+		sbj.gncDcnType  = 0
+		sbj.spcDcnTypes = None
+		sbj.dcnDegMax   = 0
 
 		#data
 		sbj.ZCIs = None

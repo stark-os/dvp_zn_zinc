@@ -72,10 +72,11 @@ class cplDat:
 		sbj.types.append(res)
 		return typeIdx
 
-def newCplDat(opts, mode):
-	res      = cplDat()
-	res.opts = opts
-	res.mode = mode
+def newCplDat(opts, info):
+	res              = cplDat()
+	res.opts         = opts
+	res.mode         = info & CPL__MODE_MASK
+	res.forbidUseRef = info & CPL__USE_REF_MASK
 
 	#z abstract elements
 	res.modPfxes = [] #lst[str]

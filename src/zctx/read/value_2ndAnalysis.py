@@ -255,7 +255,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 	#starting with includer
 	if c in ('(', '[', '{'):
-		ZCIDeepDbg(ZCI, "2nd analysis: Includer detected => Potentially targetting tab,lst.", prtLine=False)
+		ZCIDeepDbg(ZCI, "2nd analysis: Includer detected => Potentially targetting tab,lst / fmap,mmap.", prtLine=False)
 
 
 
@@ -266,35 +266,43 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 		mainStc_typeID = 0
 		subStc1_typeID = 0 #subStcs for maps only
 		subStc2_typeID = 0
+		mainStc_typeName = ""
+		subStc1_typeName = "" #idem
 
 		#maps
 		if tgtMap:
-			mainStc_typeName = ""
 			if c == '(':
 				mainStc_typeName = "fmap"
-				subStc1_typeID   = ZCI.zCtx.rootStcTypes[RST__TAB]
-				subStc2_typeID   = ZCI.zCtx.rootStcTypes[RST__TAB]
+				subStc1_typeName = "GUtab"
 			elif c == '[':
 				mainStc_typeName = "mmap"
-				subStc1_typeID   = ZCI.zCtx.rootStcTypes[RST__LST]
-				subStc2_typeID   = ZCI.zCtx.rootStcTypes[RST__LST]
+				subStc1_typeName = "GUlst"
 			elif c == '{':
 				ZCIErr(ZCI, "2nd analysis: Associative notation on braces includer is not linked to anything yet" + v2i.ZCIKindIfErr_ending)
 
-			#mainStc type must already exist yet
-			mainStc_typeID = ZCI.getTypeIDFromName(mainStc_typeName)
-			if mainStc_typeID == TYPE_ID__UNKNOWN:
+			#look for ID
+			subStc1_typeID = ZCI.getTypeIDFromName(subStc1_typeName)
+			subStc2_typeID = subStc1_typeID
+
+			#subStcs type must already exist yet
+			if subStc1_typeID == TYPE_ID__UNKNOWN:
 				ZCIWrn(ZCI, "Here are all the available types for now " + ZCI.zCtx.listTypeNames(), prtSubCtxs=False, prtLine=False)
-				ZCIErr(ZCI, "2nd analysis: No type \"" + mainStc_typeName + "\" found to be used in root structure notation" + v2i.ZCIKindIfErr_ending)
+				ZCIErr(ZCI, "2nd analysis: No type \"" + subStc1_typeName + "\" found to be used in common data structure shortcut notation" + v2i.ZCIKindIfErr_ending)
 
 		#tab, lst
 		else:
 			if c == '(':
-				mainStc_typeID = ZCI.zCtx.rootStcTypes[RST__TAB]
+				mainStc_typeName = "GUtab"
 			elif c == '[':
-				mainStc_typeID = ZCI.zCtx.rootStcTypes[RST__LST]
+				mainStc_typeName = "GUlst"
 			elif c == '{':
 				ZCIErr(ZCI, "2nd analysis: Braces includer notation is not linked to anything yet" + v2i.ZCIKindIfErr_ending)
+
+		#mainStc type must already exist yet
+		mainStc_typeID = ZCI.getTypeIDFromName(mainStc_typeName)
+		if mainStc_typeID == TYPE_ID__UNKNOWN:
+			ZCIWrn(ZCI, "Here are all the available types for now " + ZCI.zCtx.listTypeNames(), prtSubCtxs=False, prtLine=False)
+			ZCIErr(ZCI, "2nd analysis: No type \"" + mainStc_typeName + "\" found to be used in common data structure shortcut notation" + v2i.ZCIKindIfErr_ending)
 
 		#init limits
 		peerIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
@@ -305,11 +313,21 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 		#STEP 2: READ CONTENT
 
+		#inner types
+		innerType1 = TYPE_ID__UNKNOWN
+		innerType2 = TYPE_ID__UNKNOWN
+
+		#explicitly given
+		if ZCI.get() == '$':
+			innerType1 = readType(ZCI, "inner type in common data structure shortcut", dcnKwLstToReplace=v2i.dcnKwLstToReplace)
+			if tgtMap:
+				if ZCI.get() != ',':
+					ZCIErr(ZCI, "Expected coma separator and a second inner type in " + mainStc_typeName + " common data structure shortcut" + v2i.ZCIKindIfErr_ending)
+				innerType2 = readType(ZCI, "second inner type in common data structure shortcut", dcnKwLstToReplace=v2i.dcnKwLstToReplace)
+
 		#read subvalues as long as we have some (separated by comas)
-		subVals1      = [] #lst[val]
-		subVals2      = [] #for maps
-		subVals1_type = TYPE_ID__UNKNOWN
-		subVals2_type = TYPE_ID__UNKNOWN #for maps
+		subVals1 = [] #lst[val]
+		subVals2 = [] #for maps
 		ZCIDeepDbg(ZCI, "2nd analysis: Start reading sub values sequence.", prtLine=False)
 		while True:
 			optionalBlanks(ZCI, None, BLANKS_EXTENDED)
@@ -325,11 +343,12 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 				subVals1.append(v)
 
 				#check its type also, they must all have the same one
-				if subVals1_type == TYPE_ID__UNKNOWN:
-					subVals1_type = v.Type
+				if innerType1 == TYPE_ID__UNKNOWN:
+					innerType1 = v.Type
 				else:
-					if v.Type != subVals1_type:
-						ZCIWrn(ZCI, "2nd analysis: " + str(len(subVals1)+1) + "th value given in collection has different type than the first one given (expected " + ZCI.getTypeNameFromID(subVals1_type) + ", got " + ZCI.getTypeNameFromID(v.Type) + ")" + v2i.ZCIKindIfErr_ending)
+					if v.Type != innerType1:
+						ZCIWrn(ZCI, "2nd analysis: " + str(len(subVals1)+1) + "th value given in collection has different type than expected (expected " + unpfxTypeName(ZCI.getTypeNameFromID(innerType1))[0] + ", got " + unpfxTypeName(ZCI.getTypeNameFromID(v.Type))[0] + ")" + v2i.ZCIKindIfErr_ending)
+						typeSizesMustMatch(ZCI, ", in common data structure shortcut notation" + v2i.ZCIKindIfErr, v.Type, innerType1)
 
 				#read second subValue (for maps only)
 				if tgtMap:
@@ -352,11 +371,12 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 					subVals2.append(v)
 
 					#check its type also, they must all have the same one
-					if subVals2_type == TYPE_ID__UNKNOWN:
-						subVals2_type = v.Type
+					if innerType2 == TYPE_ID__UNKNOWN:
+						innerType2 = v.Type
 					else:
-						if v.Type != subVals2_type:
-							ZCIWrn(ZCI, "2nd analysis: " + str(len(subVals2)+1) + "th value given in collection has different type than the first one given (expected " + ZCI.getTypeNameFromID(subVals2_type) + ", got " + ZCI.getTypeNameFromID(v.Type) + ")" + v2i.ZCIKindIfErr_ending)
+						if v.Type != innerType2:
+							ZCIWrn(ZCI, "2nd analysis: " + str(len(subVals1)+1) + "th value given in collection has different type than expected (expected " + unpfxTypeName(ZCI.getTypeNameFromID(innerType2))[0] + ", got " + unpfxTypeName(ZCI.getTypeNameFromID(v.Type))[0] + ")" + v2i.ZCIKindIfErr_ending)
+							typeSizesMustMatch(ZCI, ", in common data structure shortcut notation" + v2i.ZCIKindIfErr, v.Type, innerType2)
 
 			#look for end separator
 			optionalBlanks(ZCI, None, BLANKS_EXTENDED)
@@ -377,52 +397,52 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 		#STEP 3: CONCLUSION
 
-		#empty stc notation => err
-		if len(subVals1) != 0:
-			ZCIErr(ZCI, "2nd analysis: Can't have empty root structure notation" + v2i.ZCIKindIfErr_ending)
+		#unable to solve inner types => err (no need to check whether the 2nd one is set for maps)
+		if len(innerType1) == TYPE_ID__UNKNOWN:
+			ZCIErr(ZCI, "2nd analysis: Unable to determine inner type of common data structure shortcut notation (require explicit inner type or at least one value inside)" + v2i.ZCIKindIfErr_ending)
 
-		#complete types with declinations: maps
+		#maps
 		if tgtMap:
-			subStc1_typeID = getOrCreateSpcTypeDcn(ZCI, #keys
-				v2i.ZCIKindIfErr_ending,
-				ZCI.getTypeInstanceFromID(subStc1_typeID),
-				[subVals1_type]
-			)
-			subStc2_typeID = getOrCreateSpcTypeDcn(ZCI, #value peers
-				v2i.ZCIKindIfErr_ending,
-				ZCI.getTypeInstanceFromID(subStc2_typeID),
-				[subVals2_type]
-			)
-			mainStc_typeID = getOrCreateSpcTypeDcn(ZCI, #main stc
-				v2i.ZCIKindIfErr_ending,
-				ZCI.getTypeInstanceFromID(mainStc_typeID),
-				[subVals1_type, subVals2_type]
-			)
 
-			#finishing result
-			keys       = val(subStc1_typeID, atm(ATM__LST_VAL, subVals1), True)
-			valuePeers = val(subStc2_typeID, atm(ATM__LST_VAL, subVals2), True)
-			res        = val(mainStc_typeID, atm(ATM__LST_VAL, [keys, valuePeers]), True)
+			#sub vals are going to be stored in custom datItms actually
+			rawKeys           = val(subStc1_typeID, atm(ATM__LST_VAL, subVals1), True)
+			rawValuePeers     = val(subStc2_typeID, atm(ATM__LST_VAL, subVals2), True)
+			datItm_keys       = v2i.scope.nextDcpDatItm(subStc1_typeID)
+			datItm_valuePeers = v2i.scope.nextDcpDatItm(subStc2_typeID)
 
-		#complete types with declinations: tab,lst
+			#then, real sub vals are just other refs to these datItm
+			keys       = val(subStc1_typeID, atm(ATM__DATITM, datItm_keys      ), False)
+			valuePeers = val(subStc2_typeID, atm(ATM__DATITM, datItm_valuePeers), False)
+
+			#res val is also going to be stored in a custom datItm actually
+			rawRes     = val(mainStc_typeID, atm(ATM__LST_VAL, [keys, valuePeers]), True)
+			datItm_res = v2i.scope.nextDcpDatItm(mainStc_typeID)
+
+			#then, real res is just another ref to that datItm
+			res = val(mainStc_typeID, atm(ATM__DATITM, datItm_res), False)
+
+		#tab,lst
 		else:
-			mainStc_typeID = getOrCreateSpcTypeDcn(ZCI,
-				v2i.ZCIKindIfErr_ending,
-				ZCI.getTypeInstanceFromID(mainStc_typeID),
-				[subVals1_type]
-			)
 
-			#table with only one element => explicit priorization
+			#table with only one element => explicit priorization (wasn't a tab actually)
 			if len(subVals1) == 1 and tgtEnd == ')':
 				res = subVals1[0]
 				ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in EXPLICIT PRIORIZATION:\n" + res.toStr())
 				return res
 
-			#finishing result
-			res = val(mainStc_typeID, atm(ATM__LST_VAL, subVals1), True)
+			#res val is going to be stored in a custom datItm actually
+			rawRes     = val(mainStc_typeID, atm(ATM__LST_VAL, subVals1), True)
+			datItm_res = v2i.scope.nextDcpDatItm(mainStc_typeID)
+
+			#then, real res is just another ref to that datItm
+			res = val(mainStc_typeID, atm(ATM__DATITM, datItm_res), False)
+
+		#create common data structure delimitations
+		v2i.scope.header.append(asg(datItm_res, rawRes))
+		v2i.scope.footer.append(call("GT" + mainStc_typeName + "_Ffree", [datItm_res], TYPE_ID_UNKNOWN)) #btw, for maps, no need to free sub dat stc, maps "free()" will take this in charge
 
 		#return result
-		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in ROOT STRUCTURE NOTATION:\n" + res.toStr())
+		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION:\n" + res.toStr())
 		return res
 
 	#having found a colon but wasn't a map => no pattern matches such a thing
@@ -461,19 +481,8 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 			if len(seq) == 0:
 				ZCIErr(ZCI, "2nd analysis: Missing valid hexadecimal characters in multi-bytes notation" + v2i.ZCIKindIfErr_ending)
 
-			#get corresponding raw type
-			rawTypeID   = 0
-			rawTypeName = "raw" + str(len(seq))
-			if rawTypeName in ZCI.zCtx.rawTypeNames.keys():
-				rawTypeID = ZCI.zCtx.rawTypeNames[rawTypeName]
-
-			#or create it if it doesn't exist yet
-			else:
-				rawTypeID = ZCI.zCtx.cpl.newTyp(rawTypeName, size=len(seq))
-				ZCI.zCtx.rawTypeNames[rawTypeName] = rawTypeID
-
 			#finish result
-			res = val(rawTypeID, atm(ATM__LST_VAL, seq), True)
+			res = val(ZCI.zCtx.rawType, atm(ATM__LST_VAL, seq), True)
 			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in MULTI-BYTE NOTATION:\n" + res.toStr())
 			return res
 
@@ -500,39 +509,66 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 
 
-	# IV] LITERAL: STRUCTURE DEFINITION
+	# IV] LITERAL: STARTING WITH TYPE
 
 	#try reading a type
-	tID = readType(ZCI, None, errIfNotExisting=False)
+	tID = readType(ZCI, None, errIfNotExisting=False, dcnKwLstToReplace=dcnKwLstToReplace)
 	if tID != TYPE_ID__UNKNOWN:
-		ZCIDeepDbg(ZCI, "2nd analysis: Structure definition detected.")
-
-		#dcn keyword
-		if tID == ZCI.zCtx.gncDcnType or tID in ZCI.zCtx.spcDcnTypes:
-			ZCIErr(ZCI, "2nd analysis: Can't use structure definition with any \"dcn\" keyword" + v2i.ZCIKindIfErr_ending)
 		tInst = ZCI.getTypeInstanceFromID(tID)
 
-		#must be a structure
-		if tInst.dcnCommon.nature != NATURE__STC:
-			ZCIErr(ZCI, "2nd analysis: Only structure types are allowed as type definition value" + v2i.ZCIKindIfErr_ending)
 
-		#continue parsing to get its fields
-		optionalBlanks(ZCI, "2nd analysis: Value parsing (structure definition with type \"" + tInst.name + "\" detected).")
-		if ZCI.get() != '{':
-			ZCIErr(ZCI, "2nd analysis: Expected a braces includer for structure definition value" + v2i.ZCIKindIfErr_ending)
 
-		#read given values between braces includer
-		givenFields = readValSeq(ZCI,
-			v2i.ZCIKindIfErr,
-			tInst.dcnCommon.fields,
-			v2i.scope,
-			cstOnly=v2i.cstOnly
-		)
+		#case 1: enm value
+		if tInst.dcnCommon.nature != NATURE__ENM:
+			ZCIDeepDbg(ZCI, "2nd analysis: Enm value detected.")
 
-		#return complete fields map as value
-		res = val(tID, atm(ATM__FMAP_STR_VAL, givenFields), True)
-		ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in STRUCTURE DEFINITION:\n" + res.toStr())
-		return res
+			#must be followed by field name
+			if ZCI.get() != '.':
+				ZCIErr(ZCI, "Expected field access operator '.' after enm type given as value" + v2i.ZCIKindIfErr_ending)
+			ZCI.inc()
+			fieldName = readName(ZCI, "field name after enm type given as value" + v2i.ZCIKindIfErr_ending, dblUnderscores=True)
+
+			#get idx
+			idx    = -1
+			fields = tInst.dcnCommon.fields
+			for f in range(len(fields)):
+				if fields[f].name == fieldName: #found it
+					idx = f
+					break
+
+			#no field found with given name
+			if idx == -1:
+				ZCIErr(ZCI, "Enumerate type " + unpfxTypeName(ZCI.zCtx, tInst.name)[0] + " has no field \"" + fieldName + "\".")
+
+			#associated idx is the final resulting value, but type is still the one of the ENM itself (not the one of the field)
+			res = val(tID, atm(ATM__U64, idx), True)
+			return res
+
+
+
+		#case 2: structure definition
+		else:
+			ZCIDeepDbg(ZCI, "2nd analysis: Structure definition detected.")
+			if tInst.dcnCommon.nature != NATURE__STC:
+				ZCIErr(ZCI, "2nd analysis: Only structure types are allowed as type definition value" + v2i.ZCIKindIfErr_ending)
+
+			#continue parsing to get its fields
+			optionalBlanks(ZCI, "2nd analysis: Value parsing (structure definition with type \"" + tInst.name + "\" detected).")
+			if ZCI.get() != '{':
+				ZCIErr(ZCI, "2nd analysis: Expected a braces includer for structure definition value" + v2i.ZCIKindIfErr_ending)
+
+			#read given values between braces includer
+			givenFields = readValSeq(ZCI,
+				v2i.ZCIKindIfErr,
+				tInst.dcnCommon.fields,
+				v2i.scope,
+				cstOnly=v2i.cstOnly
+			)
+
+			#return complete fields map as value
+			res = val(tID, atm(ATM__FMAP_STR_VAL, givenFields), True)
+			ZCIDeepDbg(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in STRUCTURE DEFINITION:\n" + res.toStr())
+			return res
 
 
 
@@ -607,7 +643,7 @@ def secondAnalysisIncludingFOs(ZCI, allowVFC, v2i):
 	if starter == '#':
 		ZCIDeepDbg(ZCI, "2nd analysis: Processing FSZ operator (2nd analysis).")
 		ZCI.inc()
-		Type = readType(ZCI, v2i.ZCIKindIfErr, v2i.dcnKwLstToReplace)
+		Type = readType(ZCI, v2i.ZCIKindIfErr, dcnKwLstToReplace=v2i.dcnKwLstToReplace)
 
 		#get size
 		tInst = ZCI.getTypeInstanceFromID(Type)
@@ -677,7 +713,7 @@ def secondAnalysisIncludingFOs(ZCI, allowVFC, v2i):
 
 		#read explicit type
 		ZCIDeepDbg(ZCI, "2nd analysis: Processing FCA operator on " + res.toStr())
-		res.Type = readType(ZCI, v2i.ZCIKindIfErr, v2i.dcnKwLstToReplace)
+		res.Type = readType(ZCI, v2i.ZCIKindIfErr, dcnKwLstToReplace=v2i.dcnKwLstToReplace)
 
 		#overwrite result type
 		ZCIDeepDbg(ZCI, "2nd analysis: FCA operator applied type " + unpfxType(ZCI.getTypeNameFromID(res.Type)) + " on value " + res.toStr())
@@ -746,16 +782,33 @@ def secondAnalysisIncludingFOs(ZCI, allowVFC, v2i):
 				latestChkType = newChk.retType
 				FAChain.append( atm(ATM__CALL, newChk) )
 
-			#case 2: else => stc/enm field
+			#case 2: else => stc field
 			else:
 
 				#error case
 				if newChk_modPfx != "G":
-					ZCIErr(ZCI, "2nd analysis: Can't use module prefix when trying to access enm/stc field (field \"" + newChk_rawName + "\" from module " + unpfxMod(newChk_modPfx) + ")" + v2i.ZCIKindIfErr_ending)
+					ZCIErr(ZCI, "2nd analysis: Can't use module prefix when trying to access stc field (field \"" + newChk_rawName + "\" from module " + unpfxMod(newChk_modPfx) + ")" + v2i.ZCIKindIfErr_ending)
 
-				#update latest chunk type + add to chain
-				latestChkType = getTypeFieldFromName(ZCI, latestChkType, newChk_rawName).Type
-				FAChain.append( atm(ATM__STR, newChk_rawName) )
+				#stc only
+				stcInst = ZCI.zCtx.getTypeInstanceFromID(latestChkType)
+				if stcInst.dcnCommon.nature != NATURE__STC:
+					ZCIErr(ZCI, "Type " + unpfxTypeName(ZCI.zCtx, stcInst.name)[0] + " is not a structure type, cannot get fields from it.")
+
+				#get field from stc
+				offset        = 0
+				latestChkType = TYPE_ID__UNKNOWN
+				for f in stcInst.dcnCommon.fields:
+					if f.name == newChk_rawName: #found it
+						latestChkType = f.Type   #update latestChkType
+						break
+					offset += ZCI.zCtx.getTypeInstanceFromID(f.Type).dcnCommon.size
+
+				#no field found with given name
+				if latestChkType == TYPE_ID_UNKNOWN:
+					ZCIErr(ZCI, "Structure type " + unpfxTypeName(ZCI.zCtx, stcInst.name)[0] + " has no field \"" + newChk_rawName + "\".")
+
+				#only add offset to chain
+				FAChain.append( atm(ATM__U32, offset) )
 
 			#another field => continue
 			if ZCI.get() != '.':

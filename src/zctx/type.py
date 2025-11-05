@@ -115,22 +115,6 @@
 
 
 
-#type fields
-def getTypeFieldFromName(ZCI, tgtTypeID, tgtFieldName):
-	tInst = ZCI.zCtx.getTypeInstanceFromID(tgtTypeID)
-
-	#type nature check
-	if tInst.dcnCommon.nature == NATURE__PRM:
-		ZCIErr(ZCI, "Type " + unpfxTypeName(ZCI.zCtx, tInst.name)[0] + " is a primitive type, cannot get fields from it.")
-
-	#look for the given name in type fields
-	for f in tInst.dcnCommon.fields:
-		if f.name == tgtFieldName:
-			return f
-	ZCIErr(ZCI, "Type " + unpfxTypeName(ZCI.zCtx, tInst.name)[0] + " has no field \"" + tgtFieldName + "\".")
-
-
-
 #get / create specific declination for a given type
 def getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns):
 
@@ -198,3 +182,12 @@ def setEnmFieldsType(zCtx, fields):
 
 	#can be useful afterwards
 	return itmType
+
+
+
+#size match
+def typeSizesMustMatch(ZCI, ZCIKindIfErr_ending, type1, type2):
+	t1Inst = ZCI.getTypeInstanceFromID(type1)
+	t2Inst = ZCI.getTypeInstanceFromID(type2)
+	if t1Inst.dcnCommon.size != t2Inst.dcnCommon.size:
+		ZCIErr(ZCI, "Incompatible type sizes between type \"" + t1Inst.name + "\" with size " + str(t1Inst.dcnCommon.size) + " and \"" + t2Inst.name + "\" with size " + str(t2Inst.dcnCommon.size) + ZCIKindIfErr_ending)

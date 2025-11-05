@@ -3,7 +3,7 @@
 	# ---------------- EXT RESOURCES ----------------
 
 	#types
-	def loadExtType(sbj, extFPPath, info):
+	def loadExtType(sbj, extFPPath, name, info):
 		if len(info) < 1:
 			sbj.err("Missing nature (p/s/e) for type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 		if len(info) < 2:
@@ -19,7 +19,7 @@
 		dcnDeg  = 0
 		lastIdx = len(dcnDegTxt)-1
 		for d in range(len(dcnDegTxt)):
-            dcnDeg += chr_halfHex_toS8(dcnDegTxt[d]) * (10**(lastIdx-d))
+			dcnDeg += chr_halfHex_toS8(dcnDegTxt[d]) * (10**(lastIdx-d))
 
 		#prepare new type
 		t     = sbj.cpl.newTyp(name, dcnDeg, isPub=True)
@@ -38,6 +38,7 @@
 				sbj.err("Unable to find parent type " + info[2] + " for primitive type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 
 			#relevant prm data
+			print('OOOOOOOOOOOOOOOOOOOOOOH['+info[2]+']['+str(parentID)+']')
 			tInst.dcnCommon.size   = sbj.getTypeInstanceFromID(parentID).dcnCommon.size
 			tInst.dcnCommon.parent = parentID
 
@@ -109,11 +110,9 @@
 
 
 	#data items
-	def loadExtDatItm(sbj, extFPPath, info):
+	def loadExtDatItm(sbj, extFPPath, name, info):
 		if len(info) < 1:
 			sbj.err("Missing type for data item " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
-		if len(info) < 2:
-			sbj.err("Missing name for data item " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 
 		#datItm type
 		typeID = sbj.getTypeIDFromName(info[0])
@@ -121,13 +120,12 @@
 			sbj.err("Unable to find type " + info[0] + " for data item type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 
 		#datItm name
-		DIName = info[1]
-		for c in DIName:
+		for c in name:
 			if c not in DEFAULT_NAME_CHARSET:
-				sbj.err("Invalid character '" + c + "' in data item name \"" + DIName + "\" in structure type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+				sbj.err("Invalid character '" + c + "' in data item name \"" + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 
 		#create ext datItm
-		di     = datItm(typeID, DIName, False, None)
+		di     = datItm(typeID, name, False, None)
 		di.ext = True
 
 		#add it to gbl scp
@@ -139,6 +137,11 @@
 	def loadExtFct(sbj, extFPPath, name, info):
 		if len(info) < 1:
 			sbj.err("Missing return type for function " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+
+		#fct name
+		for c in name:
+			if c not in DEFAULT_NAME_CHARSET:
+				sbj.err("Invalid character '" + c + "' in function name \"" + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 
 		#read params given
 		retType = TYPE_ID__UNKNOWN
@@ -184,8 +187,8 @@
 		#for entry
 		for name in fp.keys():
 			id   = name[0]
-			name = name[1:]
 			info = fp[name].split(',')
+			name = name[1:]
 
 			#check info element emptyness
 			for i in range(len(info)):

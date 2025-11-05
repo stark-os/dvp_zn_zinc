@@ -482,7 +482,7 @@ def processFwdDcl(ZCI, isPub):
 			#error cases
 			if dstF.params[p].name != srcF.params[p].name:
 				ZCIErr(ZCI, "Can only forward functions with same parameters names (expected \"" + srcF.params[p].name + "\" as parameter " + str(p+1) + ", got \"" + dstF.params[p].name + "\", in DCL_FWD).")
-			paramTypeSizesMustMatch(ZCI, "in function forwarding (DCL_FWD).", p, dstF.params[p].Type, srcF.params[p].Type)
+				typeSizesMustMatch(ZCI, ", in function forwarding (DCL_FWD).", dstF.params[p].Type, srcF.params[p].Type)
 
 		#add param values
 		paramVals.append(

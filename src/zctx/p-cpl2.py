@@ -25,9 +25,9 @@
 					sbj.err("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " in local cfg/cpl_opt.cfg (32 or 64 expected)")
 
 			#check value: FILE PATH
-			elif CPL_OPT__ALLOWED[o] == CPL_OPT__VALUES__FILE:
-				if not os.path.isfile(cpl_opt[o]):
-					sbj.err("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " in local cfg/cpl_opt.cfg (existing filepath expected)")
+			elif CPL_OPT__ALLOWED[o] == CPL_OPT__VALUES__DIR:
+				if not os.path.isdir(cpl_opt[o]):
+					sbj.err("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " in local cfg/cpl_opt.cfg (existing directory path expected)")
 
 			#check value: ON / OFF
 			elif CPL_OPT__ALLOWED[o] == CPL_OPT__VALUES__ONOFF:

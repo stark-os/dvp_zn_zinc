@@ -51,7 +51,7 @@ def main():
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
 		config.read(CXD + "/../cfg/pcpl_itm.cfg", comment_character='%', additionnalSpacesAllowed=False),
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
-		CPL__MODE_EXE,
+		CPL__MODE_EXE | CPL__USE_REF_ALLOWED,
 
 		#debug
 		dbgMode = (

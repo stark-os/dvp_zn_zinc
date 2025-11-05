@@ -26,8 +26,7 @@ ROOT_TYPES = (
 	"s16", "u16",
 	"s32", "u32",
 	"s64", "u64",
-	"f32", "f64",
-	"ref"
+	"f32", "f64"
 )
 RT__BOO = 0 #enm #for indexing in zCtx.rootTypes
 RT__S8  = 1
@@ -40,15 +39,7 @@ RT__S64 = 7
 RT__U64 = 8
 RT__F32 = 9
 RT__F64 = 10
-RT__REF = 11
-#RT__STC = 12
-
-#root stc types
-RST__TAB  = 0
-RST__DLT  = 1
-RST__LST  = 2
-RST__FMAP = 3
-RST__MMAP = 4
+#RT__STC = 11
 
 #specific type ID
 TYPE_ID__UNKNOWN = -1
@@ -242,19 +233,23 @@ JMP__BRK = 0
 JMP__CTN = 1
 JMP__RET = 2
 
-#cpl mode
-CPL__MODE_EXE = 0
-CPL__MODE_SDL = 1
+#cpl info
+CPL__MODE_EXE  = 0
+CPL__MODE_SDL  = 1
+CPL__MODE_MASK = 1
+CPL__USE_REF_ALLOWED   = 0
+CPL__USE_REF_FORBIDDEN = 2
+CPL__USE_REF_MASK      = 2
 
 #cpl opt set
 CPL_OPT__VALUES__ARCH  = 0 #architecture type
-CPL_OPT__VALUES__FILE  = 1
+CPL_OPT__VALUES__DIR   = 1
 CPL_OPT__VALUES__ONOFF = 2
 CPL_OPT__VALUES__DIGIT = 3
 CPL_OPT__VALUES__RTYPE = 4 #root type
 CPL_OPT__ALLOWED = {
 	"ARCH":                         CPL_OPT__VALUES__ARCH,
-	"LLI_INV_PATH":                 CPL_OPT__VALUES__FILE,
+	"LLI_DIR_PATH":                 CPL_OPT__VALUES__DIR,
 	"DEFAULT_ACCESS_PUB":           CPL_OPT__VALUES__ONOFF,
 	"COMMON_STC_SHORTCUTS":         CPL_OPT__VALUES__ONOFF,
 	"MAX_INSTRUCTS_NOFCT":          CPL_OPT__VALUES__DIGIT,
