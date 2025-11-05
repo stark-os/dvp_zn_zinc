@@ -9,11 +9,19 @@ class pcplDat:
 		sbj.inCfgItms  = itms #loaded in cfg/pcpl_itms.cfg
 		sbj.cfgs       = cfgs
 
+		#literal str
+		sbj.litStrIdx = -1
+		sbj.litStr    = []
+
 		#max complexity allowed in directives
 		sbj.directivesMaxComplexity = PCPL__DIRECTIVES_MAX_COMPLEXITY
 
 		#cur nbr of failures found in one try of parsing
 		sbj.failures = 0
+
+	def nextLitStrDIName(sbj):
+		sbj.litStrIdx += 1
+		return "L" + str(sbj.litStrIdx)
 
 def newPcplDat(cfgs, itms):
 	formattedCfgs = {}

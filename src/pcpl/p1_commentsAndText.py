@@ -37,7 +37,6 @@ def p1_commentsAndText(zCtx):
 	# PREPARE FOR DETECTION
 
 	#literal strings replacement
-	curStrLen = 0
 	curStrDat = ""
 
 	#fields detection
@@ -145,16 +144,11 @@ def p1_commentsAndText(zCtx):
 				#end sequence
 				if c == '"':
 
-					#write length
-					output += "str{lenMax=128l,len=" + str(curStrLen) + "l,dat=" #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+					#store aside for further treatment (multi-byte notation)
+					zCtx.pcpl.litStr.append(BN_PFX + BN_PFX + curStrDat)
 
-					#case 1: empty string (null data)
-					if curStrLen == 0:
-						output += "0l}"
-
-					#case 2: anything else (multi-byte notation)
-					else:
-						output += BN_PFX + BN_PFX + curStrDat + '}'
+					#set corresponding data item instead
+					output += zCtx.pcpl.nextLitStrDIName()
 					inStr = False
 					continue
 
@@ -169,7 +163,6 @@ def p1_commentsAndText(zCtx):
 
 			#escaping or not => set character
 			curStrDat += BN_fromChr(zCtx, c, escaping=escaping)
-			curStrLen += 1
 			continue
 
 
@@ -212,7 +205,6 @@ def p1_commentsAndText(zCtx):
 
 		#strings detection
 		if c == '"':
-			curStrLen = 0
 			curStrDat = ""
 			inStr     = True
 			continue
