@@ -2,6 +2,23 @@
 
 	# ---------------- EXT RESOURCES ----------------
 
+	#specific tool only for ext loading
+	def getTypeIDFromName_includingDcnIfNeeded(sbj, extFPPath, typeName):
+
+		#create fake ZCI containing type name to read
+		fakeCtx = ParsingCtx(extFPPath, typeName)
+		fakeZCI = newZCI(sbj, [fakeCtx])
+		fakeZCI.inc()
+		fakeZCI.stopIdx = len(typeName)-1
+
+		#read type as in real Z code
+		tID = readType(fakeZCI, None)
+		if tID == TYPE_ID__UNKNOWN:
+			sbj.err("Unknown type \"" + typeName + "\" in fingerprint file " + extFPPath, prtLine=False, prtSubCtxs=False)
+		return tID
+
+
+
 	#types
 	def loadExtType(sbj, extFPPath, name, info):
 		if len(info) < 1:
@@ -33,12 +50,11 @@
 			#parent type must be given
 			if len(info) < 3:
 				sbj.err("Missing parent to primitive type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
-			parentID = sbj.getTypeIDFromName(info[2])
+			parentID = sbj.getTypeIDFromName_includingDcnIfNeeded(extFPPath, info[2])
 			if parentID == TYPE_ID__UNKNOWN:
 				sbj.err("Unable to find parent type " + info[2] + " for primitive type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 
 			#relevant prm data
-			print('OOOOOOOOOOOOOOOOOOOOOOH['+info[2]+']['+str(parentID)+']')
 			tInst.dcnCommon.size   = sbj.getTypeInstanceFromID(parentID).dcnCommon.size
 			tInst.dcnCommon.parent = parentID
 
@@ -54,7 +70,7 @@
 
 				#field type
 				typeName = info[2+i]
-				typeID   = sbj.getTypeIDFromName(typeName)
+				typeID   = sbj.getTypeIDFromName_includingDcnIfNeeded(extFPPath, typeName)
 				if typeID == TYPE_ID__UNKNOWN:
 					sbj.err("Unable to find field type \"" + typeName + "\" in structure type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 
@@ -115,7 +131,7 @@
 			sbj.err("Missing type for data item " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 
 		#datItm type
-		typeID = sbj.getTypeIDFromName(info[0])
+		typeID = sbj.getTypeIDFromName_includingDcnIfNeeded(extFPPath, info[0])
 		if typeID == TYPE_ID__UNKNOWN:
 			sbj.err("Unable to find type " + info[0] + " for data item type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 
@@ -148,12 +164,11 @@
 		params  = [] #lst[datItm]
 		for i in range(len(info)):
 
-			#get type ID (should be a root type if no other default type is loaded yet)
-			tID = sbj.getTypeIDFromName(info[i])
-
 			#"void" keyword is allowed, but every other undefined type must raise an error
-			if tID == TYPE_ID__UNKNOWN and info[i] != "void":
-				sbj.err("Unable to find type " + info[i] + " as parameter for function " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+			if info[i] == "void":
+				tID = TYPE_ID__UNKNOWN
+			else:
+				tID = sbj.getTypeIDFromName_includingDcnIfNeeded(extFPPath, info[i])
 
 			#retType
 			if i == 0:

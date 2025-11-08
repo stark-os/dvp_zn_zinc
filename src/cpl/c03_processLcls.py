@@ -16,7 +16,7 @@ from cpl.c02_redirectGbl import *
 # -------- CONDITIONAL STATEMENTS --------
 
 #if - elf - els
-def processIfStm(ZCI, tgtFct, scope):
+def processIfStm(ZCI, scope, tgtFct):
 	ZCIDbg(ZCI, "Processing IF STM in function " + tgtFct.name, prtLine=False)
 	jumpBlankZone(ZCI, None)
 
@@ -521,10 +521,10 @@ def processRetJmp(ZCI, scope, tgtFct):
 	#try read ret val if given
 	retVal = None
 	if not ZCI.reachedEnd():
-		retVal = readVal(ZCI, "Return value in function " + tgtFct.name + " (JMP_RET).", scope)
+		retVal = readVal(ZCI, "return value in function " + tgtFct.name + " (JMP_RET).", scope)
 
 	#retVal must match with fct ret requirements (void/!void)
-	if f.retType == TYPE_ID__UNKNOWN:
+	if tgtFct.retType == TYPE_ID__UNKNOWN:
 		if retVal is not None:
 			ZCIErr(ZCI, "Must return nothing (void function " + tgtFct.name + " targetted, JMP_RET).")
 	else:

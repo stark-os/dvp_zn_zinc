@@ -145,10 +145,10 @@ def p1_commentsAndText(zCtx):
 				if c == '"':
 
 					#store aside for further treatment (multi-byte notation)
-					zCtx.pcpl.litStr.append(BN_PFX + BN_PFX + curStrDat)
+					zCtx.pcpl.litStr.append(curStrDat)
 
 					#set corresponding data item instead
-					output += zCtx.pcpl.nextLitStrDIName()
+					output += zCtx.pcpl.nextLitStrDIName() + ".dat"
 					inStr = False
 					continue
 

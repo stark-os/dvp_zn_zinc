@@ -73,35 +73,43 @@ def newZCtx(
 		res.rootTypes[RT__F64] = res.cpl.newTyp("GUf64", size=res.SIZE__U64)
 
 		#max prm
-		res.umaxType = res.cpl.newTyp("GUumax", size=res.SIZE__U64)
-		res.umaxSize = res.SIZE__U64
-		res.umaxZero = val(res.umaxType, atm(ATM__U64, 0), True)
-		res.umaxOne  = val(res.umaxType, atm(ATM__U64, 1), True)
+		res.smaxType = res.cpl.newTyp("GUsmax", size=res.SIZE__U64)
+		res.smaxSize = res.SIZE__U64
+		res.smaxZero = val(res.smaxType, atm(ATM__S64, 0), True)
+		res.smaxOne  = val(res.smaxType, atm(ATM__S64, 1), True)
+
+		#set also as smax parent
+		smaxInst = res.getTypeInstanceFromID(res.smaxType)
+		smaxInst.dcnCommon.parent = res.rootTypes[RT__S64]
 
 	#32bits
 	else:
 
 		#max prm
-		res.maxPrmType = res.rootTypes[RT__U32]
-		res.maxPrmSize = res.SIZE__U32
-		res.maxPrmZero = val(res.maxPrmType, atm(ATM__U32, 0), True)
-		res.maxPrmOne  = val(res.maxPrmType, atm(ATM__U32, 1), True)
+		res.smaxPrmType = res.rootTypes[RT__S32]
+		res.smaxPrmSize = res.SIZE__U32
+		res.smaxPrmZero = val(res.smaxPrmType, atm(ATM__S32, 0), True)
+		res.smaxPrmOne  = val(res.smaxPrmType, atm(ATM__S32, 1), True)
+
+		#set also as smax parent
+		smaxInst = res.getTypeInstanceFromID(res.smaxType)
+		smaxInst.dcnCommon.parent = res.rootTypes[RT__S32]
 
 	#refs
-	res.refType = res.cpl.newTyp("GUref", dcnDeg=1, size=res.umaxSize)
+	res.refType = res.cpl.newTyp("GUref", dcnDeg=1, size=res.smaxSize)
 
 	#raw
 	res.rawType = res.cpl.newTyp("GUraw")
 	rawTypeInst = res.getTypeInstanceFromID(res.rawType)
 	rawTypeInst.dcnCommon.nature = NATURE__STC
 	rawTypeInst.dcnCommon.fields = [
-		datItm(res.umaxType, "len", False, None),
-		datItm(res.umaxType, "dat", False, None)
+		datItm(res.smaxType, "len", False, None),
+		datItm(res.smaxType, "dat", False, None)
 	]
 	rawTypeInst.computeStcSize(res.cpl.types)
 
 	#stc type
-	#res.stcType = res.cpl.newTyp("GUstc", size=res.umaxSize)
+	#res.stcType = res.cpl.newTyp("GUstc", size=res.smaxSize)
 
 	#init root stcs
 	#res.rootStcTypes = zCtx__addRootStcs(res) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< let's say they must be given by user
@@ -114,7 +122,7 @@ def newZCtx(
 		res.spcDcnTypes.append( res.cpl.newTyp("GUdcn" + str(d)) )
 
 	#LLI
-	res.loadExtFP(res.cpl.opts['LLI_DIR_PATH'] + "/core.sdl.cfg.TMP_FOR_Z_CPL") #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< use regular "core.cfg" at the end
+	res.loadExtFP(res.cpl.opts['LLI_FP_PATH'])
 	return res
 
 
@@ -139,10 +147,10 @@ class zctx:
 		sbj.SIZE__U64 = 8
 
 		#biggest prm
-		sbj.umaxType = 0
-		sbj.umaxSize = 0
-		sbj.umaxZero = None
-		sbj.umaxOne  = None
+		sbj.smaxType = 0
+		sbj.smaxSize = 0
+		sbj.smaxZero = None
+		sbj.smaxOne  = None
 
 		#types
 		sbj.rootTypes    = None

@@ -58,8 +58,3 @@ def zCtx__findMatchingOperator(sbj, opeHeader, paramTypeIDs, paramTypeNames):
 
 	#no alternative found
 	return None
-
-
-
-
-

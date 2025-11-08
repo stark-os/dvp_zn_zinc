@@ -61,7 +61,7 @@ def readDatItm(ZCI,
 	#missing Type still not solved
 	if Type == TYPE_ID__UNKNOWN:
 		if not allowUnsolvableType:
-			ZCIErr(ZCI, "Unsolvable type to given element \"" + name + "\" (required either explicitely or implicity using initial value)" + ZCIKinfIfErr_ending)
+			ZCIErr(ZCI, "Unsolvable type to given element \"" + name + "\" (required either explicitely or implicity using initial value)" + ZCIKindIfErr_ending)
 
 	#result
 	ZCIDeepDbg(ZCI, "Ended reading data item.")

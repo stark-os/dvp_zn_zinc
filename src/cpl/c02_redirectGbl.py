@@ -142,8 +142,8 @@ def processTypeDcl(ZCI, isPub):
 
 		#special case: no "raw" type allowed
 		for di in newTypeInst.dcnCommon.fields:
-			if di.Type in ZCI.zCtx.rawTypeNames.values():
-				ZCIErr(ZCI, "Structure type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" contains a field of \"raw\" type => forbidden, in type declaration ZCI (DCL_TYP).")
+			if di.Type == ZCI.zCtx.rawType:
+				ZCIErr(ZCI, "Structure type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" contains a field of type \"raw\" => forbidden, in type declaration ZCI (DCL_TYP).")
 
 		#compute size
 		newTypeInst.computeStcSize(ZCI.zCtx.cpl.types)
@@ -605,17 +605,11 @@ def processVFC(ZCI, scope, tgtFct):
 	#read ZCI content as reading a value: it MUST be a call (either operator, !VFC or VFC)
 	v = readVal(ZCI, "void returning function call" + scpTxt + " (VFC_VFC).", scope, allowVFC=True, dcnKwLstToReplace=tgtFct.dcnKwLstToReplace)
 
-	#case 1: FA chain => decompose it directly into scope
-	if v.vdat.id == ATM__LST_ATM:
-		scope.exes.append(
-			decomposeFAChain(ZCI, scope, v.vdat.dat, spcTxt + " (VFC_VFC).", True)
-		)
-
-	#case 2: call => add it to scope
-	elif v.vdat.id == ATM__CALL:
+	#call => add it to scope
+	if v.vdat.id == ATM__CALL:
 		scope.exes.append(v.vdat)
 
-	#other: unknown ZCI
+	#other => unknown ZCI
 	else:
 		ZCIErr(ZCI, "Invalid ZCS, unknown ZCI given" + scpTxt + " (Expected function call or field access chain, VFC_VFC).")
 
@@ -681,6 +675,25 @@ def c02_redirectGbl(zCtx):
 	zCtx.dbg("======================== C02 REDIRECT GLOBAL : beginning ========================")
 	zCtx.dbg("=================================================================================")
 	zCtx.deepDbgPause()
+
+	#before loading any gbl ZCI, load lit str saved at step P1
+	for i in range(zCtx.pcpl.litStrIdx+1):
+		hs = zCtx.pcpl.litStr[i] #hex str (2 hex chr per chr)
+
+		#transform lit str as raw val
+		seq = [] #lst[val]
+		for c in range(int(len(hs)/2)):
+			seq.append(val(
+				zCtx.rootTypes[RT__S8],
+				atm(ATM__S8, hex_toS8(hs[2*c], hs[2*c+1]) ),
+				True
+			))
+		zCtx.cpl.gblScp.datItms.append(datItm(
+			zCtx.rawType,
+			"GE__" + str(i),
+			True,
+			val(zCtx.rawType, atm(ATM__LST_VAL, seq), True)
+		))
 
 	#manually set resource access
 	manualAccess_set   = False

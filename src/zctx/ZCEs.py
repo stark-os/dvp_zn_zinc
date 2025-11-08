@@ -61,7 +61,6 @@ class zci:
 	#WARNING! Must be used with ctx.icontent.idx at startIdx position !
 	#ctx will be forwarded if necessary (beginning strip).
 	def strip(sbj):
-		sbj.updateTxt()
 
 		#strip beginning
 		beginningShift = str_getBeginningStripIndex(sbj.txt, charset=BLANKS_EXTENDED)
@@ -153,7 +152,7 @@ def dumpZCIs(ZCIs, filename, oneLine=True):
 	if oneLine:
 		output = '['
 		for ZCI in ZCIs:
-			output += TERM__OUTPUT_TAB + ZCI.toStr() + ","
+			output += ZCI.toStr() + ",\n"
 		output += ']'
 	else:
 		outputLst = []

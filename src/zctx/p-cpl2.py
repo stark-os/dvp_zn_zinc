@@ -17,7 +17,7 @@
 
 			#option must be defined
 			if o not in cpl_opt:
-				sbj.err("Missing compilation option \"" + o + "\" in local cfg/cpl_opt.cfg.")
+				sbj.err("Missing compilation option \"" + o + "\" in local cfg/cpl_opt.cfg.", prtLine=False, prtSubCtxs=False)
 
 			#check value: ARCH type
 			if CPL_OPT__ALLOWED[o] == CPL_OPT__VALUES__ARCH:
@@ -25,9 +25,9 @@
 					sbj.err("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " in local cfg/cpl_opt.cfg (32 or 64 expected)")
 
 			#check value: FILE PATH
-			elif CPL_OPT__ALLOWED[o] == CPL_OPT__VALUES__DIR:
-				if not os.path.isdir(cpl_opt[o]):
-					sbj.err("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " in local cfg/cpl_opt.cfg (existing directory path expected)")
+			elif CPL_OPT__ALLOWED[o] == CPL_OPT__VALUES__FILE:
+				if not os.path.isfile(cpl_opt[o]):
+					sbj.err("Invalid value \"" + cpl_opt[o] + "\" for compilation option " + o + " in local cfg/cpl_opt.cfg (existing file path expected)")
 
 			#check value: ON / OFF
 			elif CPL_OPT__ALLOWED[o] == CPL_OPT__VALUES__ONOFF:

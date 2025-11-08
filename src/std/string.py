@@ -122,3 +122,15 @@ def str_expandTabs(s, expansionLength):
 		else:
 			result += c
 	return result
+
+def str_findFirstChr(s, c):
+	for i in range(len(s)):
+		if s[i] == c:
+			return i
+	return -1
+
+def str_findLastChr(s, c):
+	for i in range(len(s)):
+		if s[len(s)-1-i] == c:
+			return i
+	return -1

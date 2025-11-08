@@ -30,6 +30,10 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPfx=None):
 		modPfx = ""
 	ZCI.modPfx = modPfx
 
+	#replace skipped line feeds with blanks
+	ZCI.updateTxt()
+	ZCI.ctx.icontent.s = ZCI.ctx.icontent.s.replace("\\\n", "  ") #skipped blanks
+
 	#strip sides
 	ZCI.strip()
 	ZCIDeepDbg(ZCI, "Stripped blanks from ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=False, prtLine=False)

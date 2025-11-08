@@ -97,15 +97,16 @@ def PCPL__processCFG(zCtx, negation):
 	PCPL__jumpBlankZone(zCtx, "CFG")
 
 	#read & check cfg name given
-	cfgName = PCPL__readUntil(zCtx, BLANKS)
+	cfgName = PCPL__readUntil(zCtx, BLANKS+('{',))
 	PCPL__checkNameCharset(zCtx, cfgName)
 
 	#not even in cfgs
 	if cfgName not in zCtx.pcpl.cfgs.keys():
-		zCtx.err("No precompiler configuration with name \"" + name + "\" (in cfg/pcpl_cfgs.cfg).")
+		zCtx.err("No precompiler configuration with name \"" + cfgName + "\" (in cfg/pcpl_cfgs.cfg).")
 
 	#then, get concerned zone as 2nd argument
-	PCPL__jumpBlankZone(zCtx, "CFG")
+	if zCtx__get(zCtx) in BLANKS:
+		PCPL__jumpBlankZone(zCtx, "CFG")
 	if zCtx__get(zCtx) != '{':
 		zCtx.err("Expecting a braces includer here to define targetted zone of precompiler CFG directive.")
 	block = PCPL__readIncluderBlock(zCtx)

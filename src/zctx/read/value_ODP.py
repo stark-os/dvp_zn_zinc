@@ -58,6 +58,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 		opand          = ZCI.copy(ctxCopy=opandInitialCtx)
 		opand.startIdx = opandInitialCtx.icontent.idx #initial context must be at operand beginning index
 		opand.stopIdx  = ZCI.ctx.icontent.idx-1       #we are just before operator index, so at operand end index
+		opand.updateTxt()
 		opand.strip()
 
 		#special case for negative number notation, we will skip them, it was not an operator
@@ -107,6 +108,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 	opand          = ZCI.copy(ctxCopy=opandInitialCtx)
 	opand.startIdx = opandInitialCtx.icontent.idx
 	opand.stopIdx  = ZCI.ctx.icontent.idx - 1
+	opand.updateTxt()
 	opand.strip()
 
 	#add last operand
@@ -206,6 +208,7 @@ def ODP_applyGroupPriorization(zCtx, maxStopIdx, curPOCall, opesAllowed, monoOpa
 			if curOpSeq.opes is None:
 				curPOCall.opand1.dat.resetCtx(oriCtx)
 				curPOCall.opand1.dat.stopIdx = curOpSeq.stopIdx
+				curPOCall.opand1.dat.updateTxt()
 				curPOCall.opand1.dat.strip()
 
 			#ope found => progressive priorizing
@@ -235,6 +238,7 @@ def ODP_applyGroupPriorization(zCtx, maxStopIdx, curPOCall, opesAllowed, monoOpa
 			if curOpSeq.opes is None:
 				curPOCall.opand2.dat.resetCtx(oriCtx)
 				curPOCall.opand2.dat.stopIdx = curOpSeq.stopIdx
+				curPOCall.opand2.dat.updateTxt()
 				curPOCall.opand2.dat.strip()
 
 			#ope found => progressive priorizing

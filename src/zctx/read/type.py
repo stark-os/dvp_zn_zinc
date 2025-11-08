@@ -48,7 +48,7 @@ def readType(ZCI,
 
 
 
-	#2 - permission: dcn / dcn# keywords + ref
+	#2 - permission: dcn keywords, raw, ref
 
 	#specific dcn keyword => must be in the specified range
 	if dcnKwLstToReplace is not None:
@@ -69,10 +69,12 @@ def readType(ZCI,
 		if forbidDcnKw:
 			ZCIErr(ZCI, "Generic \"dcn\" keyword is not allowed in type here" + ZCIKindIfErr_ending)
 
-	#ref keyword
-	elif ZCI.zCtx.forbidUseRef:
+	#ref & raw types
+	elif ZCI.zCtx.cpl.forbidUseRef:
 		if tID == ZCI.zCtx.refType:
 			ZCIErr(ZCI, "Use of \"ref\" type is not allowed in current compilation mode" + ZCIKindIfErr_ending)
+		if tID == ZCI.zCtx.rawType:
+			ZCIErr(ZCI, "Use of \"raw\" type is not allowed in current compilation mode" + ZCIKindIfErr_ending)
 
 	#got it
 	ZCIDeepDbg(ZCI, "Undeclinated type \"" + tUndecFullName + "\" targetted.")
@@ -81,8 +83,6 @@ def readType(ZCI,
 
 	#3 - declination list given => solve them
 	if ZCI.get() == '[':
-		initialIdx = ZCI.ctx.icontent.idx
-		peerIdx    = ZCI.pairs[initialIdx]
 		ZCI.inc()
 
 		#undeclinable type
@@ -110,8 +110,6 @@ def readType(ZCI,
 			optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 			next = ZCI.get()
 			if next == ']':
-				if ZCI.ctx.icontent.idx != peerIdx:
-					ZCIInt(ZCI, "Ending declination type sequence reading with inconsistent peer index (finished at index " + str(ZCI.ctx.icontent.idx) + " instead of targetted " + str(peerIdx) + ").")
 				ZCI.inc()
 				break
 			elif next != ',':
@@ -127,22 +125,6 @@ def readType(ZCI,
 		#get that spc dcn, creating it if needed
 		tID = getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns)
 
-	#special case for root stcs
-	elif tID in ZCI.zCtx.rootStcTypes:
-		ZCIErr(ZCI, "Can't use undeclinated variant of root structures" + ZCIKindIfErr_ending)
-
 	#final result
 	ZCIDeepDbg(ZCI, "Ended reading type.")
 	return tID
-
-
-
-#size match
-def paramTypeSizesMustMatch(ZCI, ZCIKindIfErr, paramNbr, type1, type2):
-	t1Inst = ZCI.getTypeInstanceFromID(type1)
-	t2Inst = ZCI.getTypeInstanceFromID(type2)
-	if t1Inst.dcnCommon.size != t2Inst.dcnCommon.size:
-		ZCIErr(ZCI, "Incompatible type sizes between type \"" + t1Inst.name + "\" with size " + str(t1Inst.dcnCommon.size) + " as parameter " + str(paramNbr) + " and \"" + t2Inst.name + "\" with size " + str(t2Inst.dcnCommon.size) + ", " + ZCIKindIfErr)
-
-
-

@@ -58,9 +58,9 @@ MAX_OCTAL_DIGITS_ALLOWED__U32 = 12
 MAX_OCTAL_DIGITS_ALLOWED__U64 = 24
 
 #literal numeric values: hexadecimal limits
-MAX_BINARY_DIGITS_ALLOWED__U16 = 4
-MAX_BINARY_DIGITS_ALLOWED__U32 = 8
-MAX_BINARY_DIGITS_ALLOWED__U64 = 16
+MAX_HEXADECIMAL_DIGITS_ALLOWED__U16 = 4
+MAX_HEXADECIMAL_DIGITS_ALLOWED__U32 = 8
+MAX_HEXADECIMAL_DIGITS_ALLOWED__U64 = 16
 
 #literal numeric values: signed decimal limits
 MAX_DECIMAL_DIGITS_ALLOWED__S16 = 5
@@ -220,8 +220,21 @@ INCLUDERS       = { '(':')', '[':']', '{':'}' }
 DEFAULT_NAME_CHARSET              = tuple(string.ascii_letters + string.digits + '_')
 ZCI_FIRSTWORD_DETECTION_BLACKLIST = BLANKS + tuple(INCLUDERS.keys())
 FCT_NAME_BLACKLIST                = BLANKS + ('(',)
-FCT_NAME_CHARSET                  = DEFAULT_NAME_CHARSET + ('.', '[', ']', '=', '-', '+', '*', '/', '^', '%', ':', '~', '!', '?', '&', '|', '<', '>')
-VALUE_CHARSET                     = FCT_NAME_CHARSET + ZCI_FIRSTWORD_DETECTION_BLACKLIST + ('@', '#', '$', '`') #additionnal FO + byte notation prefix
+FCT_NAME_CHARSET                  = DEFAULT_NAME_CHARSET + (
+	'-', '+', '*', '/', '%', #A/BO
+	'^', '&', '|', '~',      #LO
+	'?', '[', ']', ':',      #IO
+	'=', '<', '>',           #CO
+	'!', '.'                 #other
+)
+VALUE_CHARSET = BLANKS + tuple(INCLUDERS.keys()) + DEFAULT_NAME_CHARSET + (
+	'-', '+', '*', '/', '%', #A/BO
+	'^', '&', '|', '~',      #LO
+	'?', ':',                #IO
+	'=', '<', '>',           #CO
+	'.', '@', '#', '$', '`', #FO + byte notation prefix
+	'!'                      #other
+)
 
 #data item nature
 NATURE__PRM = 0
@@ -243,13 +256,13 @@ CPL__USE_REF_MASK      = 2
 
 #cpl opt set
 CPL_OPT__VALUES__ARCH  = 0 #architecture type
-CPL_OPT__VALUES__DIR   = 1
+CPL_OPT__VALUES__FILE  = 1
 CPL_OPT__VALUES__ONOFF = 2
 CPL_OPT__VALUES__DIGIT = 3
 CPL_OPT__VALUES__RTYPE = 4 #root type
 CPL_OPT__ALLOWED = {
 	"ARCH":                         CPL_OPT__VALUES__ARCH,
-	"LLI_DIR_PATH":                 CPL_OPT__VALUES__DIR,
+	"LLI_FP_PATH":                  CPL_OPT__VALUES__FILE,
 	"DEFAULT_ACCESS_PUB":           CPL_OPT__VALUES__ONOFF,
 	"COMMON_STC_SHORTCUTS":         CPL_OPT__VALUES__ONOFF,
 	"MAX_INSTRUCTS_NOFCT":          CPL_OPT__VALUES__DIGIT,

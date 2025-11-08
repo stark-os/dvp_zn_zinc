@@ -21,7 +21,7 @@ class pcplDat:
 
 	def nextLitStrDIName(sbj):
 		sbj.litStrIdx += 1
-		return "L" + str(sbj.litStrIdx)
+		return "_" + str(sbj.litStrIdx)
 
 def newPcplDat(cfgs, itms):
 	formattedCfgs = {}
@@ -54,8 +54,9 @@ class cplDat:
 		sbj.fcts     = None #lst[fct]
 		sbj.lnkLibs  = None #lst[]
 
-		#cpl mode (exe/sdl)
-		sbj.mode = 0
+		#general info
+		sbj.mode         = 0
+		sbj.forbidUseRef = 0
 
 		#program concrete elements
 		#sbj.dataRes = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required

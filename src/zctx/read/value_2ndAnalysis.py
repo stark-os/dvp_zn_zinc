@@ -48,17 +48,17 @@ def parseLiteralIntOrFloat(ZCI):
 				if ZCI.inc():
 					ZCIErr(ZCI, "Incomplete literal number given, binary notation must be followed by a digit sequence.")
 				resDigitPower = 2
-				resText       = readNbrAsRawText(ZCI, STR__BINARY)
+				resText       = readNbrAsText(ZCI, STR__BINARY)
 			elif c == 'o':
 				if ZCI.inc():
 					ZCIErr(ZCI, "Incomplete literal number given, octal notation must be followed by a digit sequence.")
 				resDigitPower = 8
-				resText       = readNbrAsRawText(ZCI, STR__OCTAL)
+				resText       = readNbrAsText(ZCI, STR__OCTAL)
 			elif c == 'x':
 				if ZCI.inc():
 					ZCIErr(ZCI, "Incomplete literal number given, hexadecimal notation must be followed by a digit sequence.")
 				resDigitPower = 16
-				resText       = readNbrAsRawText(ZCI, STR__HEXADECIMAL_LOWERCASE)
+				resText       = readNbrAsText(ZCI, STR__HEXADECIMAL_LOWERCASE)
 
 		#weird cases: negative sign on non-decimal
 		if resIsNegative and resDigitPower != 10:
@@ -116,58 +116,58 @@ def parseLiteralIntOrFloat(ZCI):
 		if resDigitPower == 2:
 			if resAtmID in (ATM__S16, ATM__U16):
 				if len(resText) > MAX_BINARY_DIGITS_ALLOWED__U16:
-					ZCIErr(ZCI, "Too much digits given in 2 bytes literal binary value (maximum " + MAX_BINARY_DIGITS_ALLOWED__U16 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 2 bytes literal binary value (maximum " + str(MAX_BINARY_DIGITS_ALLOWED__U16) + " allowed).")
 			elif resAtmID in (ATM__S32, ATM__U32):
 				if len(resText) > MAX_BINARY_DIGITS_ALLOWED__U32:
-					ZCIErr(ZCI, "Too much digits given in 4 bytes literal binary value (maximum " + MAX_BINARY_DIGITS_ALLOWED__U32 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 4 bytes literal binary value (maximum " + str(MAX_BINARY_DIGITS_ALLOWED__U32) + " allowed).")
 			else: #if resAtmID in (ATM__S64, ATM__U64):
 				if len(resText) > MAX_BINARY_DIGITS_ALLOWED__U64:
-					ZCIErr(ZCI, "Too much digits given in 8 bytes literal binary value (maximum " + MAX_BINARY_DIGITS_ALLOWED__U64 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 8 bytes literal binary value (maximum " + str(MAX_BINARY_DIGITS_ALLOWED__U64) + " allowed).")
 
 		#check if too much digits have been given: octal
 		elif resDigitPower == 8:
 			if resAtmID in (ATM__S16, ATM__U16):
 				if len(resText) > MAX_OCTAL_DIGITS_ALLOWED__U16:
-					ZCIErr(ZCI, "Too much digits given in 2 bytes literal octal value (maximum " + MAX_OCTAL_DIGITS_ALLOWED__U16 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 2 bytes literal octal value (maximum " + str(MAX_OCTAL_DIGITS_ALLOWED__U16) + " allowed).")
 			elif resAtmID in (ATM__S32, ATM__U32):
 				if len(resText) > MAX_OCTAL_DIGITS_ALLOWED__U32:
-					ZCIErr(ZCI, "Too much digits given in 4 bytes literal octal value (maximum " + MAX_OCTAL_DIGITS_ALLOWED__U32 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 4 bytes literal octal value (maximum " + str(MAX_OCTAL_DIGITS_ALLOWED__U32) + " allowed).")
 			else: #if resAtmID in (ATM__S64, ATM__U64):
 				if len(resText) > MAX_OCTAL_DIGITS_ALLOWED__U64:
-					ZCIErr(ZCI, "Too much digits given in 8 bytes literal octal value (maximum " + MAX_OCTAL_DIGITS_ALLOWED__U64 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 8 bytes literal octal value (maximum " + str(MAX_OCTAL_DIGITS_ALLOWED__U64) + " allowed).")
 
 		#check if too much digits have been given: hexadecimal
 		elif resDigitPower == 16:
 			if resAtmID in (ATM__S16, ATM__U16):
 				if len(resText) > MAX_HEXADECIMAL_DIGITS_ALLOWED__U16:
-					ZCIErr(ZCI, "Too much digits given in 2 bytes literal hexadecimal value (maximum " + MAX_HEXADECIMAL_DIGITS_ALLOWED__U16 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 2 bytes literal hexadecimal value (maximum " + str(MAX_HEXADECIMAL_DIGITS_ALLOWED__U16) + " allowed).")
 			elif resAtmID in (ATM__S32, ATM__U32):
 				if len(resText) > MAX_HEXADECIMAL_DIGITS_ALLOWED__U32:
-					ZCIErr(ZCI, "Too much digits given in 4 bytes literal hexadecimal value (maximum " + MAX_HEXADECIMAL_DIGITS_ALLOWED__U32 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 4 bytes literal hexadecimal value (maximum " + str(MAX_HEXADECIMAL_DIGITS_ALLOWED__U32) + " allowed).")
 			else: #if resAtmID in (ATM__S64, ATM__U64):
 				if len(resText) > MAX_HEXADECIMAL_DIGITS_ALLOWED__U64:
-					ZCIErr(ZCI, "Too much digits given in 8 bytes literal hexadecimal value (maximum " + MAX_HEXADECIMAL_DIGITS_ALLOWED__U64 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 8 bytes literal hexadecimal value (maximum " + str(MAX_HEXADECIMAL_DIGITS_ALLOWED__U64) + " allowed).")
 
 		#check if too much digits have been given: decimal
 		else:
 			if resAtmID == ATM__S16:
 				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__S16:
-					ZCIErr(ZCI, "Too much digits given in 2 bytes literal signed decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__S16 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 2 bytes literal signed decimal value (maximum " + str(MAX_DECIMAL_DIGITS_ALLOWED__S16) + " allowed).")
 			elif resAtmID == ATM__S32:
 				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__S32:
-					ZCIErr(ZCI, "Too much digits given in 4 bytes literal signed decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__S32 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 4 bytes literal signed decimal value (maximum " + str(MAX_DECIMAL_DIGITS_ALLOWED__S32) + " allowed).")
 			elif resAtmID == ATM__S64:
 				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__S64:
-					ZCIErr(ZCI, "Too much digits given in 8 bytes literal signed decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__S64 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 8 bytes literal signed decimal value (maximum " + str(MAX_DECIMAL_DIGITS_ALLOWED__S64) + " allowed).")
 			elif resAtmID == ATM__U16:
 				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__U16:
-					ZCIErr(ZCI, "Too much digits given in 2 bytes literal unsigned decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__U16 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 2 bytes literal unsigned decimal value (maximum " + str(MAX_DECIMAL_DIGITS_ALLOWED__U16) + " allowed).")
 			elif resAtmID == ATM__U32:
 				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__U32:
-					ZCIErr(ZCI, "Too much digits given in 4 bytes literal unsigned decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__U32 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 4 bytes literal unsigned decimal value (maximum " + str(MAX_DECIMAL_DIGITS_ALLOWED__U32) + " allowed).")
 			else: #if resAtmID == ATM__U64:
 				if len(resText) > MAX_DECIMAL_DIGITS_ALLOWED__U64:
-					ZCIErr(ZCI, "Too much digits given in 8 bytes literal unsigned decimal value (maximum " + MAX_DECIMAL_DIGITS_ALLOWED__U64 + " allowed).")
+					ZCIErr(ZCI, "Too much digits given in 8 bytes literal unsigned decimal value (maximum " + str(MAX_DECIMAL_DIGITS_ALLOWED__U64) + " allowed).")
 
 
 
@@ -194,7 +194,7 @@ def parseLiteralIntOrFloat(ZCI):
 				ZCIErr(ZCI, "Incomplete floating point notation, missing value after point.")
 
 			#read after point
-			afterPoint = readNbrAsRawText(ZCI, STR__DECIMAL)
+			afterPoint = readNbrAsText(ZCI, STR__DECIMAL)
 			lastIdx    = len(resText)-1
 			for r in range(len(resText)):
 				resFloatingNbr += chr_dec_toS8(afterPoint[r]) * 1/(10**(lastIdx-r))
@@ -398,7 +398,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 		#STEP 3: CONCLUSION
 
 		#unable to solve inner types => err (no need to check whether the 2nd one is set for maps)
-		if len(innerType1) == TYPE_ID__UNKNOWN:
+		if innerType1 == TYPE_ID__UNKNOWN:
 			ZCIErr(ZCI, "2nd analysis: Unable to determine inner type of common data structure shortcut notation (require explicit inner type or at least one value inside)" + v2i.ZCIKindIfErr_ending)
 
 		#maps
@@ -467,13 +467,11 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 			#prepare sequence
 			seq = [] #lst[value]
 			while ZCI.get() in HEX_DIGITS_LOWERCASE:
-				seq.append(
-					val(
-						ZCI.zCtx.rootTypes[RT__S8],
-						atm(ATM__S8, readHexByte(ZCI)),
-						True
-					)
-				)
+				seq.append(val(
+					ZCI.zCtx.rootTypes[RT__S8],
+					atm(ATM__S8, readHexByte(ZCI)),
+					True
+				))
 				if ZCI.inc():
 					break
 
@@ -512,7 +510,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 	# IV] LITERAL: STARTING WITH TYPE
 
 	#try reading a type
-	tID = readType(ZCI, None, errIfNotExisting=False, dcnKwLstToReplace=dcnKwLstToReplace)
+	tID = readType(ZCI, None, errIfNotExisting=False, dcnKwLstToReplace=v2i.dcnKwLstToReplace)
 	if tID != TYPE_ID__UNKNOWN:
 		tInst = ZCI.getTypeInstanceFromID(tID)
 
@@ -632,14 +630,15 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 
 
-def secondAnalysisIncludingFOs(ZCI, allowVFC, v2i):
-	starter = ZCI.get()
+def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
+	checkReachedEnd = True
+	starter         = ZCI.get()
 
 
 
-	# 1) PROCESSING FOs: MONO-OPERAND
+	# 1) PROCESSING MONO-OPERAND
 
-	#size (FSZ)
+	#case 1: size (FSZ)
 	if starter == '#':
 		ZCIDeepDbg(ZCI, "2nd analysis: Processing FSZ operator (2nd analysis).")
 		ZCI.inc()
@@ -666,24 +665,41 @@ def secondAnalysisIncludingFOs(ZCI, allowVFC, v2i):
 			True
 		)
 
-	#reference (FRF)
+	#case 2: reference (FRF)
 	if starter == '@':
+		if ZCI.zCtx.cpl.forbidUseRef:
+			ZCIErr(ZCI, "2nd analysis: Reference operator (FRF) is forbiden" + v2i.ZCIKindIfErr_ending)
 		ZCIDeepDbg(ZCI, "2nd analysis: Processing FRF operator.")
 		ZCI.inc()
 
-		#target data item
-		modPfx, rawName = readName(ZCI, "2nd analysis: Missing data item name for reference operator '@' (FRF).", parseModPfxes=True)
+		#read datItm name
+		modPfx, rawName = readName(ZCI, "2nd analysis: Missing data item name for reference operator '@' (FRF)" + v2i.ZCIKindIfErr_ending, parseModPfxes=True)
 		di              = getDatItmFromScopeAndParents(modPfx, rawName, v2i.scope)
 		if di is None:
 			ZCIErr(ZCI, "2nd analysis: Unable to find data item given " + unpfxMod(modPfx) + rawName + " (2nd analysis, concerning reference operator '@' FRF)" + v2i.ZCIKindIfErr_ending)
 
+		#get it
+		di = getDatItmFromScopeAndParents(modPfx, rawName, v2i.scope)
+		if di is None:
+			ZCIWrn(ZCI, "Maybe you wanted to target a data item among the available " + listDatItmNamesAvailable(v2i.scope), prtSubCtxs=False, prtLine=False)
+			ZCIErr(ZCI, "2nd analysis: Cannot find data item " + unpfxMod(modPfx) + undblUnderscores(rawName) + " in current scope or higher" + v2i.ZCIKindIfErr_ending)
+
 		#result
-		ZCIDeepDbg(ZCI, "2nd analysis: FRF resulted into call to frf()") #<<<<<<<<<<<<<<<<<<<<<<<<<<<< TODO
-		return value(
-			ZCI.zCtx.rootTypes[RT__REF],
-			atm(ATM__REF, 0),
-			True #<<<<<<<<<<<<<<<<<<< this will depend on the data item targetted (static => cst adr, else variable)
+		res = value(
+			ZCI.zCtx.refType,
+			atm(ATM__CALL, call(
+				"frf",
+				[val(
+				di.Type,
+					atm(ATM__DATITM, di),
+					di.Cst
+				)],
+				ZCI.zCtx.refType
+			)),
+			True
 		)
+		ZCIDeepDbg(ZCI, "2nd analysis: FRF resulted into call " + res.toStr())
+		return res
 
 
 
@@ -695,145 +711,229 @@ def secondAnalysisIncludingFOs(ZCI, allowVFC, v2i):
 	#no value found is acceptable => don't go further
 	if res is None and v2i.ZCIKindIfErr is None:
 		return None
-	optionalBlanks(ZCI, None)
-
-	#nothing left to analyze
-	if ZCI.reachedEnd():
-		return res
 
 
 
-	# 3) PROCESSING FOs: 2-OPERANDS
+	# 3) PROCESSING 2-OPERANDS
 
-	#casht (FCA)
-	following = ZCI.get()
-	if following == '$':
-		ZCI.inc()
+	#as long as we have other operand
+	while True:
 		optionalBlanks(ZCI, None)
-
-		#read explicit type
-		ZCIDeepDbg(ZCI, "2nd analysis: Processing FCA operator on " + res.toStr())
-		res.Type = readType(ZCI, v2i.ZCIKindIfErr, dcnKwLstToReplace=v2i.dcnKwLstToReplace)
-
-		#overwrite result type
-		ZCIDeepDbg(ZCI, "2nd analysis: FCA operator applied type " + unpfxType(ZCI.getTypeNameFromID(res.Type)) + " on value " + res.toStr())
-
-	#field access (FFA)
-	elif following == '.':
-		ZCI.inc()
-
-
-		# STEP 1: PREPARE FOR COLLECTION OF FA CHAIN
-
-		#prepare first element
-		FAChain       = []
-		isCst         = False
-		latestChkType = 0 #<<<<<<<<<<<<<<<<<<<<<<<< just declare this one
-
-		#can start with datItm
-		if res.vdat.id == ATM__DATITM:
-			FAChain.append( atm(ATM__DATITM, res.vdat.dat) )
-			latestChkType = res.vdat.dat.Type
-			isCst         = res.vdat.dat.Cst
-
-		#or can start with !VFC
-		elif res.vdat.dat == ATM__CALL:
-			if res.vdat.dat.retType == TYPE_ID__UNKNOWN:
-				ZCIErr(ZCI, "2nd analysis: Trying to operate field access on void returning function call => forbidden" + v2i.ZCIKindIfErr_ending)
-			FAChain.append( atm(ATM__CALL, res.vdat.dat) )
-			latestChkType = res.vdat.dat.retType
-			isCst         = False
-
-		#invalid element to operate FFA onto
-		else:
-			ZCIErr(ZCI, "2nd analysis: Can only operate field access operator (FFA) on data item names or non-void returning function calls" + v2i.ZCIKindIfErr_ending)
+		if ZCI.reachedEnd():
+			break
+		following = ZCI.get()
+		ZCIDeepDbg(ZCI, "2nd analysis: Having at least one EXTRA OPE to be processed after raw result of 2nd analysis.", prtLine=False)
 
 
 
-		#STEP 2: COLLECT FA CHAIN
+		#case 1: casht (FCA)
+		if following == '$':
+			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is FCA.")
+			ZCI.inc()
+			optionalBlanks(ZCI, None)
 
-		#get the complete chain of accessed fields
-		while not ZCI.reachedEnd():
+			#read explicit type & apply it
+			res.Type = readType(ZCI, v2i.ZCIKindIfErr, dcnKwLstToReplace=v2i.dcnKwLstToReplace)
+			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE FCA resulted into " + res.toStr())
+
+
+
+		#case 2: field access (FFA) or method call
+		elif following == '.':
+			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is FFA or METHOD CALL.")
+			ZCI.inc()
 
 			#read name & prepare extraction of modPfx
-			newChk_modPfx, newChk_rawName = readName(ZCI, "2nd analysis: Missing second operand after field access operator (FFA).", parseModPfxes=True)
+			modPfx, rawName = readName(ZCI, "2nd analysis: Missing second operand after field access operator (FFA)" + v2i.ZCIKindIfErr_ending, parseModPfxes=True)
 
-			#case 1: following parentheses => METHOD call (and not function call)
+
+
+			#case 2.1: following parentheses => METHOD call (and not function call)
 			if ZCI.get() == '(':
-
-				#err case: call from cst elm
-				if isCst:
-					ZCIErr(ZCI, "2nd analysis: Field access chain is calling methods on constant data item => forbidden" + v2i.ZCIKindIfErr_ending)
+				ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is METHOD CALL.")
 
 				#err case: call from VFC
-				if latestChkType == TYPE_ID__UNKNOWN:
-					ZCIErr(ZCI, "2nd analysis: Cannot call method " + unpfxMod(newChk_modPfx) + newChk_rawName + " on void value" + v2i.ZCIKindIfErr_ending)
+				if res.vdat.id == ATM__CALL:
+					if res.vdat.dat.retType == TYPE_ID__UNKNOWN:
+						ZCIErr(ZCI, "2nd analysis: Cannot call method " + unpfxMod(modPfx) + rawName + " on void value" + v2i.ZCIKindIfErr_ending)
 
 				#parse method call
-				newChk = checkAll_thenReadParams_thenCreateCall(ZCI,
-					allowVFC,      v2i.ZCIKindIfErr,
-					newChk_modPfx, newChk_rawName,
-					v2i.scope,     v2i.cstOnly,
+				c = checkAll_thenReadParams_thenCreateCall(ZCI,
+					allowVFC,  v2i.ZCIKindIfErr,
+					modPfx,    rawName,
+					v2i.scope, v2i.cstOnly,
 					v2i.dcnKwLstToReplace,
-					methodOf = latestChkType
+					methodOf = res.Type
 				)
 
-				#update latest chunk type + add to chain
-				latestChkType = newChk.retType
-				FAChain.append( atm(ATM__CALL, newChk) )
+				#update res with that method call
+				res = val(c.retType, atm(ATM__CALL, c), False)
+				ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE METHOD CALL resulted into " + res.toStr())
 
-			#case 2: else => stc field
+
+
+			#case 2.2: else => stc field
 			else:
+				ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is FFA.")
 
 				#error case
-				if newChk_modPfx != "G":
-					ZCIErr(ZCI, "2nd analysis: Can't use module prefix when trying to access stc field (field \"" + newChk_rawName + "\" from module " + unpfxMod(newChk_modPfx) + ")" + v2i.ZCIKindIfErr_ending)
+				if modPfx != "G":
+					ZCIErr(ZCI, "2nd analysis: Can't use module prefix when trying to access stc field (field \"" + rawName + "\" from module " + unpfxMod(modPfx) + ")" + v2i.ZCIKindIfErr_ending)
 
 				#stc only
-				stcInst = ZCI.zCtx.getTypeInstanceFromID(latestChkType)
+				stcInst = ZCI.zCtx.getTypeInstanceFromID(res.Type)
 				if stcInst.dcnCommon.nature != NATURE__STC:
-					ZCIErr(ZCI, "Type " + unpfxTypeName(ZCI.zCtx, stcInst.name)[0] + " is not a structure type, cannot get fields from it.")
+					ZCIErr(ZCI, "2nd analysis: Type " + unpfxTypeName(ZCI.zCtx, stcInst.name)[0] + " is not a structure type, cannot get fields from it" + v2i.ZCIKindIfErr_ending)
 
 				#get field from stc
-				offset        = 0
-				latestChkType = TYPE_ID__UNKNOWN
+				offset    = 0
+				fieldType = TYPE_ID__UNKNOWN
 				for f in stcInst.dcnCommon.fields:
-					if f.name == newChk_rawName: #found it
-						latestChkType = f.Type   #update latestChkType
+					if f.name == rawName: #found it
+						fieldType = f.Type
 						break
 					offset += ZCI.zCtx.getTypeInstanceFromID(f.Type).dcnCommon.size
 
 				#no field found with given name
-				if latestChkType == TYPE_ID_UNKNOWN:
-					ZCIErr(ZCI, "Structure type " + unpfxTypeName(ZCI.zCtx, stcInst.name)[0] + " has no field \"" + newChk_rawName + "\".")
+				if fieldType == TYPE_ID__UNKNOWN:
+					ZCIErr(ZCI, "Structure type " + unpfxTypeName(ZCI.zCtx, stcInst.name)[0] + " has no field \"" + rawName + "\"" + v2i.ZCIKindIfErr_ending)
 
-				#only add offset to chain
-				FAChain.append( atm(ATM__U32, offset) )
+				#update res with ffa call with computed offset
+				res = val(
+					fieldType,
+					atm(ATM__CALL, call(
+						"ffa", [
+							res,
+							val(ZCI.zCtx.rootTypes[RT__U32], atm(ATM__U32, offset), True)
+						], fieldType
+					)),
+					res.Cst
+				)
+				ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE FFA resulted into " + res.toStr())
 
-			#another field => continue
-			if ZCI.get() != '.':
-				break
+
+
+		#case 3: IIN, ISU, IIA, ISA
+		elif following == '[':
+			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is IIN/ISU/IIA/ISA.")
+			ZCI.inc()
+			opeHeader = "Oiin"
+			paramVals = [res] #<======= in Z, declare 4 elements and call tab.rmLast() thrice right after (this way we are sure to have room for each param in all cases (IIN requires 2, ISU & IIA 3, ISA 4)
+
+			#set some info for ope search
+			paramTypeIDs   = [                      res.Type ]
+			paramTypeNames = [ZCI.getTypeNameFromID(res.Type)]
+
+			#read 1st value given in brackets includer
+			optionalBlanks(ZCI, None)
+			v = readVal(ZCI,
+				"indexing value in IIN/ISU/IIA/ISA operator call" + v2i.ZCIKindIfErr_ending,
+				v2i.scope,
+				cstOnly           = v2i.cstOnly,
+				dcnKwLstToReplace = v2i.dcnKwLstToReplace
+			)
+			paramVals.append(v)
+
+			#add info for ope search
+			paramTypeIDs.append(v.Type)
+			paramTypeNames.append(ZCI.getTypeNameFromID(v.Type))
+			optionalBlanks(ZCI, None)
+
+			#sub targetted
+			if ZCI.get() == ':':
+				optionalBlanks(ZCI, None)
+				opeHeader = "Oisu"
+
+				#read 2nd value given in brackets includer
+				v = readVal(ZCI,
+					"stop indexing value in ISU operator call" + v2i.ZCIKindIfErr_ending,
+					v2i.scope,
+					cstOnly          = v2i.cstOnly,
+					dcnKwLstToReplace = v2i.dcnKwLstToReplace
+				)
+				paramVals.append(v)
+
+				#add info for ope search
+				paramTypeIDs.append(v.Type)
+				paramTypeNames.append(ZCI.getTypeNameFromID(v.Type))
+				optionalBlanks(ZCI, None)
+
+			#must be at end of brackets includer
+			if ZCI.reachedEnd() or ZCI.get() != ']':
+				ZCIErr(ZCI, "2nd analysis: Expected closing bracket in " + opeHeader[1:].upper() + " operator call" + v2i.ZCIKindIfErr_ending)
 			ZCI.inc()
 
+			#possibly having IIA / ISU
+			if allowVFC:
+				optionalBlanks(ZCI, None)
+
+				#definitely got asg
+				if readSym(ZCI) == SYM__ASG:
+					ZCI.forward(SYM_LENGTHS[SYM__ASG])
+					optionalBlanks(ZCI, None)
+
+					#read & add value to assign
+					v = readVal(ZCI,
+						"assignment value for IIA/ISA operator call" + v2i.ZCIKindIfErr_ending,
+						v2i.scope,
+						cstOnly           = v2i.cstOnly,
+						dcnKwLstToReplace = v2i.dcnKwLstToReplace
+					)
+					paramVals.append(v)
+
+					#add info for ope search
+					paramTypeIDs.append(v.Type)
+					paramTypeNames.append(ZCI.getTypeNameFromID(v.Type))
+
+					#turn IIN into IIA & ISU into ISA
+					if opeHeader == "Oiin":
+						opeHeader = "Oiia"
+					elif opeHeader == "Oisu":
+						opeHeader = "Oisa"
+
+			#try find an appropriate ope
+			matchingOpe = zCtx__findMatchingOperator(ZCI.zCtx, opeHeader, paramTypeIDs, paramTypeNames)
+
+			#no one found
+			if matchingOpe is None:
+				ZCIWrn(ZCI, "Available combinations for this operator are " + zCtx__listAllExistingOpeNames(ZCI.zCtx, opeHeader), prtSubCtxs=False, prtLine=False)
+				ZCIErr(ZCI, "2nd analysis: No operator " + opeHeader[1:].upper() + " matching for parameters (" + ','.join(paramTypeNames) + ")" + v2i.ZCIKindIfErr_ending)
+
+			#corresponding ope call
+			c = call(matchingOpe.name, paramVals, matchingOpe.retType)
+
+			#update res with corresponding ope call
+			res = val(c.retType, atm(ATM__CALL, c), False)
+			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE " + opeHeader[1:].upper() + " resulted into " + res.toStr())
 
 
-		#STEP 3: END OF COLLECTION
 
-		#check last elm retType if we must ret !void
-		if not allowVFC:
-			if latestChkType == TYPE_ID__UNKNOWN:
-				ZCIErr(ZCI, "2nd analysis: Method call in field access chain resulted in void value => forbiden here" + v2i.ZCIKindIfErr_ending)
+		#']' or ':' here can be the result of an IO processed
+		# => not a problem, just keeping them after value,
+		#    the rest of execution will see whether it is good to have this thing after our value or not
+		#    ("end of ZCI expected" for example)
+		elif following in (']', ':'):
+			checkReachedEnd = False
+			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is not actually an ope but an acceptable after-value chr '" + following + "'.")
+			break
 
-		#format chain under VALUE format
-		res = val(
-			latestChkType,
-			atm(ATM__LST_ATM, FAChain),
-			isCst
-		)
+
+
+		#unknown following chr => rely on err "too much elm after value"
+		else:
+			break
+
+
+
+	#check last elm retType if we must ret !void
+	if not allowVFC:
+		if res.Type == TYPE_ID__UNKNOWN:
+			ZCIErr(ZCI, "2nd analysis: Extra operator parsing resulted in void value => forbiden here" + v2i.ZCIKindIfErr_ending)
 
 	#too much content in VALUE ZCE
-	if not ZCI.reachedEnd():
-		ZCIErr(ZCI, "Too much elements in VALUE ZCE (2nd analysis, parsing including FOs)" + v2i.ZCIKindIfErr_ending)
+	if checkReachedEnd:
+		if not ZCI.reachedEnd():
+			ZCIErr(ZCI, "2nd analysis: Too much elements in VALUE ZCE (even after parsing including extra operators)" + v2i.ZCIKindIfErr_ending)
 
 	#success
 	return res
@@ -853,7 +953,7 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only us
 
 		#UNITARY entry point for 2nd analysis
 		elif curPOCall.opand1.id == ATM__ZCI:
-			opand1Val = secondAnalysisIncludingFOs(curPOCall.opand1.dat, allowVFC, v2i)
+			opand1Val = secondAnalysisIncludingExtraOpes(curPOCall.opand1.dat, allowVFC, v2i)
 
 		#should never happen
 		else:
@@ -869,7 +969,7 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only us
 
 		#UNITARY entry point for 2nd analysis
 		elif curPOCall.opand2.id == ATM__ZCI:
-			opand2Val = secondAnalysisIncludingFOs(curPOCall.opand2.dat, allowVFC, v2i)
+			opand2Val = secondAnalysisIncludingExtraOpes(curPOCall.opand2.dat, allowVFC, v2i)
 
 		#should never happen
 		else:
