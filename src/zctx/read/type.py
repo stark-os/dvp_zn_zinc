@@ -37,7 +37,7 @@ def readType(ZCI,
 
 		#case 1: type not found => error
 		if errIfNotExisting:
-			ZCIWrn(ZCI, "Available types are " + ZCI.zCtx.listTypeNames())
+			ZCIWrn(ZCI, "Available types are " + ZCI.zCtx.listTypeNames(), prtSubCtxs=False, prtLine=False)
 			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist" + ZCIKindIfErr_ending)
 
 		#case 2: maybe it was not a type at all

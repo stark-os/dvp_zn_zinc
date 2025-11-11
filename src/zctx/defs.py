@@ -227,7 +227,7 @@ FCT_NAME_CHARSET                  = DEFAULT_NAME_CHARSET + (
 	'=', '<', '>',           #CO
 	'!', '.'                 #other
 )
-VALUE_CHARSET = BLANKS + tuple(INCLUDERS.keys()) + DEFAULT_NAME_CHARSET + (
+VALUE_CHARSET = BLANKS + tuple(INCLUDERS.keys()) + DEFAULT_NAME_CHARSET + ( #use in ODP
 	'-', '+', '*', '/', '%', #A/BO
 	'^', '&', '|', '~',      #LO
 	'?', ':',                #IO

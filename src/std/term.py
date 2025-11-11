@@ -5,6 +5,7 @@
 # -------- IMPORTATIONS --------
 
 #system
+import sys
 import subprocess
 
 
@@ -21,9 +22,9 @@ TERM__OUTPUT_TAB = "|   " #'\t'
 def Term__width():
 	return int(subprocess.check_output(["tput","cols"])[:-1])
 
-def Term__fillLine(c):
-	print(c * Term__width())
+def Term__fillLine(c, stream=sys.stdout):
+	stream.write(c * Term__width())
 
-def Term__drawSepLine():
-	Term__fillLine('_')
-	print()
+def Term__drawSepLine(stream=sys.stdout):
+	Term__fillLine('_', stream=stream)
+	stream.write("\n")

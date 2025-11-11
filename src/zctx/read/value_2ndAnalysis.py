@@ -631,8 +631,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 
 def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
-	checkReachedEnd = True
-	starter         = ZCI.get()
+	starter = ZCI.get()
 
 
 
@@ -646,10 +645,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 
 		#get size
 		tInst = ZCI.getTypeInstanceFromID(Type)
-		if tInst.dcnCommon.nature != NATURE__PRM:
-			size = tInst.dcnCommon.stcSize
-		else:
-			size = tInst.size
+		size  = tInst.dcnCommon.size
 
 		#result
 		ZCIDeepDbg(ZCI,"2nd analysis: FSZ resulted into fsz(" + unpfxMod(tInst.name) + ") = " + str(size))
@@ -722,13 +718,12 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 		if ZCI.reachedEnd():
 			break
 		following = ZCI.get()
-		ZCIDeepDbg(ZCI, "2nd analysis: Having at least one EXTRA OPE to be processed after raw result of 2nd analysis.", prtLine=False)
 
 
 
 		#case 1: casht (FCA)
 		if following == '$':
-			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is FCA.")
+			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE FCA in process.")
 			ZCI.inc()
 			optionalBlanks(ZCI, None)
 
@@ -740,7 +735,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 
 		#case 2: field access (FFA) or method call
 		elif following == '.':
-			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is FFA or METHOD CALL.")
+			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE FFA or METHOD CALL in process.")
 			ZCI.inc()
 
 			#read name & prepare extraction of modPfx
@@ -750,7 +745,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 
 			#case 2.1: following parentheses => METHOD call (and not function call)
 			if ZCI.get() == '(':
-				ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is METHOD CALL.")
+				ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE METHOD CALL in process.")
 
 				#err case: call from VFC
 				if res.vdat.id == ATM__CALL:
@@ -763,7 +758,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 					modPfx,    rawName,
 					v2i.scope, v2i.cstOnly,
 					v2i.dcnKwLstToReplace,
-					methodOf = res.Type
+					methodCaller = res
 				)
 
 				#update res with that method call
@@ -774,7 +769,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 
 			#case 2.2: else => stc field
 			else:
-				ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is FFA.")
+				ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE FFA in process.")
 
 				#error case
 				if modPfx != "G":
@@ -815,7 +810,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 
 		#case 3: IIN, ISU, IIA, ISA
 		elif following == '[':
-			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is IIN/ISU/IIA/ISA.")
+			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE IIN/ISU/IIA/ISA in process.")
 			ZCI.inc()
 			opeHeader = "Oiin"
 			paramVals = [res] #<======= in Z, declare 4 elements and call tab.rmLast() thrice right after (this way we are sure to have room for each param in all cases (IIN requires 2, ISU & IIA 3, ISA 4)
@@ -908,18 +903,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 
 
 
-		#']' or ':' here can be the result of an IO processed
-		# => not a problem, just keeping them after value,
-		#    the rest of execution will see whether it is good to have this thing after our value or not
-		#    ("end of ZCI expected" for example)
-		elif following in (']', ':'):
-			checkReachedEnd = False
-			ZCIDeepDbg(ZCI, "2nd analysis: EXTRA OPE in process is not actually an ope but an acceptable after-value chr '" + following + "'.")
-			break
-
-
-
-		#unknown following chr => rely on err "too much elm after value"
+		#unknown following chr => not part of the value itself, stop 2nd analysis here
 		else:
 			break
 
@@ -929,11 +913,6 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 	if not allowVFC:
 		if res.Type == TYPE_ID__UNKNOWN:
 			ZCIErr(ZCI, "2nd analysis: Extra operator parsing resulted in void value => forbiden here" + v2i.ZCIKindIfErr_ending)
-
-	#too much content in VALUE ZCE
-	if checkReachedEnd:
-		if not ZCI.reachedEnd():
-			ZCIErr(ZCI, "2nd analysis: Too much elements in VALUE ZCE (even after parsing including extra operators)" + v2i.ZCIKindIfErr_ending)
 
 	#success
 	return res
@@ -955,6 +934,10 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only us
 		elif curPOCall.opand1.id == ATM__ZCI:
 			opand1Val = secondAnalysisIncludingExtraOpes(curPOCall.opand1.dat, allowVFC, v2i)
 
+			#update maxStopIdx ACCORDING TO 2ND ANALYSIS (ODP can't have the accuracy we have here, so we RE-compute a better maxStopIdx)
+			if curPOCall.opand1.dat.ctx.icontent.idx > v2i.maxStopIdx:
+				v2i.maxStopIdx = curPOCall.opand1.dat.ctx.icontent.idx
+
 		#should never happen
 		else:
 			ZCIInt(oriZCI, "Found a non-POCall & non-ZCI atom in ODP result.")
@@ -970,6 +953,10 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only us
 		#UNITARY entry point for 2nd analysis
 		elif curPOCall.opand2.id == ATM__ZCI:
 			opand2Val = secondAnalysisIncludingExtraOpes(curPOCall.opand2.dat, allowVFC, v2i)
+
+			#update maxStopIdx ACCORDING TO 2ND ANALYSIS (ODP can't have the accuracy we have here, so we RE-compute a better maxStopIdx)
+			if curPOCall.opand2.dat.ctx.icontent.idx > v2i.maxStopIdx:
+				v2i.maxStopIdx = curPOCall.opand2.dat.ctx.icontent.idx
 
 		#should never happen
 		else:
@@ -992,6 +979,8 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only us
 				tgt = opand2Val
 			elif v2i.ZCIKindIfErr is not None:
 				ZCIInt(oriZCI, "Found null-name POCall with 2 null operands, and we don't allow null from 2nd analysis here (=> probably inconsistent result from ODP).")
+
+		#lonely ZCI fragment to be returned
 		return tgt
 
 
@@ -1027,7 +1016,7 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only us
 	if matchingFct is None:
 		oriZCI.forwardUntil(curPOCall.opeIdx)
 		ZCIWrn(oriZCI, "Available combinations for this operator are " + zCtx__listAllExistingOpeNames(oriZCI.zCtx, opeHeader), prtSubCtxs=False, prtLine=False)
-		ZCIErr(oriZCI, "No operator " + curPOCall.name + " matching for parameters (" + ','.join(paramTypeNames) + ")" + v2i.ZCIKindIfErr_ending)
+		ZCIErr(oriZCI, "No operator " + curPOCall.name.upper() + " matching for parameters (" + ','.join(paramTypeNames) + ")" + v2i.ZCIKindIfErr_ending)
 
 	#result
 	return val(

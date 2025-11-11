@@ -155,8 +155,8 @@ def processTypeDcl(ZCI, isPub):
 		parentInst = ZCI.getTypeInstanceFromID(parentID)
 
 		#special case: no "raw" type allowed
-		if parentID in ZCI.zCtx.rawTypeNames.values():
-			ZCIErr(ZCI, "Type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" is being copied from a \"raw\" type => forbidden, in type declaration ZCI (DCL_TYP).")
+		if parentID == ZCI.zCtx.rawType:
+			ZCIErr(ZCI, "Type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" is being copied from \"raw\" type => forbidden, in type declaration ZCI (DCL_TYP).")
 
 		#copying itself, no matter the declination (error case seems obvious, though required)
 		if parentInst.dcnCommon == newTypeInst.dcnCommon:
@@ -311,7 +311,7 @@ def processFctDcl_partial(ZCI, isPub, fwdTypeName=None):
 
 	#must be followed by parameters between parentheses includer
 	if ZCI.get() != '(':
-		ZCIErr(ZCI, "Expected parameters between parentheses includer right after function name.")
+		ZCIErr(ZCI, "Expected parameters between parentheses includer right after function name (DCL_FCT/DCL_FWD).")
 
 	#parameters
 	params = readDatItmSeq(
@@ -322,7 +322,13 @@ def processFctDcl_partial(ZCI, isPub, fwdTypeName=None):
 		dcnKwLstToReplaceInTypes = dcnKwLst #only effective if fct is dcn-dependent, and btw, it doesn't replace anything for the moment but only ALLOW 'dcn#' notations
 	)
 	for p in params: #add "lcl" module prefix
+		if isMethod and p.name == "sbj":
+			ZCIErr(ZCI, "Can't use name \"sbj\" as parameter in method, already in use for targetting current instance (DCL_FCT/DCL_FWD).")
 		p.name = 'L' + p.name
+
+	#method instance as 1st param: "sbj"
+	if isMethod:
+		params = [datItm(methodType, "Lsbj", False, None)] + params
 
 	#go to the next interesting thing (if any)
 	optionalBlanks(ZCI, None)
@@ -351,10 +357,10 @@ def processFctDcl_partial(ZCI, isPub, fwdTypeName=None):
 		methodHeader = "F"
 		if isMethod:
 			if parsingFctDcl:
-				methodHeader       = 'T' + methodTypeName + '_'
+				methodHeader       = 'T' + methodTypeName + "_F"
 			else:
-				methodHeader       = 'T' + fwdTypeName + '_'
-				fwd_srcFctFullName = modPfx + 'T' + methodTypeName + '_' + rawName #also build fwd src fct name (DCL_FWD only)
+				methodHeader       = 'T' + fwdTypeName + "_F"
+				fwd_srcFctFullName = modPfx + 'T' + methodTypeName + "_F" + rawName #also build fwd src fct name (DCL_FWD only)
 
 				#additionnal check for fwd fct: forward with same type
 				if methodTypeName == fwdTypeName:
@@ -378,7 +384,7 @@ def processFctDcl_partial(ZCI, isPub, fwdTypeName=None):
 
 	#check if function/method/operator already exists
 	if getFctFromName(ZCI, fullName) is not None:
-		ZCIWrn(ZCI, "Available functions/methods/operators declared since now " + listAllExistingFct(ZCI.zCtx))
+		ZCIWrn(ZCI, "Available functions/methods/operators declared since now " + listAllExistingFct(ZCI.zCtx), prtSubCtxs=False, prtLine=False)
 		ZCIErr(ZCI, "Already have a function/method/operator with name " + fullName)
 
 	#create fct instance (set VOID retType for the moment)

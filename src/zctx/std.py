@@ -4,6 +4,9 @@
 
 # -------- IMPORTATIONS --------
 
+#system
+import sys
+
 #charsets
 import string
 
@@ -12,6 +15,7 @@ from std.string            import *
 from std.path              import *
 from std.list              import *
 from std.io                import *
+from std.log               import *
 from std.parsingCtx        import *
 from std.int               import *
 from std.term              import *

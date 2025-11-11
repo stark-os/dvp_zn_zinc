@@ -2,6 +2,7 @@
 
 #tool for reading value sequences
 def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToReplace=None):
+	ZCIDeepDbg(ZCI, "Reading value sequence.")
 
 	#initial conditions
 	if ZCI.get() not in INCLUDERS.keys():
@@ -43,7 +44,8 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 				optionalBlanks(ZCI, "Value after assignment symbol in \"NAME = VALUE\" association (reading value sequence, field " + fieldName + ")" + ZCIKindIfErr_ending)
 
 		#value empty or simply not given
-		if ZCI.ctx.icontent.idx >= peerIdx: #should never be greater (could have set an internal error here)
+		if ZCI.ctx.icontent.idx == peerIdx:
+			ZCI.inc()
 			break
 		if ZCI.get() == ',':
 			ZCIErr(ZCI, "Missing element given in value sequence (\"VALUE\" or \"NAME = VALUE\" expected)" + ZCIKindIfErr_ending)
@@ -89,15 +91,21 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 	#fill missing fields with their default value
 	for f in givenFields.keys():
 		if givenFields[f] is None:
-			di = tgtFields[f]
 
-			#set default value if no one given
-			if not di.inited:
-				ZCIErr(ZCI, "Value required for field " + f + " in value sequence (no default value set for that field)" + ZCIKindIfErr_ending)
-			ZCIDeepDbg(ZCI, "No value given for field " + f + " in value sequence (=> set default value: " + di.initVal.toStr())
-			givenFields[f] = di.initVal
+			#target the correct field
+			defVal = None
+			for tf in tgtFields:
+				if tf.inited:
+					givenFields[f] = tf.initVal
+					ZCIDeepDbg(ZCI, "No value given for field " + f + " in value sequence (=> set default value: " + tf.initVal.toStr())
+				break
+
+			#unable to find def value for that field
+			if defVal is None:
+				ZCIErr(ZCI, "Value required for field " + f + " in value sequence (no default value for that field)" + ZCIKindIfErr_ending)
 
 	#return completed result
+	ZCIDeepDbg(ZCI, "Ended reading value sequence.")
 	return givenFields
 
 
@@ -106,32 +114,42 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 def readVal(ZCI, ZCIKindIfErr, scope, cstOnly=False, dcnKwLstToReplace=None, allowVFC=False):
 	ZCIDeepDbg(ZCI, "Reading value.")
 
-	#can have err => use a copy just in case
-	if ZCIKindIfErr is None:
-		tgtZCI = ZCI.copy()
-	else:
-		tgtZCI = ZCI
+
+
+	#STEP 1: PREPARE
+
+	#work on copy
+	tmpZCI = ZCI.copy()
+
+	#create a fancy pack to transport redundant dat (VAP 2nd analysis info)
+	v2i = vap2info(ZCIKindIfErr, scope, cstOnly, dcnKwLstToReplace)
+
+
+
+	#STEP 2: VAP
 
 	#1st analysis: ODP
-	firstAnalysisRes = ODP(tgtZCI)
-	tgtZCI.forwardUntil(firstAnalysisRes.maxStopIdx+1)
+	firstAnalysisRes = ODP(tmpZCI)
+	tmpZCI.forwardUntil(firstAnalysisRes.maxStopIdx+1) #as far as ODP could see, 2nd analysis can go
 
-	#apply 2nd analysis recursively in ODP result
-	secondAnalysisRes = applySecondAnalysis(
-		firstAnalysisRes.mainPOCall,
-		tgtZCI, #for err msg only
-		vap2info(ZCIKindIfErr, scope, cstOnly, dcnKwLstToReplace),
-		allowVFC=allowVFC
-	)
+	#2nd analysis: recursively applied in ODP res
+	secondAnalysisRes = applySecondAnalysis(firstAnalysisRes.mainPOCall, tmpZCI, v2i, allowVFC=allowVFC)
 
-	#no value found is allowed => share the forwarding with ori ZCI
+
+
+	#STEP 3: FORWARD ZCI ACCORDINGLY
+
+	#no value read but err allowed => just stop here, without affecting ZCI
 	if ZCIKindIfErr is None:
-		if secondAnalysisRes is not None:
-			ZCI.forwardAlike(tgtZCI)
+		if secondAnalysisRes is None:
+			return None
 
-	#should never happen
+	#no value read and that was not allowed => should be handled in 2nd analysis parsing directly
 	elif secondAnalysisRes is None:
 		ZCIInt(ZCI, "Having null value from 2nd analysis but we don't allow to have \"no value found\".")
+
+	#set maxStopIdx according to 2nd analysis (and not the one of ODP)
+	ZCI.forwardUntil(v2i.maxStopIdx)
 
 	#res
 	ZCIDeepDbg(ZCI, "Ended reading value.")

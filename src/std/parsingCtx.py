@@ -150,7 +150,7 @@ class ParsingCtx:
 
 
 	#output
-	def prtLineIndicator(sbj):
+	def lineIndicator(sbj):
 		content = sbj.icontent.s
 
 		#set beginning & end of line
@@ -174,7 +174,6 @@ class ParsingCtx:
 		#print full line
 		rawConcernedLine = str_sub(content, begIdx, endIdx)
 		concernedLine    = str_expandTabs(rawConcernedLine, Term__TAB_LENGTH)
-		print(concernedLine)
 
 		#prepare position indicator
 		positionIdx       = (Term__TAB_LENGTH-1) * rawConcernedLine.count('\t') + sbj.colmNbr - 1
@@ -184,7 +183,7 @@ class ParsingCtx:
 		positionIndicator += '^'
 
 		#print position indicator
-		print(positionIndicator)
+		return concernedLine + positionIndicator
 
 
 

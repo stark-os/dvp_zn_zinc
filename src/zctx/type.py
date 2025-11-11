@@ -83,6 +83,9 @@
 	def typeIDContainsDcnKw(sbj, tID):
 		return tID in sbj.spcDcnTypes or tID == sbj.gncDcnType
 
+
+
+	#output
 	def listTypeNames(sbj):
 		typeNames = []
 		skip      = False
@@ -103,10 +106,16 @@
 				skip = False
 				continue
 
-			#add name: enm
+			#ID (dbg only)
 			n = ""
+			if sbj.dbgMode[sbj.step]:
+				n = str(tID) + ':'
+
+			#enm
 			if tInst.name[2] == 'N':
 				n += "(enm) "
+
+			#add name
 			n += unpfxTypeName(sbj, tInst.name)[0]
 			typeNames.append(n)
 

@@ -44,11 +44,11 @@ def processIfStm(ZCI, scope, tgtFct):
 
 	#parse them as inner sub-scp (lcl)
 	subScp = newScp(parent=scope)
-	readLclScp(scpZCIs, tgtFct, subScp)
+	readLclScp(subScpZCIs, subScp, tgtFct)
 	res.scopes.append(subScp)
 
 	#add statement
-	scope.exes.append( atm(ATM__IF_, res) )
+	scope.exes.append( atm(ATM__STM_IF, res) )
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "if statement, in function " + tgtFct.name + " (STM_IF_).")
@@ -65,7 +65,7 @@ def processElfStm(ZCI, scope, tgtFct):
 	if len(scope.exes) != 0:
 		lastExe   = lst_last(scope.exes)
 		lastExeID = lastExe.id
-	if lastExeID != ATM__IF_:
+	if lastExeID != ATM__STM_IF:
 		ZCIErr(ZCI, "Found lonely \"elf\" keyword, it must be following an IF/ELF statement, in function" + tgtFct.name + " (STM_IF_).")
 
 	#els keyword already detected
@@ -95,7 +95,7 @@ def processElfStm(ZCI, scope, tgtFct):
 
 	#parse them as inner sub-scp (lcl)
 	subScp = newScp(parent=scope)
-	readLclScp(scpZCIs, tgtFct, subScp)
+	readLclScp(subScpZCIs, subScp, tgtFct)
 	lastExe.dat.scopes.append(subScp)
 
 	#end of ZCI expected
@@ -113,7 +113,7 @@ def processElsStm(ZCI, scope, tgtFct):
 	if len(scope.exes) != 0:
 		lastExe   = lst_last(scope.exes)
 		lastExeID = lastExe.id
-	if lastExeID != ATM__IF_:
+	if lastExeID != ATM__STM_IF:
 		ZCIErr(ZCI, "Found lonely \"els\" keyword, it must be following an IF/ELF statement, in function" + tgtFct.name + " (STM_IF_).")
 
 	#els keyword already detected
@@ -138,7 +138,7 @@ def processElsStm(ZCI, scope, tgtFct):
 
 	#parse them as inner sub-scp (lcl)
 	subScp = newScp(parent=scope)
-	readLclScp(scpZCIs, tgtFct, subScp)
+	readLclScp(subScpZCIs, subScp, tgtFct)
 	lastExe.dat.scopes.append(subScp)
 
 	#end of ZCI expected
@@ -192,11 +192,11 @@ def processSwiStm(ZCI, scope, tgtFct):
 
 		#parse them as inner sub-scp (lcl)
 		subScp = newScp(parent=scope)
-		readLclScp(scpZCIs, tgtFct, subScp)
+		readLclScp(subScpZCIs, subScp, tgtFct)
 		res.scopes.append(subScp)
 
 	#add statement
-	scope.exes.append( atm(ATM__SWI, res) )
+	scope.exes.append( atm(ATM__STM_SWI, res) )
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "swi statement, in function " + tgtFct.name + " (STM_SWI).")
@@ -454,11 +454,11 @@ def processForStm(ZCI, scope, tgtFct):
 	ZCIDeepDbg(ZCI, "End of extraction of FOR statement sub-scope.")
 
 	#parse them as inner sub-scp (lcl)
-	readLclScp(scpZCIs, tgtFct, subScp)
+	readLclScp(subScpZCIs, subScp, tgtFct)
 	res.scope = subScp
 
 	#add statement to lcl scp
-	scope.exes.append( atm(ATM__FOR, res) )
+	scope.exes.append( atm(ATM__STM_FOR, res) )
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "for statement, in function " + tgtFct.name + " (STM_FOR).")
@@ -495,11 +495,11 @@ def processWhiStm(ZCI, scope, tgtFct):
 
 	#parse them as inner sub-scp (lcl)
 	subScp = newScp(parent=scope)
-	readLclScp(scpZCIs, tgtFct, subScp)
+	readLclScp(subScpZCIs, subScp, tgtFct)
 	res.scope = subScp
 
 	#add statement
-	scope.exes.append( atm(ATM__WHI, res) )
+	scope.exes.append( atm(ATM__STM_WHI, res) )
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "whi statement, in function " + tgtFct.name + " (STM_WHI).")
@@ -550,7 +550,7 @@ def processRetJmp(ZCI, scope, tgtFct):
 # -------- EXECUTION --------
 
 #read given ZCIs => add them to given scope
-def readLclScope(ZCIs, scope, tgtFct): #tgtFct is for debug
+def readLclScp(ZCIs, scope, tgtFct): #tgtFct is for debug
 	for ZCI in ZCIs:
 		initialCtx = ZCI.ctx.copy()
 		ZCIDeepDbg(ZCI, "Treating local ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
@@ -594,7 +594,7 @@ def readLclScope(ZCIs, scope, tgtFct): #tgtFct is for debug
 			if str_cmp("for", firstWord):
 				processForStm(ZCI, scope, tgtFct)
 				continue
-			if str_cmp("while", firstWord):
+			if str_cmp("whi", firstWord):
 				processWhiStm(ZCI, scope, tgtFct)
 				continue
 			if str_cmp("swi", firstWord):
@@ -667,7 +667,7 @@ def c03_processLcls(zCtx):
 			zCtx.err("Missing \"main\" function to compile as executable.", prtSubCtxs=False, prtLine=False)
 
 		#process fct scope & remove its content ZCIs
-		readLclScope(mainFct.content, mainFct.scope, mainFct)
+		readLclScp(mainFct.content, mainFct.scope, mainFct)
 		mainFct.content = None
 
 	#case 2: SDL
@@ -684,7 +684,7 @@ def c03_processLcls(zCtx):
 				continue
 
 			#process fct scope & remove its content ZCIs
-			readLclScope(f.content, f.scope, f)
+			readLclScp(f.content, f.scope, f)
 			f.content = None
 
 	#unknown cpl mode

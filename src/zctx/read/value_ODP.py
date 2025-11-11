@@ -70,7 +70,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 			if ope == SYM__BSU:
 				itWasJustANegSign = True
 				ZCIDeepDbg(ZCI, "SPECIAL CASE IN ODP: Found operator BSU without first operand => considerated as negative sign only (no operation).")
-			else:
+			elif ope not in MONO_OPERAND:
 				ZCIErr(ZCI, "Missing first operand to operator " + OPE_NAMES[ope])
 		elif ope in MONO_OPERAND:
 			ZCIErr(ZCI, "Got too much operands for single operator " + OPE_NAMES[ope] + " (only 1 allowed after symbol).")

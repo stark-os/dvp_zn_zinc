@@ -38,7 +38,7 @@ def main():
 
 	#args: filepath
 	if len(sys.argv) < 2:
-		print("zcc: Missing arguments (at least 1 required: \"filepath\").")
+		print("zinc: Missing arguments (at least 1 required: \"filepath\").")
 		exit(1)
 	filepath = sys.argv[1]
 
@@ -51,7 +51,7 @@ def main():
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
 		config.read(CXD + "/../cfg/pcpl_itm.cfg", comment_character='%', additionnalSpacesAllowed=False),
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
-		CPL__MODE_EXE | CPL__USE_REF_ALLOWED,
+		CPL__MODE_SDL | CPL__USE_REF_ALLOWED,
 
 		#debug
 		dbgMode = (

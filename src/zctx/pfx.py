@@ -152,8 +152,8 @@ def unpfxTypeName(zCtx, exactName):
 def unpfxOpeName(zCtx, o):
 	txt = "operator " + str_sub(o.name, start=1, stop=3) + '('
 	for p in o.params:
-		txt += unpfxTypeName(zCtx, zCtx.getTypeNameFromID(p.Type)) + ','
-	return txt + ')'
+		txt += unpfxTypeName(zCtx, zCtx.getTypeNameFromID(p.Type))[0] + ','
+	return txt[:-1] + ')'
 
 
 def unpfxFctName(zCtx, f):
@@ -163,18 +163,19 @@ def unpfxFctName(zCtx, f):
 		return unpfxOpeName(zCtx, f)
 
 	#in/out mod
-	fModPfx = unpfxMod(f.name)
+	fModPfx = unpfxMod(extractModPfx(f.name))
 	if len(fModPfx) == 0:
 		rawName = str_sub(f.name, start=2)
 	else:
 		rawName = str_sub(f.name, start=len(fModPfx)+1)
 
 	#method type also
-	methodTypePfx = ""
+	methodTypeName_unpfx = ""
 	if f.methodOf != TYPE_ID__UNKNOWN:
-		methodTypePfx = unpfxTypeName(rawName)
-		rawName       = str_sub(rawName, start=len(methodTypePfx))
-	return fModPfx + methodTypePfx + rawName
+		methodTypeName        = zCtx.getTypeNameFromID(f.methodOf)
+		methodTypeName_unpfx  = unpfxTypeName(zCtx, methodTypeName)[0] + '.'
+		rawName               = str_sub(rawName, start=len(methodTypeName)+1)
+	return fModPfx + methodTypeName_unpfx + rawName
 
 def unpfxDatItm(exactName):
 

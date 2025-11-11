@@ -41,7 +41,7 @@ def strLst_toDsp(sl):
 			maxLen = len(s)
 
 	#compute optimal modulo depending on terminal width
-	dspModulo = int( (Term__width()-len(TERM__OUTPUT_TAB))/(maxLen+3) )
+	dspModulo = int( (Term__width()-10-len(TERM__OUTPUT_TAB))/(maxLen+3) )
 
 	#create text list
 	res = "["

@@ -44,7 +44,7 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 	fctModPfx, fctRawName,
 	scope,     cstOnly,
 	dcnKwLstToReplace,
-	methodOf = TYPE_ID__UNKNOWN
+	methodCaller = None #val
 ):
 	#check scope: calls are only allowed in non-global scope
 	if scope == ZCI.zCtx.cpl.gblScp:
@@ -56,12 +56,12 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 		ZCIKindIfErr_ending = ", in " + ZCIKindIfErr
 
 	#method related
-	isMethod       = (methodOf != TYPE_ID__UNKNOWN)
+	isMethod       = (methodCaller is not None)
 	methodTypeInst = None
 	methodHeader   = "F"
 	if isMethod:
-		methodTypeInst = ZCI.getTypeInstanceFromID(methodOf)
-		methodHeader   = 'T' + methodTypeInst.name + '_'
+		methodTypeInst = ZCI.getTypeInstanceFromID(methodCaller.Type)
+		methodHeader   = 'T' + methodTypeInst.name + "_F"
 
 	#try get function matching exact name
 	fctExactName = fctModPfx + methodHeader + fctRawName
@@ -70,30 +70,33 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 
 	#no exact match
 	if tgtFct is None:
+		for f in ZCI.zCtx.cpl.fcts:
+			print("["+f.name+"]")
 
 		#not a method => no other alternative
 		if not isMethod:
+			ZCIWrn(ZCI, "You may wanted to target one of the following functions declared: " + listAllExistingFct(ZCI.zCtx), prtSubCtxs=False, prtLine=False)
 			ZCIErr(ZCI, "No matching function \"" + unpfxMod(fctModPfx) + fctRawName + "\" found (parsing call)" + ZCIKindIfErr_ending)
 		ZCIDeepDbg(ZCI, "No matching function with that exact name but this is a method call => trying alternatives.", prtLine=False)
 
 		#get some info about tgt method type
-		methodTypeName_alternatives = ZCI.zCtx.getTypeAlternativeNames(methodOf)
+		methodTypeName_alternatives = ZCI.zCtx.getTypeAlternativeNames(methodCaller.Type)
 		fctExactName_alternatives   = []
 
 		#at least one dcn in type => gather every combination, including with "dcn" kw (dcn-dep methods)
 		dcnsCombinations = []
-		if len(methodTypeInst.dcnCommon.dcns) != 0:
-			dcnsCombinations += zCtx__listAllDcnsNameCombinations(methodTypeInst)
+		if len(methodTypeInst.dcns) != 0:
+			dcnsCombinations += zCtx__listAllDcnsNameCombinations(ZCI.zCtx, methodTypeInst)
 
 		#look in parents for a match
 		for parentAltName in methodTypeName_alternatives:
 
 			#declinated parent can match
 			for dc in dcnsCombinations:
-				fctExactName_alternatives = fctModPfx + 'T' + parentAltName + dc + '_' + fctRawName
+				fctExactName_alternatives.append(fctModPfx + 'T' + parentAltName + dc + "_F" + fctRawName)
 
 			#undcn parent can also match
-			fctExactName_alternatives = fctModPfx + 'T' + parentAltName + '_' + fctRawName
+			fctExactName_alternatives.append(fctModPfx + 'T' + parentAltName + "_F" + fctRawName)
 
 		#check each alternative for tgtFct
 		ZCIDeepDbg(ZCI, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ALTERNATIVES " + strLst_toDsp(fctExactName_alternatives), prtLine=False)
@@ -109,17 +112,23 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 		#still no one matching
 		if tgtFct is None:
 			ZCIWrn(ZCI, "The following methods could have match if they were declared: " + strLst_toDsp(fctExactName_alternatives), prtSubCtxs=False, prtLine=False)
-			ZCIErr(ZCI, "No matching method \"" + fctExactName + "\" found for type " + unpfxTypeName(ZCI.zCtx, tInst.name) + " (parsing call)" + ZCIKindIfErr_ending)
-		ZCIDeepDbg(ZCI, "Found matching method \"" + fctExactName + "\".", prtLine=False)
+			ZCIErr(ZCI, "No matching method \"" + fctExactName + "\" found for type " + unpfxTypeName(ZCI.zCtx, methodTypeInst.name)[0] + " (parsing call)" + ZCIKindIfErr_ending)
+
+	#match (debug)
+	ZCIDeepDbg(ZCI, "Found matching method \"" + fctExactName + "\".", prtLine=False)
 
 	#check ret type
 	if not allowVFC and tgtFct.retType == TYPE_ID__UNKNOWN:
 		ZCIErr(ZCI, "Can't have void returning function call here (only !VFC allowed)" + ZCIKindIfErr_ending)
 
-	#read params
+	#collect params info
 	unpfxParams = []
-	for p in tgtFct.params:
-		unpfxParams.append(datItm( p.Type, p.name[1:], p.inited, p.initVal )) #copy params but without 'L' pfx
+	for p in range(len(tgtFct.params)):
+		if p != 0 or not isMethod:
+			pDI = tgtFct.params[p]
+			unpfxParams.append(datItm( pDI.Type, pDI.name[1:], pDI.inited, pDI.initVal )) #copy params but without 'L' pfx
+
+	#read param vals
 	paramVals_fmap = readValSeq(ZCI,
 		ZCIKindIfErr,
 		unpfxParams,
@@ -127,10 +136,11 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 		cstOnly           = cstOnly,
 		dcnKwLstToReplace = dcnKwLstToReplace
 	)
-	ZCI.inc()
 
 	#set under lst[val] for call format
 	paramVals_valLst = []
+	if isMethod:
+		paramVals_valLst.append(methodCaller) #add "sbj" in param vals
 	for p in unpfxParams:
 		paramVals_valLst.append(paramVals_fmap[p.name]) #ensure to add each param in the correct order !
 
@@ -140,5 +150,5 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 def listAllExistingFct(zCtx):
 	nl = []
 	for f in zCtx.cpl.fcts:
-		nl.append(f.name)
+		nl.append(unpfxFctName(zCtx, f))
 	return strLst_toDsp(nl)

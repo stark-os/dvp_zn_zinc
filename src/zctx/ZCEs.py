@@ -341,6 +341,7 @@ class vap2info:
 		if ZCIKindIfErr is not None:
 			sbj.ZCIKindIfErr_ending = ", in " + ZCIKindIfErr
 		sbj.scope             = scope
+		sbj.maxStopIdx        = 0
 		sbj.cstOnly           = cstOnly
 		sbj.dcnKwLstToReplace = dcnKwLstToReplace
 
