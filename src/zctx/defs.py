@@ -73,59 +73,59 @@ MAX_DECIMAL_DIGITS_ALLOWED__U32 = 10
 MAX_DECIMAL_DIGITS_ALLOWED__U64 = 20
 
 #other
-SYM__ASG       = 1 #assignment
 SYM__NOT_FOUND = 0
+SYM__ASG       = 1 #assignment
 
 #Single Operators
-SYM__SIN = 1 #invert
-SYM__SNO = 2 #not
+SYM__SIN = 2 #invert
+SYM__SNO = 3 #not
 
 #Decisionnal Operators
-SYM__DAN = 3 #decisionnal and
-SYM__DOR = 4 #decisionnal or
+SYM__DAN = 4 #decisionnal and
+SYM__DOR = 5 #decisionnal or
 
 #Arithmetic Operators
-SYM__AMU = 5 #multiply
-SYM__ADI = 6 #divide
-SYM__AMO = 7 #modulo
-SYM__APO = 8 #power
+SYM__AMU = 6 #multiply
+SYM__ADI = 7 #divide
+SYM__AMO = 8 #modulo
+SYM__APO = 9 #power
 
 #B-rithmetic Operators
-SYM__BAD =  9 #add
-SYM__BSU = 10 #subtract
+SYM__BAD = 10 #add
+SYM__BSU = 11 #subtract
 
 #Logical Operators
-SYM__LAN = 11 #logical and
-SYM__LOR = 12 #logical or
-SYM__LXO = 13 #logical xor
-SYM__LLS = 14 #left shift
-SYM__LRS = 15 #right shift
-SYM__LLB = 16 #left byte-shift
-SYM__LRB = 17 #right byte-shift
-SYM__LLR = 18 #left roll
-SYM__LRR = 19 #right roll
+SYM__LAN = 12 #logical and
+SYM__LOR = 13 #logical or
+SYM__LXO = 14 #logical xor
+SYM__LLS = 15 #left shift
+SYM__LRS = 16 #right shift
+SYM__LLB = 17 #left byte-shift
+SYM__LRB = 18 #right byte-shift
+SYM__LLR = 19 #left roll
+SYM__LRR = 20 #right roll
 
 #Conditionnal Operators
-SYM__CEQ = 20 #equals
-SYM__CNE = 21 #not equals
-SYM__CLT = 22 #lesser than
-SYM__CGT = 23 #greater than
-SYM__CLE = 24 #lesser or equal
-SYM__CGE = 25 #greater or equal
+SYM__CEQ = 21 #equals
+SYM__CNE = 22 #not equals
+SYM__CLT = 23 #lesser than
+SYM__CGT = 24 #greater than
+SYM__CLE = 25 #lesser or equal
+SYM__CGE = 26 #greater or equal
 
 #Indexing Operators
-SYM__IAM = 30 #among
-SYM__INA = 31 #not among
-SYM__IIN = 32 #index
-SYM__IIA = 33 #index assign
-SYM__ISU = 34 #sub
-SYM__ISA = 35 #sub assign
+SYM__IAM = 27 #among
+SYM__INA = 28 #not among
+SYM__IIN = 29 #index
+SYM__IIA = 30 #index assign
+SYM__ISU = 31 #sub
+SYM__ISA = 32 #sub assign
 
 #Fixed Operators
-SYM__FSZ = 36 #size
-SYM__FRF = 37 #reference
-SYM__FCA = 38 #casht
-SYM__FFA = 39 #field access
+SYM__FSZ = 33 #size
+SYM__FRF = 34 #reference
+SYM__FCA = 35 #casht
+SYM__FFA = 36 #field access
 
 #useful symbol sets
 SO = (SYM__SIN, SYM__SNO)

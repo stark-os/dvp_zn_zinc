@@ -7,17 +7,17 @@
 		#subCtxs
 		if prtSubCtxs:
 			for ctx in sbj.subCtxs:
-				out += "    At " + ctx.toStr() + '\n'
+				out += "  At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 		#code line
 		if prtLine:
 			if sbj.ctx is None:
 				sbj.int("No context to internal-output line from.", prtSubCtxs=False, prtLine=False)
-			out += sbj.ctx.lineIndicator() + '\n'
+			out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
 
 		#msg
 		out += msg
-		log_int(out)
+		log_intLF(out)
 
 		#exit
 		import traceback #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< can be useful
@@ -32,24 +32,23 @@
 		#subCtxs
 		if prtSubCtxs:
 			for ctx in sbj.subCtxs:
-				out += "    At " + ctx.toStr() + '\n'
+				out += "  At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 		#code line
 		if prtLine:
 			if sbj.ctx is None:
 				sbj.int("No context to error-output line from.", prtSubCtxs=False, prtLine=False)
-			out += sbj.ctx.lineIndicator() + '\n'
+			out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
 
 		#msg
 		out += msg
-		log_err(out)
-
-		#additional dbg info IN STDOUT !
-		if sbj.dbgMode[sbj.step]:
-			log_dbg("Types ID table: " + sbj.listTypeNames())
+		log_errLF(out)
 
 		#exit
-		exit(err)
+		if err != 0:
+			if sbj.dbgMode[sbj.step]: #additional dbg info IN STDOUT !
+				log_dbgLF("Types ID table: " + sbj.listTypeNames())
+			exit(err)
 
 
 
@@ -59,17 +58,17 @@
 		#subCtxs
 		if prtSubCtxs:
 			for ctx in sbj.subCtxs:
-				out += "    At " + ctx.toStr() + '\n'
+				out += "  At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 		#code line
 		if prtLine:
 			if sbj.ctx is None:
 				sbj.int("No context to warning-output line from.", prtSubCtxs=False, prtLine=False)
-			out += sbj.ctx.lineIndicator() + '\n'
+			out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
 
 		#msg
 		out += msg
-		log_wrn(out)
+		log_wrnLF(out)
 
 
 
@@ -84,17 +83,17 @@
 			#subCtxs
 			if prtSubCtxs:
 				for ctx in sbj.subCtxs:
-					out += "    At " + ctx.toStr() + '\n'
+					out += "  At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 			#code line
 			if prtLine:
 				if sbj.ctx is None:
 					sbj.int("No context to debug-output line from.", prtSubCtxs=False, prtLine=False)
-				out += sbj.ctx.lineIndicator() + '\n'
+				out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
 
 			#msg
 			out += msg
-			log_dbg(out)
+			log_dbgLF(out)
 
 
 
@@ -109,17 +108,17 @@
 			#subCtxs
 			if prtSubCtxs:
 				for ctx in sbj.subCtxs:
-					out += "    At " + ctx.toStr() + '\n'
+					out += "  At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 			#code line
 			if prtLine:
 				if sbj.ctx is None:
 					sbj.int("No context to deep-debug-output line from.", prtSubCtxs=False, prtLine=False)
-				out += sbj.ctx.lineIndicator() + '\n'
+				out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
 
 			#log
 			out += msg
-			log_deepDbg(out)
+			log_deepDbgLF(out)
 
 
 
@@ -131,9 +130,9 @@
 
 	def deepDbgPause(sbj):
 		if sbj.deepDbgMode[sbj.step] and sbj.stepByStep:
-			log_deepDbg("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~", end="")
+			log_deepDbg("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~")
 			input()
-			log_deepDbg(Term__CUU1 + "                                       \r", end="")
+			log_deepDbg(Term__CUU1 + "                                       \r")
 			Term__drawSepLine()
 
 

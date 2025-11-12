@@ -134,3 +134,9 @@ def str_findLastChr(s, c):
 		if s[len(s)-1-i] == c:
 			return i
 	return -1
+
+def str_insert(s, i, newStr):
+	return str_sub(s, stop=i-1) + newStr + str_sub(s, start=i)
+
+def str_truncate(s, start, stop):
+	return str_sub(s, stop=start-1) + str_sub(s, start=stop+1)

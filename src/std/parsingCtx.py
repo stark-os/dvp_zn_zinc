@@ -55,6 +55,9 @@ class istr:
 	def reachedEnd(sbj):
 		return sbj.idx == len(sbj.s)-1
 
+	def insert(sbj, newStr):
+		sbj.s = str_insert(sbj.s, sbj.idx, newStr)
+
 
 
 #constants
@@ -144,8 +147,11 @@ class ParsingCtx:
 		sbj.colmNbr    = 0
 		sbj.detectedLF = False
 		if newText is not None:
-			sbj.icontent.s   = newText
-			sbj.icontent.idx = -1
+			sbj.icontent.s = newText
+		sbj.icontent.idx = -1
+
+	def insert(sbj, newStr):
+		sbj.icontent.insert(newStr)
 
 
 

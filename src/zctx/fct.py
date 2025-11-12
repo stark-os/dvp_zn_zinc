@@ -99,7 +99,6 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 			fctExactName_alternatives.append(fctModPfx + 'T' + parentAltName + "_F" + fctRawName)
 
 		#check each alternative for tgtFct
-		ZCIDeepDbg(ZCI, ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ALTERNATIVES " + strLst_toDsp(fctExactName_alternatives), prtLine=False)
 		for altExactName in fctExactName_alternatives:
 			ZCIDeepDbg(ZCI, "Trying with \"" + altExactName + "\".", prtLine=False)
 

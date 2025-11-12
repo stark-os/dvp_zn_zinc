@@ -39,6 +39,13 @@
 					return True
 		return False
 
+	def getUndcnTypeID(sbj, dcnTypeInst):
+		for t in range(len(sbj.cpl.types)):
+			tInst = sbj.getTypeInstanceFromID(t)
+			if tInst.dcnCommon == dcnTypeInst.dcnCommon and len(tInst.dcns) == 0:
+				return t
+		return None
+
 
 
 	#inheritance !WARNING: A bit of complexity !!!
@@ -68,7 +75,11 @@
 			#add this dcn-related alternative as ID
 			alternatives.append( sbj.getTypeIDFromName(exactNameWithoutDcns + sfx) )
 
-		#step 5: add also parent's alternatives
+		#step 5: add undcn type itself (only if on a dcned one)
+		if len(tInst.dcns) != 0:
+			alternatives.append(sbj.getUndcnTypeID(tInst))
+
+		#step 6: add also parent's alternatives
 		if tInst.dcnCommon.parent is not None:
 			alternatives += sbj.getTypeAlternatives(tInst.dcnCommon.parent)
 		return alternatives

@@ -100,7 +100,7 @@ def processElfStm(ZCI, scope, tgtFct):
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "elf statement, in function " + tgtFct.name + " (STM_IF_).")
-	ZCIDbg(ZCI, "Processed ELF STM in function " + tgtFct.name + ": " + res.toStr())
+	ZCIDbg(ZCI, "Processed ELF STM in function " + tgtFct.name + ": " + lastExe.toStr())
 	ZCI.deepDbgPause()
 
 def processElsStm(ZCI, scope, tgtFct):
@@ -143,7 +143,7 @@ def processElsStm(ZCI, scope, tgtFct):
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "els statement, in function " + tgtFct.name + " (STM_IF_).")
-	ZCIDbg(ZCI, "Processed ELS STM in function " + tgtFct.name + ": " + res.toStr())
+	ZCIDbg(ZCI, "Processed ELS STM in function " + tgtFct.name + ": " + lastExe.toStr())
 	ZCI.deepDbgPause()
 
 
@@ -473,9 +473,9 @@ def processWhiStm(ZCI, scope, tgtFct):
 	jumpBlankZone(ZCI, None)
 
 	#read condition
-	res      = stm_whi()
-	res.cond = readVal(ZCI, "condition in WHI statement (STM_WHI).", scope)
-	ZCIDeepDbg(ZCI, "Added while statement condition: " + res.cond.toStr())
+	res          = stm_whi()
+	res.iterCond = readVal(ZCI, "condition in WHI statement (STM_WHI).", scope)
+	ZCIDeepDbg(ZCI, "Added while statement condition: " + res.iterCond.toStr())
 
 	#read following includer
 	optionalBlanks(ZCI, None)

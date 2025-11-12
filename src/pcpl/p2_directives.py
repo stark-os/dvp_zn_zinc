@@ -24,12 +24,15 @@ from zctx import *
 def PCPL__processSET(zCtx):
 	zCtx.dbg("Processing PCPL directive \"SET\".", prtLine=True)
 	PCPL__jumpBlankZone(zCtx, "SET")
+	initCtx = zCtx.ctx.copy()
 
 	#read name given
 	name = PCPL__readUntil(zCtx, BLANKS)
 	if '#' in name:
-		zCtx.deepDbg("Found PCPL sub directive in item name, unparseable yet => FAILURE")
-		zCtx.pcpl.failures += 1
+		zCtx.deepDbg("Found PCPL sub directive in SET item name, unparseable yet => FAILURE")
+		zCtx.pcpl.failures.append(PCPL_failure(
+			initCtx, "Found precompiler sub directive in SET item name, unparseable yet."
+		))
 		return None
 
 	#check name charset
@@ -43,7 +46,10 @@ def PCPL__processSET(zCtx):
 
 	#value could not be solved yet => cancel directive
 	if valueText is None:
-		zCtx.pcpl.failures += 1
+		zCtx.deepDbg("Precompiler item \"" + name + "\" has unreadable value yet.")
+		zCtx.pcpl.failures.append(PCPL_failure(
+			initCtx, "Precompiler item \"" + name + "\" has unreadable value yet."
+		))
 		return None
 
 	#else, add pcpl item (success)
@@ -60,12 +66,15 @@ def PCPL__processSET(zCtx):
 def PCPL__processUnSET(zCtx):
 	zCtx.dbg("Processing PCPL directive \"!SET\".", prtLine=True)
 	PCPL__jumpBlankZone(zCtx, "!SET")
+	initCtx = zCtx.ctx.copy()
 
 	#read name given
 	name = PCPL__readUntil(zCtx, BLANKS_EXTENDED) #1st and only field => must allow line feeds
 	if '#' in name:
-		zCtx.deepDbg("Found PCPL sub directive in item name, unparseable yet => FAILURE")
-		zCtx.pcpl.failures += 1
+		zCtx.deepDbg("Found PCPL sub directive in !SET item name, unparseable yet => FAILURE")
+		zCtx.pcpl.failures.append(PCPL_failure(
+			initCtx, "Found precompiler sub directive in !SET item name, unparseable yet."
+		))
 		return None
 
 	#check name charset
@@ -131,12 +140,15 @@ def PCPL__processCFG(zCtx, negation):
 def PCPL__processFOR(zCtx):
 	zCtx.dbg("Processing PCPL directive \"FOR\".", prtLine=True)
 	PCPL__jumpBlankZone(zCtx, "FOR")
+	initCtx = zCtx.ctx.copy()
 
 	#read iter var name given
 	iterVarName = PCPL__readUntil(zCtx, BLANKS)
 	if '#' in iterVarName:
-		zCtx.deepDbg("Found PCPL sub directive in item name, unparseable yet => FAILURE")
-		zCtx.pcpl.failures += 1
+		zCtx.deepDbg("Found PCPL sub directive in FOR item name, unparseable yet => FAILURE")
+		zCtx.pcpl.failures.append(PCPL_failure(
+			initCtx, "Found precompiler sub directive in FOR item name, unparseable yet."
+		))
 		return None
 
 	#check name charset
@@ -180,7 +192,6 @@ def PCPL__processFOR(zCtx):
 		#sub-directive => stop here then, we must have 0 complexity
 		if txtValues[tv][0] == '#':
 			zCtx.dbg("Found a sub-directive in FOR range values => stop here, it must be solved first.")
-			zCtx.pcpl.failures += 1
 			return None
 
 	#finally, get concerned zone
@@ -220,8 +231,7 @@ def getDirectiveText(zCtx):
 
 	#2 hashes in a row => consider having an directive inside another => unparseable yet => FAILURE
 	elif c == '#':
-		zCtx.dbg("Got 2 '#' in a row, maybe it is a directive inside another => FAILURE.")
-		zCtx.pcpl.failures += 1
+		zCtx.dbg("Got 2 '#' in a row, maybe it is a directive inside another.")
 		return None
 
 
@@ -231,12 +241,15 @@ def getDirectiveText(zCtx):
 	#braces includer directly => targetting a PCPL item
 	if c == '{':
 		zCtx.deepDbg("Looking for a PCPL item name.")
-		name = PCPL__readIncluderBlock(zCtx)
+		initCtx = zCtx.ctx.copy()
+		name    = PCPL__readIncluderBlock(zCtx)
 
 		#sub directive => unparseable yet => cancel
 		if '#' in name:
 			zCtx.dbg("Got sub directive in PCPL name, unparseable yet => FAILURE.")
-			zCtx.pcpl.failures += 1
+			zCtx.pcpl.failures.append(PCPL_failure(
+				initCtx, "Got sub directive in precompiler name, unparseable yet."
+			))
 			return None
 
 		#get corresponding value
@@ -247,11 +260,13 @@ def getDirectiveText(zCtx):
 		#unknown item => cancel
 		if tgtText is None:
 			zCtx.dbg("Unable to find precompiler item with name \"" + name + "\" => FAILURE.")
-			zCtx.pcpl.failures += 1
+			zCtx.pcpl.failures.append(PCPL_failure(
+				initCtx, "Unable to find precompiler item with name \"" + name + "\"."
+			))
 			return None
 
 		#replace PCPL instruction
-		zCtx.dbg("PCPL item found and replaced => SUCCESS", prtLine=True)
+		zCtx.dbg("PCPL item found and replaced => SUCCESS")
 		return tgtText
 
 
@@ -260,26 +275,31 @@ def getDirectiveText(zCtx):
 
 	#parentheses includer directly => targetting an arithmetic expression
 	if c == '(':
+		initCtx = zCtx.ctx.copy()
 		zCtx.deepDbg("Looking for a PCPL arithmetic expression.")
 		expression = PCPL__readIncluderBlock(zCtx, opening='(')
 
 		#sub directive => unparseable yet => cancel
 		if '#' in expression:
 			zCtx.dbg("Got sub directive in PCPL arithmetic expression, unparseable yet => FAILURE.")
-			zCtx.pcpl.failures += 1
+			zCtx.pcpl.failures.append(PCPL_failure(
+				initCtx, "Got sub directive in precompiler arithmetic expression, unparseable yet."
+			))
 			return None
 
 		#solve expression
 		tgtText = PCPL__ATH__solveArithmetic(zCtx, expression)
 
-		#unknown item => FAILURE
+		#unsolvable => FAILURE
 		if tgtText is None:
-			zCtx.dbg("Unable to find precompiler item with name \"" + name + "\" => FAILURE.")
-			zCtx.pcpl.failures += 1
+			zCtx.dbg("Unable to solve PCPL expression \"" + expression + "\" => FAILURE.")
+			zCtx.pcpl.failures.append(PCPL_failure(
+				initCtx, "Unable to solve precompiler arithmetic expression \"" + expression + "\"."
+			))
 			return None
 
 		#replace PCPL directive
-		zCtx.dbg("PCPL arithmetic expression replaced => SUCCESS", prtLine=True)
+		zCtx.dbg("PCPL arithmetic expression replaced => SUCCESS")
 		return tgtText
 
 
@@ -292,19 +312,16 @@ def getDirectiveText(zCtx):
 	#found a negation => read one more
 	if c == '!':
 		if zCtx__inc(zCtx):
-			zCtx.pcpl.failures += 1
 			return None
 		directiveKw += zCtx__get(zCtx)
 
 	#read 2nd chr of directive name
 	if zCtx__inc(zCtx):
-		zCtx.pcpl.failures += 1
 		return None
 	directiveKw += zCtx__get(zCtx)
 
 	#3rd and last one
 	if zCtx__inc(zCtx):
-		zCtx.pcpl.failures += 1
 		return None
 	directiveKw += zCtx__get(zCtx) #got full directive keyword, now time to analyze it
 
@@ -340,47 +357,87 @@ def getDirectiveText(zCtx):
 
 #parse straightforward over cur context, trying to solve things out, as much as possible
 def tryParseDirectives(zCtx):
-	zCtx.pcpl.failures = 0 #reset failure nbr
+	zCtx.pcpl.gotChanges = False
+	retry                = 0
 
-	#read chr per chr
-	output  = ""
-	skipInc = False
+
+
+	#PARSING WHOLE FILE
+
+	#as long as we find it necessary to parse the file
 	while True:
+		zCtx.pcpl.failures = [] #lst[PCPL_failure]
 
-		#mechanism to allow skipping just one chr dynamically
-		if skipInc:
-			skipInc = False
-		elif zCtx__inc(zCtx):
+		#read chr per chr
+		skipInc = False
+		while True:
+
+			#mechanism to allow skipping just one chr dynamically
+			if skipInc:
+				skipInc = False
+			elif zCtx__inc(zCtx):
+				break
+			c = zCtx__get(zCtx)
+
+			#potentially found PCPL instruction => SPECIFIC BEHAVIOR
+			if c == '#':
+				initCtx       = zCtx.ctx.copy()
+				res           = getDirectiveText(zCtx)
+				idxAfterBlock = zCtx.ctx.icontent.idx
+
+				#reset ctx before directive in all cases (fail => ignore, success => parse new block)
+				zCtx__resetCtx(zCtx, initCtx)
+
+				#FAILURE or not-a-directive => do nothing
+				if res is None:
+					zCtx.dbg("Character '#' does not target a PCPL directive or resulted in FAILURE => ignoring for the moment.", prtLine=True)
+
+				#SUCCESS => add replacement text in ctx + skip next inc
+				else:
+					skipInc = True #skipping next inc because PCPL success makes zCtx move until next chr to parse => we don't want to miss it ! (especially if it is another PCPL directive following)
+
+					#remove directive txt
+					zCtx.ctx.icontent.s = str_truncate(zCtx.ctx.icontent.s, zCtx.ctx.icontent.idx, idxAfterBlock-1)
+
+					#add replacement txt instead
+					zCtx.ctx.insert(res)
+					zCtx.dbg("Replacement done, ready to parse block and further.", prtLine=True)
+
+					#a block has been added => got changes then ! (potentially sub-directives inside)
+					zCtx.pcpl.gotChanges = True
+					zCtx.dbg("Added block to output => CHANGES")
+					continue
+
+
+
+		#CONCLUSION
+
+		#reset parsing head
+		zCtx__reset(zCtx)
+
+		#deep debug
+		if zCtx.deepDbgMode[zCtx.step]:
+			prepareDbgDir()
+			writeFile("dbg/" + path_name(zCtx.ctx.filename) + ".p2.retry" + str(retry) + ".z", zCtx.ctx.icontent.s)
+
+		#go again
+		if zCtx.pcpl.gotChanges:
+			zCtx.pcpl.gotChanges = False
+			zCtx.deepDbg("END OF PARSING, GOT CHANGES => Reseting cur ctx to the beginning, let's go parsing new content.", prtSubCtxs=False, prtLine=False)
+			zCtx.deepDbgPause()
+
+		#no need to go deeper
+		else:
+			zCtx.deepDbg("END OF PARSING, NO CHANGES => stopping here.", prtSubCtxs=False, prtLine=False)
 			break
-		c = zCtx__get(zCtx)
 
-		#potentially found PCPL instruction => SPECIFIC BEHAVIOR
-		if c == '#':
-			initialCtx = zCtx.ctx.copy()
-			res        = getDirectiveText(zCtx)
-
-			#FAILURE or not-a-directive => reset ctx
-			if res is None:
-				zCtx.dbg("Character '#' does not target a PCPL directive or resulted in FAILURE => canceling operation.", prtLine=True)
-				zCtx__resetCtx(zCtx, initialCtx)
-
-			#SUCCESS => add replacement text instead + skip next inc
-			else:
-
-				#resolution may include other directives in res => maintain same failure nbr in that case
-				if '#' in res:
-					zCtx.pcpl.failures += 1
-
-				#go on
-				output += res
-				skipInc = True #skipping next inc because PCPL success makes zCtx move until next chr to parse => we don't want to miss it ! (especially if ti is another PCPL directive following)
-				continue
-
-		#regular code (unchanged)
-		output += c
-
-	#write out result in given context
-	zCtx__reset(zCtx, newText=output)
+		#too much retry => also stop
+		retry += 1
+		if retry >= zCtx.pcpl.directivesMaxComplexity:
+			zCtx.pcpl.failures.append(PCPL_failure(
+				zCtx.ctx, "Unable to solve complexity of precompiler directives, can be cyclic dependencies or requiring more that the cur number of retries allowed:" + str(zCtx.pcpl.directivesMaxComplexity)
+			))
+			break
 
 
 
@@ -394,32 +451,15 @@ def p2_directives(zCtx):
 	zCtx.dbg("FILE: " + zCtx.ctx.filepath)
 	zCtx.deepDbgPause()
 
-	#parse once straightforward
-	zCtx.dbg("1st try for parsing PCPL directives.")
-	tryParseDirectives(zCtx) #includes zCtx.reset() at the end
+	#try parsing as long as we can/need
+	tryParseDirectives(zCtx)
 
-	#deep debug
-	if zCtx.deepDbgMode[zCtx.step]:
-		prepareDbgDir()
-		writeFile("dbg/" + path_name(zCtx.ctx.filename) + ".p2.1stTry.z", zCtx.ctx.icontent.s)
-
-	#remaining directives to be solved
-	retry = 0
-	while zCtx.pcpl.failures != 0:
-
-		#maximum retries reached
-		if retry >= zCtx.pcpl.directivesMaxComplexity:
-			zCtx.err("Unable to solve complexity of precompiler directives, can be cyclic dependencies or requiring more that the cur number of retries allowed:" + str(zCtx.pcpl.directivesMaxComplexity))
-
-		#try again from the beginning (previous resolutions could have unlocked some other directives)
-		zCtx.dbg("Retry parsing PCPL directives: " + str(retry))
-		tryParseDirectives(zCtx)
-		retry += 1
-
-		#deep debug
-		if zCtx.deepDbgMode[zCtx.step]:
-			prepareDbgDir()
-			writeFile("dbg/" + path_name(zCtx.ctx.filename) + ".p2.retry" + str(retry) + ".z", zCtx.ctx.icontent.s)
+	#still having failures
+	if len(zCtx.pcpl.failures) != 0:
+		for f in zCtx.pcpl.failures:
+			zCtx__resetCtx(zCtx, f.ctx)
+			zCtx.err(f.msg, err=0)
+		exit(1)
 
 	#debug
 	zCtx.dbg("============================================================================")

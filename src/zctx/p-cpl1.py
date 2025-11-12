@@ -16,8 +16,9 @@ class pcplDat:
 		#max complexity allowed in directives
 		sbj.directivesMaxComplexity = PCPL__DIRECTIVES_MAX_COMPLEXITY
 
-		#cur nbr of failures found in one try of parsing
-		sbj.failures = 0
+		#indicator to know whether a PCPL directive has affected code text or not
+		sbj.failures   = [] #lst[PCPL_failure]
+		sbj.gotChanges = False
 
 	def nextLitStrDIName(sbj):
 		sbj.litStrIdx += 1
@@ -34,6 +35,11 @@ def newPcplDat(cfgs, itms):
 		else:
 			raise ValueError("Invalid value \"" + v + "\" given to precompiler configuration \"" + c + "\".")
 	return pcplDat(formattedCfgs, itms)
+
+class PCPL_failure:
+	def __init__(sbj, ctx, msg):
+		sbj.ctx = ctx
+		sbj.msg = msg
 
 
 

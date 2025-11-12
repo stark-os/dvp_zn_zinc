@@ -4,28 +4,75 @@
 
 #output after precompilation is closely related to ZCIs, no longer to global subCtxs
 def ZCIInt(ZCI, msg, prtSubCtxs=True, prtLine=True):
+
+	#log as original file dat
+	ZCI.resetStartIdx()
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.int(msg, prtSubCtxs, prtLine)
 
+
+
 def ZCIErr(ZCI, msg, prtSubCtxs=True, prtLine=True):
+
+	#log as original file dat
+	ZCI.resetStartIdx()
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.err(msg, prtSubCtxs, prtLine)
 
+
+
 def ZCIWrn(ZCI, msg, prtSubCtxs=True, prtLine=True):
+
+	#keep cur status aside
+	curStartIdx = ZCI.startIdx
+	curTxt      = ZCI.txt
+
+	#log as original file dat
+	ZCI.resetStartIdx()
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.wrn(msg, prtSubCtxs, prtLine)
 
+	#reset cur reading head (potentially shifted)
+	ZCI.startIdx = curStartIdx
+	ZCI.txt      = curTxt
+
+
+
 def ZCIDbg(ZCI, msg, prtSubCtxs=False, prtLine=True):
+
+	#keep cur status aside
+	curStartIdx = ZCI.startIdx
+	curTxt      = ZCI.txt
 	prevSubCtxs = ZCI.zCtx.subCtxs
+
+	#log as original file dat
+	ZCI.resetStartIdx()
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.dbg(msg, prtSubCtxs, prtLine)
-	zCtx__overwriteSubCtxs(ZCI.zCtx, prevSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
+
+	#reset cur status (beginning potentially shifted)
+	ZCI.startIdx = curStartIdx
+	ZCI.txt      = curTxt
+	zCtx__overwriteSubCtxs(ZCI.zCtx, prevSubCtxs)
+
+
 
 def ZCIDeepDbg(ZCI, msg, prtSubCtxs=False, prtLine=True):
+
+	#keep cur status aside
+	curStartIdx = ZCI.startIdx
+	curTxt      = ZCI.txt
 	prevSubCtxs = ZCI.zCtx.subCtxs
+
+	#log as original file dat
+	ZCI.resetStartIdx()
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.deepDbg(msg, prtSubCtxs, prtLine)
-	zCtx__overwriteSubCtxs(ZCI.zCtx, prevSubCtxs) #restore previous subctxs (debug must not affect current zCtx)
+
+	#reset cur status (beginning potentially shifted)
+	ZCI.startIdx = curStartIdx
+	ZCI.txt      = curTxt
+	zCtx__overwriteSubCtxs(ZCI.zCtx, prevSubCtxs)
 
 
 
