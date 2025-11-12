@@ -18,7 +18,7 @@ from cpl.c02_redirectGbl import *
 #if - elf - els
 def processIfStm(ZCI, scope, tgtFct):
 	ZCIDbg(ZCI, "Processing IF STM in function " + tgtFct.name, prtLine=False)
-	jumpBlankZone(ZCI, None)
+	optionalBlanks(ZCI, None)
 
 	#read condition
 	res = stm_if()
@@ -57,7 +57,7 @@ def processIfStm(ZCI, scope, tgtFct):
 
 def processElfStm(ZCI, scope, tgtFct):
 	ZCIDbg(ZCI, "Processing ELF STM in function " + tgtFct.name, prtLine=False)
-	jumpBlankZone(ZCI, None)
+	optionalBlanks(ZCI, None)
 
 	#must follow if/elf statement
 	lastExe   = None
@@ -105,7 +105,7 @@ def processElfStm(ZCI, scope, tgtFct):
 
 def processElsStm(ZCI, scope, tgtFct):
 	ZCIDbg(ZCI, "Processing ELS STM in function " + tgtFct.name, prtLine=False)
-	jumpBlankZone(ZCI, None)
+	optionalBlanks(ZCI, None)
 
 	#must follow if/elf statement
 	lastExe   = None
@@ -151,7 +151,7 @@ def processElsStm(ZCI, scope, tgtFct):
 #switch cases
 def processSwiStm(ZCI, scope, tgtFct):
 	ZCIDbg(ZCI, "Processing SWI STM in function " + tgtFct.name, prtLine=False)
-	jumpBlankZone(ZCI, None)
+	optionalBlanks(ZCI, None)
 
 	#read tgt
 	res     = stm_swi()
@@ -213,7 +213,7 @@ def processSwiStm(ZCI, scope, tgtFct):
 #for
 def processForStm(ZCI, scope, tgtFct):
 	ZCIDbg(ZCI, "Processing FOR STM in function " + tgtFct.name, prtLine=False)
-	jumpBlankZone(ZCI, None)
+	optionalBlanks(ZCI, None)
 
 
 
@@ -470,7 +470,7 @@ def processForStm(ZCI, scope, tgtFct):
 #while
 def processWhiStm(ZCI, scope, tgtFct):
 	ZCIDbg(ZCI, "Processing WHI STM in function " + tgtFct.name, prtLine=False)
-	jumpBlankZone(ZCI, None)
+	optionalBlanks(ZCI, None)
 
 	#read condition
 	res          = stm_whi()
@@ -516,7 +516,7 @@ def processWhiStm(ZCI, scope, tgtFct):
 #return keyword
 def processRetJmp(ZCI, scope, tgtFct):
 	ZCIDbg(ZCI, "Processing RET JMP in function " + tgtFct.name, prtLine=False)
-	jumpBlankZone(ZCI, None)
+	optionalBlanks(ZCI, None)
 
 	#try read ret val if given
 	retVal = None

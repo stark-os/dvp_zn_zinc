@@ -8,6 +8,7 @@
 from cpl.c01_unmodulize  import *
 from cpl.c02_redirectGbl import *
 from cpl.c03_processLcls import *
+from cpl.c04_unparseAsC  import *
 
 
 
@@ -27,3 +28,6 @@ def compile(zCtx):
 
 	#step c03
 	c03_processLcls(zCtx)
+
+	#step c04
+	c04_unparseAsC(zCtx)

@@ -65,8 +65,9 @@ class cplDat:
 		sbj.forbidUseRef = 0
 
 		#program concrete elements
-		#sbj.dataRes = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
-		sbj.txtRes  = ""
+		sbj.resC    = ""
+		sbj.resFP   = ""
+		sbj.resFP_C = "" #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
 
 	def newTyp(sbj, name, dcnDeg=0, size=0, dcns=None, dcnCommon=None, isPub=False):
 		if dcnCommon is None:

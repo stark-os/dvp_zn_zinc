@@ -12,6 +12,7 @@ class Step:
 		sbj.C01  = 4
 		sbj.C02  = 5
 		sbj.C03  = 6
+		sbj.C04  = 7
 STEP = Step()
 
 #general name parsing

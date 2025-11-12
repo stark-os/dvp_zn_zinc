@@ -61,7 +61,8 @@ def main():
 			False, #P3
 			False, #C01
 			False, #C02
-			True   #C03
+			True,  #C03
+			True   #C04
 		), deepDbgMode = (
 			False, #INIT
 			False, #P1
@@ -69,7 +70,8 @@ def main():
 			False, #P3
 			False, #C01
 			False, #C02
-			True   #C03
+			True,  #C03
+			True   #C04
 		), stepByStep = False
 	)
 
@@ -78,7 +80,9 @@ def main():
 
 	#compile
 	compile(zCtx)
-	writeFile(outputFilename, zCtx.cpl.txtRes)
+	writeFile(outputFilename, zCtx.cpl.resC)
+	writeFile(outputFilename + ".cfg", zCtx.cpl.resFP)
+	writeFile(outputFilename + ".cfg.TMP_C", zCtx.cpl.resFP_C) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
 
 #run main
 main()
