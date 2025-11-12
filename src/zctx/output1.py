@@ -7,7 +7,7 @@
 		#subCtxs
 		if prtSubCtxs:
 			for ctx in sbj.subCtxs:
-				out += "  At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
+				out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 		#code line
 		if prtLine:
@@ -32,7 +32,7 @@
 		#subCtxs
 		if prtSubCtxs:
 			for ctx in sbj.subCtxs:
-				out += "  At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
+				out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 		#code line
 		if prtLine:
@@ -58,7 +58,7 @@
 		#subCtxs
 		if prtSubCtxs:
 			for ctx in sbj.subCtxs:
-				out += "  At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
+				out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 		#code line
 		if prtLine:
@@ -83,7 +83,7 @@
 			#subCtxs
 			if prtSubCtxs:
 				for ctx in sbj.subCtxs:
-					out += "  At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
+					out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 			#code line
 			if prtLine:
@@ -108,7 +108,7 @@
 			#subCtxs
 			if prtSubCtxs:
 				for ctx in sbj.subCtxs:
-					out += "  At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
+					out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 			#code line
 			if prtLine:

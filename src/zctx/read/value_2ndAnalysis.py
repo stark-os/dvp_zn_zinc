@@ -651,12 +651,12 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 		ZCIDeepDbg(ZCI,"2nd analysis: FSZ resulted into fsz(" + unpfxMod(tInst.name) + ") = " + str(size))
 		if ZCI.zCtx.cpl.opts["ARCH"] == "64":
 			return val(
-				ZCI.zCtx.rootTypes[RT__U64],
+				ZCI.zCtx.rootTypes[RT__S64],
 				atm(ATM__S64, size),
 				True
 			)
 		return val(
-			ZCI.zCtx.rootTypes[RT__U32],
+			ZCI.zCtx.rootTypes[RT__S32],
 			atm(ATM__S32, size),
 			True
 		)
