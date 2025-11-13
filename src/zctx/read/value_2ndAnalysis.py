@@ -606,7 +606,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 		if di is None:
 			ZCIWrn(ZCI, "Maybe you wanted to target a type among the available " + ZCI.zCtx.listTypeNames(), prtSubCtxs=False, prtLine=False)
 			ZCIWrn(ZCI, "Maybe you wanted to target a data item among the available " + listDatItmNamesAvailable(v2i.scope), prtSubCtxs=False, prtLine=False)
-			ZCIErr(ZCI, "2nd analysis: Cannot find data item " + unpfxMod(modPfx) + undblUnderscores(rawName) + " in current scope or higher" + v2i.ZCIKindIfErr_ending)
+			ZCIErr(ZCI, "2nd analysis: Cannot find data item \"" + unpfxMod(modPfx) + undblUnderscores(rawName) + "\" in current scope or higher" + v2i.ZCIKindIfErr_ending)
 
 		#cstOnly => not allowed
 		if v2i.cstOnly and not di.Cst:

@@ -178,7 +178,7 @@
 			else:
 				if tID == TYPE_ID__UNKNOWN:
 					sbj.err("Cannot have \"void\" as parameter type for function " + name + " (only allowed in return type), in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
-				params.append( datItm(tID, str(DEFAULT_NAME_CHARSET[i]), False, None) )
+				params.append( datItm(tID, "Lp" + str(i), False, None) )
 
 		#create ext fct
 		f = newFct(name, retType, params, sbj.cpl.gblScp)
