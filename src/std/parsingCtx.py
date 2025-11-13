@@ -134,10 +134,12 @@ class ParsingCtx:
 		return False
 
 	def forwardUntil(sbj, tgtIdx):
-		return sbj.icontent.forwardUntil(tgtIdx)
+		if tgtIdx < sbj.icontent.idx: #wrong value given
+			return True
+		return sbj.forward(tgtIdx - sbj.icontent.idx)
 
 	def forwardAlike(sbj, otherCtx):
-		return sbj.icontent.forwardAlike(otherCtx.icontent)
+		return sbj.forwardUntil(otherCtx.icontent.idx)
 
 	def reachedEnd(sbj):
 		return sbj.icontent.reachedEnd()

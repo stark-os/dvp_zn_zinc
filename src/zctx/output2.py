@@ -6,7 +6,6 @@
 def ZCIInt(ZCI, msg, prtSubCtxs=True, prtLine=True):
 
 	#log as original file dat
-	ZCI.resetStartIdx()
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.int(msg, prtSubCtxs, prtLine)
 
@@ -15,7 +14,6 @@ def ZCIInt(ZCI, msg, prtSubCtxs=True, prtLine=True):
 def ZCIErr(ZCI, msg, prtSubCtxs=True, prtLine=True):
 
 	#log as original file dat
-	ZCI.resetStartIdx()
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.err(msg, prtSubCtxs, prtLine)
 
@@ -28,7 +26,6 @@ def ZCIWrn(ZCI, msg, prtSubCtxs=True, prtLine=True):
 	curTxt      = ZCI.txt
 
 	#log as original file dat
-	ZCI.resetStartIdx()
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.wrn(msg, prtSubCtxs, prtLine)
 
@@ -46,7 +43,6 @@ def ZCIDbg(ZCI, msg, prtSubCtxs=False, prtLine=True):
 	prevSubCtxs = ZCI.zCtx.subCtxs
 
 	#log as original file dat
-	ZCI.resetStartIdx()
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.dbg(msg, prtSubCtxs, prtLine)
 
@@ -65,7 +61,6 @@ def ZCIDeepDbg(ZCI, msg, prtSubCtxs=False, prtLine=True):
 	prevSubCtxs = ZCI.zCtx.subCtxs
 
 	#log as original file dat
-	ZCI.resetStartIdx()
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
 	ZCI.zCtx.deepDbg(msg, prtSubCtxs, prtLine)
 

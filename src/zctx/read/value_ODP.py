@@ -54,7 +54,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 
 		#create operand as a unique ZCI.
 		# This is actually a value to be analyzed in further steps.
-		# However, to parse it easilly, we store it as a fragment of the ori ZCI (which is, here, a copy of the original but doesn't matter).
+		# However, to parse it easilly, we store it as a fragment of the ori ZCI.
 		opand          = ZCI.copy(ctxCopy=opandInitialCtx)
 		opand.startIdx = opandInitialCtx.icontent.idx #initial context must be at operand beginning index
 		opand.stopIdx  = ZCI.ctx.icontent.idx-1       #we are just before operator index, so at operand end index
@@ -155,7 +155,7 @@ def monoOperandOpSeqConcatenation(zCtx, curOpSeq):
 
 
 #transform an operating sequence into a single POCall (destroying the given opSeq!)
-def progressivePriorizing(zCtx, curOpSeq, monoOpand): #WARNING! DO NOT USE WITH SO !!!
+def progressivePriorizing(zCtx, curOpSeq, monoOpand):
 	if len(curOpSeq.opands) == 0:
 		zCtx.int("Got no operand in operating sequence when running progressive priorizing.")
 

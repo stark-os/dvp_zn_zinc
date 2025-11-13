@@ -10,14 +10,9 @@ class zci:
 		sbj.ctx       = None
 		sbj.pairs     = None
 		sbj.modPfx    = None
-		sbj.startIdx0 = None
 		sbj.startIdx  = None
 		sbj.stopIdx   = None
 		sbj.txt       = ""
-
-	def resetStartIdx(sbj):
-		sbj.startIdx = sbj.startIdx0
-		sbj.updateTxt()
 
 	def updateTxt(sbj):
 		startIdx = sbj.startIdx
@@ -55,12 +50,11 @@ class zci:
 
 	def copy(sbj, ctxCopy=None): #this copy mainly affects ZCI ctx rather than the other fields
 		if ctxCopy is None:
-			ctxCopy    = sbj.ctx.copy()
-		copy           = newZCI(sbj.zCtx, lst_copy(sbj.subCtxs), modPfx=sbj.modPfx, pairs=sbj.pairs)
-		copy.startIdx  = sbj.startIdx
-		copy.startIdx0 = sbj.startIdx0
-		copy.stopIdx   = sbj.stopIdx
-		copy.txt       = sbj.txt
+			ctxCopy   = sbj.ctx.copy()
+		copy          = newZCI(sbj.zCtx, lst_copy(sbj.subCtxs), modPfx=sbj.modPfx, pairs=sbj.pairs)
+		copy.startIdx = sbj.startIdx
+		copy.stopIdx  = sbj.stopIdx
+		copy.txt      = sbj.txt
 		copy.resetCtx(ctxCopy) #we copy ctx & subctxs so that we can TEMPORARILY work on that ZCI without affecting it really
 		return copy
 
@@ -145,14 +139,13 @@ def newZCI(zCtx, subCtxs, modPfx=None, pairs=None):
 	if lst_isEmpty(subCtxs):
 		print("[INTERNAL] Cannot instantiate a ZCI with no subCtxs.")
 		exit(1)
-	res           = zci(zCtx)
-	res.subCtxs   = subCtxs
-	res.ctx       = subCtxs[-1]
-	res.pairs     = pairs
-	res.modPfx    = modPfx
-	res.startIdx  = res.ctx.icontent.idx #current position is where our ZCI starts
-	res.startIdx0 = res.startIdx
-	res.stopIdx   = res.startIdx
+	res          = zci(zCtx)
+	res.subCtxs  = subCtxs
+	res.ctx      = subCtxs[-1]
+	res.pairs    = pairs
+	res.modPfx   = modPfx
+	res.startIdx = res.ctx.icontent.idx #current position is where our ZCI starts
+	res.stopIdx  = res.startIdx
 	return res
 
 def dumpZCIs(ZCIs, filename, oneLine=True):
