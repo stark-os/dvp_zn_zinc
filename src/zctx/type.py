@@ -119,7 +119,7 @@
 
 			#ID (dbg only)
 			n = ""
-			if sbj.dbgMode[sbj.step]:
+			if log_lvl[0] >= LOG__LVL_DBG0:
 				n = str(tID) + ':'
 
 			#enm
@@ -172,7 +172,7 @@ def getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns):
 		newID         = ZCI.zCtx.cpl.newTyp(tDecFullName, dcnCommon=tUndecInst.dcnCommon) #share the same dcnCommon (affecting the undeclinated instance will affect every declination)
 		tDecInst      = ZCI.getTypeInstanceFromID(newID)
 		tDecInst.dcns = dcns
-		ZCIDbg(ZCI, "First call of declination \"" + tDecFullName + "\" from type \"" + tUndecInst.name + "\", adding it.")
+		ZCIDbg0(ZCI, "First call of declination \"" + tDecFullName + "\" from type \"" + tUndecInst.name + "\", adding it.")
 		return newID
 
 	#found => just use it
@@ -181,18 +181,18 @@ def getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns):
 
 #enm typing
 def setEnmFieldsType(zCtx, fields):
-	zCtx.deepDbg(ZCI, "Enumerate length: " + str(len(fields)), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg1(ZCI, "Enumerate length: " + str(len(fields)), prtSubCtxs=False, prtLine=False)
 	if len(fields) <= 0x1_00:
-		zCtx.deepDbg(ZCI, "Enumerate length indexing can be contained in U8 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U8 => using that type as parent.", prtSubCtxs=False, prtLine=False)
 		itmType = zCtx.rootTypes[RT__U8]
 	elif len(fields) <= 0x1_00_00:
-		zCtx.deepDbg(ZCI, "Enumerate length indexing can be contained in U16 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U16 => using that type as parent.", prtSubCtxs=False, prtLine=False)
 		itmType = zCtx.rootTypes[RT__U16]
 	elif len(fields) <= 0x1_00_00_00_00:
-		zCtx.deepDbg(ZCI, "Enumerate length indexing can be contained in U32 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U32 => using that type as parent.", prtSubCtxs=False, prtLine=False)
 		itmType = zCtx.rootTypes[RT__U32]
 	else:
-		zCtx.deepDbg(ZCI, "Enumerate length indexing can be contained in U64 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U64 => using that type as parent.", prtSubCtxs=False, prtLine=False)
 		itmType = zCtx.rootTypes[RT__U64]
 
 	#fullfill fields info

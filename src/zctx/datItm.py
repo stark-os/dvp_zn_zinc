@@ -3,10 +3,15 @@
 # ---------------- DATA ITEMS RELATED TOOLS ----------------
 
 #data items
-def checkAlreadyDeclaredDatItmOrField(ZCI, di, dis):
+def alreadyDclDatItmOrField(di, dis):
 	for other in dis:
 		if other.name == di.name:
-			ZCIErr(ZCI, "Data item or field with name \"" + di.name + "\" already declared.")
+			return True
+	return False
+
+def checkAlreadyDclDatItmOrField(ZCI, di, dis):
+	if alreadyDclDatItmOrField(di, dis):
+		ZCIErr(ZCI, "Data item or field with name \"" + di.name + "\" already declared.")
 
 #get correct data item prefix depending on current ZCI scope
 def getDatItmModPfxFromScope(ZCI, scope):

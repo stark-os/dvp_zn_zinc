@@ -45,29 +45,29 @@ def formatModName(ZCI, modName):
 
 #compilation
 def c01_unmodulize(zCtx):
-	zCtx.step = STEP.C01
+	zCtx.updateLogLvl(STEP.C01)
 	zCtx.dbgSepLine()
-	zCtx.dbg("============================================================================")
-	zCtx.dbg("======================== C01 UNMODULIZE : beginning ========================")
-	zCtx.dbg("============================================================================")
-	zCtx.deepDbgPause()
+	zCtx.dbg0("============================================================================")
+	zCtx.dbg0("======================== C01 UNMODULIZE : beginning ========================")
+	zCtx.dbg0("============================================================================")
+	zCtx.dbgPause()
 
 	#for each precompiled ZCI
 	z = 0
 	_ZCIsLen = len(zCtx.ZCIs) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only exists here in python, won't be useful in Z (we got .length)
 	while z < _ZCIsLen:
 		ZCI = zCtx.ZCIs[z]
-		ZCIDeepDbg(ZCI, "Treating global ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
+		ZCIDbg1(ZCI, "Treating global ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
 
 		#too short => skip it
 		if len(ZCI.txt) < 5:
-			zCtx.deepDbg("Too short => Skipping ZCI.")
+			zCtx.dbg1("Too short => Skipping ZCI.")
 			z += 1
 			continue
 
 		#found module declaration (DCL_MOD)
 		if ZCI.txt.startswith("mod") and ZCI.txt[3] in BLANKS:
-			ZCIDbg(ZCI, "Found module declaration.")
+			ZCIDbg0(ZCI, "Found module declaration.")
 			ZCI.forward(3)
 
 
@@ -97,7 +97,7 @@ def c01_unmodulize(zCtx):
 
 			# I.2) new module
 			else:
-				zCtx.dbg("Detected new module creation \"" + unpfxMod(modPfx) + "\".")
+				zCtx.dbg0("Detected new module creation \"" + unpfxMod(modPfx) + "\".")
 
 				#already declared the same exact module
 				if modPfx in zCtx.cpl.modPfxes:
@@ -106,8 +106,8 @@ def c01_unmodulize(zCtx):
 
 				#avoid re-declaration
 				zCtx.cpl.modPfxes.append(modPfx)
-				zCtx.dbg("Added module \"" + modPfx + "\" to compiler context.")
-			ZCIDbg(ZCI, "Full module name read \"" + modPfx + "\" (based on prefix \"" + ZCI.modPfx + "\").")
+				zCtx.dbg0("Added module \"" + modPfx + "\" to compiler context.")
+			ZCIDbg0(ZCI, "Full module name read \"" + modPfx + "\" (based on prefix \"" + ZCI.modPfx + "\").")
 
 
 
@@ -128,7 +128,7 @@ def c01_unmodulize(zCtx):
 			ZCI.inc()
 
 			#extract ZCIs from content
-			zCtx.dbg("Extracting ZCIs from module content.")
+			zCtx.dbg0("Extracting ZCIs from module content.")
 			modZCIs = extractZCIsFromCtx(
 				zCtx,
 				ZCI.ctx, subCtxs=ZCI.subCtxs,
@@ -138,7 +138,7 @@ def c01_unmodulize(zCtx):
 			)
 
 			#remove cur ZCI in general ZCtx
-			zCtx.dbg("Replacing module declaration ZCI by global unmodularized ZCIs.")
+			zCtx.dbg0("Replacing module declaration ZCI by global unmodularized ZCIs.")
 			zCtx.ZCIs = lst_remove(zCtx.ZCIs, z)
 
 			#complete general ZCI list
@@ -151,8 +151,8 @@ def c01_unmodulize(zCtx):
 
 			#shift cur ZCI index because we removed it
 			z -= 1
-			zCtx.deepDbg("Module declaration processed.")
-			zCtx.deepDbgPause()
+			zCtx.dbg1("Module declaration processed.")
+			zCtx.dbgPause()
 
 			_ZCIsLen = len(zCtx.ZCIs) # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< only in python, not required in Z (.length field)
 
@@ -160,13 +160,13 @@ def c01_unmodulize(zCtx):
 		z += 1
 
 	#debug
-	zCtx.dbg("======================================================================")
-	zCtx.dbg("======================== C01 UNMODULIZE : end ========================")
-	zCtx.dbg("======================================================================")
+	zCtx.dbg0("======================================================================")
+	zCtx.dbg0("======================== C01 UNMODULIZE : end ========================")
+	zCtx.dbg0("======================================================================")
 	zCtx.dbgSepLine()
-	zCtx.deepDbgPause()
+	zCtx.dbgPause()
 
 	#debug output file
-	if zCtx.dbgMode[zCtx.step]:
+	if log_lvl[0] >= LOG__LVL_DBG0:
 		prepareDbgDir()
 		dumpZCIs(zCtx.ZCIs, "dbg/" + path_name(zCtx.initialCtx.filename) + ".c01.dl", oneLine=False)

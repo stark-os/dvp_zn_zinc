@@ -36,7 +36,7 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPfx=None):
 
 	#strip sides
 	ZCI.strip()
-	ZCIDeepDbg(ZCI, "Stripped blanks from ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=False, prtLine=False)
+	ZCIDbg2(ZCI, "Stripped blanks from ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=False, prtLine=False)
 
 
 
@@ -48,13 +48,13 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPfx=None):
 
 	#not long enough to be an import => regular ZCI
 	if len(ZCI.txt) < 4:
-		ZCIDeepDbg(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
+		ZCIDbg1(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
 		result.append(ZCI)
 		return
 
 	#import ZCI : process it NOW
 	if ZCI.txt.startswith("imp") and ZCI.txt[3] in BLANKS:
-		ZCIDeepDbg(ZCI, "Detected as importation ZCI => processing it now.")
+		ZCIDbg1(ZCI, "Detected as importation ZCI => processing it now.")
 
 		#importations not allowed
 		if not allowImpExpansion or len(modPfx) != 0:
@@ -79,7 +79,7 @@ def stripAndAppendZCI(ZCI, result, allowImpExpansion=False, modPfx=None):
 		return
 
 	#not an import => regular ZCI
-	ZCIDeepDbg(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
+	ZCIDbg1(ZCI, "Detected as non-importation ZCI => Adding it " + ZCI.toStr())
 	result.append(ZCI)
 
 
@@ -94,7 +94,7 @@ INT_MAX = sys.maxsize
 
 #split raw text into ZCI list (ZCS)
 def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, wallIdx=INT_MAX): #wallIdx is the ending chr for ZCI extraction: it is not to be included in ZCI, but if reached, we must end right AFTER it.
-	zCtx.deepDbg("Extracting ZCIs inside given context.", prtSubCtxs=True)
+	zCtx.dbg1("Extracting ZCIs inside given context.", prtSubCtxs=True)
 	if subCtxs is None:
 		subCtxs = zCtx.subCtxs
 
@@ -207,27 +207,27 @@ def extractZCIsFromCtx(zCtx, ctx, gbl=False, subCtxs=None, modPfx=None, wallIdx=
 
 #main
 def p3_ZCSAndImp(zCtx):
-	zCtx.step = STEP.P3
+	zCtx.updateLogLvl(STEP.P3)
 	zCtx.dbgSepLine()
-	zCtx.dbg("============================================================================")
-	zCtx.dbg("======================= P3 ZCS AND IMPs : beginning ========================")
-	zCtx.dbg("============================================================================")
-	zCtx.dbg("FILE: " + zCtx.ctx.filepath)
-	zCtx.deepDbgPause()
+	zCtx.dbg0("============================================================================")
+	zCtx.dbg0("======================= P3 ZCS AND IMPs : beginning ========================")
+	zCtx.dbg0("============================================================================")
+	zCtx.dbg0("FILE: " + zCtx.ctx.filepath)
+	zCtx.dbgPause()
 
 	#extract global scope ZCIs
 	ZCIs = extractZCIsFromCtx(zCtx, zCtx.ctx, gbl=True)
 
 	#debug
-	zCtx.dbg("============================================================================")
-	zCtx.dbg("========================== P3 ZCS AND IMPs : end ===========================")
-	zCtx.dbg("============================================================================")
-	zCtx.dbg("FILE: " + zCtx.ctx.filepath)
+	zCtx.dbg0("============================================================================")
+	zCtx.dbg0("========================== P3 ZCS AND IMPs : end ===========================")
+	zCtx.dbg0("============================================================================")
+	zCtx.dbg0("FILE: " + zCtx.ctx.filepath)
 	zCtx.dbgSepLine()
-	zCtx.deepDbgPause()
+	zCtx.dbgPause()
 
 	#debug
-	if zCtx.dbgMode[zCtx.step]:
+	if log_lvl[0] >= LOG__LVL_DBG0:
 		prepareDbgDir()
 		dumpZCIs(ZCIs, "dbg/" + path_name(zCtx.ctx.filename) + ".p3.dl")
 

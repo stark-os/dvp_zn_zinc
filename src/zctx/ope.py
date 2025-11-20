@@ -42,18 +42,18 @@ def zCtx__listAllTargettableOperatorNames(sbj, opeHeader, paramTypeIDs, paramTyp
 
 #find THE RIGHT matching operator among, the first one among the possible names that truely exists
 def zCtx__findMatchingOperator(sbj, opeHeader, paramTypeIDs, paramTypeNames):
-	sbj.deepDbg("Trying to find matching function for operator " + opeHeader + " with parameters (" + ",".join(paramTypeNames) + ").", prtSubCtxs=False, prtLine=False)
+	sbj.dbg2("Trying to find matching function for operator " + opeHeader + " with parameters (" + ",".join(paramTypeNames) + ").", prtSubCtxs=False, prtLine=False)
 	possibleMatchingOpeNames = zCtx__listAllTargettableOperatorNames(sbj, opeHeader, paramTypeIDs, paramTypeNames)
 	allExistingOpes          = zCtx__listAllExistingOpes(sbj, opeHeader)
 
 	#look for the 1st existing operator among those mentionned as "possible matching"
 	for p in possibleMatchingOpeNames:
-		sbj.deepDbg("Next possible matching name " + p, prtSubCtxs=False, prtLine=False)
+		sbj.dbg2("Next possible matching name " + p, prtSubCtxs=False, prtLine=False)
 		for ope in allExistingOpes:
 
 			#match => stop here
 			if ope.name == p:
-				sbj.deepDbg("Its a MATCH ! => using it.", prtSubCtxs=False, prtLine=False)
+				sbj.dbg2("Its a MATCH ! => using it.", prtSubCtxs=False, prtLine=False)
 				return ope
 
 	#no alternative found

@@ -47,7 +47,7 @@ def readHexByte(ZCI):
 
 #try reading symbol (don't move ZCI ctx)
 def readSym(ZCI):
-	ZCIDeepDbg(ZCI, "Reading symbol.")
+	ZCIDbg2(ZCI, "Reading symbol.")
 	tmpZCI = ZCI.copy()
 	c1 = tmpZCI.get()
 
@@ -180,7 +180,7 @@ def readName(ZCI,
 	dblUnderscores=False,
 	parseModPfxes=False
 ):
-	ZCIDeepDbg(ZCI, "Reading name.")
+	ZCIDbg2(ZCI, "Reading name.")
 	if parseModPfxes:
 		dblUnderscores = True #doesn't make sens to double underscores in module prefixes but not in the name => force it
 
@@ -301,7 +301,7 @@ def readName(ZCI,
 		#no longer in first character (maybe, getting rid of the "if" and keeping only the assignment would be more optimized ?)
 		if firstChr:
 			firstChr = False
-	ZCIDeepDbg(ZCI, "Ended reading name.")
+	ZCIDbg2(ZCI, "Ended reading name.")
 
 	#missing raw name field
 	if len(rawName) == 0:

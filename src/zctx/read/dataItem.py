@@ -7,7 +7,7 @@ def readDatItm(ZCI,
 	allowUnsolvableType = False, forbidDcnKwInTypeDcns   = True,
 	allowModPfxInName   = True,  dcnKwLstToReplaceInType = None
 ):
-	ZCIDeepDbg(ZCI, "Reading data item.", prtLine=False)
+	ZCIDbg1(ZCI, "Reading data item.", prtLine=False)
 
 	#sub-error indication
 	ZCIKindIfErr_ending = "."
@@ -25,7 +25,7 @@ def readDatItm(ZCI,
 		jumpBlankZone(ZCI, "data item name") #no line feed allowed between type-name-initialValue
 
 	#read name
-	modPfx, name = readName(ZCI, "data item name" + ZCIKindIfErr_ending, parseModPfxes=allowModPfxInName)
+	modPfx, name = readName(ZCI, "data item name" + ZCIKindIfErr_ending, parseModPfxes=allowModPfxInName, dblUnderscores=True)
 
 	#add modPfx if asked
 	if allowModPfxInName and modPfx[0] != 'G':
@@ -55,7 +55,7 @@ def readDatItm(ZCI,
 		#solve type if missing using initialValue
 		if Type == TYPE_ID__UNKNOWN:
 			Type = initVal.Type
-			ZCIDeepDbg(ZCI, "Solving missing type using initial value given \"" + ZCI.getTypeInstanceFromID(Type).name + "\".")
+			ZCIDbg1(ZCI, "Solving missing type using initial value given \"" + ZCI.getTypeInstanceFromID(Type).name + "\".")
 	optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 	#missing Type still not solved
@@ -64,7 +64,7 @@ def readDatItm(ZCI,
 			ZCIErr(ZCI, "Unsolvable type to given element \"" + name + "\" (required either explicitely or implicity using initial value)" + ZCIKindIfErr_ending)
 
 	#result
-	ZCIDeepDbg(ZCI, "Ended reading data item.")
+	ZCIDbg1(ZCI, "Ended reading data item.")
 	return datItm(Type, name, inited, initVal)
 
 
@@ -77,7 +77,7 @@ def readDatItmSeq(
 	forbidDcnKwInTypeDcns    = True,  allowEmpty  = False,
 	dcnKwLstToReplaceInTypes = None
 ):
-	ZCIDeepDbg(ZCI, "Reading sequence of data item(s).")
+	ZCIDbg1(ZCI, "Reading sequence of data item(s).")
 
 	#initial conditions
 	if ZCI.get() not in INCLUDERS.keys():
@@ -91,7 +91,7 @@ def readDatItmSeq(
 	if ZCI.ctx.icontent.idx == peerIdx:
 		if allowEmpty:
 			ZCI.inc()
-			ZCIDeepDbg(ZCI, "Data item sequence is empty (allowed here) => ending reading here.")
+			ZCIDbg1(ZCI, "Data item sequence is empty (allowed here) => ending reading here.")
 			return dis
 		ZCIErr(ZCI, "Missing at least one data item declaration in " + ZCIKindIfErr)
 
@@ -107,9 +107,9 @@ def readDatItmSeq(
 				forbidDcnKwInTypeDcns   = forbidDcnKwInTypeDcns,
 				dcnKwLstToReplaceInType = dcnKwLstToReplaceInTypes
 			)
-			checkAlreadyDeclaredDatItmOrField(ZCI, di, dis)
+			checkAlreadyDclDatItmOrField(ZCI, di, dis)
 			dis.append(di)
-			ZCIDeepDbg(ZCI, "Got data item " + di.toStr())
+			ZCIDbg1(ZCI, "Got data item " + di.toStr())
 
 			#must be followed by coma or closing peer
 			optionalBlanks(ZCI, None)
@@ -124,7 +124,7 @@ def readDatItmSeq(
 			ZCI.inc()
 
 	#return result
-	ZCIDeepDbg(ZCI, "Ended reading sequence of data item(s).")
+	ZCIDbg1(ZCI, "Ended reading sequence of data item(s).")
 	return dis
 
 

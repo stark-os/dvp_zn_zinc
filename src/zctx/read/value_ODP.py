@@ -6,12 +6,12 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 	allowedOpesTxt = "" #only for deep debug
 
 	#deep debug
-	if ZCI.zCtx.deepDbgMode:
+	if log_lvl[0] >= LOG__LVL_DBG1:
 		allowedOpesTxt = "["
 		for o in allowedOpes:
 			allowedOpesTxt += OPE_NAMES[o] + ','
 		allowedOpesTxt += "]"
-		ZCIDeepDbg(ZCI, "ODP-1: Reading & splitting ZCI content \"" + ZCI.txtFormat() + "\" by operators " + allowedOpesTxt)
+		ZCIDbg1(ZCI, "ODP-1: Reading & splitting ZCI content \"" + ZCI.txtFormat() + "\" by operators " + allowedOpesTxt)
 
 	#split by operator symbols
 	opands            = [] #lst[zci]
@@ -41,7 +41,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 			#look at the following character to determine whether it is a module prefix or a regular LXO operator
 			nextChr = ZCI.ctx.icontent.s[ZCI.ctx.icontent.idx+1]
 			if nextChr == '.' or nextChr in DEFAULT_NAME_CHARSET:
-				ZCIDeepDbg(ZCI, "ODP-1: '^' symbol detected as module prefix and not as LXO operator.")
+				ZCIDbg1(ZCI, "ODP-1: '^' symbol detected as module prefix and not as LXO operator.")
 				ZCI.inc() #not an operator actually => skipping it
 				continue
 
@@ -69,7 +69,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 		if opandIsEmpty:
 			if ope == SYM__BSU:
 				itWasJustANegSign = True
-				ZCIDeepDbg(ZCI, "SPECIAL CASE IN ODP: Found operator BSU without first operand => considerated as negative sign only (no operation).")
+				ZCIDbg1(ZCI, "SPECIAL CASE IN ODP: Found operator BSU without first operand => considerated as negative sign only (no operation).")
 			elif ope not in MONO_OPERAND:
 				ZCIErr(ZCI, "Missing first operand to operator " + OPE_NAMES[ope])
 		elif ope in MONO_OPERAND:
@@ -80,7 +80,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 			opands.append(opand)
 			opes.append(ope)
 			opeIdxes.append(ZCI.ctx.icontent.idx)
-			ZCIDeepDbg(ZCI, "ODP-1: New operator " + OPE_NAMES[ope] + " found, cur operating sequence is " + opSeq(ZCI.ctx.icontent.idx, opands, opes, opeIdxes).toStr())
+			ZCIDbg1(ZCI, "ODP-1: New operator " + OPE_NAMES[ope] + " found, cur operating sequence is " + opSeq(ZCI.ctx.icontent.idx, opands, opes, opeIdxes).toStr())
 
 		#moving after symbol
 		ZCI.forward(SYM_LENGTHS[ope])
@@ -93,7 +93,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 
 	#no operator found at all => not an operating sequence => return as it was an operating sequence with no operator and only one operand
 	if len(opes) == 0:
-		ZCIDeepDbg(ZCI, "ODP-1: No operator found at all => Finished with null operating sequence.")
+		ZCIDbg1(ZCI, "ODP-1: No operator found at all => Finished with null operating sequence.")
 		return opSeq(maxStopIdx, None, None, None)
 
 	#last operand cannot be empty
@@ -113,10 +113,10 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 
 	#add last operand
 	opands.append(opand)
-	ZCIDeepDbg(ZCI, "ODP-1: Last operand added, final operating sequence is " + opSeq(maxStopIdx, opands, opes, opeIdxes).toStr())
+	ZCIDbg1(ZCI, "ODP-1: Last operand added, final operating sequence is " + opSeq(maxStopIdx, opands, opes, opeIdxes).toStr())
 
 	#deep debug
-	ZCIDeepDbg(ZCI, "ODP-1: Finished reading & splitting ZCI content \"" + ZCI.txtFormat() + "\" by operators " + allowedOpesTxt)
+	ZCIDbg1(ZCI, "ODP-1: Finished reading & splitting ZCI content \"" + ZCI.txtFormat() + "\" by operators " + allowedOpesTxt)
 	return opSeq(maxStopIdx, opands, opes, opeIdxes)
 
 
@@ -131,7 +131,7 @@ def monoOperandOpSeqConcatenation(zCtx, curOpSeq):
 			zCtx.int("Non-empty operand found in mono-operand operating sequence (last element excepted).")
 
 	#deep debug: before
-	zCtx.deepDbg("ODP-2: Applying mono-operand operating sequence concatenation on " + curOpSeq.toStr())
+	zCtx.dbg1("ODP-2: Applying mono-operand operating sequence concatenation on " + curOpSeq.toStr())
 
 	#associate each operand to its operator
 	res = POCall(
@@ -149,7 +149,7 @@ def monoOperandOpSeqConcatenation(zCtx, curOpSeq):
 		cur = cur.opand2.dat
 
 	#deep debug: after
-	zCtx.deepDbg("ODP-2: Mono-operand operating sequence concatenation resulted into the following POCall " + res.toStr())
+	zCtx.dbg1("ODP-2: Mono-operand operating sequence concatenation resulted into the following POCall " + res.toStr())
 	return res
 
 
@@ -164,7 +164,7 @@ def progressivePriorizing(zCtx, curOpSeq, monoOpand):
 		return monoOperandOpSeqConcatenation(zCtx, curOpSeq)
 
 	#deep debug: before
-	zCtx.deepDbg("ODP-2: Applying progressive priorizing on operating sequence " + curOpSeq.toStr())
+	zCtx.dbg1("ODP-2: Applying progressive priorizing on operating sequence " + curOpSeq.toStr())
 
 	#first element (we must keep track of it)
 	res = POCall(
@@ -187,7 +187,7 @@ def progressivePriorizing(zCtx, curOpSeq, monoOpand):
 		cur = cur.opand1.dat
 
 	#deep debug: after
-	zCtx.deepDbg("ODP-2: Progressive priorizing resulted into the following POCall " + res.toStr())
+	zCtx.dbg1("ODP-2: Progressive priorizing resulted into the following POCall " + res.toStr())
 	return res
 
 
@@ -274,33 +274,33 @@ def ODP(oriZCI):
 	)
 
 	#deep debug
-	oriZCI.zCtx.deepDbg("Beginning ODP on ZCI \"" + ZCI.txtFormat() + '\"')
+	oriZCI.zCtx.dbg1("Beginning ODP on ZCI \"" + ZCI.txtFormat() + '\"')
 
 	#1st group priorization (lowest): CO
-	oriZCI.zCtx.deepDbg("ODP-0: Applying 1st group priorization.")
+	oriZCI.zCtx.dbg1("ODP-0: Applying 1st group priorization.")
 	res.maxStopIdx = ODP_applyGroupPriorization(oriZCI.zCtx, res.maxStopIdx, res.mainPOCall, CO)
-	oriZCI.zCtx.deepDbg("ODP-0: Applied 1st group priorization, resulted into " + res.mainPOCall.toStr())
+	oriZCI.zCtx.dbg1("ODP-0: Applied 1st group priorization, resulted into " + res.mainPOCall.toStr())
 
 	#2nd group priorization: BO
-	oriZCI.zCtx.deepDbg("ODP-0: Applying 2nd group priorization")
+	oriZCI.zCtx.dbg1("ODP-0: Applying 2nd group priorization")
 	res.maxStopIdx = ODP_applyGroupPriorization(oriZCI.zCtx, res.maxStopIdx, res.mainPOCall, BO)
-	oriZCI.zCtx.deepDbg("ODP-0: Applied 2nd group priorization, resulted into " + res.mainPOCall.toStr())
+	oriZCI.zCtx.dbg1("ODP-0: Applied 2nd group priorization, resulted into " + res.mainPOCall.toStr())
 
 	#3rd group priorization: AO + LO
-	oriZCI.zCtx.deepDbg("ODP-0: Applying 3rd group priorization")
+	oriZCI.zCtx.dbg1("ODP-0: Applying 3rd group priorization")
 	res.maxStopIdx = ODP_applyGroupPriorization(oriZCI.zCtx, res.maxStopIdx, res.mainPOCall, AO + LO)
-	oriZCI.zCtx.deepDbg("ODP-0: Applied 3rd group priorization, resulted into " + res.mainPOCall.toStr())
+	oriZCI.zCtx.dbg1("ODP-0: Applied 3rd group priorization, resulted into " + res.mainPOCall.toStr())
 
 	#4th group priorization: DO
-	oriZCI.zCtx.deepDbg("ODP-0: Applying 4th group priorization")
+	oriZCI.zCtx.dbg1("ODP-0: Applying 4th group priorization")
 	res.maxStopIdx = ODP_applyGroupPriorization(oriZCI.zCtx, res.maxStopIdx, res.mainPOCall, DO)
-	oriZCI.zCtx.deepDbg("ODP-0: Applied 4th group priorization, resulted into " + res.mainPOCall.toStr())
+	oriZCI.zCtx.dbg1("ODP-0: Applied 4th group priorization, resulted into " + res.mainPOCall.toStr())
 
 	#5th group priorization: SO (highest treated in ODP)
-	oriZCI.zCtx.deepDbg("ODP-0: Applying 5th group priorization (SO)")
+	oriZCI.zCtx.dbg1("ODP-0: Applying 5th group priorization (SO)")
 	res.maxStopIdx = ODP_applyGroupPriorization(oriZCI.zCtx, res.maxStopIdx, res.mainPOCall, SO, monoOpand=True)
-	oriZCI.zCtx.deepDbg("ODP-0: Applied 5th group priorization, resulted into " + res.mainPOCall.toStr())
-	oriZCI.zCtx.deepDbg("Ended ODP on ZCI fragment \"" + ZCI.txtFormat() + '\"')
+	oriZCI.zCtx.dbg1("ODP-0: Applied 5th group priorization, resulted into " + res.mainPOCall.toStr())
+	oriZCI.zCtx.dbg1("Ended ODP on ZCI fragment \"" + ZCI.txtFormat() + '\"')
 	return res
 
 

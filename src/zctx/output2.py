@@ -11,11 +11,11 @@ def ZCIInt(ZCI, msg, prtSubCtxs=True, prtLine=True):
 
 
 
-def ZCIErr(ZCI, msg, prtSubCtxs=True, prtLine=True):
+def ZCIErr(ZCI, msg, prtSubCtxs=True, prtLine=True, err=1):
 
 	#log as original file dat
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
-	ZCI.zCtx.err(msg, prtSubCtxs, prtLine)
+	ZCI.zCtx.err(msg, prtSubCtxs, prtLine, err=err)
 
 
 
@@ -35,7 +35,7 @@ def ZCIWrn(ZCI, msg, prtSubCtxs=True, prtLine=True):
 
 
 
-def ZCIDbg(ZCI, msg, prtSubCtxs=False, prtLine=True):
+def ZCIDbg0(ZCI, msg, prtSubCtxs=False, prtLine=True):
 
 	#keep cur status aside
 	curStartIdx = ZCI.startIdx
@@ -44,7 +44,7 @@ def ZCIDbg(ZCI, msg, prtSubCtxs=False, prtLine=True):
 
 	#log as original file dat
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
-	ZCI.zCtx.dbg(msg, prtSubCtxs, prtLine)
+	ZCI.zCtx.dbg0(msg, prtSubCtxs, prtLine)
 
 	#reset cur status (beginning potentially shifted)
 	ZCI.startIdx = curStartIdx
@@ -53,7 +53,7 @@ def ZCIDbg(ZCI, msg, prtSubCtxs=False, prtLine=True):
 
 
 
-def ZCIDeepDbg(ZCI, msg, prtSubCtxs=False, prtLine=True):
+def ZCIDbg1(ZCI, msg, prtSubCtxs=False, prtLine=True):
 
 	#keep cur status aside
 	curStartIdx = ZCI.startIdx
@@ -62,7 +62,25 @@ def ZCIDeepDbg(ZCI, msg, prtSubCtxs=False, prtLine=True):
 
 	#log as original file dat
 	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
-	ZCI.zCtx.deepDbg(msg, prtSubCtxs, prtLine)
+	ZCI.zCtx.dbg1(msg, prtSubCtxs, prtLine)
+
+	#reset cur status (beginning potentially shifted)
+	ZCI.startIdx = curStartIdx
+	ZCI.txt      = curTxt
+	zCtx__overwriteSubCtxs(ZCI.zCtx, prevSubCtxs)
+
+
+
+def ZCIDbg2(ZCI, msg, prtSubCtxs=False, prtLine=True):
+
+	#keep cur status aside
+	curStartIdx = ZCI.startIdx
+	curTxt      = ZCI.txt
+	prevSubCtxs = ZCI.zCtx.subCtxs
+
+	#log as original file dat
+	zCtx__overwriteSubCtxs(ZCI.zCtx, ZCI.subCtxs)
+	ZCI.zCtx.dbg2(msg, prtSubCtxs, prtLine)
 
 	#reset cur status (beginning potentially shifted)
 	ZCI.startIdx = curStartIdx
@@ -78,11 +96,4 @@ def zCtx__dbgMods(zCtx):
 	unpfxMods = ""
 	for mp in zCtx.cpl.modPfxs:
 		unpfxMods += "\n - " + unpfxMod(mp)
-	zCtx.dbg("Available modules are :" + unpfxMods)
-
-
-
-
-
-
-
+	zCtx.dbg0("Available modules are :" + unpfxMods)

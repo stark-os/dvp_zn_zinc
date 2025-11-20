@@ -66,7 +66,7 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 	#try get function matching exact name
 	fctExactName = fctModPfx + methodHeader + fctRawName
 	tgtFct       = getFctFromName(ZCI, fctExactName)
-	ZCIDeepDbg(ZCI, "Trying to find matching fct call with exact name \"" + fctExactName + "\".")
+	ZCIDbg2(ZCI, "Trying to find matching fct call with exact name \"" + fctExactName + "\".")
 
 	#no exact match
 	if tgtFct is None:
@@ -75,9 +75,11 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 
 		#not a method => no other alternative
 		if not isMethod:
-			ZCIWrn(ZCI, "You may wanted to target one of the following functions declared: " + listAllExistingFct(ZCI.zCtx), prtSubCtxs=False, prtLine=False)
-			ZCIErr(ZCI, "No matching function \"" + unpfxMod(fctModPfx) + fctRawName + "\" found (parsing call)" + ZCIKindIfErr_ending)
-		ZCIDeepDbg(ZCI, "No matching function with that exact name but this is a method call => trying alternatives.", prtLine=False)
+			ZCIErr(ZCI,
+				"You may wanted to target one of the following functions declared: " + listAllExistingFct(ZCI.zCtx) + \
+				"\nNo matching function \"" + unpfxMod(fctModPfx) + fctRawName + "\" found (parsing call)" + ZCIKindIfErr_ending
+			)
+		ZCIDbg2(ZCI, "No matching function with that exact name but this is a method call => trying alternatives.", prtLine=False)
 
 		#get some info about tgt method type
 		methodTypeName_alternatives = ZCI.zCtx.getTypeAlternativeNames(methodCaller.Type)
@@ -100,7 +102,7 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 
 		#check each alternative for tgtFct
 		for altExactName in fctExactName_alternatives:
-			ZCIDeepDbg(ZCI, "Trying with \"" + altExactName + "\".", prtLine=False)
+			ZCIDbg2(ZCI, "Trying with \"" + altExactName + "\".", prtLine=False)
 
 			#retry with this one
 			tgtFct = getFctFromName(ZCI, altExactName)
@@ -110,11 +112,13 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 
 		#still no one matching
 		if tgtFct is None:
-			ZCIWrn(ZCI, "The following methods could have match if they were declared: " + strLst_toDsp(fctExactName_alternatives), prtSubCtxs=False, prtLine=False)
-			ZCIErr(ZCI, "No matching method \"" + fctExactName + "\" found for type " + unpfxTypeName(ZCI.zCtx, methodTypeInst.name)[0] + " (parsing call)" + ZCIKindIfErr_ending)
+			ZCIErr(ZCI,
+				"The following methods could have match if they were declared: " + strLst_toDsp(fctExactName_alternatives) + \
+				"\nNo matching method \"" + fctExactName + "\" found for type " + unpfxTypeName(ZCI.zCtx, methodTypeInst.name)[0] + " (parsing call)" + ZCIKindIfErr_ending
+			)
 
 	#match (debug)
-	ZCIDeepDbg(ZCI, "Found matching method \"" + fctExactName + "\".", prtLine=False)
+	ZCIDbg2(ZCI, "Found matching method \"" + fctExactName + "\".", prtLine=False)
 
 	#check ret type
 	if not allowVFC and tgtFct.retType == TYPE_ID__UNKNOWN:

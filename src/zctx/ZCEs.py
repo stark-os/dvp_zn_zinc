@@ -115,8 +115,8 @@ class zci:
 	def listAllOperatorAlternatives(sbj, opeTrigram):
 		return sbj.zCtx.listAllOperatorAlternatives(opeTrigram)
 
-	def deepDbgPause(sbj):
-		return sbj.zCtx.deepDbgPause()
+	def dbgPause(sbj):
+		return sbj.zCtx.dbgPause()
 
 
 

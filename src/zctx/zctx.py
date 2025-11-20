@@ -7,22 +7,19 @@ def newZCtx(
 	filepath,
 	pcpl_cfg, pcpl_itm,
 	cpl_opt,  cpl_info,
-	dbgMode=None, deepDbgMode=None, stepByStep=False
+	log_lvls=None, stepByStep=False
 ):
 	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Pythonic
-	if dbgMode is None:
-		dbgMode = (False,) * 6 #len(enm DBG)
-	if deepDbgMode is None:
-		deepDbgMode = (False,) * 6
+	if log_lvls is None:
+		log_lvls = (LOG__LVL_ERR,) * 7 #len(enm STEP)
 
 	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< real init
 	res      = zctx()
 	res.step = STEP.INIT
 
 	#debug
-	res.dbgMode     = dbgMode
-	res.deepDbgMode = deepDbgMode
-	res.stepByStep  = stepByStep
+	res.log_lvls   = log_lvls
+	res.stepByStep = stepByStep
 
 	#every imported context & the current one
 	res.initialCtx   = ParsingCtx(filepath, readFile(filepath))
@@ -130,9 +127,8 @@ def newZCtx(
 class zctx:
 	def __init__(sbj):
 
-		#debug
-		sbj.dbgMode     = None
-		sbj.deepDbgMode = None
+		#log
+		sbj.log_lvls = None
 
 		#every imported context & the current one
 		sbj.initialCtx = None

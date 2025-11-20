@@ -20,13 +20,13 @@ from pcpl.byteNotation import *
 
 #module
 def p1_commentsAndText(zCtx):
-	zCtx.step = STEP.P1
+	zCtx.updateLogLvl(STEP.P1)
 	zCtx.dbgSepLine()
-	zCtx.dbg("============================================================================")
-	zCtx.dbg("===================== P1 COMMENTS AND TEXT : beginning =====================")
-	zCtx.dbg("============================================================================")
-	zCtx.dbg("FILE: " + zCtx.ctx.filepath)
-	zCtx.deepDbgPause()
+	zCtx.dbg0("============================================================================")
+	zCtx.dbg0("===================== P1 COMMENTS AND TEXT : beginning =====================")
+	zCtx.dbg0("============================================================================")
+	zCtx.dbg0("FILE: " + zCtx.ctx.filepath)
+	zCtx.dbgPause()
 
 	#empty file
 	if zCtx__inc(zCtx):
@@ -226,15 +226,15 @@ def p1_commentsAndText(zCtx):
 		zCtx.err("Missing ending delimiter for string (end of file reached too early).")
 
 	#debug
-	zCtx.dbg("============================================================================")
-	zCtx.dbg("======================== P1 COMMENTS AND TEXT : end ========================")
-	zCtx.dbg("============================================================================")
-	zCtx.dbg("FILE: " + zCtx.ctx.filepath)
+	zCtx.dbg0("============================================================================")
+	zCtx.dbg0("======================== P1 COMMENTS AND TEXT : end ========================")
+	zCtx.dbg0("============================================================================")
+	zCtx.dbg0("FILE: " + zCtx.ctx.filepath)
 	zCtx.dbgSepLine()
-	zCtx.deepDbgPause()
+	zCtx.dbgPause()
 
 	#debug
-	if zCtx.dbgMode[zCtx.step]:
+	if log_lvl[0] >= LOG__LVL_DBG0:
 		prepareDbgDir()
 		writeFile("dbg/" + path_name(zCtx.ctx.filename) + ".p1.z", output)
 

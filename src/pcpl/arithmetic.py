@@ -264,14 +264,14 @@ def PCPL__ATH__mergeNegativeSignsAndCheckConsistency(zCtx, tokens):
 
 #potentially got an arithmetic expression instead of a regular text => try to solve it first
 def PCPL__ATH__solveArithmetic(zCtx, text):
-	zCtx.deepDbg("Arithmetic expression detected.")
+	zCtx.dbg1("Arithmetic expression detected.")
 	tokens = PCPL__ATH__tokenizeExpression(text)
 
 	#debug
 	tokensText = ""
 	for t in tokens:
 		tokensText += "{ope:" + str(t.isOpe) + ",\"" + t.txtValue + "\"},"
-	zCtx.deepDbg("Arithmetic tokenization resulted into [" + tokensText + "].")
+	zCtx.dbg1("Arithmetic tokenization resulted into [" + tokensText + "].")
 
 	#simpler case: lone token => not a real expression actually, can be treated directly
 	if len(tokens) == 1:
@@ -317,7 +317,7 @@ def PCPL__ATH__solveArithmetic(zCtx, text):
 			#invalid res from computation => invalid arithmetic expression
 			if res is None:
 				return None
-			zCtx.deepDbg("Computation " + ope + " between " + opa1 + " and " + opa2 + " resulted into " + res + " with floatness[" + str(floatness) + "]")
+			zCtx.dbg1("Computation " + ope + " between " + opa1 + " and " + opa2 + " resulted into " + res + " with floatness[" + str(floatness) + "]")
 
 			#store result at operator position
 			tokens[opeIdx].txtValue = res
@@ -335,5 +335,5 @@ def PCPL__ATH__solveArithmetic(zCtx, text):
 		zCtx.int("Got more than 1 token at the end of PCPL arithmetic resolution " + tokensText)
 
 	#res in last token
-	zCtx.deepDbg("Arithmetic expression resulted into value \"" + tokens[0].txtValue + "\" (ATH success).")
+	zCtx.dbg1("Arithmetic expression resulted into value \"" + tokens[0].txtValue + "\" (ATH success).")
 	return tokens[0].txtValue

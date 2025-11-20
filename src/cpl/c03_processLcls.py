@@ -17,14 +17,14 @@ from cpl.c02_redirectGbl import *
 
 #if - elf - els
 def processIfStm(ZCI, scope, tgtFct):
-	ZCIDbg(ZCI, "Processing IF STM in function " + tgtFct.name, prtLine=False)
+	ZCIDbg0(ZCI, "Processing IF STM in function " + tgtFct.name, prtLine=False)
 	optionalBlanks(ZCI, None)
 
 	#read condition
 	res = stm_if()
 	v   = readVal(ZCI, "condition in IF statement (STM_IF_).", scope)
 	res.conds.append(v)
-	ZCIDeepDbg(ZCI, "Added IF statement condition: " + v.toStr())
+	ZCIDbg1(ZCI, "Added IF statement condition: " + v.toStr())
 
 	#read following includer
 	optionalBlanks(ZCI, None)
@@ -32,7 +32,7 @@ def processIfStm(ZCI, scope, tgtFct):
 		ZCIErr(ZCI, "Expected braces includer after condition in IF statement, in function " + tgtFct.name + " (STM_IF_).")
 
 	#extract ZCIs from it
-	ZCIDeepDbg(ZCI, "Extracting IF statement sub-scope.")
+	ZCIDbg1(ZCI, "Extracting IF statement sub-scope.")
 	subScpZCIs = extractZCIsFromCtx(
 		ZCI.zCtx,
 		ZCI.ctx, subCtxs=ZCI.subCtxs,
@@ -40,7 +40,7 @@ def processIfStm(ZCI, scope, tgtFct):
 		modPfx  = ZCI.modPfx,
 		wallIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
 	)
-	ZCIDeepDbg(ZCI, "End of extraction of IF statement sub-scope.")
+	ZCIDbg1(ZCI, "End of extraction of IF statement sub-scope.")
 
 	#parse them as inner sub-scp (lcl)
 	subScp = newScp(parent=scope)
@@ -52,11 +52,11 @@ def processIfStm(ZCI, scope, tgtFct):
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "if statement, in function " + tgtFct.name + " (STM_IF_).")
-	ZCIDbg(ZCI, "Processed IF STM in function " + tgtFct.name + ": " + res.toStr())
-	ZCI.deepDbgPause()
+	ZCIDbg0(ZCI, "Processed IF STM in function " + tgtFct.name + ": " + res.toStr())
+	ZCI.dbgPause()
 
 def processElfStm(ZCI, scope, tgtFct):
-	ZCIDbg(ZCI, "Processing ELF STM in function " + tgtFct.name, prtLine=False)
+	ZCIDbg0(ZCI, "Processing ELF STM in function " + tgtFct.name, prtLine=False)
 	optionalBlanks(ZCI, None)
 
 	#must follow if/elf statement
@@ -75,7 +75,7 @@ def processElfStm(ZCI, scope, tgtFct):
 	#read condition
 	v   = readVal(ZCI, "condition in ELF statement (STM_IF_).", scope)
 	lastExe.dat.conds.append(v)
-	ZCIDeepDbg(ZCI, "Added ELF statement condition: " + v.toStr())
+	ZCIDbg1(ZCI, "Added ELF statement condition: " + v.toStr())
 
 	#read following includer
 	optionalBlanks(ZCI, None)
@@ -83,7 +83,7 @@ def processElfStm(ZCI, scope, tgtFct):
 		ZCIErr(ZCI, "Expected braces includer after condition in ELF statement, in function " + tgtFct.name + " (STM_IF_).")
 
 	#extract ZCIs from it
-	ZCIDeepDbg(ZCI, "Extracting ELF statement sub-scope.")
+	ZCIDbg1(ZCI, "Extracting ELF statement sub-scope.")
 	subScpZCIs = extractZCIsFromCtx(
 		ZCI.zCtx,
 		ZCI.ctx, subCtxs=ZCI.subCtxs,
@@ -91,7 +91,7 @@ def processElfStm(ZCI, scope, tgtFct):
 		modPfx  = ZCI.modPfx,
 		wallIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
 	)
-	ZCIDeepDbg(ZCI, "End of extraction of ELF statement sub-scope.")
+	ZCIDbg1(ZCI, "End of extraction of ELF statement sub-scope.")
 
 	#parse them as inner sub-scp (lcl)
 	subScp = newScp(parent=scope)
@@ -100,11 +100,11 @@ def processElfStm(ZCI, scope, tgtFct):
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "elf statement, in function " + tgtFct.name + " (STM_IF_).")
-	ZCIDbg(ZCI, "Processed ELF STM in function " + tgtFct.name + ": " + lastExe.toStr())
-	ZCI.deepDbgPause()
+	ZCIDbg0(ZCI, "Processed ELF STM in function " + tgtFct.name + ": " + lastExe.toStr())
+	ZCI.dbgPause()
 
 def processElsStm(ZCI, scope, tgtFct):
-	ZCIDbg(ZCI, "Processing ELS STM in function " + tgtFct.name, prtLine=False)
+	ZCIDbg0(ZCI, "Processing ELS STM in function " + tgtFct.name, prtLine=False)
 	optionalBlanks(ZCI, None)
 
 	#must follow if/elf statement
@@ -126,7 +126,7 @@ def processElsStm(ZCI, scope, tgtFct):
 		ZCIErr(ZCI, "Expected braces includer after keyword in ELS statement, in function " + tgtFct.name + " (STM_IF_).")
 
 	#extract ZCIs from it
-	ZCIDeepDbg(ZCI, "Extracting ELS statement sub-scope.")
+	ZCIDbg1(ZCI, "Extracting ELS statement sub-scope.")
 	subScpZCIs = extractZCIsFromCtx(
 		ZCI.zCtx,
 		ZCI.ctx, subCtxs=ZCI.subCtxs,
@@ -134,7 +134,7 @@ def processElsStm(ZCI, scope, tgtFct):
 		modPfx  = ZCI.modPfx,
 		wallIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
 	)
-	ZCIDeepDbg(ZCI, "End of extraction of ELS statement sub-scope.")
+	ZCIDbg1(ZCI, "End of extraction of ELS statement sub-scope.")
 
 	#parse them as inner sub-scp (lcl)
 	subScp = newScp(parent=scope)
@@ -143,20 +143,20 @@ def processElsStm(ZCI, scope, tgtFct):
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "els statement, in function " + tgtFct.name + " (STM_IF_).")
-	ZCIDbg(ZCI, "Processed ELS STM in function " + tgtFct.name + ": " + lastExe.toStr())
-	ZCI.deepDbgPause()
+	ZCIDbg0(ZCI, "Processed ELS STM in function " + tgtFct.name + ": " + lastExe.toStr())
+	ZCI.dbgPause()
 
 
 
 #switch cases
 def processSwiStm(ZCI, scope, tgtFct):
-	ZCIDbg(ZCI, "Processing SWI STM in function " + tgtFct.name, prtLine=False)
+	ZCIDbg0(ZCI, "Processing SWI STM in function " + tgtFct.name, prtLine=False)
 	optionalBlanks(ZCI, None)
 
 	#read tgt
 	res     = stm_swi()
 	res.tgt = readVal(ZCI, "target in SWI statement (STM_SWI).", scope)
-	ZCIDeepDbg(ZCI, "Added switch statement target: " + res.tgt.toStr())
+	ZCIDbg1(ZCI, "Added switch statement target: " + res.tgt.toStr())
 
 	#read following includer
 	optionalBlanks(ZCI, None)
@@ -176,11 +176,11 @@ def processSwiStm(ZCI, scope, tgtFct):
 
 		#read case value
 		v = readVal(ZCI, "case value in SWI statement (STM_SWI).", scope)
-		ZCIDeepDbg(ZCI, "Added switch statement case value: " + v.toStr())
+		ZCIDbg1(ZCI, "Added switch statement case value: " + v.toStr())
 		res.cases.append(v)
 
 		#extract ZCIs from it
-		ZCIDeepDbg(ZCI, "Extracting SWI statement case sub-scope.")
+		ZCIDbg1(ZCI, "Extracting SWI statement case sub-scope.")
 		subScpZCIs = extractZCIsFromCtx(
 			ZCI.zCtx,
 			ZCI.ctx, subCtxs=ZCI.subCtxs,
@@ -188,7 +188,7 @@ def processSwiStm(ZCI, scope, tgtFct):
 			modPfx  = ZCI.modPfx,
 			wallIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
 		)
-		ZCIDeepDbg(ZCI, "End of extraction of SWI statement case sub-scope.")
+		ZCIDbg1(ZCI, "End of extraction of SWI statement case sub-scope.")
 
 		#parse them as inner sub-scp (lcl)
 		subScp = newScp(parent=scope)
@@ -200,8 +200,8 @@ def processSwiStm(ZCI, scope, tgtFct):
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "swi statement, in function " + tgtFct.name + " (STM_SWI).")
-	ZCIDbg(ZCI, "Processed SWI STM in function " + tgtFct.name + ": " + res.toStr())
-	ZCI.deepDbgPause()
+	ZCIDbg0(ZCI, "Processed SWI STM in function " + tgtFct.name + ": " + res.toStr())
+	ZCI.dbgPause()
 
 
 
@@ -212,7 +212,7 @@ def processSwiStm(ZCI, scope, tgtFct):
 
 #for
 def processForStm(ZCI, scope, tgtFct):
-	ZCIDbg(ZCI, "Processing FOR STM in function " + tgtFct.name, prtLine=False)
+	ZCIDbg0(ZCI, "Processing FOR STM in function " + tgtFct.name, prtLine=False)
 	optionalBlanks(ZCI, None)
 
 
@@ -221,7 +221,7 @@ def processForStm(ZCI, scope, tgtFct):
 
 	#read iter datItm name
 	res     = stm_for()
-	iDIName = readName(ZCI, "iteration data item name in FOR statement, in function " + tgtFct.name + " (STM_FOR).", dblUnderscores=True)
+	iDIName = 'L' + readName(ZCI, "iteration data item name in FOR statement, in function " + tgtFct.name + " (STM_FOR).", dblUnderscores=True)[1]
 
 	#blank required (avoid confusion)
 	if ZCI.get() not in BLANKS:
@@ -236,16 +236,20 @@ def processForStm(ZCI, scope, tgtFct):
 
 	#detect tgt kind
 	tmpCopy = ZCI.copy()
-	kw      = readName(tmpCopy, None)
+	kw      = readName(tmpCopy, None)[1]
 	kind    = 0
 	if kw == "on":
 		kind = KIND__ON
+		ZCIDbg1(tmpCopy, "For statement of \"ON\" kind.")
 	elif kw == "in":
 		kind = KIND__IN
+		ZCIDbg1(tmpCopy, "For statement of \"IN\" kind.")
 	elif kw == "ovr":
 		kind = KIND__OVR
+		ZCIDbg1(tmpCopy, "For statement of \"OVR\" kind.")
 	else:
 		kind = KIND__RANGE
+		ZCIDbg1(tmpCopy, "For statement of \"RANGE\" kind.")
 
 	#forward after kw
 	if kind != KIND__RANGE:
@@ -261,7 +265,7 @@ def processForStm(ZCI, scope, tgtFct):
 	#STEP 2: ITER LIMIT
 
 	#iter limit
-	iLimit      = readVal(ZCI, "value in FOR statement, in function " + tgtFct.name + " (STM_FOR).", scope)
+	iLimit      = readVal(ZCI, "value given in FOR statement, in function " + tgtFct.name + " (STM_FOR).", scope)
 	iDIType     = iLimit.Type
 	iDITypeInst = ZCI.getTypeInstanceFromID(iDIType)
 	stcType     = iDIType     #only for "in/ovr"
@@ -272,29 +276,32 @@ def processForStm(ZCI, scope, tgtFct):
 		if stcTypeInst.dcnCommon.nature != NATURE__STC:
 			ZCIErr(ZCI, "Value given in FOR statement must have structure type, in function " + tgtFct.name + " (STM_FOR).")
 
-		#must have a "len" field
-		missingField = True
+		#get field "len" from iLimit
+		offset  = 0
+		iDIType = TYPE_ID__UNKNOWN
 		for di in iDITypeInst.dcnCommon.fields:
 			if di.name == "len":
 				iDIType     = di.Type
 				iDITypeInst = ZCI.getTypeInstanceFromID(iDIType)
-				iLimit      = val(
-					iDIType,
-					atm(ATM__CALL, call(
-						"fa",
-						[
-							val(ZCI.zCtx.rootTypes[RT__U32], atm(ATM__U32,    stcType), True ),
-							val(ZCI.zCtx.rootTypes[RT__REF], atm(ATM__STR,    "len"  ), True ),
-							val(stcType,                     atm(ATM__DATITM, iLimit ), False)
-						],
-						iDIType
-					)),
-					False
-				)
-				missingField = False
 				break
-		if missingField:
+			offset += ZCI.zCtx.getTypeInstanceFromID(di.Type).dcnCommon.size
+
+		#no "len" field found
+		if iDIType == TYPE_ID__UNKNOWN:
 			ZCIErr(ZCI, "Value given as limit has no \"len\" field in FOR statement, in function " + tgtFct.name + " (STM_FOR).")
+
+		#update iLimit with ffa call with computed offset
+		iLimit = val(
+			iDIType,
+			atm(ATM__CALL, call(
+				"ffa", [
+					iLimit,
+					val(ZCI.zCtx.rootTypes[RT__U32], atm(ATM__U32, offset), True),
+				], iDIType
+			)),
+			iLimit.Cst
+		)
+		ZCIDbg1(ZCI, "Got \"len\" field from given value, in FOR IN/OVR statement:" + iLimit.toStr(), prtLine=False)
 
 	#limit must be prm
 	if iDITypeInst.dcnCommon.nature != NATURE__PRM:
@@ -305,7 +312,7 @@ def processForStm(ZCI, scope, tgtFct):
 	#STEP 3: ITER STEP & ITER INIT
 
 	#iter step
-	iStep = val(iDIType, ZCI.zCtx.maxPrmOne, True)
+	iStep = val(iDIType, ZCI.zCtx.smaxOne, True)
 
 	#iter init: range => read a second value
 	iInit = None
@@ -335,7 +342,7 @@ def processForStm(ZCI, scope, tgtFct):
 
 	#itm init val: on/in/ovr => zero
 	else:
-		iInit = ZCI.zCtx.maxPrmZero
+		iInit = ZCI.zCtx.smaxZero
 
 
 
@@ -343,7 +350,7 @@ def processForStm(ZCI, scope, tgtFct):
 
 	#complete iter datItm info
 	ovrUsrIterDI = None #iter datItm that the USER mentionned, that will not be the actual iter datItm of the FOR (ovr only)
-	if kind == OVR:
+	if kind == KIND__OVR:
 		ovrUsrIterDI   = datItm(TYPE_ID__UNKNOWN, iDIName, False, None) #set unknown ID temporarily (we get that info in further steps)
 		res.iterDatItm = datItm(iDIType, "D0", True, iInit) #manually gen 1st dcp var of FOR scope
 	else:
@@ -351,31 +358,37 @@ def processForStm(ZCI, scope, tgtFct):
 
 	#use iter datItm as val for calls
 	iDIVal = val(iDIType, atm(ATM__DATITM, res.iterDatItm), False)
-	ZCIDeepDbg(ZCI, "Added for statement iter datItm: " + res.iterDatItm.toStr())
+	ZCIDbg1(ZCI, "Added for statement iter datItm: " + res.iterDatItm.toStr())
 
 	#iter condition
-	ope = ZCI.zCtx.zCtx__findMatchingOperator(
-		"clt",
+	ope = zCtx__findMatchingOperator(ZCI.zCtx,
+		"Oclt",
 		[iDIType,          iDIType         ],
 		[iDITypeInst.name, iDITypeInst.name]
 	)
 	if ope is None:
-		ZCIErr(ZCI, "Can't find a valid operator CLT to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR).")
+		ZCIErr(ZCI,
+			"Available combinations for this operator are " + zCtx__listAllExistingOpeNames(ZCI.zCtx, "Oclt") + \
+			"\nCan't find a valid operator CLT to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
+		)
 	res.iterCond = atm(ATM__CALL, call(
 		ope.name,
 		[iDIVal, iLimit],
 		ope.retType
 	))
-	ZCIDeepDbg(ZCI, "Added for statement iter cond: " + res.iterCond.toStr())
+	ZCIDbg1(ZCI, "Added for statement iter cond: " + res.iterCond.toStr())
 
 	#iter exe
-	ope = ZCI.zCtx.zCtx__findMatchingOperator(
-		"bad",
+	ope = zCtx__findMatchingOperator(ZCI.zCtx,
+		"Obad",
 		[iDIType,          iDIType         ],
 		[iDITypeInst.name, iDITypeInst.name]
 	)
 	if ope is None:
-		ZCIErr(ZCI, "Can't find a valid operator BAD to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR).")
+		ZCIErr(ZCI,
+			"Available combinations for this operator are " + zCtx__listAllExistingOpeNames(ZCI.zCtx, "Obad") + \
+			"\nCan't find a valid operator BAD to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
+		)
 	res.iterExe = atm(ATM__ASG, asg(
 		res.iterDatItm,
 		val(
@@ -388,7 +401,7 @@ def processForStm(ZCI, scope, tgtFct):
 			False
 		)
 	))
-	ZCIDeepDbg(ZCI, "Added for statement iter exe: " + res.iterExe.toStr())
+	ZCIDbg1(ZCI, "Added for statement iter exe: " + res.iterExe.toStr())
 
 
 
@@ -399,13 +412,16 @@ def processForStm(ZCI, scope, tgtFct):
 
 	#ovr: generated ZCI to be run as 1st exe in scope
 	if kind == KIND__OVR:
-		ope = ZCI.zCtx.zCtx__findMatchingOperator(
-			"iin",
+		ope = zCtx__findMatchingOperator(ZCI.zCtx,
+			"Oiin",
 			[stcType,          iDIType         ],
 			[stcTypeInst.name, iDITypeInst.name]
 		)
 		if ope is None:
-			ZCIErr(ZCI, "Can't find a valid operator IIN to match between types \"" + unpfxTypeName(ZCI.zCtx, stcTypeInst.name)[0] + "\" and \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR).")
+			ZCIErr(ZCI,
+				"Available combinations for this operator are " + zCtx__listAllExistingOpeNames(ZCI.zCtx, "Oiin") + \
+				"\nCan't find a valid operator IIN to match between types \"" + unpfxTypeName(ZCI.zCtx, stcTypeInst.name)[0] + "\" and \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
+			)
 
 		#update usr iter datItm type
 		ovrUsrIterDI.Type = ope.retType
@@ -416,7 +432,7 @@ def processForStm(ZCI, scope, tgtFct):
 		#gen idxing exe
 		ovrUsrIterDIVal = val(ovrUsrIterDI.Type, atm(ATM__DATITM, ovrUsrIterDI), False)
 		ovr1stExe       = atm(ATM__ASG, asg(
-			ovrUsrIterDI,
+			ovrUsrIterDIVal,
 			val(
 				ope.retType,
 				atm(ATM__CALL, call(
@@ -428,10 +444,16 @@ def processForStm(ZCI, scope, tgtFct):
 			)
 		))
 
-		#add it as 1st exe
+		#add iter datItm
 		subScp.datItms.append(ovrUsrIterDI)
+
+		#add it as 1st exe
 		subScp.exes.append(ovr1stExe)
-		ZCIDeepDbg(ZCI, "Added for statement iter exe: " + res.iterExe.toStr())
+		ZCIDbg1(ZCI, "Added for statement iter exe: " + res.iterExe.toStr())
+
+	#add iter datItm
+	else:
+		subScp.datItms.append(res.iterDatItm)
 
 
 
@@ -443,7 +465,7 @@ def processForStm(ZCI, scope, tgtFct):
 		ZCIErr(ZCI, "Expected braces includer after condition in for statement, in function " + tgtFct.name + " (STM_FOR).")
 
 	#extract ZCIs from it
-	ZCIDeepDbg(ZCI, "Extracting FOR statement sub-scope.")
+	ZCIDbg1(ZCI, "Extracting FOR statement sub-scope.")
 	subScpZCIs = extractZCIsFromCtx(
 		ZCI.zCtx,
 		ZCI.ctx, subCtxs=ZCI.subCtxs,
@@ -451,7 +473,7 @@ def processForStm(ZCI, scope, tgtFct):
 		modPfx  = ZCI.modPfx,
 		wallIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
 	)
-	ZCIDeepDbg(ZCI, "End of extraction of FOR statement sub-scope.")
+	ZCIDbg1(ZCI, "End of extraction of FOR statement sub-scope.")
 
 	#parse them as inner sub-scp (lcl)
 	readLclScp(subScpZCIs, subScp, tgtFct)
@@ -462,20 +484,20 @@ def processForStm(ZCI, scope, tgtFct):
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "for statement, in function " + tgtFct.name + " (STM_FOR).")
-	ZCIDbg(ZCI, "Processed FOR STM in function " + tgtFct.name + ": " + res.toStr())
-	ZCI.deepDbgPause()
+	ZCIDbg0(ZCI, "Processed FOR STM in function " + tgtFct.name + ": " + res.toStr())
+	ZCI.dbgPause()
 
 
 
 #while
 def processWhiStm(ZCI, scope, tgtFct):
-	ZCIDbg(ZCI, "Processing WHI STM in function " + tgtFct.name, prtLine=False)
+	ZCIDbg0(ZCI, "Processing WHI STM in function " + tgtFct.name, prtLine=False)
 	optionalBlanks(ZCI, None)
 
 	#read condition
 	res          = stm_whi()
 	res.iterCond = readVal(ZCI, "condition in WHI statement (STM_WHI).", scope)
-	ZCIDeepDbg(ZCI, "Added while statement condition: " + res.iterCond.toStr())
+	ZCIDbg1(ZCI, "Added while statement condition: " + res.iterCond.toStr())
 
 	#read following includer
 	optionalBlanks(ZCI, None)
@@ -483,7 +505,7 @@ def processWhiStm(ZCI, scope, tgtFct):
 		ZCIErr(ZCI, "Expected braces includer after condition in while statement, in function " + tgtFct.name + " (STM_WHI).")
 
 	#extract ZCIs from it
-	ZCIDeepDbg(ZCI, "Extracting WHI statement sub-scope.")
+	ZCIDbg1(ZCI, "Extracting WHI statement sub-scope.")
 	subScpZCIs = extractZCIsFromCtx(
 		ZCI.zCtx,
 		ZCI.ctx, subCtxs=ZCI.subCtxs,
@@ -491,7 +513,7 @@ def processWhiStm(ZCI, scope, tgtFct):
 		modPfx  = ZCI.modPfx,
 		wallIdx = ZCI.pairs[ZCI.ctx.icontent.idx]
 	)
-	ZCIDeepDbg(ZCI, "End of extraction of WHI statement sub-scope.")
+	ZCIDbg1(ZCI, "End of extraction of WHI statement sub-scope.")
 
 	#parse them as inner sub-scp (lcl)
 	subScp = newScp(parent=scope)
@@ -503,8 +525,8 @@ def processWhiStm(ZCI, scope, tgtFct):
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "whi statement, in function " + tgtFct.name + " (STM_WHI).")
-	ZCIDbg(ZCI, "Processed WHI STM in function " + tgtFct.name + ": " + res.toStr())
-	ZCI.deepDbgPause()
+	ZCIDbg0(ZCI, "Processed WHI STM in function " + tgtFct.name + ": " + res.toStr())
+	ZCI.dbgPause()
 
 
 
@@ -515,7 +537,7 @@ def processWhiStm(ZCI, scope, tgtFct):
 
 #return keyword
 def processRetJmp(ZCI, scope, tgtFct):
-	ZCIDbg(ZCI, "Processing RET JMP in function " + tgtFct.name, prtLine=False)
+	ZCIDbg0(ZCI, "Processing RET JMP in function " + tgtFct.name, prtLine=False)
 	optionalBlanks(ZCI, None)
 
 	#try read ret val if given
@@ -539,8 +561,8 @@ def processRetJmp(ZCI, scope, tgtFct):
 	retValTxt = "<void>"
 	if retVal is not None:
 		retValTxt = retVal.toStr()
-	ZCIDbg(ZCI, "Processed RET JMP in function " + tgtFct.name + " with given value " + retValTxt)
-	ZCI.deepDbgPause()
+	ZCIDbg0(ZCI, "Processed RET JMP in function " + tgtFct.name + " with given value " + retValTxt)
+	ZCI.dbgPause()
 
 
 
@@ -553,7 +575,7 @@ def processRetJmp(ZCI, scope, tgtFct):
 def readLclScp(ZCIs, scope, tgtFct): #tgtFct is for debug
 	for ZCI in ZCIs:
 		initialCtx = ZCI.ctx.copy()
-		ZCIDeepDbg(ZCI, "Treating local ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
+		ZCIDbg1(ZCI, "Treating local ZCI \"" + ZCI.txtFormat() + '\"', prtSubCtxs=True)
 
 		#read 1st ZCI word
 		firstWord = readName(ZCI, "Invalid ZCS: Unknown ZCI.", blacklist=ZCI_FIRSTWORD_DETECTION_BLACKLIST)[1]
@@ -651,12 +673,12 @@ def readLclScp(ZCIs, scope, tgtFct): #tgtFct is for debug
 
 #compilation
 def c03_processLcls(zCtx):
-	zCtx.step = STEP.C03
+	zCtx.updateLogLvl(STEP.C03)
 	zCtx.dbgSepLine()
-	zCtx.dbg("=================================================================================")
-	zCtx.dbg("========================== C03 PROCESS LCLs : beginning =========================")
-	zCtx.dbg("=================================================================================")
-	zCtx.deepDbgPause()
+	zCtx.dbg0("=================================================================================")
+	zCtx.dbg0("========================== C03 PROCESS LCLs : beginning =========================")
+	zCtx.dbg0("=================================================================================")
+	zCtx.dbgPause()
 
 	#get main fct if existing
 	mainFct = zCtx__getFctFromName(zCtx, "GFmain")
@@ -680,7 +702,7 @@ def c03_processLcls(zCtx):
 
 			#can only process dcn-independant fcts
 			if f.dcnDep:
-				zCtx.dbg("Method \"" + f.name + "\" is public but also dcn-dependant => not processing it directly.")
+				zCtx.dbg0("Method \"" + f.name + "\" is public but also dcn-dependant => not processing it directly.")
 				continue
 
 			#process fct scope & remove its content ZCIs
@@ -692,13 +714,13 @@ def c03_processLcls(zCtx):
 		zCtx.int("Unknown compilation mode with id " + str(zCtx.cpl.mode), prtSubCtxs=False, prtLine=False)
 
 	#debug
-	zCtx.dbg("===========================================================================")
-	zCtx.dbg("========================== C03 PROCESS LCLs : end =========================")
-	zCtx.dbg("===========================================================================")
+	zCtx.dbg0("===========================================================================")
+	zCtx.dbg0("========================== C03 PROCESS LCLs : end =========================")
+	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
-	zCtx.deepDbgPause()
+	zCtx.dbgPause()
 
-	#debug output file
-	if zCtx.dbgMode[zCtx.step]:
-		prepareDbgDir()
-		#writeFIle("dbg/" + ..., ...)
+	#debug output file <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< MAYBE DO SOMETHING
+	#if log_lvl[0] >= LOG__LVL_DBG0:
+	#	prepareDbgDir()
+	#	writeFIle("dbg/" + ..., ...)

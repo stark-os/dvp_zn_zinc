@@ -54,24 +54,15 @@ def main():
 		CPL__MODE_SDL | CPL__USE_REF_ALLOWED,
 
 		#debug
-		dbgMode = (
-			False, #INIT
-			False, #P1
-			False, #P2
-			False, #P3
-			False, #C01
-			False, #C02
-			True,  #C03
-			True   #C04
-		), deepDbgMode = (
-			False, #INIT
-			False, #P1
-			False, #P2
-			False, #P3
-			False, #C01
-			False, #C02
-			True,  #C03
-			True   #C04
+		log_lvls = (
+			LOG__LVL_INF, #INIT
+			LOG__LVL_INF, #P1
+			LOG__LVL_INF, #P2
+			LOG__LVL_INF, #P3
+			LOG__LVL_INF, #C01
+			LOG__LVL_INF, #C02
+			LOG__LVL_INF, #C03
+			LOG__LVL_INF  #C04
 		), stepByStep = False
 	)
 

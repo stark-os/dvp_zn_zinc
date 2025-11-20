@@ -191,7 +191,7 @@
 
 	#load LLI types, datItms & functions
 	def loadExtFP(sbj, extFPPath):
-		sbj.deepDbg("Loading ext fp file " + extFPPath)
+		sbj.dbg1("Loading ext fp file " + extFPPath)
 
 		#read core fingerprint
 		try:
@@ -222,4 +222,4 @@
 				sbj.err("Invalid start character '" + id + "' for key \"" + name + "\" in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
 
 		#debug
-		sbj.deepDbg("Ext fp file " + extFPPath + " loaded.")
+		sbj.dbg1("Ext fp file " + extFPPath + " loaded.")

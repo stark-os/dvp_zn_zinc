@@ -1,5 +1,12 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/output1.py
 
+	#log lvl
+	def updateLogLvl(sbj, step):
+		sbj.step   = step
+		log_lvl[0] = sbj.log_lvls[step]
+
+
+
 	#output
 	def int(sbj, msg, prtSubCtxs=True, prtLine=True):
 		out = ""
@@ -51,8 +58,7 @@
 
 		#exit
 		if err != 0:
-			if sbj.dbgMode[sbj.step]: #additional dbg info IN STDOUT !
-				log_dbgLF("Types ID table: " + sbj.listTypeNames())
+			log_dbg0LF("Types ID table: " + sbj.listTypeNames())
 			exit(err)
 
 
@@ -77,67 +83,86 @@
 
 
 
-	def dbg(sbj, msg, prtSubCtxs=False, prtLine=False):
+	def dbg0(sbj, msg, prtSubCtxs=False, prtLine=False):
 		out = ""
-		if sbj.dbgMode[sbj.step]:
 
-			#additional ver spacing
-			if prtSubCtxs or prtLine:
-				out += "\n\n\n"
+		#additional ver spacing
+		if prtSubCtxs or prtLine:
+			out += "\n\n\n"
 
-			#subCtxs
-			if prtSubCtxs:
-				for ctx in sbj.subCtxs:
-					out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
+		#subCtxs
+		if prtSubCtxs:
+			for ctx in sbj.subCtxs:
+				out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
-			#code line
-			if prtLine:
-				if sbj.ctx is None:
-					sbj.int("No context to debug-output line from.", prtSubCtxs=False, prtLine=False)
+		#code line
+		if prtLine:
+			if sbj.ctx is not None:
 				out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
 
-			#msg
-			out += msg
-			log_dbgLF(out)
+		#msg
+		out += msg
+		log_dbg0LF(out)
 
 
 
-	def deepDbg(sbj, msg, prtSubCtxs=False, prtLine=False):
+	def dbg1(sbj, msg, prtSubCtxs=False, prtLine=False):
 		out = ""
-		if sbj.deepDbgMode[sbj.step]:
 
-			#additional ver spacing
-			if prtSubCtxs or prtLine:
-				out += "\n\n\n"
+		#additional ver spacing
+		if prtSubCtxs or prtLine:
+			out += "\n\n\n"
 
-			#subCtxs
-			if prtSubCtxs:
-				for ctx in sbj.subCtxs:
-					out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
+		#subCtxs
+		if prtSubCtxs:
+			for ctx in sbj.subCtxs:
+				out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
-			#code line
-			if prtLine:
-				if sbj.ctx is None:
-					sbj.int("No context to deep-debug-output line from.", prtSubCtxs=False, prtLine=False)
+		#code line
+		if prtLine:
+			if sbj.ctx is not None:
 				out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
 
-			#log
-			out += msg
-			log_deepDbgLF(out)
+		#log
+		out += msg
+		log_dbg1LF(out)
+
+
+
+	def dbg2(sbj, msg, prtSubCtxs=False, prtLine=False):
+		out = ""
+
+		#additional ver spacing
+		if prtSubCtxs or prtLine:
+			out += "\n\n\n"
+
+		#subCtxs
+		if prtSubCtxs:
+			for ctx in sbj.subCtxs:
+				out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
+
+		#code line
+		if prtLine:
+			if sbj.ctx is not None:
+				out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
+
+		#log
+		out += msg
+		log_dbg2LF(out)
 
 
 
 	def dbgSepLine(sbj):
-		if sbj.dbgMode[sbj.step]:
+		if log_lvl[0] >= LOG__LVL_DBG0:
 			Term__drawSepLine()
 
 
 
-	def deepDbgPause(sbj):
-		if sbj.deepDbgMode[sbj.step] and sbj.stepByStep:
-			log_deepDbg("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~")
+	def dbgPause(sbj):
+		if log_lvl[0] >= LOG__LVL_DBG0 and sbj.stepByStep:
+			log_dbg("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~")
 			input()
-			log_deepDbg(Term__CUU1 + "                                       \r")
+			log_dbg(Term__CUU1 + "                                       \r")
 			Term__drawSepLine()
 
 

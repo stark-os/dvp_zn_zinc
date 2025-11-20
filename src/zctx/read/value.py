@@ -2,7 +2,7 @@
 
 #tool for reading value sequences
 def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToReplace=None):
-	ZCIDeepDbg(ZCI, "Reading value sequence.")
+	ZCIDbg2(ZCI, "Reading value sequence.")
 
 	#initial conditions
 	if ZCI.get() not in INCLUDERS.keys():
@@ -73,7 +73,7 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 
 		#set value to corresponding field
 		if givenFields[fieldName] is not None:
-			ZCIErr(ZCI, "Value for field " + fieldName + " is already set (reading value sequence)" + ZCIKindIfErr_ending)
+			ZCIErr(ZCI, "Value for field \"" + fieldName + "\" is already set (reading value sequence)" + ZCIKindIfErr_ending)
 		givenFields[fieldName] = v
 
 		#must be followed by coma or closing brace
@@ -97,7 +97,7 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 			for tf in tgtFields:
 				if tf.inited:
 					givenFields[f] = tf.initVal
-					ZCIDeepDbg(ZCI, "No value given for field " + f + " in value sequence (=> set default value: " + tf.initVal.toStr())
+					ZCIDbg1(ZCI, "No value given for field " + f + " in value sequence (=> set default value: " + tf.initVal.toStr())
 				break
 
 			#unable to find def value for that field
@@ -105,14 +105,14 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 				ZCIErr(ZCI, "Value required for field " + f + " in value sequence (no default value for that field)" + ZCIKindIfErr_ending)
 
 	#return completed result
-	ZCIDeepDbg(ZCI, "Ended reading value sequence.")
+	ZCIDbg1(ZCI, "Ended reading value sequence.")
 	return givenFields
 
 
 
 #value analysis process (VAP), main entry point
 def readVal(ZCI, ZCIKindIfErr, scope, cstOnly=False, dcnKwLstToReplace=None, allowVFC=False):
-	ZCIDeepDbg(ZCI, "Reading value.")
+	ZCIDbg2(ZCI, "Reading value.")
 
 
 
@@ -152,5 +152,5 @@ def readVal(ZCI, ZCIKindIfErr, scope, cstOnly=False, dcnKwLstToReplace=None, all
 	ZCI.forwardUntil(v2i.maxStopIdx)
 
 	#res
-	ZCIDeepDbg(ZCI, "Ended reading value.")
+	ZCIDbg2(ZCI, "Ended reading value.")
 	return secondAnalysisRes

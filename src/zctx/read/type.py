@@ -10,7 +10,7 @@ def readType(ZCI,
 	forbidDcnKwInDcns = True, #toggle possibility to have 'dcn' (=gncDcnType) in dcns only
 	dcnKwLstToReplace = None  #toggle possibility to have 'dcn#' (=spcDcnTypes) as type or in dcns
 ):
-	ZCIDeepDbg(ZCI, "Reading type.", prtLine=False)
+	ZCIDbg2(ZCI, "Reading type.", prtLine=False)
 	initialZCICtx = ZCI.ctx.copy()
 
 	#sub-err indication
@@ -37,13 +37,15 @@ def readType(ZCI,
 
 		#case 1: type not found => error
 		if errIfNotExisting:
-			ZCIWrn(ZCI, "Available types are " + ZCI.zCtx.listTypeNames(), prtSubCtxs=False, prtLine=False)
-			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist" + ZCIKindIfErr_ending)
+			ZCIErr(ZCI,
+				"Available types are " + ZCI.zCtx.listTypeNames() + \
+				"\nType " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist" + ZCIKindIfErr_ending
+			)
 
 		#case 2: maybe it was not a type at all
-		ZCIDeepDbg(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", prtLine=False)
+		ZCIDbg2(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", prtLine=False)
 		ZCI.resetCtx(initialZCICtx)
-		ZCIDeepDbg(ZCI, "Restoring ZCI context to that position => Ended reading Z type.")
+		ZCIDbg2(ZCI, "Restoring ZCI context to that position => Ended reading Z type.")
 		return TYPE_ID__UNKNOWN
 
 
@@ -77,7 +79,7 @@ def readType(ZCI,
 			ZCIErr(ZCI, "Use of \"raw\" type is not allowed in current compilation mode" + ZCIKindIfErr_ending)
 
 	#got it
-	ZCIDeepDbg(ZCI, "Undeclinated type \"" + tUndecFullName + "\" targetted.")
+	ZCIDbg2(ZCI, "Undeclinated type \"" + tUndecFullName + "\" targetted.")
 
 
 
@@ -91,7 +93,7 @@ def readType(ZCI,
 			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " is not declinable (null declination degree)" + ZCIKindIfErr_ending)
 
 		#read declination types one by one
-		ZCIDeepDbg(ZCI, "Type is declinated, reading declination types.", prtLine=False)
+		ZCIDbg2(ZCI, "Type is declinated, reading declination types.", prtLine=False)
 		dcns = [] #lst[int]
 		while True:
 			optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
@@ -117,14 +119,14 @@ def readType(ZCI,
 			ZCI.inc()
 
 		#debug
-		ZCIDeepDbg(ZCI, "Found declination types [", prtLine=False)
+		ZCIDbg2(ZCI, "Found declination types [", prtLine=False)
 		for d in dcns:
-			ZCIDeepDbg(ZCI, TERM__OUTPUT_TAB + ZCI.getTypeNameFromID(d) + ",", prtLine=False)
-		ZCIDeepDbg(ZCI, "].", prtLine=False)
+			ZCIDbg2(ZCI, TERM__OUTPUT_TAB + ZCI.getTypeNameFromID(d) + ",", prtLine=False)
+		ZCIDbg2(ZCI, "].", prtLine=False)
 
 		#get that spc dcn, creating it if needed
 		tID = getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns)
 
 	#final result
-	ZCIDeepDbg(ZCI, "Ended reading type.")
+	ZCIDbg2(ZCI, "Ended reading type.")
 	return tID

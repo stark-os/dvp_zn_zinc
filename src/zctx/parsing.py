@@ -39,11 +39,11 @@ def zCtx__openNewSubCtx(zCtx, filepath):
 	realNewPath = os.path.realpath(filepath)
 	for c in zCtx.imported:
 		if realNewPath == c:
-			zCtx.deepDbg("Subctx \"" + realNewPath + "\" already openned once => skipping it.")
+			zCtx.dbg1("Subctx \"" + realNewPath + "\" already openned once => skipping it.")
 			return False
 
 	#open new subcontext
-	zCtx.deepDbg("Opening subctx \"" + filepath + "\".")
+	zCtx.dbg1("Opening subctx \"" + filepath + "\".")
 	try:
 		newCtx = ParsingCtx(filepath, readFile(filepath))
 	except FileNotFoundError:
@@ -58,17 +58,17 @@ def zCtx__openNewSubCtx(zCtx, filepath):
 	return True
 
 def zCtx__closeCurrentCtx(zCtx): #return True if no more context remains
-	zCtx.deepDbg("Closing latest subctx.")
+	zCtx.dbg1("Closing latest subctx.")
 	lst_pop(zCtx.subCtxs)
 
 	#no more subcontext remaining
 	if lst_isEmpty(zCtx.subCtxs):
 		zCtx.ctx = None
-		zCtx.deepDbg("No more subctx remaining.")
+		zCtx.dbg1("No more subctx remaining.")
 		return True
 
 	#subcontexts remaining
-	zCtx.deepDbg("Back here:", prtSubCtxs=True)
+	zCtx.dbg1("Back here:", prtSubCtxs=True)
 	zCtx.ctx = lst_last(zCtx.subCtxs)
 	return False
 
