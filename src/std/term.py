@@ -16,7 +16,7 @@ import subprocess
 # -------- TOOLS --------
 
 #tabulation used for output
-TERM__OUTPUT_TAB = "|   " #'\t'
+TERM__OUTPUT_TAB = "\t" #"|   "
 
 #exact range
 def Term__width():

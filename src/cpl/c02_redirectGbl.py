@@ -27,7 +27,9 @@ def processLnk(ZCI):
 	jumpBlankZone(ZCI, "File path in library linking ZCI (EXT_LNK)")
 
 	#library linking path
-	path = os.path.realpath( readName(ZCI, "File path in library linking ZCI (EXT_LNK).", blacklist=BLANKS_EXTENDED)[1] )
+	path = readName(ZCI, "File path in library linking ZCI (EXT_LNK).", blacklist=BLANKS_EXTENDED)[1]
+	if not path.startswith('/'):
+		path = os.path.normpath(ZCI.ctx.dirname + '/' + path)
 
 	#check existence
 	if not os.path.isfile(path):
@@ -35,8 +37,8 @@ def processLnk(ZCI):
 	ZCIDbg0(ZCI, "SDL file \"" + path + "\" found.", prtLine=False)
 
 	#add link
-	if path not in zCtx.cpl.lnkLibs:
-		zCtx.cpl.lnkLibs.append(path)
+	if path not in ZCI.zCtx.cpl.lnkLibs:
+		ZCI.zCtx.cpl.lnkLibs.append(path)
 		ZCIDbg0(ZCI, "Added SDL \"" + path + "\" to linking list.")
 	else:
 		ZCIDbg0(ZCI, "SDL \"" + path + "\" already in linking list => skipping it.")

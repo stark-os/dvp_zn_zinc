@@ -117,9 +117,6 @@ def newZCtx(
 	res.spcDcnTypes = []
 	for d in range(res.dcnDegMax):
 		res.spcDcnTypes.append( res.cpl.newTyp("GUdcn" + str(d)) )
-
-	#LLI
-	res.loadExtFP(res.cpl.opts['LLI_FP_PATH'])
 	return res
 
 
