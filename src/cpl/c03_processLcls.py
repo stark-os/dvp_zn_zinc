@@ -312,7 +312,7 @@ def processForStm(ZCI, scope, tgtFct):
 	#STEP 3: ITER STEP & ITER INIT
 
 	#iter step
-	iStep = val(iDIType, ZCI.zCtx.smaxOne, True)
+	iStep = val(iDIType, atm(ATM__S32, 1), True)
 
 	#iter init: range => read a second value
 	iInit = None
@@ -371,11 +371,15 @@ def processForStm(ZCI, scope, tgtFct):
 			"Available combinations for this operator are " + zCtx__listAllExistingOpeNames(ZCI.zCtx, "Oclt") + \
 			"\nCan't find a valid operator CLT to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
 		)
-	res.iterCond = atm(ATM__CALL, call(
-		ope.name,
-		[iDIVal, iLimit],
-		ope.retType
-	))
+	res.iterCond = val(
+		ope.retType,
+		atm(ATM__CALL, call(
+			ope.name,
+			[iDIVal, iLimit],
+			ope.retType
+		)),
+		False
+	)
 	ZCIDbg1(ZCI, "Added for statement iter cond: " + res.iterCond.toStr())
 
 	#iter exe
@@ -390,7 +394,7 @@ def processForStm(ZCI, scope, tgtFct):
 			"\nCan't find a valid operator BAD to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
 		)
 	res.iterExe = atm(ATM__ASG, asg(
-		res.iterDatItm,
+		iDIVal,
 		val(
 			iDIType,
 			atm(ATM__CALL, call(
@@ -595,11 +599,11 @@ def readLclScp(ZCIs, scope, tgtFct): #tgtFct is for debug
 
 			#1.1 - jumps
 			if str_cmp("brk", firstWord):
-				scope.exes.append( jmp(JMP__BRK) )
+				scope.exes.append( atm(ATM__JMP, jmp(JMP__BRK)) )
 				endOfZCI(ZCI, "break jump ZCI (JMP_BRK).")
 				continue
 			if str_cmp("ctn", firstWord):
-				scope.exes.append( jmp(JMP__CTN) )
+				scope.exes.append( atm(ATM__JMP, jmp(JMP__CTN)) )
 				endOfZCI(ZCI, "break jump ZCI (JMP_BRK).")
 				continue
 			if str_cmp("ret", firstWord):

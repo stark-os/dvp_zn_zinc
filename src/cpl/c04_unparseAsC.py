@@ -15,11 +15,15 @@ from zctx import *
 # -------- SPECIFIC UNPARSE --------
 
 #value
-def unparseVal(zCtx, v, depth):
+def unparseVal(zCtx, v, depth, casht=True):
 	zCtx.dbg0("Unparsing VAL " + v.toStr(depth=1), prtSubCtxs=False, prtLine=False)
 
+	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< MAYBE KEEP THIS...
+	casht = False
+
 	#cast res
-	zCtx.cpl.resC += "(" + zCtx.getTypeNameFromID(v.Type) + ")("
+	if casht:
+		zCtx.cpl.resC += '(' + zCtx.getTypeNameFromID(v.Type) + ")("
 
 	#lit int
 	if v.vdat.id in (ATM__S8,  ATM__U8):
@@ -37,162 +41,272 @@ def unparseVal(zCtx, v, depth):
 
 	#call
 	elif v.vdat.id == ATM__CALL:
-		unparseCall(zCtx, v.vdat.dat, depth, VFC=False)
+		unparseCall(zCtx, v.vdat.dat, depth, begEnd=False)
 
 	#unknown
 	else:
 		zCtx.int("Unknown ID " + str(v.vdat.id) + " in value.", prtSubCtxs=False, prtLine=False)
 
 	#end
-	zCtx.cpl.resC += ")"
+	if casht:
+		zCtx.cpl.resC += ')'
 	zCtx.dbg0("Unparsed VAL.", prtSubCtxs=False, prtLine=False)
 
 
 
 #datItm
-def unparseDatDcl(zCtx, di, depth):
+def unparseDatDcl(zCtx, di, depth, begEnd=True):
 	zCtx.dbg0("Unparsing DAT DCL " + di.toStr(depth=1), prtSubCtxs=False, prtLine=False)
 	d   = TERM__OUTPUT_TAB * depth
 	dcl = ""
 
+	#beg mark (shift)
+	if begEnd:
+		dcl += d
+
 	#"type name;"
-	if depth == 0 and not di.isPub: #0 depth <=> gbl
-		dcl += "static "
+	diTypeName = zCtx.getTypeNameFromID(di.Type)
 	if di.Cst:
 		dcl += "const "
-	dcl += zCtx.getTypeNameFromID(di.Type) + ' ' + di.name + ";\n"
+	dcl += diTypeName + ' ' + di.name
 
-	#res
-	zCtx.cpl.resC += d + dcl
+	#ext
+	if di.ext:
+		zCtx.cpl.resC += "extern " + dcl
 
-	#fp
-	if depth == 0 and di.isPub:
-		zCtx.cpl.resFP += dcl + ";\n"
-		zCtx.cpl.resFP_C += dcl + ";\n" #<<<<<<<<<<<<<<<<<<< TMP
+	#int
+	else:
+
+		#gbl only
+		if depth == 0:
+
+			#fp
+			if di.isPub:
+				zCtx.cpl.resFP   += 'd' + di.name + '\t' + diTypeName
+				zCtx.cpl.resFP_C += dcl #<<<<<<<<<<<<<<<<<<< TMP
+
+			#prv
+			else:
+				zCtx.cpl.resC += "static "
+
+		#both gbl & lcl
+		zCtx.cpl.resC += dcl
+
+	#end mark
+	if begEnd:
+		zCtx.cpl.resC += ";\n"
 	zCtx.dbg0("Unparsed DAT DCL.", prtSubCtxs=False, prtLine=False)
 
 
 
 #asg
-def unparseAsg(zCtx, a, depth):
+def unparseAsg(zCtx, a, depth, begEnd=True):
 	zCtx.dbg0("Unparsing ASG " + a.toStr(depth=1), prtSubCtxs=False, prtLine=False)
 	d = TERM__OUTPUT_TAB * depth
 
+	#beg mark (shift)
+	if begEnd:
+		zCtx.cpl.resC += d
+
 	#"name = val;"
-	zCtx.cpl.resC += d
-	unparseVal(zCtx, a.dst, depth)
+	unparseVal(zCtx, a.dst, depth, casht=False)
 	zCtx.cpl.resC += " = "
-	unparseVal(zCtx, a.src, depth)
-	zCtx.cpl.resC += ";\n"
+	unparseVal(zCtx, a.src, depth, casht=False)
+
+	#end mark
+	if begEnd:
+		zCtx.cpl.resC += ";\n"
 	zCtx.dbg0("Unparsed ASG.", prtSubCtxs=False, prtLine=False)
 
 
 
 #stm if
-def unparseStmIf(zCtx, i, depth):
+def unparseStmIf(zCtx, i, depth, begEnd=True):
 	if depth == 0:
 		sbj.int("Got IF STM in gbl scp.", prtSubCtxs=False, prtLine=False)
 
-	#beginning
+	#"if(cond){scp}else if(cond){scp}else{scp}"
 	zCtx.dbg0("Unparsing IF " + i.toStr(depth=1), prtSubCtxs=False, prtLine=False)
 	d = TERM__OUTPUT_TAB * depth
 
-	#"if(cond){scp}else if(cond){scp}else{scp}"
-	zCtx.cpl.resC += d + "if(){"
-	zCtx.cpl.resC += "}\n"
+	#beg mark (shift)
+	if begEnd:
+		zCtx.cpl.resC += d
+
+	#conditional blocks
+	c = 0
+	while c < len(i.conds):
+		zCtx.cpl.resC += "if("
+		unparseVal(zCtx, i.conds[c], depth+1)
+		zCtx.cpl.resC += "){\n"
+		unparseScope(zCtx, i.scopes[c], depth=depth+1)
+		zCtx.cpl.resC += d + "}el"
+		c += 1
+
+	#els block
+	if len(i.scopes) > len(i.conds):
+		zCtx.cpl.resC += "se{\n"
+		unparseScope(zCtx, i.scopes[c], depth=depth+1)
+		zCtx.cpl.resC += d + "}\n"
+	else:
+		zCtx.cpl.resC = str_sub(zCtx.cpl.resC, stop=-3) + '\n'
 	zCtx.dbg0("Unparsed IF.", prtSubCtxs=False, prtLine=False)
 
 
 
 #for
-def unparseStmFor(zCtx, f, depth):
+def unparseStmFor(zCtx, f, depth, begEnd=True):
 	if depth == 0:
 		sbj.int("Got IF STM in gbl scp.", prtSubCtxs=False, prtLine=False)
 
-	#beginning
+	#"for(iterDIType iterDIName=iterDIInitVal; iterCond; iterOpe){scp}"
 	zCtx.dbg0("Unparsing FOR " + f.toStr(depth=1), prtSubCtxs=False, prtLine=False)
 	d = TERM__OUTPUT_TAB * depth
 
-	#"for(iterDIType iterDIName=iterDIInitVal; iterCond; iterOpe){scp}"
-	zCtx.cpl.resC += d + "for(){"
-	zCtx.cpl.resC += "}\n"
+	#beg mark (shift)
+	if begEnd:
+		zCtx.cpl.resC += d
+	zCtx.cpl.resC += "for("
+
+	#iterDI
+	iterDITypeName = zCtx.getTypeNameFromID(f.iterDatItm.Type)
+	zCtx.cpl.resC += iterDITypeName + ' ' + f.iterDatItm.name + '='
+	unparseVal(zCtx, f.iterDatItm.initVal, depth+1)
+	zCtx.cpl.resC += ';'
+
+	#iterCond
+	unparseVal(zCtx, f.iterCond, depth+1)
+	zCtx.cpl.resC += ';'
+
+	#iterExe
+	unparseExe(zCtx, f.iterExe, depth+1, begEnd=False)
+	zCtx.cpl.resC += "){\n"
+
+	#scope
+	unparseScope(zCtx, f.scope, depth=depth+1)
+	zCtx.cpl.resC += d + "}\n"
 	zCtx.dbg0("Unparsed FOR.", prtSubCtxs=False, prtLine=False)
 
 
 
 #whi
-def unparseStmWhi(zCtx, w, depth):
+def unparseStmWhi(zCtx, w, depth, begEnd=True):
 	if depth == 0:
 		sbj.int("Got SWI STM in gbl scp.", prtSubCtxs=False, prtLine=False)
 
-	#beginning
+	#"while(cond){scp}"
 	zCtx.dbg0("Unparsing WHI " + w.toStr(depth=1), prtSubCtxs=False, prtLine=False)
 	d = TERM__OUTPUT_TAB * depth
 
-	#"while(cond){scp}"
-	zCtx.cpl.resC += d + "while(){"
-	zCtx.cpl.resC += "}\n"
+	#beg mark (shift)
+	if begEnd:
+		zCtx.cpl.resC += d
+	zCtx.cpl.resC += "while("
+
+	#iterCond
+	unparseVal(zCtx, w.iterCond, depth+1)
+	zCtx.cpl.resC += "){\n"
+
+	#scope
+	unparseScope(zCtx, w.scope, depth=depth+1)
+	zCtx.cpl.resC += d + "}\n"
 	zCtx.dbg0("Unparsed WHI.", prtSubCtxs=False, prtLine=False)
 
 
 
 #swi
-def unparseStmSwi(zCtx, s, depth):
+def unparseStmSwi(zCtx, s, depth, begEnd=True):
 	if depth == 0:
 		sbj.int("Got SWI STM in gbl scp.", prtSubCtxs=False, prtLine=False)
 
-	#beginning
-	zCtx.dbg0("Unparsing SWI " + s.toStr(depth=1), prtSubCtxs=False, prtLine=False)
-	d = TERM__OUTPUT_TAB * depth
-
 	#"switch(){case c1val:{scp} c2val:{scp} def:{}}"
-	zCtx.cpl.resC += d + "switch(){\n"
-	zCtx.cpl.resC += d + "}\n"
+	zCtx.dbg0("Unparsing SWI " + s.toStr(depth=1), prtSubCtxs=False, prtLine=False)
+	d   = TERM__OUTPUT_TAB * depth
+	dp1 = d + TERM__OUTPUT_TAB
+
+	#beg mark (shift)
+	if begEnd:
+		zCtx.cpl.resC += d
+	zCtx.cpl.resC += "switch("
+
+	#tgt
+	unparseVal(zCtx, s.tgt, depth+1)
+	zCtx.cpl.resC += "){\n"
+
+	#for each case
+	c = 0
+	while c < len(s.cases):
+		zCtx.cpl.resC += dp1 + "case "
+		unparseVal(zCtx, s.cases[c], depth+2)
+		zCtx.cpl.resC += ": {\n"
+		unparseScope(zCtx, s.scopes[c], depth=depth+2)
+		zCtx.cpl.resC += dp1 + "}\n"
+		c += 1
+
+	#def block
+	if len(s.scopes) > len(s.cases):
+		zCtx.cpl.resC += dp1 + "default: {\n"
+		unparseScope(zCtx, s.scopes[c], depth=depth+2)
+		zCtx.cpl.resC += dp1 + "}\n"
+	zCtx.cpl.resC = d + "}\n"
 	zCtx.dbg0("Unparsed SWI.", prtSubCtxs=False, prtLine=False)
 
 
 
 #jmp
-def unparseJmp(zCtx, j, depth):
+def unparseJmp(zCtx, j, depth, begEnd=True):
 	if depth == 0:
 		sbj.int("Got JMP in gbl scp.", prtSubCtxs=False, prtLine=False)
 
-	#beginning
+	#"break;", "continue;", "return ;", "return val;"
 	zCtx.dbg0("Unparsing JMP " + j.toStr(depth=1), prtSubCtxs=False, prtLine=False)
 	d = TERM__OUTPUT_TAB * depth
 
-	#"break;", "continue;", "return val;"
+	#beg mark (shift)
+	if begEnd:
+		zCtx.cpl.resC += d
+
+	#redirect
 	if j.kind == JMP__BRK:
-		zCtx.cpl.resC += d + "break"
+		zCtx.cpl.resC += "break"
 	if j.kind == JMP__CTN:
-		zCtx.cpl.resC += d + "continue"
+		zCtx.cpl.resC += "continue"
 	if j.kind == JMP__RET:
-		zCtx.cpl.resC += d + "return "
-		unparseVal(zCtx, j.retVal, depth)
-	zCtx.cpl.resC += ";\n"
+		zCtx.cpl.resC += "return "
+		if j.retVal is not None:
+			unparseVal(zCtx, j.retVal, depth, casht=False)
+
+	#end mark
+	if begEnd:
+		zCtx.cpl.resC += ";\n"
 	zCtx.dbg0("Unparsed JMP.", prtSubCtxs=False, prtLine=False)
 
 
 
 #call
-def unparseCall(zCtx, c, depth, VFC=True):
+def unparseCall(zCtx, c, depth, begEnd=True):
+
+	#"name(p1,p2...);"
 	zCtx.dbg0("Unparsing CALL " + c.toStr(depth=1), prtSubCtxs=False, prtLine=False)
 	d = TERM__OUTPUT_TAB * depth
 
-	#shift at start
-	if VFC:
+	#beg mark (shift)
+	if begEnd:
 		zCtx.cpl.resC += d
 
-	#"name(p1,p2...);"
+	#name
 	zCtx.cpl.resC += c.name + "(\n"
+
+	#params
 	for p in c.paramVals:
 		zCtx.cpl.resC += d + TERM__OUTPUT_TAB
 		unparseVal(zCtx, p, depth+1)
 		zCtx.cpl.resC += ",\n"
-
-	#end
+	zCtx.cpl.resC = str_sub(zCtx.cpl.resC, stop=-3) + '\n' #immutable str in python, but in Z, we can simply make resC[-2] = ' ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	zCtx.cpl.resC += d + ")"
-	if VFC:
+
+	#end mark
+	if begEnd:
 		zCtx.cpl.resC += ";\n"
 	zCtx.dbg0("Unparsed CALL.", prtSubCtxs=False, prtLine=False)
 
@@ -204,21 +318,20 @@ def unparseFctHeader(zCtx, f):
 	header = ""
 
 	#retType
-	if f.retType == TYPE_ID__UNKNOWN:
-		header += "void"
-	else:
-		header += zCtx.getTypeNameFromID(f.retType)
+	retTypeTxt = "void"
+	if f.retType != TYPE_ID__UNKNOWN:
+		retTypeTxt = zCtx.getTypeNameFromID(f.retType)
 
 	#"retType name(p1type p1name, ...) {"
-	params = ""
+	paramsTxt_C  = ""
+	paramsTxt_FP = ""
 	for p in f.params:
-		params += zCtx.getTypeNameFromID(p.Type) + ' ' + p.name + ","
-	header += ' ' + f.name + '(' + params[:-1] + ')'
+		pTypeName     = zCtx.getTypeNameFromID(p.Type)
+		paramsTxt_C  += ',' + pTypeName + ' ' + p.name
+		paramsTxt_FP += ',' + pTypeName
 
-	#fp
-	if f.isPub and not f.ext:
-		zCtx.cpl.resFP += header + ";\n"
-		zCtx.cpl.resFP_C += header + ";\n" #<<<<<<<<<<<<<<<<<<< TMP
+	#C
+	header += retTypeTxt + ' ' + f.name + '(' + paramsTxt_C[1:] + ')'
 
 	#ext
 	if f.ext:
@@ -226,8 +339,17 @@ def unparseFctHeader(zCtx, f):
 
 	#int
 	else:
-		if not f.isPub:
+
+		#fp
+		if f.isPub:
+			zCtx.cpl.resFP   += 'f' + f.name + '\t' + retTypeTxt + paramsTxt_FP + '\n'
+			zCtx.cpl.resFP_C += header + ";\n" #<<<<<<<<<<<<<<<<<<< TMP
+
+		#prv
+		else:
 			zCtx.cpl.resC += "static "
+
+		#C
 		zCtx.cpl.resC += header + " {\n"
 	zCtx.dbg0("Unparsed FCT HEADER.", prtSubCtxs=False, prtLine=False)
 
@@ -238,33 +360,33 @@ def unparseFctHeader(zCtx, f):
 
 # -------- MAIN UNPARSE --------
 
+#exe
+def unparseExe(zCtx, e, depth, begEnd=True):
+	if e.id == ATM__ASG:
+		unparseAsg(zCtx, e.dat, depth, begEnd=begEnd)
+	elif e.id == ATM__STM_IF:
+		unparseStmIf(zCtx, e.dat, depth, begEnd=begEnd)
+	elif e.id == ATM__STM_FOR:
+		unparseStmFor(zCtx, e.dat, depth, begEnd=begEnd)
+	elif e.id == ATM__STM_WHI:
+		unparseStmWhi(zCtx, e.dat, depth, begEnd=begEnd)
+	elif e.id == ATM__STM_SWI:
+		unparseStmSwi(zCtx, e.dat, depth, begEnd=begEnd)
+	elif e.id == ATM__JMP:
+		unparseJmp(zCtx, e.dat, depth, begEnd=begEnd)
+	elif e.id == ATM__CALL:
+		unparseCall(zCtx, e.dat, depth, begEnd=begEnd)
+
+	#unknown exe
+	else:
+		zCtx.int("Unknown ID " + str(e.id) + " in exe.", prtSubCtxs=False, prtLine=False)
+
 #scope
 def unparseScope(zCtx, scope, depth=1):
-
-	#datItm
 	for di in scope.datItms:
 		unparseDatDcl(zCtx, di, depth)
-
-	#exes
 	for e in scope.exes:
-		if e.id == ATM__ASG:
-			unparseAsg(zCtx, e.dat, depth)
-		elif e.id == ATM__STM_IF:
-			unparseStmIf(zCtx, e.dat, depth)
-		elif e.id == ATM__STM_FOR:
-			unparseStmFor(zCtx, e.dat, depth)
-		elif e.id == ATM__STM_WHI:
-			unparseStmWhi(zCtx, e.dat, depth)
-		elif e.id == ATM__STM_SWI:
-			unparseStmSwi(zCtx, e.dat, depth)
-		elif e.id == ATM__JMP:
-			unparseJmp(zCtx, e.dat, depth)
-		elif e.id == ATM__CALL:
-			unparseCall(zCtx, e.dat, depth)
-
-		#unknown exe
-		else:
-			zCtx.int("Unknown ID " + str(e.id) + " in exe.", prtSubCtxs=False, prtLine=False)
+		unparseExe(zCtx, e, depth)
 
 
 
