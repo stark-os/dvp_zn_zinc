@@ -193,8 +193,10 @@ class scp:
 		sbj.datItms = None #lst[datItm]
 		sbj.parent  = None #scp
 		sbj.dcpIdx  = 0    #next available dcp datItm idx
+		sbj.header  = [] #lst[atm], lst[exe]
+		sbj.footer  = [] #lst[atm], lst[exe]
 
-	def nextDcpDatItm(sbj, Type):
+	def nxtDcpDatItm(sbj, Type):
 		dcpDI = datItm(Type, "D" + str(sbj.dcpIdx), False, None)
 
 		#add to scope directly
@@ -553,7 +555,7 @@ def newFct(name, retType, params, gblScp, methodOf=TYPE_ID__UNKNOWN): #global sc
 	res          = fct()
 	res.name     = name
 	res.retType  = retType
-	res.params   = params
+	res.params   = params #lst[datItm]
 	res.scope    = newScp(parent=gblScp) #create its own independant scope which holds a link to the parent one (that must be "global" btw)
 	res.methodOf = methodOf
 	return res

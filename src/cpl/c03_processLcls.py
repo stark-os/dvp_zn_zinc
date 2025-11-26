@@ -290,13 +290,21 @@ def processForStm(ZCI, scope, tgtFct):
 		if iDIType == TYPE_ID__UNKNOWN:
 			ZCIErr(ZCI, "Value given as limit has no \"len\" field in FOR statement, in function " + tgtFct.name + " (STM_FOR).")
 
-		#update iLimit with ffa call with computed offset
+		#use appropriate "ffa" call, keep the info that this "ffa_get_<fieldTypeID>" must be generated later
+		if iDIType not in ZCI.zCtx.cpl.ffa_fieldTypeIDs:
+			ZCI.zCtx.cpl.ffa_fieldTypeIDs.append(iDIType)
+
+		#update iLimit with "ffa_get" call with computed offset
+		iLimitRef = val(ZCI.zCtx.refType, atm(
+			ATM__CALL,
+			call("frf", [iLimit], ZCI.zCtx.refType)
+		), False)
 		iLimit = val(
 			iDIType,
 			atm(ATM__CALL, call(
-				"ffa", [
-					iLimit,
-					val(ZCI.zCtx.rootTypes[RT__U32], atm(ATM__U32, offset), True),
+				"ffa_get_" + str(iDIType), [
+					iLimitRef,
+					val(ZCI.zCtx.smaxType, atm(ATM__U32, offset), True),
 				], iDIType
 			)),
 			iLimit.Cst
@@ -684,38 +692,26 @@ def c03_processLcls(zCtx):
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
-	#get main fct if existing
+	#main fct existence
 	mainFct = zCtx__getFctFromName(zCtx, "GFmain")
+	if zCtx.cpl.mode == CPL__MODE_EXE and mainFct is None:
+		zCtx.err("Missing \"main\" function to compile as executable.", prtSubCtxs=False, prtLine=False)
+	elif zCtx.cpl.mode == CPL__MODE_SDL and mainFct is not None:
+		zCtx.err("Got a \"main\" function to compile as SDL.", prtSubCtxs=False, prtLine=False)
 
-	#case 1: executable program => focus on main only
-	if zCtx.cpl.mode == CPL__MODE_EXE:
-		if mainFct is None:
-			zCtx.err("Missing \"main\" function to compile as executable.", prtSubCtxs=False, prtLine=False)
+	#process every fct
+	for f in zCtx.cpl.fcts:
+		if f.ext or f.content is None: #ext or already processed
+			continue
+
+		#can't process dcn-dep fcts
+		if f.dcnDep:
+			zCtx.dbg0("Method \"" + f.name + "\" is public but also dcn-dependant => not processing it directly.")
+			continue
 
 		#process fct scope & remove its content ZCIs
-		readLclScp(mainFct.content, mainFct.scope, mainFct)
-		mainFct.content = None
-
-	#case 2: SDL
-	elif zCtx.cpl.mode == CPL__MODE_SDL:
-		for f in zCtx.cpl.fcts:
-
-			#target only public fct and skip LLI or already processed fcts
-			if not f.isPub or f.content is None:
-				continue
-
-			#can only process dcn-independant fcts
-			if f.dcnDep:
-				zCtx.dbg0("Method \"" + f.name + "\" is public but also dcn-dependant => not processing it directly.")
-				continue
-
-			#process fct scope & remove its content ZCIs
-			readLclScp(f.content, f.scope, f)
-			f.content = None
-
-	#unknown cpl mode
-	else:
-		zCtx.int("Unknown compilation mode with id " + str(zCtx.cpl.mode), prtSubCtxs=False, prtLine=False)
+		readLclScp(f.content, f.scope, f)
+		f.content = None
 
 	#debug
 	zCtx.dbg0("===========================================================================")
@@ -724,7 +720,15 @@ def c03_processLcls(zCtx):
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
 
-	#debug output file <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< MAYBE DO SOMETHING
-	#if log_lvl[0] >= LOG__LVL_DBG0:
-	#	prepareDbgDir()
-	#	writeFIle("dbg/" + ..., ...)
+	#debug output file
+	if log_lvl[0] >= LOG__LVL_DBG0:
+		prepareDbgDir()
+
+		#gather gbl scp + fcts
+		output = zCtx.cpl.gblScp.toStr()
+		for f in zCtx.cpl.fcts:
+			if not f.ext:
+				output += f.toStr()
+
+		#write out current res
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c03.dl", output)

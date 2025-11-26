@@ -416,8 +416,8 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 			#sub vals are going to be stored in custom datItms actually
 			rawKeys           = val(subStc1_typeID, atm(ATM__LST_VAL, subVals1), True)
 			rawValuePeers     = val(subStc2_typeID, atm(ATM__LST_VAL, subVals2), True)
-			datItm_keys       = v2i.scope.nextDcpDatItm(subStc1_typeID)
-			datItm_valuePeers = v2i.scope.nextDcpDatItm(subStc2_typeID)
+			datItm_keys       = v2i.scope.nxtDcpDatItm(subStc1_typeID)
+			datItm_valuePeers = v2i.scope.nxtDcpDatItm(subStc2_typeID)
 
 			#then, real sub vals are just other refs to these datItm
 			keys       = val(subStc1_typeID, atm(ATM__DATITM, datItm_keys      ), False)
@@ -425,7 +425,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 			#res val is also going to be stored in a custom datItm actually
 			rawRes     = val(mainStc_typeID, atm(ATM__LST_VAL, [keys, valuePeers]), True)
-			datItm_res = v2i.scope.nextDcpDatItm(mainStc_typeID)
+			datItm_res = v2i.scope.nxtDcpDatItm(mainStc_typeID)
 
 			#then, real res is just another ref to that datItm
 			res = val(mainStc_typeID, atm(ATM__DATITM, datItm_res), False)
@@ -441,7 +441,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 			#res val is going to be stored in a custom datItm actually
 			rawRes     = val(mainStc_typeID, atm(ATM__LST_VAL, subVals1), True)
-			datItm_res = v2i.scope.nextDcpDatItm(mainStc_typeID)
+			datItm_res = v2i.scope.nxtDcpDatItm(mainStc_typeID)
 
 			#then, real res is just another ref to that datItm
 			res = val(mainStc_typeID, atm(ATM__DATITM, datItm_res), False)
@@ -695,13 +695,13 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 				"\n2nd analysis: Cannot find data item " + unpfxMod(modPfx) + undblUnderscores(rawName) + " in current scope or higher" + v2i.ZCIKindIfErr_ending
 			)
 
-		#result
-		res = value(
+		#res
+		res = val(
 			ZCI.zCtx.refType,
 			atm(ATM__CALL, call(
 				"frf",
 				[val(
-				di.Type,
+					di.Type,
 					atm(ATM__DATITM, di),
 					di.Cst
 				)],
@@ -808,13 +808,24 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 				if fieldType == TYPE_ID__UNKNOWN:
 					return ZCIErr_vap2(ZCI, "Structure type " + unpfxTypeName(ZCI.zCtx, stcInst.name)[0] + " has no field \"" + rawName + '\"', v2i)
 
-				#update res with ffa call with computed offset
+				#use appropriate "ffa" call, keep the info that this "ffa_get_<fieldTypeID>" must be generated later
+				if fieldType not in ZCI.zCtx.cpl.ffa_fieldTypeIDs:
+					ZCI.zCtx.cpl.ffa_fieldTypeIDs.append(fieldType)
+
+				#res will be given to "ffa" call as a ref
+				refRes = val(
+					ZCI.zCtx.refType,
+					atm(ATM__CALL, call("frf", [res], ZCI.zCtx.refType)),
+					True
+				)
+
+				#update res with ffa call and computed offset
 				res = val(
 					fieldType,
 					atm(ATM__CALL, call(
-						"ffa", [
-							res,
-							val(ZCI.zCtx.rootTypes[RT__U32], atm(ATM__U32, offset), True)
+						"ffa_get_" + str(fieldType), [
+							refRes,
+							val(ZCI.zCtx.smaxType, atm(ATM__U32, offset), True)
 						], fieldType
 					)),
 					res.Cst

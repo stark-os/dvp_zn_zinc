@@ -23,7 +23,7 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 	peerIdx        = ZCI.pairs[ZCI.ctx.icontent.idx]
 	ZCI.inc()
 	while True:
-		optionalBlanks(ZCI, None)
+		optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 
 		#try reading a name (on a copy) for "NAME = VALUE" notation
 		tmpCopy   = ZCI.copy()
@@ -41,7 +41,7 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 			else:
 				ZCI.forwardAlike(tmpCopy)
 				ZCI.forward(SYM_LENGTHS[SYM__ASG])
-				optionalBlanks(ZCI, "Value after assignment symbol in \"NAME = VALUE\" association (reading value sequence, field " + fieldName + ")" + ZCIKindIfErr_ending)
+				optionalBlanks(ZCI, "value after assignment symbol in \"NAME = VALUE\" association (reading value sequence, field " + fieldName + ")" + ZCIKindIfErr_ending)
 
 		#value empty or simply not given
 		if ZCI.ctx.icontent.idx == peerIdx:
@@ -52,7 +52,7 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 
 		#read value
 		v = readVal(ZCI,
-			"Field VALUE in structure definition" + ZCIKindIfErr_ending,
+			str(givenFieldsIdx+1) + "th field VALUE" + ZCIKindIfErr_ending,
 			scope,
 			cstOnly           = cstOnly,
 			dcnKwLstToReplace = dcnKwLstToReplace
@@ -61,7 +61,7 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 		#solve name if not explicitely given
 		if len(fieldName) == 0:
 			if givenFieldsIdx >= len(tgtFields):
-				ZCIErr(ZCI, "Too much fields given in value sequence (max " + str(len(tgtFields)) + " fields allowed, " + str(givenFieldsIdx) + " given)" + ZCIKindIfErr_ending)
+				ZCIErr(ZCI, "Too much fields given in value sequence (max " + str(len(tgtFields)) + " field allowed, " + str(givenFieldsIdx+1) + " given)" + ZCIKindIfErr_ending)
 
 			#use the next field in logical order
 			fieldName       = tgtFields[givenFieldsIdx].name
@@ -77,7 +77,7 @@ def readValSeq(ZCI, ZCIKindIfErr, tgtFields, scope, cstOnly=False, dcnKwLstToRep
 		givenFields[fieldName] = v
 
 		#must be followed by coma or closing brace
-		optionalBlanks(ZCI, None)
+		optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 		next = ZCI.get()
 		if next in INCLUDERS.values():
 			if ZCI.ctx.icontent.idx != peerIdx:

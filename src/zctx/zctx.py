@@ -44,7 +44,7 @@ def newZCtx(
 	res.rootTypes = [0,0,0,0, 0,0,0,0, 0,0,0,0] #<-- fixed-size table
 
 	#boolean
-	res.rootTypes[RT__BOO] = res.cpl.newTyp("GUboo", size=res.SIZE__U8)
+	res.rootTypes[RT__BOL] = res.cpl.newTyp("GUbol", size=res.SIZE__U8)
 
 	#8bits
 	res.rootTypes[RT__S8] = res.cpl.newTyp("GUs8", size=res.SIZE__U8)
@@ -104,6 +104,7 @@ def newZCtx(
 		datItm(res.smaxType, "dat", False, None)
 	]
 	rawTypeInst.computeStcSize(res.cpl.types)
+	rawTypeInst.dcnCommon.isPub = False
 
 	#stc type
 	#res.stcType = res.cpl.newTyp("GUstc", size=res.smaxSize)

@@ -5,10 +5,14 @@
 # -------- IMPORTATIONS --------
 
 #internal
-from cpl.c01_unmodulize  import *
-from cpl.c02_redirectGbl import *
-from cpl.c03_processLcls import *
-from cpl.c04_unparseAsC  import *
+from cpl.c01_unmodulize          import *
+from cpl.c02_redirectGbl         import *
+from cpl.c03_processLcls         import *
+from cpl.c04_ffaFcts             import *
+from cpl.c05_atm                 import *
+from cpl.c06_toStr               import *
+from cpl.c07_mergeConsecutiveAsg import *
+from cpl.c08_unparseAsC          import *
 
 
 
@@ -19,15 +23,11 @@ from cpl.c04_unparseAsC  import *
 
 #compilation
 def compile(zCtx):
-
-	#step c01
 	c01_unmodulize(zCtx)
-
-	#step c02
 	c02_redirectGbl(zCtx)
-
-	#step c03
 	c03_processLcls(zCtx)
-
-	#step c04
-	c04_unparseAsC(zCtx)
+	c04_ffaFcts(zCtx)
+	c05_atm(zCtx)
+	c06_toStr(zCtx)
+	c07_mergeConsecutiveAsg(zCtx)
+	c08_unparseAsC(zCtx)

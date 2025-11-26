@@ -42,15 +42,10 @@
 				out += "At " + LOG__COLOR_NEUTRAL + ctx.toStr() + '\n'
 
 		#code line
-		i = sbj.ctx.icontent.idx
-		sbj.ctx.reset()
-		while sbj.ctx.icontent.idx != i:
-			sbj.ctx.inc()
 		if prtLine:
 			if sbj.ctx is None:
 				sbj.int("No context to error-output line from.", prtSubCtxs=False, prtLine=False)
 			out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
-			#print("ERR " + str(sbj.ctx.icontent.idx) + "@[" + sbj.ctx.icontent.s[sbj.ctx.icontent.idx-9:sbj.ctx.icontent.idx] + "|" + sbj.ctx.icontent.s[sbj.ctx.icontent.idx]+ "|[" + sbj.ctx.icontent.s[sbj.ctx.icontent.idx+1:sbj.ctx.icontent.idx+10] + "]")
 
 		#msg
 		out += msg

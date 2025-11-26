@@ -39,7 +39,7 @@ STR__OCTAL                 = string.digits[:-2]
 STR__HEXADECIMAL_LOWERCASE = string.hexdigits[:-6]
 
 #local-python version of atm
-ATM__BOO = 0
+ATM__BOL = 0
 ATM__S8  = 1
 ATM__U8  = 2
 ATM__S16 = 3
@@ -94,7 +94,7 @@ class atm:
 			res += d0 + "dat:" + sbj.dat.toStr(depth=depth+1)
 
 		#boolean
-		elif sbj.id == ATM__BOO:
+		elif sbj.id == ATM__BOL:
 			if sbj.dat:
 				res += "dat:true"
 			res += "dat:false"
@@ -128,9 +128,9 @@ class atm:
 
 		#fmaps
 		elif sbj.id == ATM__FMAP_STR_VAL:
-			res += d0 + "dat:{\n"
+			res += d0 + "dat:{"
 			for k in sbj.dat.keys():
-				res += '\"' + k + "\":" + sbj.dat[k].toStr(depth=depth+1) + ',' #recursive call
+				res += '\n' + d0 + TERM__OUTPUT_TAB + '\"' + k + "\":" + sbj.dat[k].toStr(depth=depth+2) + ',' #recursive call
 			res += '\n' + d0 + '}'
 
 		#text

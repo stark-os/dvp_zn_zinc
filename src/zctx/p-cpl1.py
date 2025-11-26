@@ -64,6 +64,9 @@ class cplDat:
 		sbj.mode         = 0
 		sbj.forbidUseRef = 0
 
+		#ffa
+		sbj.ffa_fieldTypeIDs = []
+
 		#program concrete elements
 		sbj.resC    = ""
 		sbj.resFP   = ""

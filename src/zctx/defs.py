@@ -13,6 +13,10 @@ class Step:
 		sbj.C02  = 5
 		sbj.C03  = 6
 		sbj.C04  = 7
+		sbj.C05  = 8
+		sbj.C06  = 9
+		sbj.C07  = 10
+		sbj.C08  = 11
 STEP = Step()
 
 #general name parsing
@@ -22,14 +26,14 @@ NOTHING_AFTER_NAME = -3
 
 #root types
 ROOT_TYPES = (
-	"boo",
+	"bol",
 	"s8",  "u8",
 	"s16", "u16",
 	"s32", "u32",
 	"s64", "u64",
 	"f32", "f64"
 )
-RT__BOO = 0 #enm #for indexing in zCtx.rootTypes
+RT__BOL = 0 #enm #for indexing in zCtx.rootTypes
 RT__S8  = 1
 RT__U8  = 2
 RT__S16 = 3
@@ -149,6 +153,9 @@ CO = (
 )
 IO_AMONG     = (SYM__IAM, SYM__INA)
 MONO_OPERAND = SO + (SYM__FSZ, SYM__FRF)
+
+#shortcut notation allowed
+SHORTCUT_OPES = AO + BO + LO
 
 #operator names in DCL_FCT
 OPERATOR_FCTNAME2SYMBOL = {
@@ -279,6 +286,10 @@ CPL_OPT__ALLOWED = {
 PCPL__NAME_CHARSET                  = DEFAULT_NAME_CHARSET #no link, but same value
 PCPL__DIRECTIVES_MAX_COMPLEXITY     = 10
 PCPL__DIRECTIVES_MAX_COMPLEXITY_KEY = "DIRECTIVES_MAX_COMPLEXITY_LEVEL"
+
+#complexity require better output
+TERM__OUTPUT_TAB = '|  '
+RES__OUTPUT_TAB  = '   ' #res code however, require real blanks
 
 
 

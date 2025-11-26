@@ -191,7 +191,7 @@ class ParsingCtx:
 		positionIndicator += '^'
 
 		#print position indicator
-		return concernedLine + positionIndicator
+		return concernedLine + '\n' + positionIndicator
 
 
 

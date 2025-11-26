@@ -546,19 +546,21 @@ def processAsg(ZCI, scope, tgtFct, dstVal):
 	#read src value to be assigned
 	srcVal = readVal(ZCI, "source value in assignment" + scpTxt + " (ASG_ASG).", scope, cstOnly=cstOnly)
 
-	#special case: asg to a field => turn into "ffa_asg" VFC
+	#special case: asg to a field
 	if dstVal.vdat.id == ATM__CALL:
-		if dstVal.vdat.dat.name != "ffa":
+
+		#no real call allowed
+		if not dstVal.vdat.dat.name.startswith("ffa_get_"):
 			ZCIErr(ZCI, "Invalid destination " + dstVal.toStr() + " to assign value " + scpTxt + " (Expected a data item value, VFC_VFC).")
-		processVFC(ZCI, scope, tgtFct, val(
-			dstVal.Type,
-			atm(ATM__CALL, call(
-				"ffa_asg",
-				[dstVal, srcVal],
-				dstVal.Type
-			)),
-			False
-		))
+
+		#slightly changing the call "ffa_get_X(r, offset)" => "ffa_set_X(r, offset, srcVal)"
+		c         = dstVal.vdat.dat
+		c.name    = "ffa_set_" + c.name[8:] #in Z: "c.name[4] = 's'" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		c.retType = TYPE_ID__UNKNOWN
+		c.paramVals.append(srcVal)
+
+		#now it can be processed as regular VFC
+		processVFC(ZCI, scope, tgtFct, dstVal)
 		return
 
 	#regular case: dst val must be a DAT ITM to be able to store in it
@@ -640,7 +642,7 @@ def processVFC(ZCI, scope, tgtFct, v):
 
 	#call => OK, add it to scope
 	if v.vdat.id == ATM__CALL:
-		if v.vdat.dat.name in ("ffa", "frf"): #these are not real fcts, makes no sens to call them as VFC
+		if v.vdat.dat.name.startswith("ffa_get_") or v.vdat.dat.name.startswith("frf"): #these are not real fcts, makes no sens to call them as VFC
 			ZCIErr(ZCI, "Invalid ZCS, unknown ZCI given" + scpTxt + " (Expected function call, VFC_VFC).")
 		scope.exes.append(v.vdat)
 
@@ -716,12 +718,14 @@ def c02_redirectGbl(zCtx):
 				atm(ATM__S8, hex_toS8(hs[2*c], hs[2*c+1]) ),
 				True
 			))
-		zCtx.cpl.gblScp.datItms.append(datItm(
+
+		#add datItm dcl
+		di = datItm(zCtx.rawType, "GE__" + str(i), True, val(
 			zCtx.rawType,
-			"GE__" + str(i),
-			True,
-			val(zCtx.rawType, atm(ATM__LST_VAL, seq), True)
+			atm(ATM__LST_VAL, seq),
+			True
 		))
+		zCtx.cpl.gblScp.datItms.append(di)
 
 	#manually set resource access
 	manualAccess_set   = False
@@ -877,4 +881,12 @@ def c02_redirectGbl(zCtx):
 	#debug output file
 	if log_lvl[0] >= LOG__LVL_DBG0:
 		prepareDbgDir()
-		dumpZCIs(zCtx.ZCIs, "dbg/" + path_name(zCtx.initialCtx.filename) + ".c01.dl", oneLine=False)
+
+		#gather gbl scp + fcts
+		output = zCtx.cpl.gblScp.toStr()
+		for f in zCtx.cpl.fcts:
+			if not f.ext:
+				output += f.toStr()
+
+		#write out current res
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c02.dl", output)

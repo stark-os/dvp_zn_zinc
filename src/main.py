@@ -43,7 +43,7 @@ def main():
 	filepath = sys.argv[1]
 
 	#prepare output filename
-	outputFilename = path_name(os.path.basename(filepath)) + ".nc"
+	outputFilename = path_name(os.path.basename(filepath)) + ".n"
 
 	#z code context
 	zCtx = newZCtx(
@@ -62,7 +62,11 @@ def main():
 			LOG__LVL_INF, #C01
 			LOG__LVL_INF, #C02
 			LOG__LVL_INF, #C03
-			LOG__LVL_INF  #C04
+			LOG__LVL_INF, #C04
+			LOG__LVL_INF, #C05
+			LOG__LVL_INF, #C06
+			LOG__LVL_INF, #C07
+			LOG__LVL_INF  #C08
 		), stepByStep = False
 	)
 
