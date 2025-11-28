@@ -43,7 +43,7 @@ def main():
 	filepath = sys.argv[1]
 
 	#prepare output filename
-	outputFilename = path_name(os.path.basename(filepath)) + ".n"
+	outputFilename = path_name(os.path.basename(filepath)) + ".c"
 
 	#z code context
 	zCtx = newZCtx(
@@ -51,7 +51,7 @@ def main():
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
 		config.read(CXD + "/../cfg/pcpl_itm.cfg", comment_character='%', additionnalSpacesAllowed=False),
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
-		CPL__MODE_SDL | CPL__USE_REF_ALLOWED,
+		CPL__TGT_SDL | CPL__MODE_N,
 
 		#debug
 		log_lvls = (

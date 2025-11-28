@@ -72,7 +72,7 @@ def readType(ZCI,
 			ZCIErr(ZCI, "Generic \"dcn\" keyword is not allowed in type here" + ZCIKindIfErr_ending)
 
 	#ref & raw types
-	elif ZCI.zCtx.cpl.forbidUseRef:
+	elif ZCI.zCtx.cpl.mode == CPL__MODE_Z:
 		if tID == ZCI.zCtx.refType:
 			ZCIErr(ZCI, "Use of \"ref\" type is not allowed in current compilation mode" + ZCIKindIfErr_ending)
 		if tID == ZCI.zCtx.rawType:

@@ -17,7 +17,6 @@ class Step:
 		sbj.C06  = 9
 		sbj.C07  = 10
 		sbj.C08  = 11
-		sbj.C09  = 12
 STEP = Step()
 
 #general name parsing
@@ -256,12 +255,12 @@ JMP__CTN = 1
 JMP__RET = 2
 
 #cpl info
-CPL__MODE_EXE  = 0
-CPL__MODE_SDL  = 1
-CPL__MODE_MASK = 1
-CPL__USE_REF_ALLOWED   = 0
-CPL__USE_REF_FORBIDDEN = 2
-CPL__USE_REF_MASK      = 2
+CPL__TGT_EXE   = 0
+CPL__TGT_SDL   = 1
+CPL__TGT_MASK  = 1
+CPL__MODE_N    = 0
+CPL__MODE_Z    = 2
+CPL__MODE_MASK = 2
 
 #cpl opt set
 CPL_OPT__VALUES__ARCH  = 0 #architecture type
@@ -272,6 +271,7 @@ CPL_OPT__VALUES__RTYPE = 4 #root type
 CPL_OPT__ALLOWED = {
 	"ARCH":                         CPL_OPT__VALUES__ARCH,
 	"DEFAULT_ACCESS_PUB":           CPL_OPT__VALUES__ONOFF,
+	"ATM_GENERATED_CONTENT":        CPL_OPT__VALUES__ONOFF,
 	"COMMON_STC_SHORTCUTS":         CPL_OPT__VALUES__ONOFF,
 	"MAX_INSTRUCTS_NOFCT":          CPL_OPT__VALUES__DIGIT,
 	"CHECK_NULL_STC_BEFORE_METHOD": CPL_OPT__VALUES__ONOFF,

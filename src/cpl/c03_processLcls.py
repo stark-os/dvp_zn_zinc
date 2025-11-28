@@ -111,7 +111,7 @@ def processElfStm(ZCI, scope, tgtFct):
 
 	#add elf as regular IF, inside the deepestPrevIf elsScope
 	deepestPrevIf.elsScope = newScp(parent=deepestPrevIfScope)
-	deepestPrevIf.elsScope.exes.append(i)
+	deepestPrevIf.elsScope.exes.append(atm(ATM__STM_IF, i))
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "ELF statement, in function " + tgtFct.name + " (STM_IF_).")
@@ -736,9 +736,9 @@ def c03_processLcls(zCtx):
 
 	#main fct existence
 	mainFct = zCtx__getFctFromName(zCtx, "GFmain")
-	if zCtx.cpl.mode == CPL__MODE_EXE and mainFct is None:
+	if zCtx.cpl.tgt == CPL__TGT_EXE and mainFct is None:
 		zCtx.err("Missing \"main\" function to compile as executable.", prtSubCtxs=False, prtLine=False)
-	elif zCtx.cpl.mode == CPL__MODE_SDL and mainFct is not None:
+	elif zCtx.cpl.tgt == CPL__TGT_SDL and mainFct is not None:
 		zCtx.err("Got a \"main\" function to compile as SDL.", prtSubCtxs=False, prtLine=False)
 
 	#process every fct

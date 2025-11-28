@@ -438,11 +438,11 @@ def unparseScope(zCtx, scope, depth=1, skipFirstDIs=0):
 # -------- EXECUTION --------
 
 #main
-def c09_unparseAsC(zCtx):
-	zCtx.updateLogLvl(STEP.C09)
+def c08_unparseAsC(zCtx):
+	zCtx.updateLogLvl(STEP.C08)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("========================== C09 UNPARSE AS C : beginning =========================")
+	zCtx.dbg0("========================== C08 UNPARSE AS C : beginning =========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -493,7 +493,7 @@ def c09_unparseAsC(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================== C09 UNPARSE AS C : end =========================")
+	zCtx.dbg0("========================== C08 UNPARSE AS C : end =========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()

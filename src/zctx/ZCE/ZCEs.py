@@ -437,7 +437,7 @@ class stm_if:
 		#toStr
 		res  = "\n" + d + "_:\"if\"\n"
 		res += d + "cond:" + sbj.cond.toStr(depth=depth+1) + "\n"
-		res += d + "ifScope:" + sbj.ifScope.toStr(depth=depth+1)
+		res += d + "ifScope:" + sbj.ifScope.toStr(depth=depth+1) + "\n"
 		res += d + "elsScope:" + str_elsScope
 		return res
 

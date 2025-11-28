@@ -15,11 +15,11 @@ from zctx import *
 # -------- EXECUTION --------
 
 #main
-def c07_mergeConsecutiveAsg(zCtx):
-	zCtx.updateLogLvl(STEP.C07)
+def c06_mergeConsecutiveAsg(zCtx):
+	zCtx.updateLogLvl(STEP.C06)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("====================== C07 MERGE CONSECUTIVE ASG : beginning ====================")
+	zCtx.dbg0("====================== C06 MERGE CONSECUTIVE ASG : beginning ====================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -46,7 +46,7 @@ def c07_mergeConsecutiveAsg(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("====================== C07 MERGE CONSECUTIVE ASG : end ====================")
+	zCtx.dbg0("====================== C06 MERGE CONSECUTIVE ASG : end ====================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
@@ -62,4 +62,4 @@ def c07_mergeConsecutiveAsg(zCtx):
 				output += f.toStr()
 
 		#write out current res
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c07.dl", output)
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c06.dl", output)

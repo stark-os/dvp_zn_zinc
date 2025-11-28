@@ -112,6 +112,19 @@ def newZCtx(
 	#init root stcs
 	#res.rootStcTypes = zCtx__addRootStcs(res) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< let's say they must be given by user
 
+	#atm type
+	res.atmType = TYPE_ID__UNKNOWN
+	if cpl_info | CPL__MODE_MASK == CPL__MODE_Z and cpl_opt['ATM_GENERATED_CONTENT'] == "ON":
+		res.atmType                  = res.cpl.newTyp("GUatm")
+		atmTypeInst                  = res.getTypeInstanceFromID(res.atmType)
+		atmTypeInst.dcnCommon.nature = NATURE__STC
+		atmTypeInst.dcnCommon.fields = [
+			datItm(res.smaxType, "id", False, None),
+			datItm(res.refType, "dat", False, None)
+		]
+		atmTypeInst.computeStcSize(res.cpl.types)
+		atmTypeInst.dcnCommon.isPub = False
+
 	#dcn related
 	res.dcnDegMax   = int(cpl_opt["DCN_NBR_MAX"])
 	res.gncDcnType  = res.cpl.newTyp("GUdcn")
@@ -152,6 +165,7 @@ class zctx:
 		sbj.rawType      = 0
 		#sbj.stcType      = None
 		#sbj.rootStcTypes = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< let's say they must be given by user
+		sbj.atmType      = 0
 
 		#dcn related
 		sbj.gncDcnType  = 0

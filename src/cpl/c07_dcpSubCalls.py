@@ -30,11 +30,11 @@ def dcpSubCalls(zCtx, c, scope):
 # -------- EXECUTION --------
 
 #main
-def c08_dcpSubCalls(zCtx):
-	zCtx.updateLogLvl(STEP.C08)
+def c07_dcpSubCalls(zCtx):
+	zCtx.updateLogLvl(STEP.C07)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("========================== C08 DCP SUB CALLS : beginning ========================")
+	zCtx.dbg0("========================== C07 DCP SUB CALLS : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -56,7 +56,7 @@ def c08_dcpSubCalls(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================== C08 UNPARSE AS C : end =========================")
+	zCtx.dbg0("========================== C07 UNPARSE AS C : end =========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
@@ -66,4 +66,4 @@ def c08_dcpSubCalls(zCtx):
 		prepareDbgDir()
 
 		#write out current res
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c08.dl", output)
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c07.dl", output)

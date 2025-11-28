@@ -676,7 +676,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 
 	#case 2: reference (FRF)
 	if starter == '@':
-		if ZCI.zCtx.cpl.forbidUseRef:
+		if ZCI.zCtx.cpl.mode == CPL__MODE_Z:
 			return ZCIErr_vap2(ZCI, "Reference operator (FRF) is forbiden", v2i)
 		ZCIDbg1(ZCI, "2nd analysis: Processing FRF operator.")
 		ZCI.inc()

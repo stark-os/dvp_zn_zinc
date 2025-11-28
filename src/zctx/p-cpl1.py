@@ -61,8 +61,8 @@ class cplDat:
 		sbj.lnkLibs  = None #lst[]
 
 		#general info
-		sbj.mode         = 0
-		sbj.forbidUseRef = 0
+		sbj.tgt  = 0
+		sbj.mode = 0
 
 		#ffa
 		sbj.ffa_fieldTypeIDs = []
@@ -92,10 +92,10 @@ class cplDat:
 		return typeIdx
 
 def newCplDat(opts, info):
-	res              = cplDat()
-	res.opts         = opts
-	res.mode         = info & CPL__MODE_MASK
-	res.forbidUseRef = info & CPL__USE_REF_MASK
+	res      = cplDat()
+	res.opts = opts
+	res.tgt  = info & CPL__TGT_MASK
+	res.mode = info & CPL__MODE_MASK
 
 	#z abstract elements
 	res.modPfxes = [] #lst[str]

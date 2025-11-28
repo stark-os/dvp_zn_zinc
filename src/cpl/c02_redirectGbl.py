@@ -170,6 +170,57 @@ def processTypeDcl(ZCI, isPub):
 		newTypeInst.dcnCommon.fields = parentInst.dcnCommon.fields
 		newTypeInst.dcnCommon.parent = parentID
 
+	#atm related gen
+	if ZCI.zCtx.cpl.mode == CPL__MODE_Z and ZCI.zCtx.cpl.opts['ATM_GENERATED_CONTENT'] == "ON":
+		ZCIDbg0(ZCI, "Generating ATM related content.", prtLine=False)
+
+		#create ATM ID cst
+		atmID_val = val(ZCI.zCtx.smaxType, atm(ATM__S64, newTypeID), True)
+		atmID_DI  = datItm(
+			ZCI.zCtx.smaxType,
+			"MAtm_" + ZCI.modPfx + "E" + rawName,
+			True,
+			atmID_val
+		)
+		atmID_DI.isPub = True
+		ZCI.zCtx.cpl.gblScp.datItms.append(atmID_DI)
+
+		#create a param "e" for toAtm method
+		toAtm_paramE     = datItm(newTypeID, "Le", False, None)
+		toAtm_paramE_val = val(newTypeID, atm(ATM__DATITM, toAtm_paramE), False)
+
+		#create toAtm method
+		toAtm_fct    = newFct(
+			"GT" + fullName + "_FtoAtm",
+			newTypeID,
+			[toAtm_paramE],
+			ZCI.zCtx.cpl.gblScp,
+			methodOf=newTypeID
+		)
+		ZCI.zCtx.cpl.fcts.append(toAtm_fct)
+
+		#process val "@e"
+		refE = val(
+			ZCI.zCtx.refType,
+			atm(ATM__CALL, call("frf", [paramE_val], ZCI.zCtx.refType)),
+			False
+		)
+
+		#add fct content directly processed "ret atm{ id=^Atm.type, dat=@e }"
+		toAtm_fct.scope.datItms.append(toAtm_paramE)
+		toAtm_fct.scope.exes.append(atm(
+			ATM__JMP,
+			jmp(JMP__RET, retVal=val(
+				ZCI.zCtx.atmType,
+				atm(ATM__FMAP_STR_VAL, {
+					'id' : atmID_val,
+					'dat': refE
+				}),
+				False
+			))
+		))
+		ZCIDbg0(ZCI, "Generated ATM related content.", prtLine=False)
+
 	#end of ZCI expected
 	endOfZCI(ZCI, "type declaration ZCI (DCL_TYP).")
 	ZCIDbg0(ZCI, "Type declaration " + newTypeInst.name + " processed.", prtLine=False)
