@@ -31,7 +31,7 @@ def unparseType(zCtx, tID):
 		return
 
 	#beginning
-	zCtx.dbg0("Unparsing TYP DCL " + tInst.name, prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsing TYP DCL " + tInst.name)
 	typDcl    = ""
 	typDcl_fp = 't' + tInst.name + '\t'
 
@@ -69,13 +69,13 @@ def unparseType(zCtx, tID):
 
 	#end
 	zCtx.cpl.resC += typDcl
-	zCtx.dbg0("Unparsed TYP DCL.", prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsed TYP DCL.")
 
 
 
 #value
 def unparseVal(zCtx, v, depth, casht=False):
-	zCtx.dbg0("Unparsing VAL " + v.toStr(depth=1), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsing VAL " + v.toStr(depth=1))
 
 	#cast res
 	if casht:
@@ -124,13 +124,13 @@ def unparseVal(zCtx, v, depth, casht=False):
 	#end
 	if casht:
 		zCtx.cpl.resC += ')'
-	zCtx.dbg0("Unparsed VAL.", prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsed VAL.")
 
 
 
 #datItm
 def unparseDatDcl(zCtx, di, depth, begEnd=True):
-	zCtx.dbg0("Unparsing DAT DCL " + di.toStr(depth=1), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsing DAT DCL " + di.toStr(depth=1))
 	d   = RES__OUTPUT_TAB * depth
 	dcl = ""
 
@@ -174,13 +174,13 @@ def unparseDatDcl(zCtx, di, depth, begEnd=True):
 	#end mark
 	if begEnd:
 		zCtx.cpl.resC += ";\n"
-	zCtx.dbg0("Unparsed DAT DCL.", prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsed DAT DCL.")
 
 
 
 #asg
 def unparseAsg(zCtx, a, depth, begEnd=True):
-	zCtx.dbg0("Unparsing ASG " + a.toStr(depth=1), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsing ASG " + a.toStr(depth=1))
 	d = RES__OUTPUT_TAB * depth
 
 	#beg mark (shift)
@@ -195,7 +195,7 @@ def unparseAsg(zCtx, a, depth, begEnd=True):
 	#end mark
 	if begEnd:
 		zCtx.cpl.resC += ";\n"
-	zCtx.dbg0("Unparsed ASG.", prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsed ASG.")
 
 
 
@@ -205,7 +205,7 @@ def unparseStmIf(zCtx, i, depth, begEnd=True):
 		sbj.int("Got IF STM in gbl scp.", prtSubCtxs=False, prtLine=False)
 
 	#"if(cond){scp}else if(cond){scp}else{scp}"
-	zCtx.dbg0("Unparsing IF " + i.toStr(depth=1), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsing IF " + i.toStr(depth=1))
 	d = RES__OUTPUT_TAB * depth
 
 	#beg mark (shift)
@@ -213,58 +213,15 @@ def unparseStmIf(zCtx, i, depth, begEnd=True):
 		zCtx.cpl.resC += d
 
 	#conditional blocks
-	c = 0
-	while c < len(i.conds):
-		zCtx.cpl.resC += "if("
-		unparseVal(zCtx, i.conds[c], depth+1)
-		zCtx.cpl.resC += "){\n"
-		unparseScope(zCtx, i.scopes[c], depth=depth+1)
-		zCtx.cpl.resC += d + "}else "
-		c += 1
-
-	#els block
-	if len(i.scopes) > len(i.conds):
-		zCtx.cpl.resC += "{\n"
-		unparseScope(zCtx, i.scopes[c], depth=depth+1)
-		zCtx.cpl.resC += d + "}\n"
-	else:
-		zCtx.cpl.resC = str_sub(zCtx.cpl.resC, stop=-6) + '\n'
-	zCtx.dbg0("Unparsed IF.", prtSubCtxs=False, prtLine=False)
-
-
-
-#for
-def unparseStmFor(zCtx, f, depth, begEnd=True):
-	if depth == 0:
-		sbj.int("Got IF STM in gbl scp.", prtSubCtxs=False, prtLine=False)
-
-	#"for(iterDIType iterDIName=iterDIInitVal; iterCond; iterOpe){scp}"
-	zCtx.dbg0("Unparsing FOR " + f.toStr(depth=1), prtSubCtxs=False, prtLine=False)
-	d = RES__OUTPUT_TAB * depth
-
-	#beg mark (shift)
-	if begEnd:
-		zCtx.cpl.resC += d
-	zCtx.cpl.resC += "for("
-
-	#iterDI
-	iterDITypeName = zCtx.getTypeNameFromID(f.iterDatItm.Type)
-	zCtx.cpl.resC += iterDITypeName + ' ' + f.iterDatItm.name + '='
-	unparseVal(zCtx, f.iterDatItm.initVal, depth+1)
-	zCtx.cpl.resC += ';'
-
-	#iterCond
-	unparseVal(zCtx, f.iterCond, depth+1)
-	zCtx.cpl.resC += ';'
-
-	#iterExe
-	unparseExe(zCtx, f.iterExe, depth+1, begEnd=False)
+	zCtx.cpl.resC += "if("
+	unparseVal(zCtx, i.cond, depth+1)
 	zCtx.cpl.resC += "){\n"
-
-	#scope
-	unparseScope(zCtx, f.scope, depth=depth+1)
+	unparseScope(zCtx, i.ifScope, depth=depth+1)
+	if i.elsScope is not None:
+		zCtx.cpl.resC += d + "}else{\n"
+		unparseScope(zCtx, i.elsScope, depth=depth+1)
 	zCtx.cpl.resC += d + "}\n"
-	zCtx.dbg0("Unparsed FOR.", prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsed IF.")
 
 
 
@@ -274,7 +231,7 @@ def unparseStmWhi(zCtx, w, depth, begEnd=True):
 		sbj.int("Got SWI STM in gbl scp.", prtSubCtxs=False, prtLine=False)
 
 	#"while(cond){scp}"
-	zCtx.dbg0("Unparsing WHI " + w.toStr(depth=1), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsing WHI " + w.toStr(depth=1))
 	d = RES__OUTPUT_TAB * depth
 
 	#beg mark (shift)
@@ -289,7 +246,7 @@ def unparseStmWhi(zCtx, w, depth, begEnd=True):
 	#scope
 	unparseScope(zCtx, w.scope, depth=depth+1)
 	zCtx.cpl.resC += d + "}\n"
-	zCtx.dbg0("Unparsed WHI.", prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsed WHI.")
 
 
 
@@ -299,7 +256,7 @@ def unparseStmSwi(zCtx, s, depth, begEnd=True):
 		sbj.int("Got SWI STM in gbl scp.", prtSubCtxs=False, prtLine=False)
 
 	#"switch(){case c1val:{scp} c2val:{scp} def:{}}"
-	zCtx.dbg0("Unparsing SWI " + s.toStr(depth=1), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsing SWI " + s.toStr(depth=1))
 	d   = RES__OUTPUT_TAB * depth
 	dp1 = d + RES__OUTPUT_TAB
 
@@ -328,7 +285,7 @@ def unparseStmSwi(zCtx, s, depth, begEnd=True):
 		unparseScope(zCtx, s.scopes[c], depth=depth+2)
 		zCtx.cpl.resC += dp1 + "}\n"
 	zCtx.cpl.resC = d + "}\n"
-	zCtx.dbg0("Unparsed SWI.", prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsed SWI.")
 
 
 
@@ -338,7 +295,7 @@ def unparseJmp(zCtx, j, depth, begEnd=True):
 		sbj.int("Got JMP in gbl scp.", prtSubCtxs=False, prtLine=False)
 
 	#"break;", "continue;", "return ;", "return val;"
-	zCtx.dbg0("Unparsing JMP " + j.toStr(depth=1), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsing JMP " + j.toStr(depth=1))
 	d = RES__OUTPUT_TAB * depth
 
 	#beg mark (shift)
@@ -358,7 +315,7 @@ def unparseJmp(zCtx, j, depth, begEnd=True):
 	#end mark
 	if begEnd:
 		zCtx.cpl.resC += ";\n"
-	zCtx.dbg0("Unparsed JMP.", prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsed JMP.")
 
 
 
@@ -366,7 +323,7 @@ def unparseJmp(zCtx, j, depth, begEnd=True):
 def unparseCall(zCtx, c, depth, begEnd=True):
 
 	#"name(p1,p2...);"
-	zCtx.dbg0("Unparsing CALL " + c.toStr(depth=1), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsing CALL " + c.toStr(depth=1))
 	d = RES__OUTPUT_TAB * depth
 
 	#beg mark (shift)
@@ -390,13 +347,13 @@ def unparseCall(zCtx, c, depth, begEnd=True):
 	#end mark
 	if begEnd:
 		zCtx.cpl.resC += ";\n"
-	zCtx.dbg0("Unparsed CALL.", prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsed CALL.")
 
 
 
 #fct
 def unparseFctHeader(zCtx, f):
-	zCtx.dbg0("Unparsing FCT HEADER of " + f.toStr(depth=1), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsing FCT HEADER of " + f.toStr(depth=1))
 	header = ""
 
 	#retType
@@ -430,7 +387,7 @@ def unparseFctHeader(zCtx, f):
 		#prv
 		else:
 			header = "static " + header
-	zCtx.dbg0("Unparsed FCT HEADER.", prtSubCtxs=False, prtLine=False)
+	zCtx.dbg0("Unparsed FCT HEADER.")
 	return header
 
 
@@ -446,8 +403,6 @@ def unparseExe(zCtx, e, depth, begEnd=True):
 		unparseAsg(zCtx, e.dat, depth, begEnd=begEnd)
 	elif e.id == ATM__STM_IF:
 		unparseStmIf(zCtx, e.dat, depth, begEnd=begEnd)
-	elif e.id == ATM__STM_FOR:
-		unparseStmFor(zCtx, e.dat, depth, begEnd=begEnd)
 	elif e.id == ATM__STM_WHI:
 		unparseStmWhi(zCtx, e.dat, depth, begEnd=begEnd)
 	elif e.id == ATM__STM_SWI:
@@ -483,11 +438,11 @@ def unparseScope(zCtx, scope, depth=1, skipFirstDIs=0):
 # -------- EXECUTION --------
 
 #main
-def c08_unparseAsC(zCtx):
-	zCtx.updateLogLvl(STEP.C08)
+def c09_unparseAsC(zCtx):
+	zCtx.updateLogLvl(STEP.C09)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("========================== C08 UNPARSE AS C : beginning =========================")
+	zCtx.dbg0("========================== C09 UNPARSE AS C : beginning =========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -538,7 +493,7 @@ def c08_unparseAsC(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================== C08 UNPARSE AS C : end =========================")
+	zCtx.dbg0("========================== C09 UNPARSE AS C : end =========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()

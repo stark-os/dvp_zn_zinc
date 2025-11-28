@@ -21,10 +21,9 @@ def processIfStm(ZCI, scope, tgtFct):
 	optionalBlanks(ZCI, None)
 
 	#read condition
-	res = stm_if()
-	v   = readVal(ZCI, "condition in IF statement (STM_IF_).", scope)
-	res.conds.append(v)
-	ZCIDbg1(ZCI, "Added IF statement condition: " + v.toStr())
+	res      = stm_if()
+	res.cond = readVal(ZCI, "condition in IF statement (STM_IF_).", scope)
+	ZCIDbg1(ZCI, "Added IF statement condition: " + res.cond.toStr())
 
 	#read following includer
 	optionalBlanks(ZCI, None)
@@ -43,15 +42,14 @@ def processIfStm(ZCI, scope, tgtFct):
 	ZCIDbg1(ZCI, "End of extraction of IF statement sub-scope.")
 
 	#parse them as inner sub-scp (lcl)
-	subScp = newScp(parent=scope)
-	readLclScp(subScpZCIs, subScp, tgtFct)
-	res.scopes.append(subScp)
+	res.ifScope = newScp(parent=scope)
+	readLclScp(subScpZCIs, res.ifScope, tgtFct)
 
 	#add statement
 	scope.exes.append( atm(ATM__STM_IF, res) )
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "if statement, in function " + tgtFct.name + " (STM_IF_).")
+	endOfZCI(ZCI, "IF statement, in function " + tgtFct.name + " (STM_IF_).")
 	ZCIDbg0(ZCI, "Processed IF STM in function " + tgtFct.name + ": " + res.toStr())
 	ZCI.dbgPause()
 
@@ -68,14 +66,28 @@ def processElfStm(ZCI, scope, tgtFct):
 	if lastExeID != ATM__STM_IF:
 		ZCIErr(ZCI, "Found lonely \"elf\" keyword, it must be following an IF/ELF statement, in function" + tgtFct.name + " (STM_IF_).")
 
-	#els keyword already detected
-	if len(lastExe.dat.scopes) > len(lastExe.dat.conds):
-		ZCIErr(ZCI, "Found \"elf\" keyword after \"els\", makes no sens in IF/ELF/ELS statement, in function" + tgtFct.name + " (STM_IF_).")
+	#find the deepest elf processed before
+	deepestPrevIf      = lastExe.dat
+	deepestPrevIfScope = scope
+	while True:
+
+		#no els processed at all => can add elf
+		if deepestPrevIf.elsScope is None:
+			break
+
+		#followed by an elf => let's see deeper
+		if len(deepestPrevIf.elScope.exes) == 1 and deepestPrevIf.elsScope.exes[0].id == ATM__STM_IF: #each elf processing results into 1 exe in elsScope => more or less means "els" has been processed instead
+			deepestPrevIf      = deepestPrevIf.elsScope.exes[0].dat
+			deepestPrevIfScope = deepestPrevIf.elsScope
+
+		#els keyword already detected
+		else:
+			ZCIErr(ZCI, "Found \"elf\" keyword after \"els\", makes no sens in IF/ELF/ELS statement, in function" + tgtFct.name + " (STM_IF_).")
 
 	#read condition
-	v   = readVal(ZCI, "condition in ELF statement (STM_IF_).", scope)
-	lastExe.dat.conds.append(v)
-	ZCIDbg1(ZCI, "Added ELF statement condition: " + v.toStr())
+	i      = stm_if()
+	i.cond = readVal(ZCI, "condition in ELF statement (STM_IF_).", deepestPrevIfScope)
+	ZCIDbg1(ZCI, "Added ELF statement condition: " + i.cond.toStr())
 
 	#read following includer
 	optionalBlanks(ZCI, None)
@@ -94,13 +106,16 @@ def processElfStm(ZCI, scope, tgtFct):
 	ZCIDbg1(ZCI, "End of extraction of ELF statement sub-scope.")
 
 	#parse them as inner sub-scp (lcl)
-	subScp = newScp(parent=scope)
-	readLclScp(subScpZCIs, subScp, tgtFct)
-	lastExe.dat.scopes.append(subScp)
+	i.ifScope = newScp(parent=deepestPrevIfScope)
+	readLclScp(subScpZCIs, i.ifScope, tgtFct)
+
+	#add elf as regular IF, inside the deepestPrevIf elsScope
+	deepestPrevIf.elsScope = newScp(parent=deepestPrevIfScope)
+	deepestPrevIf.elsScope.exes.append(i)
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "elf statement, in function " + tgtFct.name + " (STM_IF_).")
-	ZCIDbg0(ZCI, "Processed ELF STM in function " + tgtFct.name + ": " + lastExe.toStr())
+	endOfZCI(ZCI, "ELF statement, in function " + tgtFct.name + " (STM_IF_).")
+	ZCIDbg0(ZCI, "Processed ELF STM in function " + tgtFct.name + ": " + i.toStr())
 	ZCI.dbgPause()
 
 def processElsStm(ZCI, scope, tgtFct):
@@ -116,9 +131,23 @@ def processElsStm(ZCI, scope, tgtFct):
 	if lastExeID != ATM__STM_IF:
 		ZCIErr(ZCI, "Found lonely \"els\" keyword, it must be following an IF/ELF statement, in function" + tgtFct.name + " (STM_IF_).")
 
-	#els keyword already detected
-	if len(lastExe.dat.scopes) > len(lastExe.dat.conds):
-		ZCIErr(ZCI, "Found \"els\" keyword after another \"els\", makes no sens in IF/ELF/ELS statement, in function" + tgtFct.name + " (STM_IF_).")
+	#find the deepest elf processed before
+	deepestPrevIf      = lastExe.dat
+	deepestPrevIfScope = scope
+	while True:
+
+		#no els processed at all => can add one
+		if deepestPrevIf.elsScope is None:
+			break
+
+		#followed by an elf => let's see deeper
+		if len(deepestPrevIf.elScope.exes) == 1 and deepestPrevIf.elsScope.exes[0].id == ATM__STM_IF: #each elf processing results into 1 exe in elsScope => more or less means "els" has been processed instead
+			deepestPrevIf      = deepestPrevIf.elsScope.exes[0].dat
+			deepestPrevIfScope = deepestPrevIf.elsScope
+
+		#els keyword already detected
+		else:
+			ZCIErr(ZCI, "Found \"els\" keyword after another \"els\", makes no sens in IF/ELF/ELS statement, in function" + tgtFct.name + " (STM_IF_).")
 
 	#read following includer
 	optionalBlanks(ZCI, None)
@@ -136,14 +165,13 @@ def processElsStm(ZCI, scope, tgtFct):
 	)
 	ZCIDbg1(ZCI, "End of extraction of ELS statement sub-scope.")
 
-	#parse them as inner sub-scp (lcl)
-	subScp = newScp(parent=scope)
-	readLclScp(subScpZCIs, subScp, tgtFct)
-	lastExe.dat.scopes.append(subScp)
+	#parse them directly in the deepest els scope (lcl)
+	deepestPrevIf.elsScope = newScp(parent=deepestPrevIfScope)
+	readLclScp(subScpZCIs, deepestPrevIf.elsScope, tgtFct)
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "els statement, in function " + tgtFct.name + " (STM_IF_).")
-	ZCIDbg0(ZCI, "Processed ELS STM in function " + tgtFct.name + ": " + lastExe.toStr())
+	endOfZCI(ZCI, "ELS statement, in function " + tgtFct.name + " (STM_IF_).")
+	ZCIDbg0(ZCI, "Processed ELS STM in function " + tgtFct.name + ": " + deepestPrevIf.elsScope.toStr())
 	ZCI.dbgPause()
 
 
@@ -199,7 +227,7 @@ def processSwiStm(ZCI, scope, tgtFct):
 	scope.exes.append( atm(ATM__STM_SWI, res) )
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "swi statement, in function " + tgtFct.name + " (STM_SWI).")
+	endOfZCI(ZCI, "SWI statement, in function " + tgtFct.name + " (STM_SWI).")
 	ZCIDbg0(ZCI, "Processed SWI STM in function " + tgtFct.name + ": " + res.toStr())
 	ZCI.dbgPause()
 
@@ -215,13 +243,15 @@ def processForStm(ZCI, scope, tgtFct):
 	ZCIDbg0(ZCI, "Processing FOR STM in function " + tgtFct.name, prtLine=False)
 	optionalBlanks(ZCI, None)
 
+	#will be stored as WHI
+	res = stm_whi()
+
 
 
 	#STEP 1: ITER DATITM NAME + KIND DETECTION
 
 	#read iter datItm name
-	res     = stm_for()
-	iDIName = 'L' + readName(ZCI, "iteration data item name in FOR statement, in function " + tgtFct.name + " (STM_FOR).", dblUnderscores=True)[1]
+	iterDIName = 'L' + readName(ZCI, "iteration data item name in FOR statement, in function " + tgtFct.name + " (STM_FOR).", dblUnderscores=True)[1]
 
 	#blank required (avoid confusion)
 	if ZCI.get() not in BLANKS:
@@ -262,214 +292,224 @@ def processForStm(ZCI, scope, tgtFct):
 
 
 
-	#STEP 2: ITER LIMIT
+	#STEP 2: ITER INIT, ITER LIMIT, ITER STEP
 
-	#iter limit
-	iLimit      = readVal(ZCI, "value given in FOR statement, in function " + tgtFct.name + " (STM_FOR).", scope)
-	iDIType     = iLimit.Type
-	iDITypeInst = ZCI.getTypeInstanceFromID(iDIType)
-	stcType     = iDIType     #only for "in/ovr"
-	stcTypeInst = iDITypeInst #only for "in/ovr"
+	#read first val given
+	v1         = readVal(ZCI, "value given in FOR statement, in function " + tgtFct.name + " (STM_FOR).", scope)
+	v1TypeInst = ZCI.getTypeInstanceFromID(v1.Type)
 
-	#extend to ".len"
-	if kind in (KIND__IN, KIND__OVR):
-		if stcTypeInst.dcnCommon.nature != NATURE__STC:
-			ZCIErr(ZCI, "Value given in FOR statement must have structure type, in function " + tgtFct.name + " (STM_FOR).")
+	#init & limit to be determined specifically
+	iterInit  = None #val
+	iterLimit = None #val
+	iterStep  = val(TYPE_ID__UNKNOWN, atm(ATM__S32, 1), True) #step defaulted to 1 (type to be defined later)
 
-		#get field "len" from iLimit
-		offset  = 0
-		iDIType = TYPE_ID__UNKNOWN
-		for di in iDITypeInst.dcnCommon.fields:
-			if di.name == "len":
-				iDIType     = di.Type
-				iDITypeInst = ZCI.getTypeInstanceFromID(iDIType)
-				break
-			offset += ZCI.zCtx.getTypeInstanceFromID(di.Type).dcnCommon.size
+	#these 3 will help to determine iterDI type
+	iterDIType = None
 
-		#no "len" field found
-		if iDIType == TYPE_ID__UNKNOWN:
-			ZCIErr(ZCI, "Value given as limit has no \"len\" field in FOR statement, in function " + tgtFct.name + " (STM_FOR).")
+	#case 1: ON
+	if kind == KIND__ON:
+		iterInit  = ZCI.zCtx.smaxZero #start at 0
+		iterLimit = v1                #v1 given is our limit to reach
 
-		#use appropriate "ffa" call, keep the info that this "ffa_get_<fieldTypeID>" must be generated later
-		if iDIType not in ZCI.zCtx.cpl.ffa_fieldTypeIDs:
-			ZCI.zCtx.cpl.ffa_fieldTypeIDs.append(iDIType)
+		#it also determines the type of our iterDI
+		iterDIType    = v1.Type
 
-		#update iLimit with "ffa_get" call with computed offset
-		iLimitRef = val(ZCI.zCtx.refType, atm(
-			ATM__CALL,
-			call("frf", [iLimit], ZCI.zCtx.refType)
-		), False)
-		iLimit = val(
-			iDIType,
-			atm(ATM__CALL, call(
-				"ffa_get_" + str(iDIType), [
-					iLimitRef,
-					val(ZCI.zCtx.smaxType, atm(ATM__U32, offset), True),
-				], iDIType
-			)),
-			iLimit.Cst
-		)
-		ZCIDbg1(ZCI, "Got \"len\" field from given value, in FOR IN/OVR statement:" + iLimit.toStr(), prtLine=False)
+	#case 2: RANGE
+	elif kind == KIND__RANGE:
+		iterInit = v1 #v1 in our init
 
-	#limit must be prm
-	if iDITypeInst.dcnCommon.nature != NATURE__PRM:
-		ZCIErr(ZCI, "Value given in FOR statement must have primitive type, in function " + tgtFct.name + " (STM_FOR).")
+		#it also determines the type of our iterDI
+		iterDIType    = v1.Type
 
-
-
-	#STEP 3: ITER STEP & ITER INIT
-
-	#iter step
-	iStep = val(iDIType, atm(ATM__S32, 1), True)
-
-	#iter init: range => read a second value
-	iInit = None
-	if kind == KIND__RANGE:
-		iInit = iLimit
-
-		#expected to have colon separator
+		#expecting a colon separator
 		if ZCI.get() != ':':
 			ZCIErr(ZCI, "Expected a colon ':' separator after first range value in FOR statement, in function " + tgtFct.name + " (STM_FOR).")
 		ZCI.inc()
 
 		#limit given as 2nd value
-		iLimit = readVal(ZCI, "range limit value in FOR statement, in function " + tgtFct.name + " (STM_FOR).", scope)
-		if iLimit.Type != iInit.Type:
+		iterLimit = readVal(ZCI, "range limit value in FOR statement, in function " + tgtFct.name + " (STM_FOR).", scope)
+		if iterLimit.Type != iterInit.Type:
 			ZCIWrn(ZCI, "Limit value doesn't have the same type as the initial one in range FOR statement, in function " + tgtFct.name + " (STM_FOR).")
-		if ZCI.getTypeInstanceFromID(iLimit.Type).dcnCommon.nature != NATURE__PRM:
+		if ZCI.getTypeInstanceFromID(iterLimit.Type).dcnCommon.nature != NATURE__PRM:
 			ZCIErr(ZCI, "Range limit value given in FOR statement must have primitive type, in function " + tgtFct.name + " (STM_FOR).")
 
 		#optional 3rd have colon separator
 		if ZCI.get() != ':':
 			ZCI.inc()
 
-			#step given as 3rd value
-			iStep = readVal(ZCI, "range step value in FOR statement, in function " + tgtFct.name + " (STM_FOR).", scope)
-			if ZCI.getTypeInstanceFromID(iStep).dcnCommon.nature != NATURE__PRM:
+			#step given as 3rd value (overwrite)
+			iterStep = readVal(ZCI, "range step value in FOR statement, in function " + tgtFct.name + " (STM_FOR).", scope)
+			if ZCI.getTypeInstanceFromID(iterStep).dcnCommon.nature != NATURE__PRM:
 				ZCIErr(ZCI, "Step value given in FOR statement must have primitive type, in function " + tgtFct.name + " (STM_FOR).")
 
-	#itm init val: on/in/ovr => zero
+	#case 3: IN/OVR => extend to ".len"
 	else:
-		iInit = ZCI.zCtx.smaxZero
+		iterInit = ZCI.zCtx.smaxZero #start at 0
+
+		#val given must be a stc
+		if v1TypeInst.dcnCommon.nature != NATURE__STC:
+			ZCIErr(ZCI, "Value given in FOR statement must have structure type, in function " + tgtFct.name + " (STM_FOR).")
+
+		#get field "len" from it
+		offset     = 0
+		iterDIType = TYPE_ID__UNKNOWN
+		for di in v1TypeInst.dcnCommon.fields:
+			if di.name == "len":
+				iterDIType = di.Type
+				break
+			offset += ZCI.zCtx.getTypeInstanceFromID(di.Type).dcnCommon.size
+
+		#no "len" field found
+		if iterDIType == TYPE_ID__UNKNOWN:
+			ZCIErr(ZCI, "Value given as limit has no \"len\" field in FOR statement, in function " + tgtFct.name + " (STM_FOR).")
+
+		#use appropriate "ffa" call, keep the info that this "ffa_get_<fieldTypeID>" must be generated later
+		if iterDIType not in ZCI.zCtx.cpl.ffa_fieldTypeIDs:
+			ZCI.zCtx.cpl.ffa_fieldTypeIDs.append(iterDIType)
+
+		#"ffa_get" call on v1 and computed offset => this is our iter limit !
+		iterLimitRef = val(ZCI.zCtx.refType, atm(
+			ATM__CALL,
+			call("frf", [v1], ZCI.zCtx.refType)
+		), False)
+		iterLimit = val(
+			iterDIType,
+			atm(ATM__CALL, call(
+				"ffa_get_" + str(iterDIType), [
+					iterLimitRef,
+					val(ZCI.zCtx.smaxType, atm(ATM__U32, offset), True),
+				], iterDIType
+			)),
+			v1.Cst
+		)
+		ZCIDbg1(ZCI, "Got \"len\" field from given value, in FOR IN/OVR statement:" + v1.toStr(), prtLine=False)
+
+	#now that we have iterDI type, update iter step
+	iterStep.Type = iterDIType
+
+	#limit must be prm
+	iterDITypeInst = ZCI.getTypeInstanceFromID(iterDIType)
+	if iterDITypeInst.dcnCommon.nature != NATURE__PRM:
+		ZCIErr(ZCI, "Value given in FOR statement must have primitive type, in function " + tgtFct.name + " (STM_FOR).")
 
 
 
-	#STEP 4: BUILD ITER COND & EXE
+	#STEP 3: ITER DATITM, EXTERNAL & INTERNAL
 
-	#complete iter datItm info
-	ovrUsrIterDI = None #iter datItm that the USER mentionned, that will not be the actual iter datItm of the FOR (ovr only)
-	if kind == KIND__OVR:
-		ovrUsrIterDI   = datItm(TYPE_ID__UNKNOWN, iDIName, False, None) #set unknown ID temporarily (we get that info in further steps)
-		res.iterDatItm = datItm(iDIType, "D0", True, iInit) #manually gen 1st dcp var of FOR scope
-	else:
-		res.iterDatItm = datItm(iDIType, iDIName, True, iInit)
+	#the datItm the USER is going to use is INTERNAL (in inner scope)
+	intIterDI = datItm(iterDIType, iterDIName, False, None)
 
-	#use iter datItm as val for calls
-	iDIVal = val(iDIType, atm(ATM__DATITM, res.iterDatItm), False)
-	ZCIDbg1(ZCI, "Added for statement iter datItm: " + res.iterDatItm.toStr())
+	#however, the real iter exe & condition will be made using an EXTERNAL datItm (in cur scope)
+	extIterDI = scope.nxtDcpDatItm(iterDIType)
+	ZCIDbg1(ZCI, "Added FOR statement extIterDI: " + extIterDI.toStr())
+
+
+
+	#STEP 4: BUILD ITER COND & ITER EXE
+
+	#use extIterDI as val for calls
+	extIterDIVal = val(iterDIType, atm(ATM__DATITM, extIterDI), False)
 
 	#iter condition
 	ope = zCtx__findMatchingOperator(ZCI.zCtx,
 		"Oclt",
-		[iDIType,          iDIType         ],
-		[iDITypeInst.name, iDITypeInst.name]
+		[iterDIType,          iterDIType         ],
+		[iterDITypeInst.name, iterDITypeInst.name]
 	)
 	if ope is None:
 		ZCIErr(ZCI,
 			"Available combinations for this operator are " + zCtx__listAllExistingOpeNames(ZCI.zCtx, "Oclt") + \
-			"\nCan't find a valid operator CLT to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
+			"\nCan't find a valid operator CLT to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iterDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
 		)
 	res.iterCond = val(
 		ope.retType,
 		atm(ATM__CALL, call(
 			ope.name,
-			[iDIVal, iLimit],
+			[extIterDIVal, iterLimit],
 			ope.retType
 		)),
 		False
 	)
-	ZCIDbg1(ZCI, "Added for statement iter cond: " + res.iterCond.toStr())
+	ZCIDbg1(ZCI, "Added FOR statement iter cond: " + res.iterCond.toStr())
 
 	#iter exe
 	ope = zCtx__findMatchingOperator(ZCI.zCtx,
 		"Obad",
-		[iDIType,          iDIType         ],
-		[iDITypeInst.name, iDITypeInst.name]
+		[iterDIType,          iterDIType         ],
+		[iterDITypeInst.name, iterDITypeInst.name]
 	)
 	if ope is None:
 		ZCIErr(ZCI,
 			"Available combinations for this operator are " + zCtx__listAllExistingOpeNames(ZCI.zCtx, "Obad") + \
-			"\nCan't find a valid operator BAD to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
+			"\nCan't find a valid operator BAD to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iterDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
 		)
-	res.iterExe = atm(ATM__ASG, asg(
-		iDIVal,
+	iterExe = atm(ATM__ASG, asg(
+		extIterDIVal,
 		val(
-			iDIType,
+			iterDIType,
 			atm(ATM__CALL, call(
 				ope.name,
-				[iDIVal, iStep],
+				[extIterDIVal, iterStep],
 				ope.retType
 			)),
 			False
 		)
 	))
-	ZCIDbg1(ZCI, "Added for statement iter exe: " + res.iterExe.toStr())
+	ZCIDbg1(ZCI, "Added FOR statement iter exe: " + iterExe.toStr())
 
 
 
-	#STEP 5: INNER SCOPE & OVR 1ST EXE
+	#STEP 5: INNER SCOPE, INTERNAL 1ST EXE
 
 	#create inner sub-scope (lcl)
-	subScp = newScp(parent=scope)
+	res.scope = newScp(parent=scope)
 
-	#ovr: generated ZCI to be run as 1st exe in scope
-	if kind == KIND__OVR:
+	#add internal iterDI
+	res.scope.datItms.append(intIterDI)
+	intIterDIVal = val(iterDIType, atm(ATM__DATITM, intIterDI), False)
+
+	#build 1st inner scope exe: ON/IN => "intIterDI = extIterDI"
+	if kind != KIND__OVR:
+		int1stExe = atm(ATM__ASG, asg(intIterDIVal, extIterDIVal))
+
+	#build 1st inner scope exe: OVR => "intIterDI = v1[extIterDI]"
+	else:
 		ope = zCtx__findMatchingOperator(ZCI.zCtx,
 			"Oiin",
-			[stcType,          iDIType         ],
-			[stcTypeInst.name, iDITypeInst.name]
+			[v1.Type,         iterDIType         ],
+			[v1TypeInst.name, iterDITypeInst.name]
 		)
 		if ope is None:
 			ZCIErr(ZCI,
 				"Available combinations for this operator are " + zCtx__listAllExistingOpeNames(ZCI.zCtx, "Oiin") + \
-				"\nCan't find a valid operator IIN to match between types \"" + unpfxTypeName(ZCI.zCtx, stcTypeInst.name)[0] + "\" and \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
+				"\nCan't find a valid operator IIN to match between types \"" + unpfxTypeName(ZCI.zCtx, v1TypeInst.name)[0] + "\" and \"" + unpfxTypeName(ZCI.zCtx, iDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
 			)
 
-		#update usr iter datItm type
-		ovrUsrIterDI.Type = ope.retType
+		#update INTERNAL iterDI type
+		intIterDI.Type    = ope.retType
+		intIterDIVal.Type = ope.retType
 
-		#don't forget to update dcpIdx of inner scp also, ovrUsrIterDI used the 1st one
-		subScp.dcpIdx = 1
-
-		#gen idxing exe
-		ovrUsrIterDIVal = val(ovrUsrIterDI.Type, atm(ATM__DATITM, ovrUsrIterDI), False)
-		ovr1stExe       = atm(ATM__ASG, asg(
-			ovrUsrIterDIVal,
+		#1st exe
+		int1stExe = atm(ATM__ASG, asg(
+			intIterDIVal,
 			val(
 				ope.retType,
-				atm(ATM__CALL, call(
+				atm(ATM__CALL, call( # corresponds to call "v1[extIterDI]"
 					ope.name,
-					[ovrUsrIterDIVal, iDIVal],
+					[v1, extIterDIVal],
 					ope.retType
 				)),
 				False
 			)
 		))
 
-		#add iter datItm
-		subScp.datItms.append(ovrUsrIterDI)
-
-		#add it as 1st exe
-		subScp.exes.append(ovr1stExe)
-		ZCIDbg1(ZCI, "Added for statement iter exe: " + res.iterExe.toStr())
-
-	#add iter datItm
-	else:
-		subScp.datItms.append(res.iterDatItm)
+	#add internal 1st exe
+	res.scope.exes.append(int1stExe)
+	ZCIDbg1(ZCI, "Added FOR statement inner 1st exe: " + int1stExe.toStr())
 
 
 
-	#STEP 6: INSIDE INNER SCOPE + END
+	#STEP 6: REST OF INNER SCOPE, INTERNAL LAST EXE, END
 
 	#read following includer
 	optionalBlanks(ZCI, None)
@@ -488,14 +528,16 @@ def processForStm(ZCI, scope, tgtFct):
 	ZCIDbg1(ZCI, "End of extraction of FOR statement sub-scope.")
 
 	#parse them as inner sub-scp (lcl)
-	readLclScp(subScpZCIs, subScp, tgtFct)
-	res.scope = subScp
+	readLclScp(subScpZCIs, res.scope, tgtFct)
+
+	#add iter exe as the last one in inner scope
+	res.scope.exes.append(iterExe)
 
 	#add statement to lcl scp
-	scope.exes.append( atm(ATM__STM_FOR, res) )
+	scope.exes.append( atm(ATM__STM_WHI, res) )
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "for statement, in function " + tgtFct.name + " (STM_FOR).")
+	endOfZCI(ZCI, "FOR statement, in function " + tgtFct.name + " (STM_FOR).")
 	ZCIDbg0(ZCI, "Processed FOR STM in function " + tgtFct.name + ": " + res.toStr())
 	ZCI.dbgPause()
 
@@ -536,7 +578,7 @@ def processWhiStm(ZCI, scope, tgtFct):
 	scope.exes.append( atm(ATM__STM_WHI, res) )
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "whi statement, in function " + tgtFct.name + " (STM_WHI).")
+	endOfZCI(ZCI, "WHI statement, in function " + tgtFct.name + " (STM_WHI).")
 	ZCIDbg0(ZCI, "Processed WHI STM in function " + tgtFct.name + ": " + res.toStr())
 	ZCI.dbgPause()
 

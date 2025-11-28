@@ -253,6 +253,14 @@ class val:
 
 
 
+#val - scp couple
+class vs:
+	def __init__(sbj, value, scope):
+		sbj.value = value
+		sbj.scope = scope
+
+
+
 #calls
 class call:
 	def __init__(sbj, name, paramVals, retType):
@@ -414,36 +422,23 @@ class asg:
 #statements
 class stm_if:
 	def __init__(sbj):
-		sbj.conds  = [] #lst[val]
-		sbj.scopes = []
+		sbj.cond     = None #val
+		sbj.ifScope  = None
+		sbj.elsScope = None
 
 	def toStr(sbj, depth=0):
 		d    = TERM__OUTPUT_TAB * depth
+
+		#null elsScope
+		str_elsScope = "null"
+		if sbj.elsScope is not None:
+			str_elsScope = sbj.elsScope.toStr(depth=depth+1)
+
+		#toStr
 		res  = "\n" + d + "_:\"if\"\n"
-		res += d + "conds:["
-		for c in sbj.conds:
-			res += c.toStr(depth=depth+1) + ","
-		res += '\n' + d + "]\n"
-		res += d + "scopes:["
-		for s in sbj.scopes:
-			res += s.toStr(depth=depth+1) + ","
-		res += '\n' + d + ']'
-		return res
-
-class stm_for:
-	def __init__(sbj):
-		sbj.iterDatItm = None
-		sbj.iterCond   = None #val
-		sbj.iterExe    = None #exe
-		sbj.scope      = None
-
-	def toStr(sbj, depth=0):
-		d    = TERM__OUTPUT_TAB * depth
-		res  = "\n" + d + "_:\"for\"\n"
-		res += d + "iterDatItm:" + sbj.iterDatItm.toStr(depth=depth+1) + "\n"
-		res += d + "iterCond:" + sbj.iterCond.toStr(depth=depth+1) + "\n"
-		res += d + "iterExe:" + sbj.iterExe.toStr(depth=depth+1) + "\n"
-		res += d + "scope:" + sbj.iterDatItm.toStr(depth=depth+1)
+		res += d + "cond:" + sbj.cond.toStr(depth=depth+1) + "\n"
+		res += d + "ifScope:" + sbj.ifScope.toStr(depth=depth+1)
+		res += d + "elsScope:" + str_elsScope
 		return res
 
 class stm_whi:

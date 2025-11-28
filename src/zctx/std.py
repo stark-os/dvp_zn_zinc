@@ -61,16 +61,15 @@ ATM__FCT = 18
 ATM__CALL    = 19
 ATM__DATITM  = 20
 ATM__STM_IF  = 21
-ATM__STM_FOR = 22
-ATM__STM_WHI = 23
-ATM__STM_SWI = 24
-ATM__TYP_DCNCOMMON = 25
-ATM__OPSEQ         = 26
-ATM__POCALL        = 27
-ATM__LST           = 28
-ATM__LST_VAL       = 29
-ATM__LST_ATM       = 30
-ATM__FMAP_STR_VAL  = 31
+ATM__STM_WHI = 22
+ATM__STM_SWI = 23
+ATM__TYP_DCNCOMMON = 24
+ATM__OPSEQ         = 25
+ATM__POCALL        = 26
+ATM__LST           = 27
+ATM__LST_VAL       = 28
+ATM__LST_ATM       = 29
+ATM__FMAP_STR_VAL  = 30
 ATM__ATM = 99
 class atm:
 	def __init__(sbj, id, dat):
@@ -88,7 +87,7 @@ class atm:
 			ATM__ZCI,	ATM__VAL,		ATM__TYP,		ATM__DATITM,
 			ATM__SCP,	ATM__ASG,		ATM__JMP,		ATM__TYP_DCNCOMMON,
 			ATM__FCT,	ATM__OPSEQ, 	ATM__POCALL,	ATM__STM_IF,
-			ATM__CALL,	ATM__STM_FOR,	ATM__STM_WHI,	ATM__STM_SWI,
+			ATM__CALL,	ATM__STM_WHI,	ATM__STM_SWI,
 			ATM__ATM
 		):
 			res += d0 + "dat:" + sbj.dat.toStr(depth=depth+1)

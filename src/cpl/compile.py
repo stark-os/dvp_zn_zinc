@@ -12,7 +12,8 @@ from cpl.c04_ffaFcts             import *
 from cpl.c05_atm                 import *
 from cpl.c06_toStr               import *
 from cpl.c07_mergeConsecutiveAsg import *
-from cpl.c08_unparseAsC          import *
+from cpl.c08_dcpSubCalls         import *
+from cpl.c09_unparseAsC          import *
 
 
 
@@ -30,4 +31,5 @@ def compile(zCtx):
 	c05_atm(zCtx)
 	c06_toStr(zCtx)
 	c07_mergeConsecutiveAsg(zCtx)
-	c08_unparseAsC(zCtx)
+	c08_dcpSubCalls(zCtx)
+	c09_unparseAsC(zCtx)
