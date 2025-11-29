@@ -197,7 +197,7 @@ class scp:
 		sbj.footer  = [] #lst[atm], lst[exe]
 
 	def nxtDcpDatItm(sbj, Type):
-		dcpDI = datItm(Type, 'D' * scopeDepth + str(sbj.dcpIdx), False, None)
+		dcpDI = datItm(Type, 'D' + str(sbj.dcpIdx), False, None)
 
 		#add to scope directly
 		sbj.datItms.append(dcpDI)

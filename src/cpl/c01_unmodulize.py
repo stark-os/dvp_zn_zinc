@@ -81,10 +81,14 @@ def c01_unmodulize(zCtx):
 				ZCI.inc()
 
 			#read module name
-			modName = readName(ZCI, "\"add\" keyword or module name in module declaration ZCI (DCL_MOD).")[1]
+			modName = readName(ZCI, "\'+\' keyword or module name in module declaration ZCI (DCL_MOD).")[1]
 
 			#combine with cur module (we can be in another module => this allows submodularization)
 			modPfx = ZCI.modPfx + formatModName(ZCI, modName)
+
+			#special case: "Atm" forbidden
+			if modPfx == "MAtm_":
+				ZCIErr(ZCI, "Can't declare a global module \"Atm\", forbidden.")
 
 			# I.1) module addition
 			if modAdd:

@@ -14,7 +14,7 @@ from zctx import *
 
 # -------- VAL DCP --------
 
-#
+#dcp tools
 def valMustBeDcp(v):
 	return (
 		v.vdat.id == ATM__FMAP_STR_VAL or \
@@ -116,11 +116,11 @@ def dcpSubVal(zCtx, v, scope, idx):
 # -------- EXECUTION --------
 
 #main
-def c07_dcpSubVals(zCtx):
-	zCtx.updateLogLvl(STEP.C07)
+def c06_dcpSubVals(zCtx):
+	zCtx.updateLogLvl(STEP.C06)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("=========================== C07 DCP SUB VALS : beginning ========================")
+	zCtx.dbg0("=========================== C06 DCP SUB VALS : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -218,7 +218,7 @@ def c07_dcpSubVals(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================= C07 DCP SUB VALS C : end ========================")
+	zCtx.dbg0("========================= C06 DCP SUB VALS C : end ========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
@@ -227,5 +227,10 @@ def c07_dcpSubVals(zCtx):
 	if log_lvl[0] >= LOG__LVL_DBG0:
 		prepareDbgDir()
 
+		#gather every scope
+		output = zCtx.cpl.gblScp.toStr()
+		for f in zCtx.cpl.fcts:
+			output += f.scope.toStr()
+
 		#write out current res
-		#writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c07.dl", output) <<<<<<<<<<<<<<<<<<<<<<<<<
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c06.dl", output)

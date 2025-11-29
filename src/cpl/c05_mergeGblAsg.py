@@ -15,11 +15,11 @@ from zctx import *
 # -------- EXECUTION --------
 
 #main
-def c06_mergeGblAsg(zCtx):
-	zCtx.updateLogLvl(STEP.C06)
+def c05_mergeGblAsg(zCtx):
+	zCtx.updateLogLvl(STEP.C05)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("========================== C06 MERGE GBL ASG : beginning ========================")
+	zCtx.dbg0("========================== C05 MERGE GBL ASG : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -46,7 +46,7 @@ def c06_mergeGblAsg(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================== C06 MERGE GBL ASG : end ========================")
+	zCtx.dbg0("========================== C05 MERGE GBL ASG : end ========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
@@ -62,4 +62,4 @@ def c06_mergeGblAsg(zCtx):
 				output += f.toStr()
 
 		#write out current res
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c06.dl", output)
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c05.dl", output)
