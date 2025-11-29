@@ -11,7 +11,7 @@ from cpl.c03_processLcls         import *
 from cpl.c04_ffaFcts             import *
 from cpl.c05_ZZZ                 import *
 from cpl.c06_mergeConsecutiveAsg import *
-from cpl.c07_dcpSubCalls         import *
+from cpl.c07_dcpSubVals          import *
 from cpl.c08_unparseAsC          import *
 
 
@@ -28,6 +28,6 @@ def compile(zCtx):
 	c03_processLcls(zCtx)
 	c04_ffaFcts(zCtx)
 	c05_ZZZ(zCtx)
-	c06_mergeConsecutiveAsg(zCtx)
-	c07_dcpSubCalls(zCtx)
+	c06_mergeGblAsg(zCtx)
+	c07_dcpSubVals(zCtx)
 	c08_unparseAsC(zCtx)

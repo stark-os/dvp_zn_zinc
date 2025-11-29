@@ -23,8 +23,9 @@ def c04_ffaFcts(zCtx):
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
-	#gen ffa fcts
+	#gen ffa fcts <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED, RELY ON C COMPILATION
 	ffa_fcts = []
+	'''
 	for fieldTypeID in zCtx.cpl.ffa_fieldTypeIDs:
 
 
@@ -161,7 +162,7 @@ def c04_ffaFcts(zCtx):
 		#prv fct => should be optimized to disappear completely after compilation
 		f.isPub = False
 		ffa_fcts.append(f)
-
+	'''
 
 
 	#add to fcts

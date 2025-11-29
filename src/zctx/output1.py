@@ -155,9 +155,9 @@
 
 	def dbgPause(sbj):
 		if log_lvl[0] >= LOG__LVL_DBG0 and sbj.stepByStep:
-			log_dbg("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~")
+			log_dbg0("~ ~ ~ ~ Press ENTER to continue ~ ~ ~ ~")
 			input()
-			log_dbg(Term__CUU1 + "                                       \r")
+			log_dbg0(Term__CUU1 + "                                       \r")
 			Term__drawSepLine()
 
 

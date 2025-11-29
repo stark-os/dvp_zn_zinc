@@ -597,6 +597,8 @@ def processAsg(ZCI, scope, tgtFct, dstVal):
 	#read src value to be assigned
 	srcVal = readVal(ZCI, "source value in assignment" + scpTxt + " (ASG_ASG).", scope, cstOnly=cstOnly)
 
+	''' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< RELY ON C STRUCTURES SYNTAX INSTEAD OF FFA CALL <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 	#special case: asg to a field
 	if dstVal.vdat.id == ATM__CALL:
 
@@ -613,15 +615,21 @@ def processAsg(ZCI, scope, tgtFct, dstVal):
 		#now it can be processed as regular VFC
 		processVFC(ZCI, scope, tgtFct, dstVal)
 		return
+	'''
 
-	#regular case: dst val must be a DAT ITM to be able to store in it
-	if dstVal.vdat.id != ATM__DATITM:
-		ZCIErr(ZCI, "Invalid destination " + dstVal.toStr() + " to assign value " + scpTxt + " (Expected a data item value, VFC_VFC).")
+	#rely on C compilation <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	if dstVal.vdat.id == ATM__FFA:
+		pass
 
 	#datItm does not exist yet => also dcl it
-	if not alreadyDclDatItmOrField(dstVal.vdat.dat, scope.datItms):
-		ZCIDbg0(ZCI, "Also dcl dat itm \"" + dstVal.vdat.dat.name + "\", it did not exist in cur scope yet (ASG_ASG).", prtLine=False)
-		scope.datItms.append(dstVal.vdat.dat)
+	elif dstVal.vdat.id == ATM__DATITM:
+		if not alreadyDclDatItmOrField(dstVal.vdat.dat, scope.datItms):
+			ZCIDbg0(ZCI, "Also dcl dat itm \"" + dstVal.vdat.dat.name + "\", it did not exist in cur scope yet (ASG_ASG).", prtLine=False)
+			scope.datItms.append(dstVal.vdat.dat)
+
+	#invalid val format to store something into
+	else:
+		ZCIErr(ZCI, "Invalid destination " + dstVal.toStr() + " to assign value " + scpTxt + " (Expected a data item value, VFC_VFC).")
 
 	#add execution to concerned scope
 	scope.exes.append( atm(ATM__ASG, asg(dstVal, srcVal)) )
@@ -693,8 +701,9 @@ def processVFC(ZCI, scope, tgtFct, v):
 
 	#call => OK, add it to scope
 	if v.vdat.id == ATM__CALL:
-		if v.vdat.dat.name.startswith("ffa_get_") or v.vdat.dat.name.startswith("frf"): #these are not real fcts, makes no sens to call them as VFC
-			ZCIErr(ZCI, "Invalid ZCS, unknown ZCI given" + scpTxt + " (Expected function call, VFC_VFC).")
+		# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< DISABLED FFA CALLS, RELY ON C COMPILER
+		#if v.vdat.dat.name.startswith("ffa_get_") or v.vdat.dat.name.startswith("frf"): #these are not real fcts, makes no sens to call them as VFC
+		#	ZCIErr(ZCI, "Invalid ZCS, unknown ZCI given" + scpTxt + " (Expected function call, VFC_VFC).")
 		scope.exes.append(v.vdat)
 
 	#other => unknown ZCI

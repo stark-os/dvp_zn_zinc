@@ -15,11 +15,11 @@ from zctx import *
 # -------- EXECUTION --------
 
 #main
-def c06_mergeConsecutiveAsg(zCtx):
+def c06_mergeGblAsg(zCtx):
 	zCtx.updateLogLvl(STEP.C06)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("====================== C06 MERGE CONSECUTIVE ASG : beginning ====================")
+	zCtx.dbg0("========================== C06 MERGE GBL ASG : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -46,7 +46,7 @@ def c06_mergeConsecutiveAsg(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("====================== C06 MERGE CONSECUTIVE ASG : end ====================")
+	zCtx.dbg0("========================== C06 MERGE GBL ASG : end ========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()

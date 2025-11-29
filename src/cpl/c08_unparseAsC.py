@@ -47,7 +47,14 @@ def unparseType(zCtx, tID):
 
 		#for each field
 		for f in tInst.dcnCommon.fields:
-			fieldTypeName = zCtx.getTypeNameFromID(f.Type)
+			fieldTypeInst = zCtx.getTypeInstanceFromID(f.Type)
+			fieldTypeName = fieldTypeInst.name
+
+			#stc field are stored as SPECIFIC REFs => add ptr notation
+			if fieldTypeInst.dcnCommon.nature == NATURE__STC:
+				fieldTypeName += '*'
+
+			#output
 			typDcl    += '\n' + RES__OUTPUT_TAB + fieldTypeName + ' ' + f.name + ';'
 			typDcl_fp += fieldTypeName + ',' + f.name + ','
 
@@ -116,6 +123,12 @@ def unparseVal(zCtx, v, depth, casht=False):
 			zCtx.cpl.resC += ','
 		zCtx.cpl.resC = str_sub(zCtx.cpl.resC, stop=-2) #these 2 lines in Z: "zCtx.cpl.resC[-1] = '}'" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		zCtx.cpl.resC += '}'
+
+	#ffa
+	elif v.vdat.id == ATM__FFA:
+		zCtx.cpl.resC += '(' + zCtx.getTypeNameFromID(v.vdat.dat.value.Type) + ")("
+		unparseVal(zCtx, v.vdat.dat.value, depth)
+		zCtx.cpl.resC += ")." + v.vdat.dat.field
 
 	#unknown
 	else:
@@ -334,15 +347,14 @@ def unparseCall(zCtx, c, depth, begEnd=True):
 	name = c.name
 	if name == "frf":
 		name = "&"
-	zCtx.cpl.resC += name + "(\n"
+	zCtx.cpl.resC += name + '('
 
 	#params
 	for p in c.paramVals:
-		zCtx.cpl.resC += d + RES__OUTPUT_TAB
 		unparseVal(zCtx, p, depth+1)
-		zCtx.cpl.resC += ",\n"
-	zCtx.cpl.resC = str_sub(zCtx.cpl.resC, stop=-3) + '\n' #immutable str in python, but in Z, we can simply make resC[-2] = ' ' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-	zCtx.cpl.resC += d + ")"
+		zCtx.cpl.resC += ','
+	zCtx.cpl.resC = str_sub(zCtx.cpl.resC, stop=-2) #immutable str in python, but in Z, we can simply make resC[-2] = ')' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+	zCtx.cpl.resC += ')'
 
 	#end mark
 	if begEnd:

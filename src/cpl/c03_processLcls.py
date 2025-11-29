@@ -363,6 +363,8 @@ def processForStm(ZCI, scope, tgtFct):
 		if iterDIType == TYPE_ID__UNKNOWN:
 			ZCIErr(ZCI, "Value given as limit has no \"len\" field in FOR statement, in function " + tgtFct.name + " (STM_FOR).")
 
+		''' <<<<<<<<<<<<<<<<<<<<<<<<< RELY ON C STRUCTURES SYNTAX INSTEAD OF FFA CALL <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 		#use appropriate "ffa" call, keep the info that this "ffa_get_<fieldTypeID>" must be generated later
 		if iterDIType not in ZCI.zCtx.cpl.ffa_fieldTypeIDs:
 			ZCI.zCtx.cpl.ffa_fieldTypeIDs.append(iterDIType)
@@ -383,6 +385,10 @@ def processForStm(ZCI, scope, tgtFct):
 			v1.Cst
 		)
 		ZCIDbg1(ZCI, "Got \"len\" field from given value, in FOR IN/OVR statement:" + v1.toStr(), prtLine=False)
+		'''
+
+		#rely on C compiler <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		iterLimit = val(iterDIType, atm(ATM__FFA, ffa(v1, "len")), v1.Cst)
 
 	#now that we have iterDI type, update iter step
 	iterStep.Type = iterDIType
@@ -400,7 +406,9 @@ def processForStm(ZCI, scope, tgtFct):
 	intIterDI = datItm(iterDIType, iterDIName, False, None)
 
 	#however, the real iter exe & condition will be made using an EXTERNAL datItm (in cur scope)
-	extIterDI = scope.nxtDcpDatItm(iterDIType)
+	extIterDI         = scope.nxtDcpDatItm(iterDIType)
+	extIterDI.inited  = True
+	extIterDI.initVal = iterInit
 	ZCIDbg1(ZCI, "Added FOR statement extIterDI: " + extIterDI.toStr())
 
 
@@ -468,6 +476,11 @@ def processForStm(ZCI, scope, tgtFct):
 	res.scope.datItms.append(intIterDI)
 	intIterDIVal = val(iterDIType, atm(ATM__DATITM, intIterDI), False)
 
+	#VERY IMPORTANT: shift dcpIdx of inner scope because we need to access to extIterDI from the inside,
+	# but its name can be overridden by an inner scope dcpDI.
+	# Shifting it guarantees that we won't have an inner scope dcpDI with same name.
+	res.scope.dcpIdx = scope.dcpIdx
+
 	#build 1st inner scope exe: ON/IN => "intIterDI = extIterDI"
 	if kind != KIND__OVR:
 		int1stExe = atm(ATM__ASG, asg(intIterDIVal, extIterDIVal))
@@ -494,7 +507,7 @@ def processForStm(ZCI, scope, tgtFct):
 			intIterDIVal,
 			val(
 				ope.retType,
-				atm(ATM__CALL, call( # corresponds to call "v1[extIterDI]"
+				atm(ATM__CALL, call( #corresponds to call "v1[extIterDI]"
 					ope.name,
 					[v1, extIterDIVal],
 					ope.retType

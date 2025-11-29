@@ -808,6 +808,8 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 				if fieldType == TYPE_ID__UNKNOWN:
 					return ZCIErr_vap2(ZCI, "Structure type " + unpfxTypeName(ZCI.zCtx, stcInst.name)[0] + " has no field \"" + rawName + '\"', v2i)
 
+				''' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< RELY ON C STRUCTURES SYNTAX INSTEAD OF FFA CALL <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 				#use appropriate "ffa" call, keep the info that this "ffa_get_<fieldTypeID>" must be generated later
 				if fieldType not in ZCI.zCtx.cpl.ffa_fieldTypeIDs:
 					ZCI.zCtx.cpl.ffa_fieldTypeIDs.append(fieldType)
@@ -831,6 +833,10 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 					res.Cst
 				)
 				ZCIDbg1(ZCI, "2nd analysis: EXTRA OPE FFA resulted into " + res.toStr())
+				'''
+
+				#rely on C compiler <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+				res = val(fieldType, atm(ATM__FFA, ffa(res, rawName)), res.Cst)
 
 
 

@@ -197,7 +197,7 @@ class scp:
 		sbj.footer  = [] #lst[atm], lst[exe]
 
 	def nxtDcpDatItm(sbj, Type):
-		dcpDI = datItm(Type, "D" + str(sbj.dcpIdx), False, None)
+		dcpDI = datItm(Type, 'D' * scopeDepth + str(sbj.dcpIdx), False, None)
 
 		#add to scope directly
 		sbj.datItms.append(dcpDI)
@@ -250,14 +250,6 @@ class val:
 		res += d + "type:" + str(sbj.Type) + "\n"
 		res += d + "vdat:" + sbj.vdat.toStr(depth=depth+1)
 		return res
-
-
-
-#val - scp couple
-class vs:
-	def __init__(sbj, value, scope):
-		sbj.value = value
-		sbj.scope = scope
 
 
 
@@ -395,6 +387,33 @@ class datItm:
 		res += d + "inited:" + str(sbj.inited) + "\n"
 		res += d + "initVal:" + str_initVal + "\n"
 		res += d + "fields:" + str_fields
+		return res
+
+
+
+
+
+
+# -------- SPECIFIC PURPOSE --------
+
+#val - scp - idx trio
+class vsi:
+	def __init__(sbj, value, scope, idx):
+		sbj.value = value
+		sbj.scope = scope
+		sbj.idx   = idx
+
+#ffa
+class ffa:
+	def __init__(sbj, value, field):
+		sbj.value = value
+		sbj.field = field
+
+	def toStr(sbj, depth=0):
+		d    = TERM__OUTPUT_TAB * depth
+		res  = "\n" + d + "_:\"ffa\"\n"
+		res += d + "value:" + sbj.value.toStr(depth=depth+1) + "\n"
+		res += d + "field:\"" + sbj.field + '\"'
 		return res
 
 
