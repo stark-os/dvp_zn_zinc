@@ -15,38 +15,19 @@ from zctx import *
 # -------- EXECUTION --------
 
 #main
-def c05_mergeGblAsg(zCtx):
+def c05_xxxx(zCtx):
 	zCtx.updateLogLvl(STEP.C05)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("========================== C05 MERGE GBL ASG : beginning ========================")
+	zCtx.dbg0("========================== C05 XXXX : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
-	#only gbl scp for the moment
-	e = 0
-	while e < len(zCtx.cpl.gblScp.exes):
-
-		#focus on ASG_ASG only
-		if zCtx.cpl.gblScp.exes[e].id == ATM__ASG:
-			a = zCtx.cpl.gblScp.exes[e].dat
-
-			#asg into a datItm => can only be a gblDI => rm asg & set init val directly instead
-			if a.dst.vdat.id == ATM__DATITM:
-				gDI         = a.dst.vdat.dat
-				gDI.inited  = True
-				gDI.initVal = a.src
-
-			#remove cur exe
-			zCtx.cpl.gblScp.exes = lst_remove(zCtx.cpl.gblScp.exes, e)
-			e -= 1
-
-		#nxt exe
-		e += 1
+	#
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================== C05 MERGE GBL ASG : end ========================")
+	zCtx.dbg0("========================== C05 XXXX : end ========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()

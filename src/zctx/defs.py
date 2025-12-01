@@ -292,8 +292,9 @@ PCPL__DIRECTIVES_MAX_COMPLEXITY_KEY = "DIRECTIVES_MAX_COMPLEXITY_LEVEL"
 TERM__OUTPUT_TAB = '|  '
 RES__OUTPUT_TAB  = '   ' #res code however, require real blanks
 
-
-
-
-
+#obvious syntax
+OBV__SEP = '\t'
+OBV__VAL_LIT    = 0
+OBV__VAL_DATITM = 1
+OBV__VAL_REG    = 2
 

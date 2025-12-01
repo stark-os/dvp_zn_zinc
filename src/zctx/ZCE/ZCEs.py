@@ -396,24 +396,17 @@ class datItm:
 
 # -------- SPECIFIC PURPOSE --------
 
-#val - scp - idx trio
-class vsi:
-	def __init__(sbj, value, scope, idx):
-		sbj.value = value
-		sbj.scope = scope
-		sbj.idx   = idx
-
 #ffa
 class ffa:
-	def __init__(sbj, value, field):
-		sbj.value = value
-		sbj.field = field
+	def __init__(sbj, value, offset):
+		sbj.value  = value
+		sbj.offset = offset
 
 	def toStr(sbj, depth=0):
 		d    = TERM__OUTPUT_TAB * depth
 		res  = "\n" + d + "_:\"ffa\"\n"
 		res += d + "value:" + sbj.value.toStr(depth=depth+1) + "\n"
-		res += d + "field:\"" + sbj.field + '\"'
+		res += d + "offset:" + str(sbj.offset)
 		return res
 
 

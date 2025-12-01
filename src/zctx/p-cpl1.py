@@ -68,9 +68,10 @@ class cplDat:
 		sbj.ffa_fieldTypeIDs = []
 
 		#program concrete elements
-		sbj.resC    = ""
+		#sbj.resC    = ""
 		sbj.resFP   = ""
-		sbj.resFP_C = "" #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
+		#sbj.resFP_C = "" #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
+		sbj.resObv   = ""
 
 	def newTyp(sbj, name, dcnDeg=0, size=0, dcns=None, dcnCommon=None, isPub=False):
 		if dcnCommon is None:

@@ -43,7 +43,7 @@ def main():
 	filepath = sys.argv[1]
 
 	#prepare output filename
-	outputFilename = path_name(os.path.basename(filepath)) + ".c"
+	outputFilename = path_name(os.path.basename(filepath)) + ".obv"
 
 	#z code context
 	zCtx = newZCtx(
@@ -75,9 +75,10 @@ def main():
 
 	#compile
 	compile(zCtx)
-	writeFile(outputFilename, zCtx.cpl.resC)
+	#writeFile(outputFilename, zCtx.cpl.resC)
+	writeFile(outputFilename, zCtx.cpl.resObv)
 	writeFile(outputFilename + ".cfg", zCtx.cpl.resFP)
-	writeFile(outputFilename + ".cfg.TMP_C", zCtx.cpl.resFP_C) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
+	#writeFile(outputFilename + ".cfg.TMP_C", zCtx.cpl.resFP_C) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
 
 #run main
 main()

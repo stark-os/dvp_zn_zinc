@@ -36,11 +36,7 @@ def parseLiteralIntOrFloat(ZCI):
 		#zero => can be anything
 		else:
 			if ZCI.inc(): #lonely '0'
-				return val(
-					ZCI.zCtx.rootTypes[RT__S32],
-					atm(ATM__S32, 0),
-					True
-				)
+				return val(ZCI.zCtx.rootTypes[RT__S32], atm(ATM__S32, 0), True)
 
 			#binary, octal, hexadecimal
 			c = ZCI.get()
@@ -808,35 +804,13 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 				if fieldType == TYPE_ID__UNKNOWN:
 					return ZCIErr_vap2(ZCI, "Structure type " + unpfxTypeName(ZCI.zCtx, stcInst.name)[0] + " has no field \"" + rawName + '\"', v2i)
 
-				''' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< RELY ON C STRUCTURES SYNTAX INSTEAD OF FFA CALL <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-				#use appropriate "ffa" call, keep the info that this "ffa_get_<fieldTypeID>" must be generated later
-				if fieldType not in ZCI.zCtx.cpl.ffa_fieldTypeIDs:
-					ZCI.zCtx.cpl.ffa_fieldTypeIDs.append(fieldType)
-
-				#res will be given to "ffa" call as a ref
-				refRes = val(
-					ZCI.zCtx.refType,
-					atm(ATM__CALL, call("frf", [res], ZCI.zCtx.refType)),
-					True
-				)
-
-				#update res with ffa call and computed offset
+				#update res with ffa and computed offset
 				res = val(
 					fieldType,
-					atm(ATM__CALL, call(
-						"ffa_get_" + str(fieldType), [
-							refRes,
-							val(ZCI.zCtx.smaxType, atm(ATM__U32, offset), True)
-						], fieldType
-					)),
+					atm(ATM__FFA, ffa(res, offset)),
 					res.Cst
 				)
 				ZCIDbg1(ZCI, "2nd analysis: EXTRA OPE FFA resulted into " + res.toStr())
-				'''
-
-				#rely on C compiler <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-				res = val(fieldType, atm(ATM__FFA, ffa(res, rawName)), res.Cst)
 
 
 

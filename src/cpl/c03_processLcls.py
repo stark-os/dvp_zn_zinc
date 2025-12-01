@@ -363,32 +363,13 @@ def processForStm(ZCI, scope, tgtFct):
 		if iterDIType == TYPE_ID__UNKNOWN:
 			ZCIErr(ZCI, "Value given as limit has no \"len\" field in FOR statement, in function " + tgtFct.name + " (STM_FOR).")
 
-		''' <<<<<<<<<<<<<<<<<<<<<<<<< RELY ON C STRUCTURES SYNTAX INSTEAD OF FFA CALL <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-		#use appropriate "ffa" call, keep the info that this "ffa_get_<fieldTypeID>" must be generated later
-		if iterDIType not in ZCI.zCtx.cpl.ffa_fieldTypeIDs:
-			ZCI.zCtx.cpl.ffa_fieldTypeIDs.append(iterDIType)
-
-		#"ffa_get" call on v1 and computed offset => this is our iter limit !
-		iterLimitRef = val(ZCI.zCtx.refType, atm(
-			ATM__CALL,
-			call("frf", [v1], ZCI.zCtx.refType)
-		), False)
+		#ffa on v1 and computed offset => this is our iter limit !
 		iterLimit = val(
 			iterDIType,
-			atm(ATM__CALL, call(
-				"ffa_get_" + str(iterDIType), [
-					iterLimitRef,
-					val(ZCI.zCtx.smaxType, atm(ATM__U32, offset), True),
-				], iterDIType
-			)),
+			atm(ATM__FFA, ffa(v1, offset)),
 			v1.Cst
 		)
 		ZCIDbg1(ZCI, "Got \"len\" field from given value, in FOR IN/OVR statement:" + v1.toStr(), prtLine=False)
-		'''
-
-		#rely on C compiler <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-		iterLimit = val(iterDIType, atm(ATM__FFA, ffa(v1, "len")), v1.Cst)
 
 	#now that we have iterDI type, update iter step
 	iterStep.Type = iterDIType

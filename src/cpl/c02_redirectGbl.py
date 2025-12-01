@@ -597,39 +597,25 @@ def processAsg(ZCI, scope, tgtFct, dstVal):
 	#read src value to be assigned
 	srcVal = readVal(ZCI, "source value in assignment" + scpTxt + " (ASG_ASG).", scope, cstOnly=cstOnly)
 
-	''' <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< RELY ON C STRUCTURES SYNTAX INSTEAD OF FFA CALL <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-	#special case: asg to a field
-	if dstVal.vdat.id == ATM__CALL:
-
-		#no real call allowed
-		if not dstVal.vdat.dat.name.startswith("ffa_get_"):
-			ZCIErr(ZCI, "Invalid destination " + dstVal.toStr() + " to assign value " + scpTxt + " (Expected a data item value, VFC_VFC).")
-
-		#slightly changing the call "ffa_get_X(r, offset)" => "ffa_set_X(r, offset, srcVal)"
-		c         = dstVal.vdat.dat
-		c.name    = "ffa_set_" + c.name[8:] #in Z: "c.name[4] = 's'" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-		c.retType = TYPE_ID__UNKNOWN
-		c.paramVals.append(srcVal)
-
-		#now it can be processed as regular VFC
-		processVFC(ZCI, scope, tgtFct, dstVal)
-		return
-	'''
-
-	#rely on C compilation <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-	if dstVal.vdat.id == ATM__FFA:
-		pass
-
 	#datItm does not exist yet => also dcl it
-	elif dstVal.vdat.id == ATM__DATITM:
+	if dstVal.vdat.id == ATM__DATITM:
 		if not alreadyDclDatItmOrField(dstVal.vdat.dat, scope.datItms):
 			ZCIDbg0(ZCI, "Also dcl dat itm \"" + dstVal.vdat.dat.name + "\", it did not exist in cur scope yet (ASG_ASG).", prtLine=False)
 			scope.datItms.append(dstVal.vdat.dat)
 
-	#invalid val format to store something into
+	#something else than datItm val
 	else:
-		ZCIErr(ZCI, "Invalid destination " + dstVal.toStr() + " to assign value " + scpTxt + " (Expected a data item value, VFC_VFC).")
+
+		#ffa chain can be accepted if targettable
+		deepestVal = None
+		if dstVal.vdat.id == ATM__FFA:
+			deepestVal = dstVal.vdat.dat.value
+			while deepestVal.vdat.id == ATM__FFA:
+				deepestVal = deepestVal.vdat.dat
+
+		#accessing a field from a non-datItm => can't write into it
+		if deepestVal is None:
+			ZCIErr(ZCI, "Invalid destination " + dstVal.toStr() + "\nto assign value " + scpTxt + " (Expected a data item based value, ASG_ASG).")
 
 	#add execution to concerned scope
 	scope.exes.append( atm(ATM__ASG, asg(dstVal, srcVal)) )
