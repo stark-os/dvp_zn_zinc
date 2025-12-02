@@ -63,18 +63,18 @@ class zci:
 	def strip(sbj):
 
 		#strip beginning
-		beginningShift = str_getBeginningStripIndex(sbj.txt, charset=BLANKS_EXTENDED)
-		if beginningShift != 0:
-			sbj.forward(beginningShift)
-			sbj.txt      = str_sub(sbj.txt, start=beginningShift)
+		begShift = str_getBegStripIndex(sbj.txt, charset=BLANKS_EXTENDED)
+		if begShift != 0:
+			sbj.forward(begShift)
+			sbj.txt      = str_sub(sbj.txt, start=begShift)
 			sbj.startIdx = sbj.ctx.icontent.idx
 
 		#strip end
 		endingIdx = str_getEndStripIndex(sbj.txt, charset=BLANKS_EXTENDED)
 		if endingIdx != -1 and endingIdx != len(sbj.txt)-1:
-			textLengthBefore = len(sbj.txt)
-			sbj.txt         = str_sub(sbj.txt, stop=endingIdx) #strip end of sbj.txt
-			sbj.stopIdx    -= textLengthBefore - len(sbj.txt)    #shift stopIdx the same amount
+			textLenBefore = len(sbj.txt)
+			sbj.txt       = str_sub(sbj.txt, stop=endingIdx) #strip end of sbj.txt
+			sbj.stopIdx  -= textLenBefore - len(sbj.txt)    #shift stopIdx the same amount
 
 
 

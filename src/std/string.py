@@ -99,7 +99,7 @@ def str_getEndStripIndex(t, charset=" \t"):
 def str_stripEnd(t, charset=" \t"):
 	return str_sub(t, stop=str_getEndStripIndex(t, charset))
 
-def str_getBeginningStripIndex(t, charset=" \t"):
+def str_getBegStripIndex(t, charset=" \t"):
 	startIdx = 0
 	for i in range(len(t)):
 		if t[startIdx] not in charset:
@@ -107,11 +107,11 @@ def str_getBeginningStripIndex(t, charset=" \t"):
 		startIdx += 1
 	return startIdx
 
-def str_stripBeginning(t, charset=" \t"):
-	return str_sub(t, start=str_getBeginningStripIndex(t, charset))
+def str_stripBeg(t, charset=" \t"):
+	return str_sub(t, start=str_getBegStripIndex(t, charset))
 
 def str_strip(t, charset=" \t"):
-	return str_stripEnd(str_stripBeginning(t, charset), charset)
+	return str_stripEnd(str_stripBeg(t, charset), charset)
 
 def str_expandTabs(s, expansionLength):
 	result    = ""

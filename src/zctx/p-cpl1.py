@@ -71,7 +71,7 @@ class cplDat:
 		#sbj.resC    = ""
 		sbj.resFP   = ""
 		#sbj.resFP_C = "" #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
-		sbj.resObv   = ""
+		sbj.resObv   = []
 
 	def newTyp(sbj, name, dcnDeg=0, size=0, dcns=None, dcnCommon=None, isPub=False):
 		if dcnCommon is None:

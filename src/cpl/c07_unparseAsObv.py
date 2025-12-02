@@ -4,6 +4,10 @@
 
 # -------- IMPORTATIONS --------
 
+# <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< should be already shared from src/main.z, Pythonic
+import sys, os
+CXD = os.path.dirname(os.path.realpath(sys.argv[0]))
+
 #internal
 from zctx import *
 
@@ -80,7 +84,7 @@ def unparseVal(zCtx, depth, v):
 def unparseDclDat(zCtx, depth, di):
 	zCtx.dbg0("Unparsing DCL DAT.")
 	d   = RES__OUTPUT_TAB * depth
-	res = ""
+	res = [""]
 
 	#type size
 	sizeTxt = hexOnN(zCtx.getTypeInstanceFromID(di.Type).dcnCommon.size, 4)
@@ -89,18 +93,18 @@ def unparseDclDat(zCtx, depth, di):
 	name = '_'*(depth+1) + di.name
 
 	#rsv
-	res = d + "rsv" + OBV__SEP + name + OBV__SEP + sizeTxt + '\n'
+	res[0] = d + "rsv" + OBV__SEP + name + OBV__SEP + sizeTxt
 
 	#initVal
 	if di.inited:
-		res += d
+		res.append(d)
 		obvValType, txt = unparseVal(zCtx, depth, di.initVal)
 		if obvValType == OBV__VAL_LIT:
-			res += "v2d" + OBV__SEP + name + OBV__SEP + txt + '\n'
+			res[1] += "v2d" + OBV__SEP + name + OBV__SEP + txt
 		elif obvValType == OBV__VAL_DATITM:
-			res += "d2d" + OBV__SEP + name + OBV__SEP + txt + sizeTxt + '\n'
+			res[1] += "d2d" + OBV__SEP + name + OBV__SEP + txt + sizeTxt
 		elif obvValType == OBV__VAL_REG:
-			res += "r2d" + OBV__SEP + name + OBV__SEP + txt + '\n'
+			res[1] += "r2d" + OBV__SEP + name + OBV__SEP + txt
 
 	#output
 	zCtx.cpl.resObv += res
@@ -112,7 +116,7 @@ def unparseDclDat(zCtx, depth, di):
 def unparseAsg(zCtx, depth, a):
 	zCtx.dbg0("Unparsing ASG " + a.toStr(depth=1))
 	d   = RES__OUTPUT_TAB * depth
-	res = ""
+	res = d[:]
 
 	#src
 	srcObvType, srcValTxt = unparseVal(zCtx, depth, a.src)
@@ -124,31 +128,30 @@ def unparseAsg(zCtx, depth, a):
 	#invalid dst
 	if dstObvType == OBV__VAL_LIT:
 		zCtx.int("Got assignment into a literal value (makes no sens) " + a.toStr())
-	res += d
 
 	#write: from lit
 	if srcObvType == OBV__VAL_LIT:
 		if dstObvType == OBV__VAL_DATITM:
-			res += "v2d" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt + '\n'
+			res += "v2d" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt
 		if dstObvType == OBV__VAL_REG:
-			res += "v2r" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt + '\n'
+			res += "v2r" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt
 
 	#write: from
 	elif srcObvType == OBV__VAL_DATITM:
 		if dstObvType == OBV__VAL_DATITM:
-			res += "d2d" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt + OBV__SEP + dstSizeTxt + '\n'
+			res += "d2d" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt + OBV__SEP + dstSizeTxt
 		if dstObvType == OBV__VAL_REG:
-			res += "d2r" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt + '\n'
+			res += "d2r" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt
 
 	#write: from register
 	else:
 		if dstObvType == OBV__VAL_DATITM:
-			res += "r2d" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt + '\n'
+			res += "r2d" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt
 		if dstObvType == OBV__VAL_REG:
-			res += "r2r" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt + '\n'
+			res += "r2r" + OBV__SEP + srcValTxt + OBV__SEP + dstValTxt
 
 	#output
-	zCtx.cpl.resObv += res
+	zCtx.cpl.resObv.append(res)
 	zCtx.dbg0("Unparsed ASG.")
 
 
@@ -250,29 +253,28 @@ def unparseStmSwi(zCtx, s, depth, begEnd=True):
 def unparseJmp(zCtx, depth, j):
 	zCtx.dbg0("Unparsing JMP " + j.toStr(depth=1))
 	d   = RES__OUTPUT_TAB * depth
-	res = ""
+	res = [d[:]]
 
 	#brk
 	if j.kind == JMP__BRK:
-		res += d + "BREAK\n"
+		res[0] += "BREAK\n"
 
 	#ctn
 	if j.kind == JMP__CTN:
-		res += d + "CONTINUE\n"
+		res[0] += "CONTINUE\n"
 
 	#ret
 	if j.kind == JMP__RET:
 		if j.retVal is not None:
-			res += d
 			obvValType, txt = unparseVal(zCtx, depth, j.retVal)
 			if obvValType == OBV__VAL_LIT:
-				res += "v2r"
+				res[0] += "v2r"
 			if obvValType == OBV__VAL_DATITM:
-				res += "d2r"
+				res[0] += "d2r"
 			else:
-				res += "r2r"
-			res += OBV__SEP + txt + "r\n"
-		res += d + "bck\n"
+				res[0] += "r2r"
+			res[0] += OBV__SEP + txt + OBV__SEP + 'r'
+		res.append(d + "bck")
 
 	#output
 	zCtx.cpl.resObv += res
@@ -284,25 +286,28 @@ def unparseJmp(zCtx, depth, j):
 def unparseCall(zCtx, depth, c):
 	zCtx.dbg0("Unparsing CALL " + c.toStr(depth=1))
 	d   = RES__OUTPUT_TAB * depth
-	res = ""
+	res = [d[:]]
 
 	#params
-	for p in range(len(c.paramVals)):
-		res += d
+	p = 0
+	while p < len(c.paramVals):
+		res.append(d[:])
+
+		#set pX reg
 		obvValType, txt = unparseVal(zCtx, depth, c.paramVals[p])
 		if obvValType == OBV__VAL_LIT:
-			res += "v2r"
+			res[p] += "v2r"
 		elif obvValType == OBV__VAL_DATITM:
-			res += "d2r"
+			res[p] += "d2r"
 		else:
-			res += "r2r"
-		res += OBV__SEP + txt + OBV__SEP + 'p' + str(p+1) + '\n'
+			res[p] += "r2r"
+		res[p] += OBV__SEP + txt + OBV__SEP + 'p' + str(p+1)
+
+		#inc
+		p += 1
 
 	#ivq
-	res += d + "ivq" + OBV__SEP + c.name + '\n'
-
-	#back
-	res += d + "bck\n"
+	res[p] += "ivq" + OBV__SEP + c.name
 
 	#output
 	zCtx.cpl.resObv += res
@@ -358,11 +363,11 @@ def unparseFct(zCtx, f):
 
 	#ext
 	if f.ext:
-		zCtx.cpl.resObv += "ext" + OBV__SEP + f.name + '\n'
+		zCtx.cpl.resObv.append("ext" + OBV__SEP + f.name)
 
 	#int
 	else:
-		res = "fct" + OBV__SEP + f.name + '\n'
+		res = ["fct" + OBV__SEP + f.name]
 
 		#retType
 		retTypeTxt = "void"
@@ -376,10 +381,10 @@ def unparseFct(zCtx, f):
 			diType = zCtx.getTypeInstanceFromID(di.Type)
 
 			#rsv them
-			res += RES__OUTPUT_TAB + "rsv" + OBV__SEP + '_' + di.name + OBV__SEP + hexOnN(diType.dcnCommon.size, 4) + '\n'
+			res.append(RES__OUTPUT_TAB + "rsv" + OBV__SEP + '_' + di.name + OBV__SEP + hexOnN(diType.dcnCommon.size, 4))
 
 			#set them according to regs
-			res += RES__OUTPUT_TAB + "r2d" + OBV__SEP + 'p' + str(p+1) + OBV__SEP + '_' + di.name + '\n'
+			res.append(RES__OUTPUT_TAB + "r2d" + OBV__SEP + 'p' + str(p+1) + OBV__SEP + '_' + di.name)
 
 			#fp
 			paramsTxtFP += ',' + diType.name
@@ -407,7 +412,10 @@ def unparseTypesFP(zCtx):
 		zCtx.dbg0("Unparsing DCL TYP " + tInst.name)
 
 		#skip root types
-		if tID in zCtx.rootTypes or tID == zCtx.gncDcnType or tID == zCtx.refType or tID in zCtx.spcDcnTypes:
+		if tID in zCtx.rootTypes or \
+			tID == zCtx.gncDcnType or \
+			tID == zCtx.refType or \
+			tID in zCtx.spcDcnTypes:
 			continue
 
 		#skip ref types (dcn)
@@ -441,68 +449,16 @@ def unparseTypesFP(zCtx):
 # -------- EXECUTION --------
 
 #main
-def c08_unparseAsObv(zCtx):
-	zCtx.updateLogLvl(STEP.C08)
+def c07_unparseAsObv(zCtx):
+	zCtx.updateLogLvl(STEP.C07)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("======================= C08 UNPARSE AS OBVIOUS : beginning ======================")
+	zCtx.dbg0("======================= C07 UNPARSE AS OBVIOUS : beginning ======================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
 	#some help lines on top
-	zCtx.cpl.resObv += "# ---------------- HELP SHORT ----------------\n"
-	zCtx.cpl.resObv += "#\n# Syntax:\n"
-	zCtx.cpl.resObv += "# - Everything written after a hash '#' will be ignored until the end of line.\n"
-	zCtx.cpl.resObv += "# - Space and tabulation characters are ignored at beginning and end of each line.\n"
-	zCtx.cpl.resObv += "# - Empty lines are ignored.\n"
-	zCtx.cpl.resObv += "# - EVERY data value is given in the following format:\n"
-	zCtx.cpl.resObv += "#   > An even number of lowercase hexadecimal digits.\n"
-	zCtx.cpl.resObv += "#   > Each pair of hexadecimal digit corresponds to a byte.\n"
-	zCtx.cpl.resObv += "# - .\n"
-	zCtx.cpl.resObv += "#\n# Data items:\n"
-	zCtx.cpl.resObv += "# - User data items are stored EXLUSIVELY in the stack.\n"
-	zCtx.cpl.resObv += "# - Their names are prefixed by underscores '_' according to their scope.\n"
-	zCtx.cpl.resObv += "#   The deepest the scope is, the more it will have underscores in prefix.\n"
-	zCtx.cpl.resObv += "#   Global scope data items starts with 1 underscore as prefix.\n"
-	zCtx.cpl.resObv += "# - Data items are always refered using their name followed by an offset suffix.\n"
-	zCtx.cpl.resObv += "#   An offset suffix is a plus sign '+' followed by 4 hex digits.\n"
-	zCtx.cpl.resObv += "#   This way, you are refering to a \"stack location\".\n"
-	zCtx.cpl.resObv += "#   This is the only way to interact with the stack.\n"
-	zCtx.cpl.resObv += "#\n# Registers:\n"
-	zCtx.cpl.resObv += "# - Registers are some special memory locations you can use to read/write from.\n"
-	zCtx.cpl.resObv += "# - There is a fixed amount of them, each with its specific use.\n"
-	zCtx.cpl.resObv += "# - Every register is 4 or 8 bytes long, depending on the architecture targetted (64=8B).\n"
-	zCtx.cpl.resObv += "#   Therefore, every operation made with them implies working with the whole memory chunk.\n"
-	zCtx.cpl.resObv += "# - All the registers available here are:\n"
-	zCtx.cpl.resObv += "#   > p1,p2,p3,p4,p5,p6 corresponds to function parameters.\n"
-	zCtx.cpl.resObv += "#   > r                 corresponds to function return value.\n"
-	zCtx.cpl.resObv += "#\n# Instructions:\n"
-	zCtx.cpl.resObv += "#   Stack:\n"
-	zCtx.cpl.resObv += "#   - rsv = \"reserve\"\n"
-	zCtx.cpl.resObv += "#     Making place in the stack for some bytes, now accessible via the data item name given.\n#\n"
-	zCtx.cpl.resObv += "#   - v2d = \"value to data item write\"\n"
-	zCtx.cpl.resObv += "#     Write bytes given into a stack location.\n#\n"
-	zCtx.cpl.resObv += "#   - d2d = \"data item to data item write\"\n"
-	zCtx.cpl.resObv += "#     Write from a stack location into another stack location, the given number of bytes.\n#\n"
-	zCtx.cpl.resObv += "#   - r2d = \"register to data item write\"\n"
-	zCtx.cpl.resObv += "#     Write from a register into a stack location.\n#\n"
-	zCtx.cpl.resObv += "#   Registers:\n"
-	zCtx.cpl.resObv += "#   - r2r = \"register to register write\"\n"
-	zCtx.cpl.resObv += "#     Write from a register into a register.\n#\n"
-	zCtx.cpl.resObv += "#   - v2r = \"value to register write\"\n"
-	zCtx.cpl.resObv += "#     Write bytes given into a register.\n#\n"
-	zCtx.cpl.resObv += "#   - d2r = \"data item to register write\"\n"
-	zCtx.cpl.resObv += "#     Write from a stack location into a register.\n#\n"
-	zCtx.cpl.resObv += "#   Functions:\n"
-	zCtx.cpl.resObv += "#   - fct = \"function\"\n"
-	zCtx.cpl.resObv += "#     Declares a function invocation starting point.\n#\n"
-	zCtx.cpl.resObv += "#   - ivq = \"invoque\"\n"
-	zCtx.cpl.resObv += "#     Pause current function execution, and move to the new function starting point given.\n#\n"
-	zCtx.cpl.resObv += "#   - bck = \"back\"\n"
-	zCtx.cpl.resObv += "#     Stop current function execution, and resume it back, right after we were invoqued.\n#\n"
-	zCtx.cpl.resObv += "#   - ext = \"external\"\n"
-	zCtx.cpl.resObv += "#     Mentions a function used by the program, but not declared in it.\n#\n"
-	zCtx.cpl.resObv += "# --------------------------------------------\n\n"
+	zCtx.cpl.resObv += readFile(CXD + "/help-header.obv").split('\n')
 
 	#gbl scp: obv
 	unparseScp(zCtx, 0, zCtx.cpl.gblScp)
@@ -520,12 +476,16 @@ def c08_unparseAsObv(zCtx):
 		if f.content is None: #compiled fcts only (leave dcp-dep aside)
 			unparseFct(zCtx, f)
 
-	#final msg if everything went OK, still cool to have that info
-	zCtx.dbg0("Types ID table: " + zCtx.listTypeNames())
-
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("======================= C08 UNPARSE AS OBVIOUS : end ======================")
+	zCtx.dbg0("======================= C07 UNPARSE AS OBVIOUS : end ======================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
+
+	#debug output file
+	if log_lvl[0] >= LOG__LVL_DBG0:
+		prepareDbgDir()
+
+		#write out current res
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c07.obv", '\n'.join(zCtx.cpl.resObv))

@@ -11,8 +11,8 @@ from cpl.c03_processLcls   import *
 from cpl.c04_dcpSubVals    import *
 from cpl.c05_unusedFcts    import *
 from cpl.c06_unusedDatItms import *
-from cpl.c07_xxxx          import *
-from cpl.c08_unparseAsObv  import *
+from cpl.c07_unparseAsObv  import *
+from cpl.c08_transitiveCpy import *
 
 
 
@@ -29,5 +29,5 @@ def compile(zCtx):
 	c04_dcpSubVals(zCtx)
 	c05_unusedFcts(zCtx)
 	c06_unusedDatItms(zCtx)
-	c07_xxxx(zCtx)
-	c08_unparseAsObv(zCtx)
+	c07_unparseAsObv(zCtx)
+	c08_transitiveCpy(zCtx)
