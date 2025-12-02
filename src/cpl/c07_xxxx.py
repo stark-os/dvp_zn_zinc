@@ -15,11 +15,11 @@ from zctx import *
 # -------- EXECUTION --------
 
 #main
-def c04_xxxx(zCtx):
-	zCtx.updateLogLvl(STEP.C04)
+def c07_xxxx(zCtx):
+	zCtx.updateLogLvl(STEP.C07)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("========================== C04 XXXX : beginning ========================")
+	zCtx.dbg0("========================== C07 XXXX : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -27,7 +27,7 @@ def c04_xxxx(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================== C04 XXXX : end ========================")
+	zCtx.dbg0("========================== C07 XXXX : end ========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
@@ -43,4 +43,4 @@ def c04_xxxx(zCtx):
 				output += f.toStr()
 
 		#write out current res
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c04.dl", output)
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c07.dl", output)

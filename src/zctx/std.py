@@ -69,8 +69,7 @@ ATM__POCALL        = 26
 ATM__LST           = 27
 ATM__LST_VAL       = 28
 ATM__LST_ATM       = 29
-ATM__FMAP_STR_VAL  = 30
-ATM__FFA = 31
+ATM__FFA = 30
 ATM__ATM = 99
 class atm:
 	def __init__(sbj, id, dat):
@@ -125,13 +124,6 @@ class atm:
 			for e in sbj.dat:
 				res += e.toStr(depth=depth+1) + ","
 			res += '\n' + d0 + ']'
-
-		#fmaps
-		elif sbj.id == ATM__FMAP_STR_VAL:
-			res += d0 + "dat:{"
-			for k in sbj.dat.keys():
-				res += '\n' + d0 + TERM__OUTPUT_TAB + '\"' + k + "\":" + sbj.dat[k].toStr(depth=depth+2) + ',' #recursive call
-			res += '\n' + d0 + '}'
 
 		#text
 		elif sbj.id == ATM__CHR:

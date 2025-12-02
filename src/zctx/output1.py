@@ -18,9 +18,8 @@
 
 		#code line
 		if prtLine:
-			if sbj.ctx is None:
-				sbj.int("No context to internal-output line from.", prtSubCtxs=False, prtLine=False)
-			out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
+			if sbj.ctx is not None:
+				out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
 
 		#msg
 		out += msg
@@ -43,9 +42,8 @@
 
 		#code line
 		if prtLine:
-			if sbj.ctx is None:
-				sbj.int("No context to error-output line from.", prtSubCtxs=False, prtLine=False)
-			out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
+			if sbj.ctx is not None:
+				out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
 
 		#msg
 		out += msg
@@ -68,9 +66,8 @@
 
 		#code line
 		if prtLine:
-			if sbj.ctx is None:
-				sbj.int("No context to warning-output line from.", prtSubCtxs=False, prtLine=False)
-			out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
+			if sbj.ctx is not None:
+				out += LOG__COLOR_TEXT + sbj.ctx.lineIndicator() + '\n'
 
 		#msg
 		out += msg

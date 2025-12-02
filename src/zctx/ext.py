@@ -89,7 +89,7 @@
 				i += 2
 
 			#compute size
-			tInst.computeStcSize(sbj.cpl.types)
+			tInst.computeStcSize(sbj.cpl)
 
 		#case 3: enm
 		elif info[0] == 'e':

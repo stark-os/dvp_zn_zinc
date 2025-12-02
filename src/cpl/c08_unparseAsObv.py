@@ -52,25 +52,23 @@ def unparseVal(zCtx, depth, v):
 		zCtx.dbg0("Unparsed VAL (lst[val]).")
 		return (OBV__VAL_LIT, res)
 
-	#stc
-	if v.vdat.id == ATM__FMAP_STR_VAL:
-		res = "<FMAP__STR_VAL> #not implemented yet"
-		'''
-		for k in v.vdat.dat.keys():
-			zCtx.cpl.resC += '.' + k + '='
-			unparseVal(zCtx, v.vdat.dat[k], depth)
-			zCtx.cpl.resC += ','
-		zCtx.cpl.resC = str_sub(zCtx.cpl.resC, stop=-2) #these 2 lines in Z: "zCtx.cpl.resC[-1] = '}'" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-		zCtx.cpl.resC += '}'
-		'''
-		return (OBV__VAL_LIT, res)
-
 	#ffa
 	if v.vdat.id == ATM__FFA:
 		obvValType, txt = unparseVal(zCtx, depth, v.vdat.dat.value)
 		if obvValType != OBV__VAL_DATITM:
 			zCtx.int("Still have FFA value on a non-datItm val " + v.vdat.dat.value.toStr(), prtSubCtxs=False, prtLine=False)
-		return (OBV__VAL_DATITM, txt + '+' + hexOnN(v.vdat.dat.offset, 4))
+
+		#remove prev 0 offset, to set ours
+		plusIdx     = str_findFirstChr(txt, '+')
+		nameAndPlus = str_sub(txt, stop=plusIdx)
+
+		#int err
+		prevOffset = str_sub(txt, start=plusIdx+1)
+		if prevOffset != "0000":
+			zCtx.int("Got non-zero offset in datItm used in FFA => SHOULDN'T BE!")
+
+		#res
+		return (OBV__VAL_DATITM, nameAndPlus + hexOnN(v.vdat.dat.offset, 4))
 
 	#unknown
 	zCtx.int("Unknown ID " + str(v.vdat.id) + " in value " + v.toStr(), prtSubCtxs=False, prtLine=False)

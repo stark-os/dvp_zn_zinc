@@ -571,8 +571,46 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 				cstOnly=v2i.cstOnly
 			)
 
-			#return complete fields map as value
-			res = val(tID, atm(ATM__FMAP_STR_VAL, givenFields), True)
+			#operate some things on each field
+			fieldDIs     = [] #lst[datItm]
+			fieldOffsets = [] #lst[smax]
+			for fieldName in givenFields.keys():
+
+				#dcp each field into a datItm
+				fieldVal        = givenFields[fieldName]
+				fieldDI         = v2i.scope.nxtDcpDatItm(fieldVal.Type)
+				fieldDI.inited  = True
+				fieldDI.initVal = fieldVal
+				fieldDIs.append(fieldDI)
+
+				#also compute its offset in main stc
+				fieldOffset = 0
+				for fDI in tInst.dcnCommon.fields:
+					if fDI.name == fieldName:
+						break
+					fieldOffset += ZCI.zCtx.getTypeInstanceFromID(fDI.Type).dcnCommon.size
+				fieldOffsets.append(fieldOffset)
+
+			#main stc, also a dcp datItm
+			mainStcDI = v2i.scope.nxtDcpDatItm(tID)
+			res       = val(tID, atm(ATM__DATITM, mainStcDI), True)
+
+			#asg each field in that main stc
+			for i in range(len(fieldDIs)):
+				fieldDI = fieldDIs[i]
+				v2i.scope.exes.append(atm(
+					ATM__ASG,
+					asg(
+						val(fieldDI.Type, atm(
+							ATM__FFA,
+							ffa(res, fieldOffsets[i])
+						), False),
+						val(fieldDI.Type, atm(
+							ATM__DATITM,
+							fieldDI
+						), False)
+					)
+				))
 			ZCIDbg1(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in STRUCTURE DEFINITION:\n" + res.toStr())
 			return res
 

@@ -14,53 +14,19 @@ from zctx import *
 
 # -------- VAL DCP --------
 
-#dcp tools
-def valMustBeDcp(v):
-	return (
-		v.vdat.id == ATM__FMAP_STR_VAL or \
-		v.vdat.id == ATM__CALL         or \
-		v.vdat.id == ATM__FFA
-	)
-
+#dcp
 def dcpSubVal(zCtx, v, scope, idx):
 	backshift = 0 #only 0 or 1
 
-	#stc def with sub val
-	if v.vdat.id == ATM__FMAP_STR_VAL:
-		fm   = v.vdat.dat
-		keys = list(fm.keys())
-		keys.reverse() #reverse order to have 1st dcp exe on top (allow potential dep use between each field)
-		for s in keys:
-
-			#sub val found
-			if valMustBeDcp(fm[s]):
-				subV = fm[s]
-				zCtx.dbg0("Decomposing sub val in stc def field \"" + s + "\" :" + subV.toStr())
-
-				#dcp DI
-				dcpDI     = scope.nxtDcpDatItm(subV.Type)
-				dcpDI_val = val(subV.Type, atm(ATM__DATITM, dcpDI), False)
-
-				#stc def contains now the dcpDI
-				fm[s] = dcpDI_val
-
-				#the dcpDI contains the subVal (still to be analyzed, it can contain another subVal => backshift)
-				lst_insertBefore(scope.exes, idx, atm(
-					ATM__ASG,
-					asg(dcpDI_val, subV)
-				))
-				zCtx.dbg1("\nScope after dcp: " + scope.toStr())
-				backshift = 1
-				zCtx.dbg0("Decomposed sub val in stc def field \"" + s + "\".")
-
 	#call with sub val
-	elif v.vdat.id == ATM__CALL:
+	if v.vdat.id == ATM__CALL:
 		c = v.vdat.dat
 		for p in range(len(c.paramVals)):
 			p = len(c.paramVals)-1-p #reverse order to have 1st dcp exe on top (allow potential dep use between each field)
 
-			#sub val found
-			if valMustBeDcp(c.paramVals[p]):
+			#sub val to dcp found
+			subValID = c.paramVals[p].vdat.id
+			if subValID == ATM__CALL or subValID == ATM__FFA:
 				subV = c.paramVals[p]
 				zCtx.dbg0("Decomposing sub val in param " + str(p+1) + " of call " + c.name + "() :" + subV.toStr())
 
@@ -84,8 +50,9 @@ def dcpSubVal(zCtx, v, scope, idx):
 	elif v.vdat.id == ATM__FFA:
 		f = v.vdat.dat
 
-		#sub val found
-		if valMustBeDcp(f.value):
+		#sub val to dcp found
+		subValID = f.value.vdat.id
+		if subValID == ATM__CALL or subValID == ATM__FFA:
 			subV = f.value
 			zCtx.dbg0("Decomposing sub val in ffa:" + subV.toStr())
 
@@ -116,11 +83,11 @@ def dcpSubVal(zCtx, v, scope, idx):
 # -------- EXECUTION --------
 
 #main
-def c06_dcpSubVals(zCtx):
-	zCtx.updateLogLvl(STEP.C06)
+def c04_dcpSubVals(zCtx):
+	zCtx.updateLogLvl(STEP.C04)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("=========================== C06 DCP SUB VALS : beginning ========================")
+	zCtx.dbg0("=========================== C04 DCP SUB VALS : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -218,7 +185,7 @@ def c06_dcpSubVals(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================= C06 DCP SUB VALS C : end ========================")
+	zCtx.dbg0("========================== C04 DCP SUB VALS : end =========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
@@ -233,4 +200,4 @@ def c06_dcpSubVals(zCtx):
 			output += f.scope.toStr()
 
 		#write out current res
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c06.dl", output)
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c04.dl", output)

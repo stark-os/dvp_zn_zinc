@@ -15,7 +15,7 @@ from zctx import *
 # -------- LIST CALLED FCTS --------
 
 #tiny tool
-def addCallNameIfValIsCall(calledFcts, v):
+'''def addCallNameIfValIsCall(calledFcts, v):
 	if v.vdat.id == ATM__CALL:
 		callName = v.vdat.dat.name
 		if callName not in calledFcts:
@@ -66,7 +66,7 @@ def listCalled(calledFcts, scope):
 		#call
 		elif x.id == ATM__CALL:
 			if x.dat.name not in calledFcts:
-				calledFcts.append(x.dat.name)
+				calledFcts.append(x.dat.name)'''
 
 
 
@@ -76,15 +76,16 @@ def listCalled(calledFcts, scope):
 # -------- EXECUTION --------
 
 #main
-def c07_rmUncalled(zCtx):
-	zCtx.updateLogLvl(STEP.C07)
+def c06_unusedDatItms(zCtx):
+	zCtx.updateLogLvl(STEP.C06)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("========================== C07 RM UNCALLED : beginning ==========================")
+	zCtx.dbg0("======================== C06 UNUSED DAT ITMS : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
-	#list all fct called in the whole program
+	''' <<<<<<<<<<<<<<<<<<<<<<<<<<<<< NOT SURE THIS STEP IS ACTUALLY USEFUL IN Z CPL, BETTER USE IT IN DEOBV
+	#list all lcl & gbl called in the whole program
 	calledFcts = [] #lst[str]
 	listCalled(calledFcts, zCtx.cpl.gblScp)
 	for f in zCtx.cpl.fcts:
@@ -108,15 +109,21 @@ def c07_rmUncalled(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================== C07 RM UNCALLED : end ==========================")
+	zCtx.dbg0("======================== C06 UNUSED DAT ITMS : end ========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
+	'''
 
 	#debug output file
 	if log_lvl[0] >= LOG__LVL_DBG0:
 		prepareDbgDir()
 
-		#gather remaining fcts
-		output = "FCTS_REMAINING:\n\n" + '\n'.join(calledFcts) + "\n\n\n\nFCTS_REMOVED:\n\n" + '\n'.join(rmFctNames) + '\n'
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c07.lst", output) #lst of removed fcts
+		#sum up
+		'''output = \
+			"GBL DATITMS REMAINING (used):\n\n" + '\n'.join() + \
+			"\n\n\n\nLCL DATITMS REMAINING (used):\n\n" + '\n'.join() + \
+			"\n\n\n\nGBL DATITMS REMOVED (unused):\n\n" + '\n'.join() + \
+			"\n\n\n\nLCL DATITMS REMOVED (unused):\n\n" + '\n'.join() '\n'
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c06.lst", output)
+		'''

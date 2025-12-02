@@ -148,7 +148,7 @@ def processTypeDcl(ZCI, isPub):
 				ZCIErr(ZCI, "Structure type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" contains a field of type \"raw\" => forbidden, in type declaration ZCI (DCL_TYP).")
 
 		#compute size
-		newTypeInst.computeStcSize(ZCI.zCtx.cpl.types)
+		newTypeInst.computeStcSize(ZCI.zCtx.cpl)
 
 	#process type content: type-copy syntax
 	else:
@@ -186,36 +186,83 @@ def processTypeDcl(ZCI, isPub):
 		ZCI.zCtx.cpl.gblScp.datItms.append(atmID_DI)
 
 		#create a param "e" for toAtm method
-		toAtm_paramE     = datItm(newTypeID, "Le", False, None)
-		toAtm_paramE_val = val(newTypeID, atm(ATM__DATITM, toAtm_paramE), False)
+		paramE     = datItm(newTypeID, "Le", False, None)
+		paramE_val = val(newTypeID, atm(ATM__DATITM, paramE), False)
 
 		#create toAtm method
-		toAtm_fct    = newFct(
+		toAtm_fct = newFct(
 			"GT" + fullName + "_FtoAtm",
 			newTypeID,
-			[toAtm_paramE],
+			[paramE],
 			ZCI.zCtx.cpl.gblScp,
 			methodOf=newTypeID
 		)
 		ZCI.zCtx.cpl.fcts.append(toAtm_fct)
+		toAtm_fct.scope.datItms.append(paramE) #also add param as 1st datItm in fct scope
 
-		#process val "@e"
-		refE = val(
+		#fct content is: "ret atm{ id=^Atm.type, dat=@e }"
+		# => dcp into:
+		#     smax D0 = ^Atm.type
+		#     ref  D1 = @e
+		#     atm  D2
+		#     D2.id  = D0
+		#     D2.dat = D1
+		#     ret D2
+
+		#"smax D0 = ^Atm.type"
+		dcpDI_id         = toAtm_fct.scope.nxtDcpDatItm(ZCI.zCtx.smaxType)
+		dcpDI_id.inited  = True
+		dcpDI_id.initVal = atmID_val
+
+		#"ref DI = @e"
+		dcpDI_dat         = toAtm_fct.scope.nxtDcpDatItm(ZCI.zCtx.refType)
+		dcpDI_dat.inited  = True
+		dcpDI_dat.initVal = val(
 			ZCI.zCtx.refType,
 			atm(ATM__CALL, call("frf", [paramE_val], ZCI.zCtx.refType)),
 			False
 		)
 
-		#add fct content directly processed "ret atm{ id=^Atm.type, dat=@e }"
-		toAtm_fct.scope.datItms.append(toAtm_paramE)
+		#"atm D2"
+		dcpDI_mainStc     = toAtm_fct.scope.nxtDcpDatItm(ZCI.zCtx.atmType)
+		dcpDI_mainStcVal  = val(ZCI.zCtx.atmType, atm(ATM__DATITM, dcpDI_mainStc), True)
+
+		#"D2.id = D0"
+		toAtm.fct.scope.exes.append(atm(
+			ATM__ASG,
+			asg(
+				val(ZCI.zCtx.smaxType, atm(
+					ATM__FFA,
+					ffa(dcpDI_mainStcVal, 0)
+				), False),
+				val(ZCI.zCtx.smaxType, atm(
+					ATM__DATITM,
+					dcpDI_id
+				), False)
+			)
+		))
+
+		#"D2.dat = D1"
+		toAtm.fct.scope.exes.append(atm(
+			ATM__ASG,
+			asg(
+				val(ZCI.zCtx.refType, atm(
+					ATM__FFA,
+					ffa(dcpDI_mainStcVal, ZCI.zCtx.smaxSize) #no need to apply any padding, #smax must be arch type
+				), False),
+				val(ZCI.zCtx.refType, atm(
+					ATM__DATITM,
+					dcpDI_dat
+				), False)
+			)
+		))
+
+		#"ret D2"
 		toAtm_fct.scope.exes.append(atm(
 			ATM__JMP,
 			jmp(JMP__RET, retVal=val(
 				ZCI.zCtx.atmType,
-				atm(ATM__FMAP_STR_VAL, {
-					'id' : atmID_val,
-					'dat': refE
-				}),
+				atm(ATM__DATITM, dcpDI_mainStc),
 				False
 			))
 		))

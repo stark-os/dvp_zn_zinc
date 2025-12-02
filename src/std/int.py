@@ -265,3 +265,8 @@ def str_dec_toS32(s):
 
 def str_dec_toS64(s):
 	return str_dec_toUM(s, MAX_LEN_DEC_S64, MAX_LEN_DEC_U64)
+
+def pad(i, step):
+	if i%step != 0:
+		i += 1
+	return i

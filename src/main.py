@@ -31,6 +31,17 @@ from cpl.compile     import *
 
 
 
+# -------- TMP --------
+
+#tmp <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+mode = CPL__MODE_N
+tgt  = CPL__TGT_SDL
+
+
+
+
+
+
 # -------- EXECUTION --------
 
 #main
@@ -43,7 +54,12 @@ def main():
 	filepath = sys.argv[1]
 
 	#prepare output filename
-	outputFilename = path_name(os.path.basename(filepath)) + ".obv"
+	name           = path_name(os.path.basename(filepath))
+	outputFilename = name + ".obv"
+	if tgt == CPL__TGT_SDL:
+		outputFilename_FP = name + ".sdl.cfg"
+	else:
+		outputFilename_FP = name + ".elf.cfg"
 
 	#z code context
 	zCtx = newZCtx(
@@ -51,7 +67,7 @@ def main():
 		config.read(CXD + "/../cfg/pcpl_cfg.cfg"),
 		config.read(CXD + "/../cfg/pcpl_itm.cfg", comment_character='%', additionnalSpacesAllowed=False),
 		config.read(CXD + "/../cfg/cpl_opt.cfg"),
-		CPL__TGT_SDL | CPL__MODE_N,
+		tgt|mode,
 
 		#debug
 		log_lvls = (
@@ -75,10 +91,8 @@ def main():
 
 	#compile
 	compile(zCtx)
-	#writeFile(outputFilename, zCtx.cpl.resC)
-	writeFile(outputFilename, zCtx.cpl.resObv)
-	writeFile(outputFilename + ".cfg", zCtx.cpl.resFP)
-	#writeFile(outputFilename + ".cfg.TMP_C", zCtx.cpl.resFP_C) #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
+	writeFile(outputFilename,    zCtx.cpl.resObv)
+	writeFile(outputFilename_FP, zCtx.cpl.resFP)
 
 #run main
 main()

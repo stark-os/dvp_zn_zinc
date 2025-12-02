@@ -103,7 +103,7 @@ def newZCtx(
 		datItm(res.smaxType, "len", False, None),
 		datItm(res.smaxType, "dat", False, None)
 	]
-	rawTypeInst.computeStcSize(res.cpl.types)
+	rawTypeInst.computeStcSize(res.cpl)
 	rawTypeInst.dcnCommon.isPub = False
 
 	#stc type
@@ -122,7 +122,7 @@ def newZCtx(
 			datItm(res.smaxType, "id", False, None),
 			datItm(res.refType, "dat", False, None)
 		]
-		atmTypeInst.computeStcSize(res.cpl.types)
+		atmTypeInst.computeStcSize(res.cpl)
 		atmTypeInst.dcnCommon.isPub = False
 
 	#dcn related
