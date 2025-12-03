@@ -360,13 +360,7 @@ def unparseScp(zCtx, depth, scope, skipFirstDIs=0):
 #fcts
 def unparseFct(zCtx, f):
 	zCtx.dbg0("Unparsing FCT " + f.toStr())
-
-	#ext
-	if f.ext:
-		zCtx.cpl.resObv.append("ext" + OBV__SEP + f.name)
-
-	#int
-	else:
+	if not f.ext:
 		res = ["fct" + OBV__SEP + f.name]
 
 		#retType
@@ -394,7 +388,9 @@ def unparseFct(zCtx, f):
 
 		#fp
 		if f.isPub:
-			zCtx.cpl.resFP += 'f' + f.name + '\t' + retTypeTxt + paramsTxtFP + '\n'
+			zCtx.cpl.resFP += "uf" + f.name + '\t' + retTypeTxt + paramsTxtFP + '\n'
+		elif zCtx.cpl.opts["INCLUDE_PRV_IN_FP"] == "ON":
+			zCtx.cpl.resFP += "rf" + f.name + '\t' + retTypeTxt + paramsTxtFP + '\n'
 
 		#content
 		unparseScp(zCtx, 1, f.scope, skipFirstDIs=len(f.params))
@@ -404,11 +400,11 @@ def unparseFct(zCtx, f):
 
 #types
 def unparseTypesFP(zCtx):
-	zCtx.dbg0("Types ID table: " + zCtx.listTypeNames())
 	refDcnCommon = zCtx.getTypeInstanceFromID(zCtx.refType).dcnCommon
+	undcnFP = []
+	dcnFP   = []
 	for tID in range(len(zCtx.cpl.types)):
 		tInst = zCtx.cpl.types[tID]
-		tFP   = ""
 		zCtx.dbg0("Unparsing DCL TYP " + tInst.name)
 
 		#skip root types
@@ -419,27 +415,70 @@ def unparseTypesFP(zCtx):
 			continue
 
 		#skip ref types (dcn)
-		if tInst.dcnCommon == refDcnCommon:
-			continue
+		#if tInst.dcnCommon == refDcnCommon: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		#	continue
 
-		#shared type
+		#int type
 		if not tInst.ext:
-			tFP += 't' + tInst.name + '\t'
+			dcnDegTxt = ',' + str(tInst.dcnCommon.dcnDeg)
 
-			#prm
-			if tInst.dcnCommon.nature == NATURE__PRM:
-				tFP += 'p' + zCtx.getTypeNameFromID(tInst.dcnCommon.parent)
+			#sharing access
+			acsPfx = 'u'
+			if not tInst.dcnCommon.isPub:
+				if zCtx.cpl.opts["INCLUDE_PRV_IN_FP"] == "ON":
+					acsPfx = 'r'
+				else:
+					continue
 
-			#stc
+			#common beg
+			line = acsPfx + 't' + tInst.name + '\t'
+
+			#case 1: dcned
+			if len(tInst.dcns) != 0:
+				line += 'd' + dcnDegTxt
+				for dcnID in tInst.dcns:
+					line += ',' + zCtx.getTypeNameFromID(dcnID)
+				dcnFP.append(line)
+
+			#case 2: stc
 			elif tInst.dcnCommon.nature == NATURE__STC:
-				tFP += 's'
+				line += 's' + dcnDegTxt
 				for f in tInst.dcnCommon.fields:
-					tFP += zCtx.getTypeNameFromID(f.Type) + ',' + f.name + ','
-				tFP = str_sub(tFP, stop=-2)
+					line += ',' + zCtx.getTypeNameFromID(f.Type) + ':' + f.name
+				undcnFP.append(line)
 
-		#output
-		zCtx.cpl.resFP += tFP
-		zCtx.dbg0("Unparsed DCL TYP.")
+			#case 3: enm
+			elif tInst.dcnCommon.nature == NATURE__ENM:
+				line += 'e' + dcnDegTxt
+				for f in tInst.dcnCommon.fields:
+					line += ',' + f.name
+				undcnFP.append(line)
+
+			#everything else => can be only a type copy of a primitive
+			else:
+				undcnFP.append(line + 'p' + dcnDegTxt + ',' + zCtx.getTypeNameFromID(tInst.dcnCommon.parent))
+
+	#output
+	zCtx.cpl.resFP += '\n'.join(undcnFP) + '\n' + '\n'.join(dcnFP) + '\n'
+	zCtx.dbg0("Unparsed DCL TYPs.")
+
+#gbl datItms
+def unparseGblDatItmsFP(zCtx):
+	for di in zCtx.cpl.gblScp.datItms:
+		if not di.ext:
+
+			#int only
+			dFP = "ud" + di.name + '\t' + zCtx.getTypeNameFromID(di.Type) + '\n'
+
+			#shared access
+			if not di.isPub:
+				if zCtx.cpl.opts["INCLUDE_PRV_IN_FP"] == "ON":
+					dFP = 'r' + str_sub(dFP, start=1)
+				else:
+					dFP = ""
+
+			#output
+			zCtx.cpl.resFP += dFP
 
 
 
@@ -467,9 +506,7 @@ def c07_unparseAsObv(zCtx):
 	unparseTypesFP(zCtx)
 
 	#gbl scp: fp, datItms
-	for di in zCtx.cpl.gblScp.datItms:
-		if not di.ext and di.isPub:
-			zCtx.cpl.resFP += 'd' + di.name + '\t' + zCtx.getTypeNameFromID(di.Type)
+	unparseGblDatItmsFP(zCtx)
 
 	#fcts
 	for f in zCtx.cpl.fcts:

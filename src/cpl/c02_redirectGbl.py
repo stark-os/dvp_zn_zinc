@@ -19,35 +19,35 @@ from pcpl.p3_ZCSAndImp import *
 
 
 
-# -------- EXT_LNK --------
+# -------- EXT_ASU --------
 
-#external linking
-def processLnk(ZCI):
-	ZCIDbg0(ZCI, "Processing SDL addition.", prtLine=False)
-	jumpBlankZone(ZCI, "File path in library linking ZCI (EXT_LNK)")
+#external resource
+def processAsu(ZCI):
+	ZCIDbg0(ZCI, "Processing external assumed code addition.", prtLine=False)
+	jumpBlankZone(ZCI, "File path in external assumed code addition ZCI (EXT_ASU)")
 
 	#library linking path
-	path = readName(ZCI, "File path in library linking ZCI (EXT_LNK).", blacklist=BLANKS_EXTENDED)[1]
+	path = readName(ZCI, "File path in external assumed code addition ZCI (EXT_ASU).", blacklist=BLANKS_EXTENDED)[1]
 	if not path.startswith('/'):
 		path = os.path.normpath(ZCI.ctx.dirname + '/' + path)
 
 	#check existence
 	if not os.path.isfile(path):
-		ZCIErr(ZCI, "Shared & Dynamically Linked (SDL) library " + path + " not found.")
-	ZCIDbg0(ZCI, "SDL file \"" + path + "\" found.", prtLine=False)
+		ZCIErr(ZCI, "File " + path + " not found for external assumed code addition (EXT_ASU).")
+	ZCIDbg0(ZCI, "File \"" + path + "\" found for EXT_ASU.", prtLine=False)
 
 	#add link
-	if path not in ZCI.zCtx.cpl.lnkLibs:
-		ZCI.zCtx.cpl.lnkLibs.append(path)
-		ZCIDbg0(ZCI, "Added SDL \"" + path + "\" to linking list.")
+	if path not in ZCI.zCtx.cpl.extAsuFiles:
+		ZCI.zCtx.cpl.extAsuFiles.append(path)
+		ZCIDbg0(ZCI, "Added file \"" + path + "\" to loaded EXT_ASU files.")
 	else:
-		ZCIDbg0(ZCI, "SDL \"" + path + "\" already in linking list => skipping it.")
+		ZCIDbg0(ZCI, "File \"" + path + "\" already loaded => skipping it.")
 
 	#load it
-	ZCI.zCtx.loadExtFP(path)
+	ZCI.zCtx.loadExtAsu(path)
 
 	#end of ZCI expected
-	endOfZCI(ZCI, "library linking ZCI (EXT_LNK).")
+	endOfZCI(ZCI, "external assumned code addition ZCI (EXT_ASU).")
 	ZCI.dbgPause()
 
 
@@ -903,11 +903,11 @@ def c02_redirectGbl(zCtx):
 					z -= 1
 					continue
 
-				#2.1 - library linking
-				if str_cmp("lnk", firstWord):
+				#2.1 - external assumed code addition
+				if str_cmp("asu", firstWord):
 					if manualAccess_set:
-						ZCIErr(ZCI, "Doesn't make sens to set public/private access to library link.")
-					processLnk(ZCI)
+						ZCIErr(ZCI, "Doesn't make sens to set public/private access to external assumed code addition.")
+					processAsu(ZCI)
 					continue
 
 				#2.2 - type declaration DCL_TYP

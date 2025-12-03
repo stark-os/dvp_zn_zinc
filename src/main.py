@@ -81,7 +81,7 @@ def main():
 			LOG__LVL_INF, #C04
 			LOG__LVL_INF, #C05
 			LOG__LVL_INF, #C06
-			LOG__LVL_DBG0, #C07
+			LOG__LVL_INF, #C07
 			LOG__LVL_INF  #C08
 		), stepByStep = False
 	)

@@ -54,11 +54,11 @@ class cplDat:
 		sbj.opts = None
 
 		#z abstract elements
-		sbj.modPfxes = None #lst[str]
-		sbj.types    = None #lst[int]
-		sbj.gblScp   = None
-		sbj.fcts     = None #lst[fct]
-		sbj.lnkLibs  = None #lst[]
+		sbj.modPfxes    = None #lst[str]
+		sbj.types       = None #lst[int]
+		sbj.gblScp      = None
+		sbj.fcts        = None #lst[fct]
+		sbj.extAsuFiles = None #lst[str]
 
 		#general info
 		sbj.tgt  = 0
@@ -68,9 +68,7 @@ class cplDat:
 		sbj.ffa_fieldTypeIDs = []
 
 		#program concrete elements
-		#sbj.resC    = ""
 		sbj.resFP   = ""
-		#sbj.resFP_C = "" #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
 		sbj.resObv   = []
 
 	def newTyp(sbj, name, dcnDeg=0, size=0, dcns=None, dcnCommon=None, isPub=False):
@@ -81,7 +79,7 @@ class cplDat:
 		res           = typ()
 		res.name      = name
 		res.methods   = []   #lst[fct]
-		res.dcns      = dcns #tab[typ]
+		res.dcns      = dcns #tab[smax]
 		res.dcnCommon = dcnCommon #typ_dcnCommon
 
 		#external
@@ -99,14 +97,13 @@ def newCplDat(opts, info):
 	res.mode = info & CPL__MODE_MASK
 
 	#z abstract elements
-	res.modPfxes = [] #lst[str]
-	res.types    = []
-	res.gblScp   = newScp()
-	res.fcts     = [] #lst[fct]
-	res.lnkLibs  = [] #lst[str]
+	res.modPfxes    = [] #lst[str]
+	res.types       = []
+	res.gblScp      = newScp()
+	res.fcts        = [] #lst[fct]
+	res.extAsuFiles = [] #lst[str]
 
-	#program concrete elements
-	#result.dataResult = program() <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< maybe not required
+	#res
 	return res
 
 

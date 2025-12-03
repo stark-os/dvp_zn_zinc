@@ -2,35 +2,18 @@
 
 	# ---------------- EXT RESOURCES ----------------
 
-	#specific tool only for ext loading
-	def getTypeIDFromName_includingDcnIfNeeded(sbj, extFPPath, typeName):
-
-		#create fake ZCI containing type name to read
-		fakeCtx = ParsingCtx(extFPPath, typeName)
-		fakeZCI = newZCI(sbj, [fakeCtx])
-		fakeZCI.inc()
-		fakeZCI.stopIdx = len(typeName)-1
-
-		#read type as in real Z code
-		tID = readType(fakeZCI, None)
-		if tID == TYPE_ID__UNKNOWN:
-			sbj.err("Unknown type \"" + typeName + "\" in fingerprint file " + extFPPath, prtLine=False, prtSubCtxs=False)
-		return tID
-
-
-
 	#types
-	def loadExtType(sbj, extFPPath, name, info):
+	def loadExtAsuType(sbj, extAsuPath, name, info, isPub):
 		if len(info) < 1:
-			sbj.err("Missing nature (p/s/e) for type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+			sbj.err("Missing nature (p/s/e) for type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 		if len(info) < 2:
-			sbj.err("Missing declination degree for type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+			sbj.err("Missing declination degree for type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 		#check dcnDeg
 		dcnDegTxt = info[1]
 		for c in dcnDegTxt:
 			if c not in string.digits:
-				sbj.err("Invalid character '" + c + "' in declination degree for type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+				sbj.err("Invalid character '" + c + "' in declination degree for type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 		#compute it
 		dcnDeg  = 0
@@ -42,21 +25,27 @@
 		t     = sbj.cpl.newTyp(name, dcnDeg, isPub=True)
 		tInst = sbj.getTypeInstanceFromID(t)
 
-		#case 1: prm
+
+
+		#case 1: type copy (child)
 		nat = 0
-		if info[0] == 'p':
-			tInst.dcnCommon.nature = NATURE__PRM
+		if info[0] == 'c':
 
 			#parent type must be given
 			if len(info) < 3:
-				sbj.err("Missing parent to primitive type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
-			parentID = sbj.getTypeIDFromName_includingDcnIfNeeded(extFPPath, info[2])
+				sbj.err("Missing parent to child type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+			parentID = sbj.getTypeIDFromName(info[2])
 			if parentID == TYPE_ID__UNKNOWN:
-				sbj.err("Unable to find parent type " + info[2] + " for primitive type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+				sbj.err("Unable to find parent type " + info[2] + " for child type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
-			#relevant prm data
-			tInst.dcnCommon.size   = sbj.getTypeInstanceFromID(parentID).dcnCommon.size
+			#relevant parent data
+			pInst                  = sbj.getTypeInstanceFromID(parentID)
+			tInst.dcnCommon.size   = pInst.dcnCommon.size
+			tInst.dcnCommon.nature = pInst.dcnCommon.nature
+			tInst.dcnCommon.fields = pInst.dcnCommon.fields
 			tInst.dcnCommon.parent = parentID
+
+
 
 		#case 2: stc
 		elif info[0] == 's':
@@ -64,32 +53,39 @@
 			tInst.dcnCommon.fields = []
 
 			#as long as we have fields to read
-			remainingLen = len(info) - 2
-			i            = 0
-			while i < remainingLen:
+			for i in range(len(info) - 2):
+				fieldTxt = info[2+i]
+
+				#parse "fieldTypeName:fieldName" <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< STDZ MUST PROVIDE A FCT TO SPLIT STR SAFELY WITH EXPLICIT ERR LIKE THIS .splitByChr_strict(s, c, len=2, nonEmpty=True)
+				cIdx = str_findFirstChr(fieldTxt, ':')
+				if cIdx == -1:
+					sbj.err("Missing colon separator ':' in field definition of structure type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+				if cIdx == 0:
+					sbj.err("Empty type name given in field definition of structure type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+				if cIdx == len(fieldTxt)-1:
+					sbj.err("Empty name given in field definition of structure type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+				if str_findLastChr(fieldTxt, ':') != cIdx:
+					sbj.err("Empty name given in field definition of structure type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+				typeName = str_sub(fieldTxt, stop=cIdx-1)
+				name     = str_sub(fieldTxt, start=cIdx+1)
 
 				#field type
-				typeName = info[2+i]
-				typeID   = sbj.getTypeIDFromName_includingDcnIfNeeded(extFPPath, typeName)
+				typeID = sbj.getTypeIDFromName(typeName)
 				if typeID == TYPE_ID__UNKNOWN:
-					sbj.err("Unable to find field type \"" + typeName + "\" in structure type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
-
-				#missing field name
-				if i+1 == remainingLen:
-					sbj.err("Missing name associated to field type " + typeName + " in structure type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+					sbj.err("Unable to find field type \"" + typeName + "\" of structure type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 				#field name
-				name = info[3+i]
 				for c in name:
 					if c not in DEFAULT_NAME_CHARSET:
-						sbj.err("Invalid character '" + c + "' in field name \"" + name + "\" in structure type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+						sbj.err("Invalid character '" + c + "' in field name \"" + name + "\" of structure type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 				#add field
 				tInst.dcnCommon.fields.append( datItm(typeID, name, False, None) )
-				i += 2
 
 			#compute size
 			tInst.computeStcSize(sbj.cpl)
+
+
 
 		#case 3: enm
 		elif info[0] == 'e':
@@ -97,17 +93,14 @@
 			tInst.dcnCommon.fields = []
 
 			#as long as we have fields to read
-			remainingLen = len(info) - 2
-			i            = 0
-			while i < remainingLen:
+			for i in range(len(info) - 2):
 				fName = info[2+i]
 				for c in fName:
 					if c not in DEFAULT_NAME_CHARSET:
-						sbj.err("Invalid character '" + c + "' in field name \"" + fName + "\" in structure type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+						sbj.err("Invalid character '" + c + "' in field name \"" + fName + "\" of enumerate type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 				#add field
 				tInst.dcnCommon.fields.append( datItm(TYPE_ID__UNKNOWN, fName, False, None) )
-				i += 1
 
 			#compute fields sizes
 			itmType = setEnmFieldsType(sbj, tInst.dcnCommon.fields)
@@ -116,33 +109,72 @@
 			tInst.dcnCommon.size   = sbj.getTypeInstanceFromID(itmType).dcnCommon.size
 			tInst.dcnCommon.parent = itmType
 
+
+
+		#case 4: dcn of an existing type
+		elif info[0] == 'd':
+
+			#src type must be given
+			if len(info) < 3:
+				sbj.err("Missing source type for declinated type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+			srcTypeID = sbj.getTypeIDFromName(info[2])
+			if srcTypeID == TYPE_ID__UNKNOWN:
+				sbj.err("Unable to find source type " + info[2] + " for declinated type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+
+			#share dcnCommon
+			srcTypeInst     = sbj.getTypeInstanceFromID(srcTypeID)
+			tInst.dcnCommon = srcTypeInst.dcnCommon
+
+			#must have the same share access
+			if isPub != srcTypeInst.dcnCommon.isPub:
+				sbj.err("Got different share access between declinated type " + name + " and its source type, in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+
+			#check how many dcns follows
+			dcnsToRead = len(info) - 3
+			if dcnsToRead != dcnDeg:
+				sbj.err("Got inexact number of declinations following declinated type " + name + " (" + str(dcnDeg) + " required, got " + str(dcnsToRead) + "), in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+
+			#read & store them
+			for i in range(dcnDeg):
+				typeName = info[3+i]
+				typeID   = sbj.getTypeIDFromName(typeName)
+				if typeID == TYPE_ID__UNKNOWN:
+					sbj.err("Unable to find type \"" + typeName + "\" in declinations of declinated type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+
+				#add dcn
+				tInst.dcns.append(typeID)
+
+
+
 		#unknown
 		else:
-			sbj.err("Invalid nature prefix '" + info[0] + "' for type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+			sbj.err("Invalid nature prefix '" + info[0] + "' for type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 		#set res as ext resource
-		tInst.dcnCommon.ext = True
+		tInst.dcnCommon.ext   = True
+		tInst.dcnCommon.isPub = isPub
 
 
 
 	#data items
-	def loadExtDatItm(sbj, extFPPath, name, info):
+	def loadExtAsuDatItm(sbj, extAsuPath, name, info, isPub):
 		if len(info) < 1:
-			sbj.err("Missing type for data item " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+			sbj.err("Missing type for data item " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 		#datItm type
-		typeID = sbj.getTypeIDFromName_includingDcnIfNeeded(extFPPath, info[0])
+		typeID = sbj.getTypeIDFromName(info[0])
 		if typeID == TYPE_ID__UNKNOWN:
-			sbj.err("Unable to find type " + info[0] + " for data item type " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+			sbj.err("Unable to find type " + info[0] + " for data item type " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 		#datItm name
 		for c in name:
 			if c not in DEFAULT_NAME_CHARSET:
-				sbj.err("Invalid character '" + c + "' in data item name \"" + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+				sbj.err("Invalid character '" + c + "' in data item name \"" + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 		#create ext datItm
-		di     = datItm(typeID, name, False, None)
-		di.ext = True
+		di       = datItm(typeID, name, False, None)
+		di.ext   = True
+		di.isPub = isPub
 
 		#add it to gbl scp
 		sbj.cpl.gblScp.datItms.append(di)
@@ -150,14 +182,14 @@
 
 
 	#fct
-	def loadExtFct(sbj, extFPPath, name, info):
+	def loadExtAsuFct(sbj, extAsuPath, name, info, isPub):
 		if len(info) < 1:
-			sbj.err("Missing return type for function " + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+			sbj.err("Missing return type for function " + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 		#fct name
 		for c in name:
 			if c not in DEFAULT_NAME_CHARSET:
-				sbj.err("Invalid character '" + c + "' in function name \"" + name + " in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+				sbj.err("Invalid character '" + c + "' in function name \"" + name + ", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 		#read params given
 		retType = TYPE_ID__UNKNOWN
@@ -168,7 +200,7 @@
 			if info[i] == "void":
 				tID = TYPE_ID__UNKNOWN
 			else:
-				tID = sbj.getTypeIDFromName_includingDcnIfNeeded(extFPPath, info[i])
+				tID = sbj.getTypeIDFromName(info[i])
 
 			#retType
 			if i == 0:
@@ -177,49 +209,61 @@
 			#params
 			else:
 				if tID == TYPE_ID__UNKNOWN:
-					sbj.err("Cannot have \"void\" as parameter type for function " + name + " (only allowed in return type), in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+					sbj.err("Cannot have \"void\" as parameter type for function " + name + " (only allowed in return type), in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 				params.append( datItm(tID, "Lp" + str(i), False, None) )
 
 		#create ext fct
-		f = newFct(name, retType, params, sbj.cpl.gblScp)
-		f.ext = True
+		f       = newFct(name, retType, params, sbj.cpl.gblScp)
+		f.ext   = True
+		f.isPub = isPub
 
 		#add fct
 		sbj.cpl.fcts.append(f)
 
 
 
-	#load LLI types, datItms & functions
-	def loadExtFP(sbj, extFPPath):
-		sbj.dbg1("Loading ext fp file " + extFPPath)
+	#load external assumed types, datItms & functions
+	def loadExtAsu(sbj, extAsuPath):
+		sbj.dbg1("Loading ext asu file " + extAsuPath)
 
-		#read core fingerprint
+		#read file
 		try:
-			fp = config.read(extFPPath)
+			ea = config.read(extAsuPath)
 		except:
-			sbj.err("Problem while extracting configuration from fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+			sbj.err("Problem while extracting configuration from external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
-		#for entry
-		for name in fp.keys():
-			id   = name[0]
-			info = fp[name].split(',')
-			name = name[1:]
+		#for each entry
+		for name in ea.keys():
+			if len(name) < 3:
+				sbj.err("Key \"" + name + "\" is too short (at least 3 chr required, got " + str(len(name)) + "), in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
+			u_r  = name[0]
+			id   = name[1]
+			info = ea[name].split(',')
+			name = name[2:]
+
+			#check pub/prv indicator
+			if u_r == 'u':
+				isPub = True
+			if u_r == 'r':
+				isPub = False
+			else:
+				sbj.err("Key \"" + name + "\" has invalid sharing indicator '" + u_r + "' (only 'u'/'r' allowed), in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 			#check info element emptyness
 			for i in range(len(info)):
 				info[i] = info[i].strip()
 				if len(info[i]) == 0:
-					sbj.err("Got an empty information field associated to key \"" + name + "\" in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+					sbj.err("Got an empty information field associated to key \"" + name + "\", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 			#load into zCtx
 			if id == 't':
-				sbj.loadExtType(extFPPath, name, info)
+				sbj.loadExtAsuType(extAsuPath, name, info, isPub)
 			elif id == 'f':
-				sbj.loadExtFct(extFPPath, name, info)
+				sbj.loadExtAsuFct(extAsuPath, name, info, isPub)
 			elif id == 'd':
-				sbj.loadExtDatItm(extFPPath, name, info)
+				sbj.loadExtAsuDatItm(extAsuPath, name, info, isPub)
 			else:
-				sbj.err("Invalid start character '" + id + "' for key \"" + name + "\" in fingerprint file " + extFPPath, prtSubCtxs=False, prtLine=False)
+				sbj.err("Invalid start character '" + id + "' for key \"" + name + "\", in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)
 
 		#debug
-		sbj.dbg1("Ext fp file " + extFPPath + " loaded.")
+		sbj.dbg1("Ext asu file " + extAsuPath + " loaded.")

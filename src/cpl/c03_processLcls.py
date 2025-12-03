@@ -682,9 +682,9 @@ def readLclScp(ZCIs, scope, tgtFct): #tgtFct is for debug
 			#trigrams requiring a following blank
 			if ZCI.txt[3] in BLANKS:
 
-				#2.1 - library linking
-				if str_cmp("lnk", firstWord):
-					ZCIErr(ZCI, "SDL linking ZCI are only allowed in global scope (EXT_LNK).")
+				#2.1 - external assumed code addition
+				if str_cmp("asu", firstWord):
+					ZCIErr(ZCI, "External assumed code addition ZCI are only allowed in global scope (EXT_ASU).")
 
 				#2.2 - type declaration DCL_TYP
 				if str_cmp("typ", firstWord):
