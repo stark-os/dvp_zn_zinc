@@ -17,6 +17,7 @@ class Step:
 		sbj.C06  = 9
 		sbj.C07  = 10
 		sbj.C08  = 11
+		sbj.C09  = 12
 STEP = Step()
 
 #general name parsing
@@ -292,10 +293,3 @@ PCPL__DIRECTIVES_MAX_COMPLEXITY_KEY = "DIRECTIVES_MAX_COMPLEXITY_LEVEL"
 #complexity require better output
 TERM__OUTPUT_TAB = '|  '
 RES__OUTPUT_TAB  = '   ' #res code however, require real blanks
-
-#obvious syntax
-OBV__SEP = '\t'
-OBV__VAL_LIT    = 0
-OBV__VAL_DATITM = 1
-OBV__VAL_REG    = 2
-
