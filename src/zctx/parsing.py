@@ -129,6 +129,9 @@ def strLst_toDsp(sl):
 		if len(s) > maxLen:
 			maxLen = len(s)
 
+	#at least one space between elms
+	maxLen += 1
+
 	#compute optimal modulo depending on terminal width
 	dspModulo = int( (Term__width()-10-len(TERM__OUTPUT_TAB))/(maxLen+3) )
 
@@ -136,7 +139,13 @@ def strLst_toDsp(sl):
 	res = "["
 	for i in range(len(sl)):
 		s = sl[i]
+
+		#add dbl quotes in dbg mode (see meta/blank chr)
+		if log_lvl[0] >= LOG__LVL_DBG0:
+			s = '"' + s + '"'
+
+		#add elm
 		if i%dspModulo == 0:
 			res += '\n' + TERM__OUTPUT_TAB
-		res += '\"' + s + "\"," + ' '*(maxLen-len(s))
+		res += s + ',' + ' '*(maxLen-len(s))
 	return res + "\n]"

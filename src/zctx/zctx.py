@@ -40,34 +40,55 @@ def newZCtx(
 	#pub by default
 	res.pubByDefault = (cpl_opt["DEFAULT_ACCESS_PUB"] == "ON")
 
-	#create a list to hold root types. This is purely a simplification tool in zCtx.
-	res.rootTypes = [0,0,0,0, 0,0,0,0, 0,0,0,0] #<-- fixed-size table
+	#create lists to hold root types
+	res.fltTypes = []
+	res.intTypes = []
 
 	#boolean
-	res.rootTypes[RT__BOL] = res.cpl.newTyp("GUbol", size=res.SIZE__U8)
+	res.TYPE_ID__BOL = res.cpl.newTyp("GUbol", size=res.SIZE__U8)
 
 	#8bits
-	res.rootTypes[RT__S8] = res.cpl.newTyp("GUs8", size=res.SIZE__U8)
-	res.rootTypes[RT__U8] = res.cpl.newTyp("GUu8", size=res.SIZE__U8)
+	tID             = res.cpl.newTyp("GUs8", size=res.SIZE__U8)
+	res.TYPE_ID__S8 = tID
+	res.intTypes.append(tID)
+	tID             = res.cpl.newTyp("GUu8", size=res.SIZE__U8)
+	res.TYPE_ID__U8 = tID
+	res.intTypes.append(tID)
 
 	#16bits
-	res.rootTypes[RT__S16] = res.cpl.newTyp("GUs16", size=res.SIZE__U16)
-	res.rootTypes[RT__U16] = res.cpl.newTyp("GUu16", size=res.SIZE__U16)
+	tID              = res.cpl.newTyp("GUs16", size=res.SIZE__U16)
+	res.TYPE_ID__S16 = tID
+	res.intTypes.append(tID)
+	tID              = res.cpl.newTyp("GUu16", size=res.SIZE__U16)
+	res.TYPE_ID__U16 = tID
+	res.intTypes.append(tID)
 
 	#32bits
-	res.rootTypes[RT__S32] = res.cpl.newTyp("GUs32", size=res.SIZE__U32)
-	res.rootTypes[RT__U32] = res.cpl.newTyp("GUu32", size=res.SIZE__U32)
-	res.rootTypes[RT__F32] = res.cpl.newTyp("GUf32", size=res.SIZE__U32)
+	tID              = res.cpl.newTyp("GUs32", size=res.SIZE__U32)
+	res.TYPE_ID__S32 = tID
+	res.intTypes.append(tID)
+	tID              = res.cpl.newTyp("GUu32", size=res.SIZE__U32)
+	res.TYPE_ID__U32 = tID
+	res.intTypes.append(tID)
+	tID              = res.cpl.newTyp("GUf32", size=res.SIZE__U32)
+	res.TYPE_ID__F32 = tID
+	res.fltTypes.append(tID)
 
 	#64bits
 	if cpl_opt["ARCH"] == "64":
 
 		#8 bytes integer
-		res.rootTypes[RT__S64] = res.cpl.newTyp("GUs64", size=res.SIZE__U64)
-		res.rootTypes[RT__U64] = res.cpl.newTyp("GUu64", size=res.SIZE__U64)
+		tID              = res.cpl.newTyp("GUs64", size=res.SIZE__U64)
+		res.TYPE_ID__S64 = tID
+		res.intTypes.append(tID)
+		tID              = res.cpl.newTyp("GUu64", size=res.SIZE__U64)
+		res.TYPE_ID__U64 = tID
+		res.intTypes.append(tID)
 
 		#8 bytes floating point
-		res.rootTypes[RT__F64] = res.cpl.newTyp("GUf64", size=res.SIZE__U64)
+		tID              = res.cpl.newTyp("GUf64", size=res.SIZE__U64)
+		res.TYPE_ID__F64 = tID
+		res.fltTypes.append(tID)
 
 		#max prm
 		res.smaxType = res.cpl.newTyp("GUsmax", size=res.SIZE__U64)
@@ -76,21 +97,25 @@ def newZCtx(
 		res.smaxOne  = val(res.smaxType, atm(ATM__S64, 1), True)
 
 		#set also as smax parent
-		smaxInst = res.getTypeInstanceFromID(res.smaxType)
-		smaxInst.dcnCommon.parent = res.rootTypes[RT__S64]
+		smaxInst        = res.getTypeInstanceFromID(res.smaxType)
+		smaxInst.parent = res.TYPE_ID__S64
 
 	#32bits
 	else:
 
 		#max prm
-		res.smaxPrmType = res.rootTypes[RT__S32]
+		res.smaxPrmType = res.TYPE_ID__S32
 		res.smaxPrmSize = res.SIZE__U32
 		res.smaxPrmZero = val(res.smaxPrmType, atm(ATM__S32, 0), True)
 		res.smaxPrmOne  = val(res.smaxPrmType, atm(ATM__S32, 1), True)
 
 		#set also as smax parent
-		smaxInst = res.getTypeInstanceFromID(res.smaxType)
-		smaxInst.dcnCommon.parent = res.rootTypes[RT__S32]
+		smaxInst        = res.getTypeInstanceFromID(res.smaxType)
+		smaxInst.parent = res.TYPE_ID__S32
+
+	#all root types
+	res.rootTypes = res.intTypes + res.fltTypes
+	res.rootTypes.append(res.TYPE_ID__BOL)
 
 	#refs
 	res.refType = res.cpl.newTyp("GUref", dcnDeg=1, size=res.smaxSize)
@@ -105,6 +130,11 @@ def newZCtx(
 	]
 	rawTypeInst.computeStcSize(res.cpl)
 	rawTypeInst.dcnCommon.isPub = False
+
+	#bare metal operations
+	loadRootPrmOpes(res)
+	loadRefOpes(res)
+	loadConvertFcts(res)
 
 	#stc type
 	#res.stcType = res.cpl.newTyp("GUstc", size=res.smaxSize)
@@ -159,8 +189,23 @@ class zctx:
 		sbj.smaxZero = None
 		sbj.smaxOne  = None
 
-		#types
-		sbj.rootTypes    = None
+		#root types
+		sbj.rootTypes    = None #tab[smax]
+		sbj.intTypes     = None #tab[smax]
+		sbj.fltTypes     = None #tab[smax]
+		sbj.TYPE_ID__BOL = 0
+		sbj.TYPE_ID__S8  = 0
+		sbj.TYPE_ID__U8  = 0
+		sbj.TYPE_ID__S16 = 0
+		sbj.TYPE_ID__U16 = 0
+		sbj.TYPE_ID__S32 = 0
+		sbj.TYPE_ID__U32 = 0
+		sbj.TYPE_ID__S64 = 0
+		sbj.TYPE_ID__U64 = 0
+		sbj.TYPE_ID__F32 = 0
+		sbj.TYPE_ID__F64 = 0
+
+		#other types
 		sbj.refType      = 0
 		sbj.rawType      = 0
 		#sbj.stcType      = None

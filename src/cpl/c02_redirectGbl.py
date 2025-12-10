@@ -168,7 +168,7 @@ def processTypeDcl(ZCI, isPub):
 		newTypeInst.dcnCommon.size   = parentInst.dcnCommon.size
 		newTypeInst.dcnCommon.nature = parentInst.dcnCommon.nature
 		newTypeInst.dcnCommon.fields = parentInst.dcnCommon.fields
-		newTypeInst.dcnCommon.parent = parentID
+		newTypeInst.parent           = parentID
 
 	#atm related gen
 	if ZCI.zCtx.cpl.mode == CPL__MODE_Z and ZCI.zCtx.cpl.opts['ATM_GENERATED_CONTENT'] == "ON":
@@ -329,7 +329,7 @@ def processEnmDcl(ZCI, scope, tgtFct=None, isPub=False):
 	mainTypeInst.dcnCommon.size   = itmTypeInst.dcnCommon.size
 	mainTypeInst.dcnCommon.nature = NATURE__ENM
 	mainTypeInst.dcnCommon.fields = fields #same fields for the datItm instance & enm type
-	mainTypeInst.dcnCommon.parent = itmType
+	mainTypeInst.parent           = itmType
 
 	#create enm <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< NO NEED
 	#enmDI = datItm(mainType, fullName, True, None, Cst=True, fields=fields, isPub=isPub)
@@ -807,7 +807,7 @@ def c02_redirectGbl(zCtx):
 		seq = [] #lst[val]
 		for c in range(int(len(hs)/2)):
 			seq.append(val(
-				zCtx.rootTypes[RT__S8],
+				zCtx.TYPE_ID__S8,
 				atm(ATM__S8, hex_toS8(hs[2*c], hs[2*c+1]) ),
 				True
 			))

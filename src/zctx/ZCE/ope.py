@@ -1,6 +1,6 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/ope.py
 
-# ---------------- OPERATOR RELATED ----------------
+# ---------------- OPERATOR FINDING ----------------
 
 #list every EXISTING operator of specified kind
 def zCtx__listAllExistingOpes(sbj, opeHeader):

@@ -1,4 +1,4 @@
-# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/fct.py
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/ZCE/fct.py
 
 # -------- FUNCTIONS & METHODS RELATED TOOLS --------
 
@@ -12,6 +12,7 @@ def zCtx__getFctFromName(zCtx, exactName):
 def getFctFromName(ZCI, exactName):
 	return zCtx__getFctFromName(ZCI.zCtx, exactName)
 
+#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TYPE RELATED => TO MOVE ELSEWHERE
 def zCtx__listAllDcnsNameCombinations(sbj, typ_inst):
 
 	#get type name without dcns (don't care about typ_modPfx, we keep it at the beginning of that "rawName")
@@ -74,8 +75,8 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 		#not a method => no other alternative
 		if not isMethod:
 			ZCIErr(ZCI,
-				"You may wanted to target one of the following functions declared: " + listAllExistingFct(ZCI.zCtx) + \
-				"\nNo matching function \"" + unpfxMod(fctModPfx) + fctRawName + "\" found (parsing call)" + ZCIKindIfErr_ending
+				"You may wanted to target one of the following functions declared: " + listAllExistingFct(ZCI.zCtx, excludeOpes=True) + \
+				"\nNo matching function \"" + unpfxMod(fctModPfx) + undblUnderscores(fctRawName) + "\" found (parsing call)" + ZCIKindIfErr_ending
 			)
 		ZCIDbg2(ZCI, "No matching function with that exact name but this is a method call => trying alternatives.", prtLine=False)
 
@@ -150,8 +151,10 @@ def checkAll_thenReadParams_thenCreateCall(ZCI,
 	#create call
 	return call(fctExactName, paramVals_valLst, tgtFct.retType)
 
-def listAllExistingFct(zCtx):
+def listAllExistingFct(zCtx, excludeOpes=False):
 	nl = []
 	for f in zCtx.cpl.fcts:
+		if f.name[0] == 'O' and excludeOpes:
+			continue
 		nl.append(unpfxFctName(zCtx, f))
 	return strLst_toDsp(nl)

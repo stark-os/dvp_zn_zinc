@@ -62,9 +62,6 @@
 #   - bck = "back"
 #     Stop current function execution, and resume it back, right after we were invoqued.
 #
-#   - ext = "external"
-#     Mentions a function used by the program, but not declared in it.
-#
 #   System:
 #   - syc = "syscall"
 #     Ask for a system call interrupt.

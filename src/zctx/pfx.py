@@ -174,8 +174,8 @@ def unpfxFctName(zCtx, f):
 	if f.methodOf != TYPE_ID__UNKNOWN:
 		methodTypeName        = zCtx.getTypeNameFromID(f.methodOf)
 		methodTypeName_unpfx  = unpfxTypeName(zCtx, methodTypeName)[0] + '.'
-		rawName               = str_sub(rawName, start=len(methodTypeName)+1)
-	return fModPfx + methodTypeName_unpfx + rawName
+		rawName               = str_sub(rawName, start=len(methodTypeName)+2)
+	return fModPfx + methodTypeName_unpfx + undblUnderscores(rawName)
 
 def unpfxDatItm(exactName):
 

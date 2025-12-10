@@ -13,6 +13,9 @@ from zctx import *
 #output
 OBV__SEP = '\t'
 
+#begBlanks for obvExe in fct scope
+OBV__BEGBLANKS_FCT = 2* OBV__SEP
+
 #value kinds
 OBV__VAL_LIT    = 0
 OBV__VAL_DATITM = 1
@@ -31,13 +34,25 @@ OBV__REGS   = OBV__PARAMS + ("r",)
 
 #obv
 class obvExe:
-	def __init__(sbj, ist, args, begBlanks):
+	def __init__(sbj, ist, sz, args, begBlanks):
 		sbj.ist       = ist  #str
+		sbj.sz        = sz   #s8
 		sbj.args      = args #lst[str]
 		sbj.begBlanks = begBlanks #str
 
-	def toStr(sbj):
-		res = sbj.begBlanks + sbj.ist
+	def toStr(sbj, depth=0):
+		d    = TERM__OUTPUT_TAB * depth
+		res  = "\n" + d + "_:\"obvExe\"\n"
+		res += d + "ist:\"" + sbj.ist + "\"\n"
+		res += d + "sz:" + str(sbj.sz) + '\n'
+		res += d + "args:["
+		for a in sbj.args:
+			res += '"' + a + "\","
+		res += ']'
+		return res
+
+	def unparse(sbj):
+		res = sbj.begBlanks + sbj.ist + hexOnN(sbj.sz, 1)
 		for a in sbj.args:
 			res += OBV__SEP + a
 		return res
@@ -47,6 +62,8 @@ class obvExe:
 #extract OBV ist & args from line
 def obvParse(rawLine):
 	commentIdx = str_findFirstChr(rawLine, '#')
+	if commentIdx == 0:
+		return None #empty line => no exe
 	if commentIdx != -1:
 		rawLine = str_sub(rawLine, stop=commentIdx-1)
 
@@ -54,6 +71,10 @@ def obvParse(rawLine):
 	line        = str_stripBeg(rawLine)
 	begBlankLen = len(rawLine) - len(line)
 	line        = str_stripEnd(line)
+
+	#empty line => no exe
+	if len(line) == 0:
+		return None
 
 	#args
 	args = line.split(OBV__SEP)[1:]
@@ -65,7 +86,14 @@ def obvParse(rawLine):
 			a += 1
 
 	#parse
-	return obvExe(line[:3], args, rawLine[:begBlankLen])
+	ox = obvExe(
+		line[:3],
+		chr_halfHex_toS8(line[3]),
+		args,
+		rawLine[:begBlankLen]
+	)
+	obvExe_checkIntegrity(ox)
+	return ox
 
 def obvExe_isCpy(ist, includeFromV=True):
 	res = ist in ("d2d","d2r", "r2d","r2r")
@@ -75,19 +103,68 @@ def obvExe_isCpy(ist, includeFromV=True):
 
 
 
-#size
-def obvExe_cpyIst_getSize(zCtx, ox):
-	size = zCtx.smaxSize
-	if ox.ist[0] == 'v':
-		size = int( len(ox.args[0])/2 )
-	elif ox.ist[0] == 'd' and ox.ist[2] == 'd':
-		size = str_hex_toS16(ox.args[2])
-	return size
+#check args
+def mustHaveNArgs(ox, argsNbr):
+	if len(ox.args) != argsNbr:
+		print("ERROR: Instruction \"" + ox.ist + "\" must have exactly " + str(argsNbr) + " args, got " + str(len(ox.args)) + ".")
+		exit(1)
 
-def obvExe_setSizeIfNeeded(ox, size): #zCtx, ox, size):
-	if ox.ist[0] == 'd' and ox.ist[2] == 'd':
-		if len(ox.args) == 2:
-			ox.args.append("")
-		#if len(ox.args) != 3:
-		#	zCtx.int("d2d ist has more or less than 2 or 3 args.", prtSubCtxs=False, prtLine=False)
-		ox.args[2] = hexOnN(size, 4)
+#def argMustBeDatChk(arg):
+#	
+
+#def argMustBeReg(arg):
+#	
+
+#def argMustBeVal(arg):
+#	
+
+def obvExe_checkIntegrity(ox):
+
+	#rsv
+	if ox.ist == "rsv":
+		mustHaveNArgs(ox, 2)
+
+	#cpy val 2 reg
+	elif ox.ist == "v2r":
+		mustHaveNArgs(ox, 2)
+
+	#cpy val 2 dat
+	elif ox.ist == "v2d":
+		mustHaveNArgs(ox, 2)
+
+	#cpy reg 2 reg
+	elif ox.ist == "r2r":
+		mustHaveNArgs(ox, 2)
+
+	#cpy reg 2 dat
+	elif ox.ist == "r2d":
+		mustHaveNArgs(ox, 2)
+
+	#cpy dat 2 dat
+	elif ox.ist == "d2d":
+		mustHaveNArgs(ox, 3)
+
+	#cpy dat 2 reg
+	elif ox.ist == "d2r":
+		mustHaveNArgs(ox, 2)
+
+	#bck
+	elif ox.ist == "bck":
+		mustHaveNArgs(ox, 0)
+
+	#ivq
+	elif ox.ist == "ivq":
+		mustHaveNArgs(ox, 1)
+
+	#fct
+	elif ox.ist == "fct":
+		mustHaveNArgs(ox, 1)
+
+	#syc
+	elif ox.ist == "syc":
+		mustHaveNArgs(ox, 0)
+
+	#unknown
+	else:
+		print("ERROR: Unknown instruction \"" + ox.ist + "\".")
+		exit(1)

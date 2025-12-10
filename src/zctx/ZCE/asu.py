@@ -43,7 +43,7 @@
 			tInst.dcnCommon.size   = pInst.dcnCommon.size
 			tInst.dcnCommon.nature = pInst.dcnCommon.nature
 			tInst.dcnCommon.fields = pInst.dcnCommon.fields
-			tInst.dcnCommon.parent = parentID
+			tInst.parent           = parentID
 
 
 
@@ -106,8 +106,8 @@
 			itmType = setEnmFieldsType(sbj, tInst.dcnCommon.fields)
 
 			#remaining enm info
-			tInst.dcnCommon.size   = sbj.getTypeInstanceFromID(itmType).dcnCommon.size
-			tInst.dcnCommon.parent = itmType
+			tInst.dcnCommon.size = sbj.getTypeInstanceFromID(itmType).dcnCommon.size
+			tInst.parent         = itmType
 
 
 

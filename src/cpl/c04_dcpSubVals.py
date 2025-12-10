@@ -172,6 +172,10 @@ def c04_dcpSubVals(zCtx):
 				v = val(x.dat.retType, atm(ATM__CALL, x.dat), False) #create virtual val just for running dcp on it, this val does not exist in the code actually
 				e -= dcpSubVal(zCtx, v, scope, e)
 
+			#obvExe: keep as is
+			elif x.id == ATM__OBVEXE:
+				pass
+
 			#unknown exe
 			else:
 				zCtx.int("Unknown EXE with ID " + str(x.id), prtSubCtxs=False, prtLine=False)

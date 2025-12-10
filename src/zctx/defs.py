@@ -34,18 +34,6 @@ ROOT_TYPES = (
 	"s64", "u64",
 	"f32", "f64"
 )
-RT__BOL = 0 #enm #for indexing in zCtx.rootTypes
-RT__S8  = 1
-RT__U8  = 2
-RT__S16 = 3
-RT__U16 = 4
-RT__S32 = 5
-RT__U32 = 6
-RT__S64 = 7
-RT__U64 = 8
-RT__F32 = 9
-RT__F64 = 10
-#RT__STC = 11
 
 #specific type ID
 TYPE_ID__UNKNOWN = -1
@@ -194,7 +182,7 @@ SYM_LENGTHS = { #map[ubyt,ubyt]
 	SYM__IAM: 2, SYM__INA: 3, #IO
 	SYM__FSZ: 1, SYM__FRF: 1, #FO
 	SYM__FCA: 1, SYM__FFA: 1,
-	SYM__ASG: 1,	SYM__NOT_FOUND: 0 #other
+	SYM__ASG: 1, SYM__NOT_FOUND: 0 #other
 }
 OPE_NAMES = {
 	SYM__SIN: "sin", SYM__SNO: "sno", #SO
@@ -218,6 +206,29 @@ OPE_NAMES = {
 MONO_OPERAND_NAMES = (
 	"sin", "sno", #SO
 	"fsz", "frf"  #FO
+)
+
+#root prm opes assumed
+ROOT_PRM_OPES_INT = (
+	"Osin",                 #SO
+	"Oamu", "Oadi", "Oamo", #AO
+	"Obad", "Obsu",         #BO
+	"Olan", "Olor", "Olxo", #LO
+	"Olls", "Olrs",
+	"Oceq", "Ocne",         #CO
+	"Oclt", "Ocgt",
+	"Ocle", "Ocge"
+)
+ROOT_PRM_OPES_FLT = (
+	"Oamu", "Oadi", "Oamo", #AO
+	"Obad", "Obsu",         #BO
+	"Oceq", "Ocne",         #CO
+	"Oclt", "Ocgt",
+	"Ocle", "Ocge"
+)
+ROOT_PRM_OPES_BOL = (
+	"Osno",        #SO
+	"Odan", "Odor" #DO
 )
 
 #general syntax

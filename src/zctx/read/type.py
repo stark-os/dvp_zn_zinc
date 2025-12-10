@@ -27,12 +27,12 @@ def readType(ZCI,
 	tModPfx, tRawName = readName(ZCI, ZCIKindIfErr_forMissingName, parseModPfxes=True)
 
 	#build full type name (forced "undeclinated" for the moment)
-	tUndecFullName = tModPfx + 'U' + tRawName
+	tUndcnFullName = tModPfx + 'U' + tRawName
 
 
 
 	#1 - check UNDECLINATED variant existence
-	tID = ZCI.getTypeIDFromName(tUndecFullName)
+	tID = ZCI.getTypeIDFromName(tUndcnFullName)
 	if tID == TYPE_ID__UNKNOWN:
 
 		#case 1: type not found => error
@@ -79,7 +79,7 @@ def readType(ZCI,
 			ZCIErr(ZCI, "Use of \"raw\" type is not allowed in current compilation mode" + ZCIKindIfErr_ending)
 
 	#got it
-	ZCIDbg2(ZCI, "Undeclinated type \"" + tUndecFullName + "\" targetted.")
+	ZCIDbg2(ZCI, "Undeclinated type \"" + tUndcnFullName + "\" targetted.")
 
 
 
@@ -88,8 +88,8 @@ def readType(ZCI,
 		ZCI.inc()
 
 		#undeclinable type
-		tUndecInst = ZCI.getTypeInstanceFromID(tID)
-		if tUndecInst.dcnCommon.dcnDeg == 0:
+		tUndcnInst = ZCI.getTypeInstanceFromID(tID)
+		if tUndcnInst.dcnCommon.dcnDeg == 0:
 			ZCIErr(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " is not declinable (null declination degree)" + ZCIKindIfErr_ending)
 
 		#read declination types one by one
@@ -125,7 +125,7 @@ def readType(ZCI,
 		ZCIDbg2(ZCI, "].", prtLine=False)
 
 		#get that spc dcn, creating it if needed
-		tID = getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns)
+		tID = getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tID, dcns)
 
 	#final result
 	ZCIDbg2(ZCI, "Ended reading type.")

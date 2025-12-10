@@ -459,7 +459,7 @@ def unparseTypesFP(zCtx):
 
 			#everything else => can be only a type copy of a primitive
 			else:
-				undcnFP.append(line + 'p' + dcnDegTxt + ',' + zCtx.getTypeNameFromID(tInst.dcnCommon.parent))
+				undcnFP.append(line + 'p' + dcnDegTxt + ',' + zCtx.getTypeNameFromID(tInst.parent))
 
 	#output
 	zCtx.cpl.resFP += '\n'.join(undcnFP) + '\n' + '\n'.join(dcnFP) + '\n'

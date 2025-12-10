@@ -25,7 +25,7 @@ def parseLiteralIntOrFloat(ZCI):
 	#first character is important (in all cases, must be a decimal digit)
 	if c in STR__DECIMAL:
 		ZCIDbg1(ZCI, "2nd analysis: Integer or float detected.", prtLine=False)
-		resType  = ZCI.zCtx.rootTypes[RT__S32] #default case, considering an S32
+		resType  = ZCI.zCtx.TYPE_ID__S32 #default case, considering an S32
 		resAtmID = ATM__S32
 
 		#non-zero => literal decimal
@@ -36,7 +36,7 @@ def parseLiteralIntOrFloat(ZCI):
 		#zero => can be anything
 		else:
 			if ZCI.inc(): #lonely '0'
-				return val(ZCI.zCtx.rootTypes[RT__S32], atm(ATM__S32, 0), True)
+				return val(ZCI.zCtx.TYPE_ID__S32, atm(ATM__S32, 0), True)
 
 			#binary, octal, hexadecimal
 			c = ZCI.get()
@@ -70,22 +70,22 @@ def parseLiteralIntOrFloat(ZCI):
 			ZCI.inc()
 			c = ZCI.get()
 			if c == 's':
-				resType  = ZCI.zCtx.rootTypes[RT__U16]
+				resType  = ZCI.zCtx.TYPE_ID__U16
 				resAtmID = ATM__U16
 				ZCI.inc()
 			elif c == 'l':
-				resType  = ZCI.zCtx.rootTypes[RT__U64]
+				resType  = ZCI.zCtx.TYPE_ID__U64
 				resAtmID = ATM__U64
 				ZCI.inc()
 			else:
-				resType  = ZCI.zCtx.rootTypes[RT__U32]
+				resType  = ZCI.zCtx.TYPE_ID__U32
 				resAtmID = ATM__U32
 		elif c == 's':
-			resType  = ZCI.zCtx.rootTypes[RT__S16]
+			resType  = ZCI.zCtx.TYPE_ID__S16
 			resAtmID = ATM__S16
 			ZCI.inc()
 		elif c == 'l':
-			resType  = ZCI.zCtx.rootTypes[RT__S64]
+			resType  = ZCI.zCtx.TYPE_ID__S64
 			resAtmID = ATM__S64
 			ZCI.inc()
 
@@ -102,11 +102,11 @@ def parseLiteralIntOrFloat(ZCI):
 			if resAtmID in ATM__S64:
 				ZCIWrn(ZCI, "Auto cashting long signed integer value into 32b (targetting 32b arch).")
 				resAtmID = ATM__S32
-				resType  = ZCI.zCtx.rootTypes[RT__S32]
+				resType  = ZCI.zCtx.TYPE_ID__S32
 			if resAtmID in ATM__U64:
 				ZCIWrn(ZCI, "Auto cashting long unsigned integer value into 32b (targetting 32b arch).")
 				resAtmID = ATM__U32
-				resType  = ZCI.zCtx.rootTypes[RT__U32]
+				resType  = ZCI.zCtx.TYPE__U32
 
 		#check if too much digits have been given: binary
 		if resDigitPower == 2:
@@ -182,7 +182,7 @@ def parseLiteralIntOrFloat(ZCI):
 		#only for decimal without terminator
 		if resDigitPower == 10 and resAtmID == ATM__S32 and c == '.':
 			resAsFloat = float(resNbr) #<<<<<<<<<<<<<<<<<<<<<<<<<<< switch from ulng to dbl storage
-			resType    = ZCI.zCtx.rootTypes[RT__F32]
+			resType    = ZCI.zCtx.TYPE_ID__F32
 			resAtmID   = ATM__F32
 
 			#nothing after point => incomplete
@@ -198,13 +198,13 @@ def parseLiteralIntOrFloat(ZCI):
 			#long float terminator
 			if ZCI.get() == 'l':
 				ZCI.inc()
-				resType  = ZCI.zCtx.rootTypes[RT__F64]
+				resType  = ZCI.zCtx.TYPE_ID__F64
 				resAtmID = ATM__F64
 
 				#32b arch does not allow 64b values => AUTO CASHT
 				if ZCI.zCtx.cpl.opts["ARCH"] != "64":
 					ZCIWrn(ZCI, "Auto cashting long float value into 32b float (targetting 32b arch).")
-					resType  = ZCI.zCtx.rootTypes[RT__F32]
+					resType  = ZCI.zCtx.TYPE_ID__F32
 					resAtmID = ATM__F32
 
 
@@ -476,7 +476,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 			seq = [] #lst[value]
 			while ZCI.get() in HEX_DIGITS_LOWERCASE:
 				seq.append(val(
-					ZCI.zCtx.rootTypes[RT__S8],
+					ZCI.zCtx.TYPE_ID__S8,
 					atm(ATM__S8, readHexByte(ZCI)),
 					True
 				))
@@ -495,7 +495,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 		#single-byte sequence
 		ZCIDbg1(ZCI, "2nd analysis: Reading hexadecimal value in single-byte notation.")
 		res = val(
-			ZCI.zCtx.rootTypes[RT__S8],
+			ZCI.zCtx.TYPE_ID__S8,
 			atm(ATM__S8, readHexByte(ZCI)),
 			True
 		)
@@ -698,12 +698,12 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 		ZCIDbg1(ZCI,"2nd analysis: FSZ resulted into fsz(" + unpfxMod(tInst.name) + ") = " + str(size))
 		if ZCI.zCtx.cpl.opts["ARCH"] == "64":
 			return val(
-				ZCI.zCtx.rootTypes[RT__S64],
+				ZCI.zCtx.TYPE_ID__S64,
 				atm(ATM__S64, size),
 				True
 			)
 		return val(
-			ZCI.zCtx.rootTypes[RT__S32],
+			ZCI.zCtx.TYPE_ID__S32,
 			atm(ATM__S32, size),
 			True
 		)

@@ -166,7 +166,6 @@ def dumpZCIs(ZCIs, filename, oneLine=True):
 #types
 class typ_dcnCommon: #common data among every declination of a type
 	def __init__(sbj, dcnDeg, isPub, size=0):
-		sbj.parent = None
 		sbj.isPub  = isPub
 		sbj.ext    = False
 		sbj.size   = size
@@ -176,8 +175,9 @@ class typ_dcnCommon: #common data among every declination of a type
 
 class typ:
 	def __init__(sbj):
+		sbj.parent    = TYPE_ID__UNKNOWN
 		sbj.name      = None
-		sbj.dcns      = None #tab[typ]
+		sbj.dcns      = None #tab[smax]
 		sbj.dcnCommon = None #typ_dcnCommon
 
 	def computeStcSize(sbj, cpl):

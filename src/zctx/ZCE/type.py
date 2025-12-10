@@ -80,8 +80,8 @@
 			alternatives.append(sbj.getUndcnTypeID(tInst))
 
 		#step 6: add also parent's alternatives
-		if tInst.dcnCommon.parent is not None:
-			alternatives += sbj.getTypeAlternatives(tInst.dcnCommon.parent)
+		if tInst.parent != TYPE_ID__UNKNOWN:
+			alternatives += sbj.getTypeAlternatives(tInst.parent)
 		return alternatives
 
 	def getTypeAlternativeNames(sbj, tgtType):
@@ -136,17 +136,18 @@
 
 
 #get / create specific declination for a given type
-def getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns):
+def getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndcnID, dcns):
+	tUndcnInst = ZCI.zCtx.getTypeInstanceFromID(tUndcnID)
 
 	#get modPfx & rawName
 	tModPfx  = ""
 	tRawName = ""
-	if tUndecInst.name[0] == 'G':
+	if tUndcnInst.name[0] == 'G':
 		tModPfx  = "G"
-		tRawName = tUndecInst.name[2:]
+		tRawName = tUndcnInst.name[2:]
 	else:
-		tModPfx  = unpfxMod(tUndecInst.name)
-		tRawName = str_sub(tUndecInst.name, start=len(tModPfx)+1)
+		tModPfx  = unpfxMod(tUndcnInst.name)
+		tRawName = str_sub(tUndcnInst.name, start=len(tModPfx)+1)
 
 	#one dcn does not exist => can't make it
 	for d in dcns:
@@ -154,25 +155,26 @@ def getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndecInst, dcns):
 			return TYPE_ID__UNKNOWN
 
 	#check declination length
-	if len(dcns) < tUndecInst.dcnCommon.dcnDeg:
-		ZCIErr(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required)" + ZCIKindIfErr_ending)
-	elif len(dcns) > tUndecInst.dcnCommon.dcnDeg:
-		ZCIErr(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(tUndecInst.dcnCommon.dcnDeg) + " required)" + ZCIKindIfErr_ending)
+	if len(dcns) < tUndcnInst.dcnCommon.dcnDeg:
+		ZCIErr(ZCI, "Too few types given for declination (" + str(len(dcns)) + " given, " + str(tUndcnInst.dcnCommon.dcnDeg) + " required)" + ZCIKindIfErr_ending)
+	elif len(dcns) > tUndcnInst.dcnCommon.dcnDeg:
+		ZCIErr(ZCI, "Too much types given for declination (" + str(len(dcns)) + " given, " + str(tUndcnInst.dcnCommon.dcnDeg) + " required)" + ZCIKindIfErr_ending)
 
 	#re-build full type name including declinations this time (tModulePfx can be set to "G" by the way, same logic as undeclinated types)
-	tDecFullName = tModPfx + 'D' + tRawName
+	tDcnFullName = tModPfx + 'D' + tRawName
 	for d in dcns:
-		tDecFullName += '_' + ZCI.getTypeNameFromID(d)
+		tDcnFullName += '_' + ZCI.getTypeNameFromID(d)
 
 	#check for that declination in currently declared types
-	existingID = ZCI.getTypeIDFromName(tDecFullName)
+	existingID = ZCI.getTypeIDFromName(tDcnFullName)
 
 	#not found => create that declination (this new combination must exist)
 	if existingID == TYPE_ID__UNKNOWN:
-		newID         = ZCI.zCtx.cpl.newTyp(tDecFullName, dcnCommon=tUndecInst.dcnCommon) #share the same dcnCommon (affecting the undeclinated instance will affect every declination)
-		tDecInst      = ZCI.getTypeInstanceFromID(newID)
-		tDecInst.dcns = dcns
-		ZCIDbg0(ZCI, "First call of declination \"" + tDecFullName + "\" from type \"" + tUndecInst.name + "\", adding it.")
+		newID           = ZCI.zCtx.cpl.newTyp(tDcnFullName, dcnCommon=tUndcnInst.dcnCommon) #share the same dcnCommon (affecting the undeclinated instance will affect every declination)
+		tDcnInst        = ZCI.getTypeInstanceFromID(newID)
+		tDcnInst.dcns   = dcns
+		tDcnInst.parent = tUndcnID
+		ZCIDbg0(ZCI, "First call of declination \"" + tDcnFullName + "\" from type \"" + tUndcnInst.name + "\", adding it.")
 		return newID
 
 	#found => just use it
@@ -184,16 +186,16 @@ def setEnmFieldsType(zCtx, fields):
 	zCtx.dbg1(ZCI, "Enumerate length: " + str(len(fields)), prtSubCtxs=False, prtLine=False)
 	if len(fields) <= 0x1_00:
 		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U8 => using that type as parent.", prtSubCtxs=False, prtLine=False)
-		itmType = zCtx.rootTypes[RT__U8]
+		itmType = zCtx.TYPE_ID__U8
 	elif len(fields) <= 0x1_00_00:
 		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U16 => using that type as parent.", prtSubCtxs=False, prtLine=False)
-		itmType = zCtx.rootTypes[RT__U16]
+		itmType = zCtx.TYPE_ID__U16
 	elif len(fields) <= 0x1_00_00_00_00:
 		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U32 => using that type as parent.", prtSubCtxs=False, prtLine=False)
-		itmType = zCtx.rootTypes[RT__U32]
+		itmType = zCtx.TYPE_ID__U32
 	else:
 		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U64 => using that type as parent.", prtSubCtxs=False, prtLine=False)
-		itmType = zCtx.rootTypes[RT__U64]
+		itmType = zCtx.TYPE_ID__U64
 
 	#fullfill fields info
 	for f in range(len(fields)):
