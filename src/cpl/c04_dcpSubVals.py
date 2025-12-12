@@ -40,7 +40,7 @@ def dcpSubVal(zCtx, v, scope, idx):
 				#the dcpDI contains the subVal (still to be analyzed, it can contain another subVal => backshift)
 				lst_insertBefore(scope.exes, idx, atm(
 					ATM__ASG,
-					asg(dcpDI_val, subV)
+					asg(subV, dcpDI_val)
 				))
 				zCtx.dbg1("\nScope after dcp: " + scope.toStr())
 				backshift = 1
@@ -66,7 +66,7 @@ def dcpSubVal(zCtx, v, scope, idx):
 			#the dcpDI contains the subVal (still to be analyzed, it can contain another subVal => backshift)
 			lst_insertBefore(scope.exes, idx, atm(
 				ATM__ASG,
-				asg(dcpDI_val, subV)
+				asg(subV, dcpDI_val)
 			))
 			zCtx.dbg1("\nScope after dcp: " + scope.toStr())
 			backshift = 1
@@ -115,8 +115,8 @@ def c04_dcpSubVals(zCtx):
 
 				#"type di = initVal" => "type di" + "di = initVal"
 				asgExes.append(atm(ATM__ASG, asg(
+					di.initVal,
 					val(di.Type, atm(ATM__DATITM, di), di.Cst),
-					di.initVal
 				)))
 				di.inited  = False
 				di.initVal = None

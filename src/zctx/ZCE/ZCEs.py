@@ -404,7 +404,7 @@ class datItm:
 
 
 
-# -------- SPECIFIC PURPOSE --------
+# -------- FO --------
 
 #ffa
 class ffa:
@@ -421,6 +421,19 @@ class ffa:
 
 
 
+#frf
+class frf:
+	def __init__(sbj, di):
+		sbj.di = di
+
+	def toStr(sbj, depth=0):
+		d    = TERM__OUTPUT_TAB * depth
+		res  = "\n" + d + "_:\"frf\"\n"
+		res += d + "di:" + sbj.di.toStr(depth=depth+1)
+		return res
+
+
+
 
 
 
@@ -428,15 +441,15 @@ class ffa:
 
 #assignment
 class asg:
-	def __init__(sbj, dst, src):
-		sbj.dst = dst #datItm
+	def __init__(sbj, src, dst):
 		sbj.src = src #val
+		sbj.dst = dst #val
 
 	def toStr(sbj, depth=0):
 		d    = TERM__OUTPUT_TAB * depth
 		res  = "\n" + d + "_:\"asg\"\n"
-		res += d + "dst:" + sbj.dst.toStr(depth=depth+1) + "\n"
-		res += d + "src:" + sbj.src.toStr(depth=depth+1)
+		res += d + "src:" + sbj.src.toStr(depth=depth+1) + '\n'
+		res += d + "dst:" + sbj.dst.toStr(depth=depth+1)
 		return res
 
 
@@ -499,11 +512,12 @@ class stm_swi:
 
 #jumps
 class jmp:
-	def __init__(sbj, kind, retVal=None):
+	def __init__(sbj, kind, retVal=None, tgtFct=None):
 		sbj.kind   = kind
 		sbj.retVal = retVal #val
+		sbj.tgtFct = tgtFct #fct
 
-	def toStr(sbj, depth=0):
+	def toStr(sbj, depth=0): #skip tgtFct because of recursion
 
 		#null retVal
 		str_retVal = "null"
@@ -522,7 +536,7 @@ class jmp:
 		#toStr
 		d    = TERM__OUTPUT_TAB * depth
 		res  = "\n" + d + "_:\"jmp\"\n"
-		res += d + "kind:" + str_kind + "\n"
+		res += d + "kind:" + str_kind + '\n'
 		res += d + "retVal:" + str_retVal
 		return res
 

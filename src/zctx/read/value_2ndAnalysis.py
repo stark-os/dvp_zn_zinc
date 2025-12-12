@@ -444,8 +444,8 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 		#create common data structure delimitations
 		v2i.scope.header.append(asg(
-			val(datItm_res.Type, atm(ATM__DATITM, datItm_res), False),
-			rawRes
+			rawRes,
+			val(datItm_res.Type, atm(ATM__DATITM, datItm_res), False)
 		))
 		v2i.scope.footer.append(call("GT" + mainStc_typeName + "_Ffree", [datItm_res], TYPE_ID_UNKNOWN)) #btw, for maps, no need to free sub dat stc, maps "free()" will take this in charge
 
@@ -602,12 +602,12 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 					ATM__ASG,
 					asg(
 						val(fieldDI.Type, atm(
-							ATM__FFA,
-							ffa(res, fieldOffsets[i])
-						), False),
-						val(fieldDI.Type, atm(
 							ATM__DATITM,
 							fieldDI
+						), False),
+						val(fieldDI.Type, atm(
+							ATM__FFA,
+							ffa(res, fieldOffsets[i])
 						), False)
 					)
 				))
@@ -730,19 +730,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 			)
 
 		#res
-		res = val(
-			ZCI.zCtx.refType,
-			atm(ATM__CALL, call(
-				"frf",
-				[val(
-					di.Type,
-					atm(ATM__DATITM, di),
-					di.Cst
-				)],
-				ZCI.zCtx.refType
-			)),
-			True
-		)
+		res = val(ZCI.zCtx.refType, atm(ATM__FRF, frf(di)), True)
 		ZCIDbg1(ZCI, "2nd analysis: FRF resulted into call " + res.toStr())
 		return res
 

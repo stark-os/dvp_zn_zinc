@@ -46,11 +46,11 @@ def loadGivenRootPrmOpe(zCtx, opeHeader, tgtTypeIDs):
 	))
 	f.scope.exes.append(atm(
 		ATM__JMP,
-		jmp(JMP__RET, retVal=val(
-			retTypeID,
-			atm(ATM__DATITM, params[0]),
-			False
-		))
+		jmp(
+			JMP__RET,
+			retVal=val(retTypeID, atm(ATM__DATITM, params[0]), False),
+			tgtFct=f
+		)
 	))
 	return f
 
@@ -115,7 +115,7 @@ def loadRefOpes(zCtx):
 			#params
 			p1.Type = dcnedRefType
 			p2.Type = idxType
-			p3.Type = dcnTypeInst.name
+			p3.Type = dcnType
 			p1Val   = val(dcnedRefType, atm(ATM__DATITM, p1), False)
 			p2Val   = val(idxType,      atm(ATM__DATITM, p2), False)
 
@@ -134,15 +134,19 @@ def loadRefOpes(zCtx):
 			#opes exes: "ret bad(p1,p2) //for s32/64"
 			ope.scope.exes.append(atm(
 				ATM__JMP,
-				jmp(JMP__RET, retVal=val(
-					dcnedRefType,
-					atm(ATM__CALL, call(
-						"Obad_GUs" + archTxt + "_GUs" + archTxt,
-						[p1Val, p2Val],
-						dcnedRefType
-					)),
-					False
-				))
+				jmp(
+					JMP__RET,
+					retVal=val(
+						dcnedRefType,
+						atm(ATM__CALL, call(
+							"Obad_GUs" + archTxt + "_GUs" + archTxt,
+							[p1Val, p2Val],
+							dcnedRefType
+						)),
+						False
+					),
+					tgtFct=ope
+				)
 			))
 
 			#add it
@@ -163,15 +167,19 @@ def loadRefOpes(zCtx):
 			#opes exes: "ret bsu(p1,p2) //for s32/64"
 			ope.scope.exes.append(atm(
 				ATM__JMP,
-				jmp(JMP__RET, retVal=val(
-					dcnedRefType,
-					atm(ATM__CALL, call(
-						"Obad_GUs" + archTxt + "_GUs" + archTxt,
-						[p1Val, p2Val],
-						dcnedRefType
-					)),
-					False
-				))
+				jmp(
+					JMP__RET,
+					retVal=val(
+						dcnedRefType,
+						atm(ATM__CALL, call(
+							"Obad_GUs" + archTxt + "_GUs" + archTxt,
+							[p1Val, p2Val],
+							dcnedRefType
+						)),
+						False
+					),
+					tgtFct=ope
+				)
 			))
 
 			#add it
@@ -206,11 +214,11 @@ def loadRefOpes(zCtx):
 			))
 			ope.scope.exes.append(atm(
 				ATM__JMP,
-				jmp(JMP__RET, retVal=val(
-					dcnType,
-					atm(ATM__DATITM, p3),
-					False
-				))
+				jmp(
+					JMP__RET,
+					retVal=val(dcnType, atm(ATM__DATITM, p3), False),
+					tgtFct=ope
+				)
 			))
 
 			#add it
@@ -272,15 +280,19 @@ def loadRefOpes(zCtx):
 	#opes exes: "ret ceq(p1,p2) //for s32/64"
 	ope.scope.exes.append(atm(
 		ATM__JMP,
-		jmp(JMP__RET, retVal=val(
-			zCtx.TYPE_ID__BOL,
-			atm(ATM__CALL, call(
-				"Oceq_GUs" + archTxt + "_GUs" + archTxt,
-				[p1Val, p2Val],
-				zCtx.TYPE_ID__BOL
-			)),
-			False
-		))
+		jmp(
+			JMP__RET,
+			retVal=val(
+				zCtx.TYPE_ID__BOL,
+				atm(ATM__CALL, call(
+					"Oceq_GUs" + archTxt + "_GUs" + archTxt,
+					[p1Val, p2Val],
+					zCtx.TYPE_ID__BOL
+				)),
+				False
+			),
+			tgtFct=ope
+		)
 	))
 
 	#add it
@@ -301,15 +313,19 @@ def loadRefOpes(zCtx):
 	#opes exes: "ret cne(p1,p2) //for s32/64"
 	ope.scope.exes.append(atm(
 		ATM__JMP,
-		jmp(JMP__RET, retVal=val(
-			zCtx.TYPE_ID__BOL,
-			atm(ATM__CALL, call(
-				"Ocne_GUs" + archTxt + "_GUs" + archTxt,
-				[p1Val, p2Val],
-				zCtx.TYPE_ID__BOL
-			)),
-			False
-		))
+		jmp(
+			JMP__RET,
+			retVal=val(
+				zCtx.TYPE_ID__BOL,
+				atm(ATM__CALL, call(
+					"Ocne_GUs" + archTxt + "_GUs" + archTxt,
+					[p1Val, p2Val],
+					zCtx.TYPE_ID__BOL
+				)),
+				False
+			),
+			tgtFct=ope
+		)
 	))
 
 	#add it

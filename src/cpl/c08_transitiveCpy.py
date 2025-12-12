@@ -8,7 +8,7 @@
 from zctx import *
 
 #obv
-from obv import *
+from obv.exe import *
 
 
 

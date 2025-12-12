@@ -68,9 +68,8 @@ class cplDat:
 		sbj.ffa_fieldTypeIDs = []
 
 		#program concrete elements
-		sbj.resFP      = ""
-		sbj.resObvExes = [] #lst[ox]
-		sbj.datSeg     = [] #dlt[s8]
+		sbj.resFP  = ""
+		sbj.resObv = None #obvCtx
 
 	def newTyp(sbj, name, dcnDeg=0, size=0, dcns=None, dcnCommon=None, isPub=False):
 		if dcnCommon is None:
@@ -104,7 +103,8 @@ def newCplDat(opts, info):
 	res.fcts        = [] #lst[fct]
 	res.extAsuFiles = [] #lst[str]
 
-	#res
+	#obv res generated
+	res.resObv = obvCtx()
 	return res
 
 

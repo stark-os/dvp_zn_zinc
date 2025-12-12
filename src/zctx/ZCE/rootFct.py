@@ -37,11 +37,11 @@ def loadConvertFcts(zCtx):
 			))
 			f.scope.exes.append(atm(
 				ATM__JMP,
-				jmp(JMP__RET, retVal=val(
-					t2,
-					atm(ATM__DATITM, p1),
-					False
-				))
+				jmp(
+					JMP__RET,
+					retVal=val(t2, atm(ATM__DATITM, p1), False),
+					tgtFct=f
+				)
 			))
 
 			#add fct

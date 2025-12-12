@@ -433,7 +433,6 @@ def processForStm(ZCI, scope, tgtFct):
 			"\nCan't find a valid operator BAD to match between 2 types \"" + unpfxTypeName(ZCI.zCtx, iterDITypeInst.name)[0] + "\" in FOR statement, in function " + tgtFct.name + " (STM_FOR)."
 		)
 	iterExe = atm(ATM__ASG, asg(
-		extIterDIVal,
 		val(
 			iterDIType,
 			atm(ATM__CALL, call(
@@ -442,7 +441,8 @@ def processForStm(ZCI, scope, tgtFct):
 				ope.retType
 			)),
 			False
-		)
+		),
+		extIterDIVal
 	))
 	ZCIDbg1(ZCI, "Added FOR statement iter exe: " + iterExe.toStr())
 
@@ -464,7 +464,7 @@ def processForStm(ZCI, scope, tgtFct):
 
 	#build 1st inner scope exe: ON/IN => "intIterDI = extIterDI"
 	if kind != KIND__OVR:
-		int1stExe = atm(ATM__ASG, asg(intIterDIVal, extIterDIVal))
+		int1stExe = atm(ATM__ASG, asg(extIterDIVal, intIterDIVal))
 
 	#build 1st inner scope exe: OVR => "intIterDI = v1[extIterDI]"
 	else:
@@ -485,7 +485,6 @@ def processForStm(ZCI, scope, tgtFct):
 
 		#1st exe
 		int1stExe = atm(ATM__ASG, asg(
-			intIterDIVal,
 			val(
 				ope.retType,
 				atm(ATM__CALL, call( #corresponds to call "v1[extIterDI]"
@@ -494,7 +493,8 @@ def processForStm(ZCI, scope, tgtFct):
 					ope.retType
 				)),
 				False
-			)
+			),
+			intIterDIVal
 		))
 
 	#add internal 1st exe
@@ -602,7 +602,10 @@ def processRetJmp(ZCI, scope, tgtFct):
 			ZCIErr(ZCI, "Must return a value (!void function " + tgtFct.name+ " targetted, JMP_RET).")
 
 	#add jmp
-	scope.exes.append( atm(ATM__JMP, jmp(JMP__RET, retVal)) )
+	scope.exes.append(atm(
+		ATM__JMP,
+		jmp(JMP__RET, retVal=retVal, tgtFct=tgtFct)
+	))
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "return jump in function " + tgtFct.name + " (JMP_RET).")
@@ -730,10 +733,19 @@ def c03_processLcls(zCtx):
 
 	#main fct existence
 	mainFct = zCtx__getFctFromName(zCtx, "GFmain")
-	if zCtx.cpl.tgt == CPL__TGT_EXE and mainFct is None:
-		zCtx.err("Missing \"main\" function to compile as executable.", prtSubCtxs=False, prtLine=False)
+	if zCtx.cpl.tgt == CPL__TGT_EXE:
+		if mainFct is None:
+			zCtx.err("Missing \"main\" function to compile as executable.", prtSubCtxs=False, prtLine=False)
+
+		#main fct params
+		if len(mainFct.params) != 1:
+			zCtx.err("Entry point function \"main\" has 1 parameter only.", prtSubCtxs=False, prtLine=False)
+		if zCtx.getTypeNameFromID(mainFct.params[0].Type) != "GDtab_GUstr":
+			zCtx.err("Entry point function \"main\" has a parameter of type \"tab[str]\".", prtSubCtxs=False, prtLine=False)
+
+	#no main fct existence
 	elif zCtx.cpl.tgt == CPL__TGT_SDL and mainFct is not None:
-		zCtx.err("Got a \"main\" function to compile as SDL.", prtSubCtxs=False, prtLine=False)
+		zCtx.err("Got a \"main\" function to compile as SDL => forbidden.", prtSubCtxs=False, prtLine=False)
 
 	#process every fct
 	for f in zCtx.cpl.fcts:

@@ -92,7 +92,7 @@ def main():
 
 	#compile
 	compile(zCtx)
-	writeFile(outputFilename,    '\n'.join(zCtx.cpl.resObv))
+	writeFile(outputFilename,    zCtx.cpl.resObv.unparse())
 	writeFile(outputFilename_FP, zCtx.cpl.resFP)
 
 #run main

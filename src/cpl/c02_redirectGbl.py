@@ -232,12 +232,12 @@ def processTypeDcl(ZCI, isPub):
 			ATM__ASG,
 			asg(
 				val(ZCI.zCtx.smaxType, atm(
-					ATM__FFA,
-					ffa(dcpDI_mainStcVal, 0)
-				), False),
-				val(ZCI.zCtx.smaxType, atm(
 					ATM__DATITM,
 					dcpDI_id
+				), False),
+				val(ZCI.zCtx.smaxType, atm(
+					ATM__FFA,
+					ffa(dcpDI_mainStcVal, 0)
 				), False)
 			)
 		))
@@ -247,12 +247,12 @@ def processTypeDcl(ZCI, isPub):
 			ATM__ASG,
 			asg(
 				val(ZCI.zCtx.refType, atm(
-					ATM__FFA,
-					ffa(dcpDI_mainStcVal, ZCI.zCtx.smaxSize) #no need to apply any padding, #smax must be arch type
-				), False),
-				val(ZCI.zCtx.refType, atm(
 					ATM__DATITM,
 					dcpDI_dat
+				), False),
+				val(ZCI.zCtx.refType, atm(
+					ATM__FFA,
+					ffa(dcpDI_mainStcVal, ZCI.zCtx.smaxSize) #no need to apply any padding, #smax must be arch type
 				), False)
 			)
 		))
@@ -260,11 +260,15 @@ def processTypeDcl(ZCI, isPub):
 		#"ret D2"
 		toAtm_fct.scope.exes.append(atm(
 			ATM__JMP,
-			jmp(JMP__RET, retVal=val(
-				ZCI.zCtx.atmType,
-				atm(ATM__DATITM, dcpDI_mainStc),
-				False
-			))
+			jmp(
+				JMP__RET,
+				retVal=val(
+					ZCI.zCtx.atmType,
+					atm(ATM__DATITM, dcpDI_mainStc),
+					False
+				),
+				tgtFct=toAtm_fct
+			)
 		))
 		ZCIDbg0(ZCI, "Generated ATM related content.", prtLine=False)
 
@@ -609,7 +613,7 @@ def processFwdDcl(ZCI, isPub):
 		dstExe = generatedCallAtm
 	else:
 		retVal = val(srcF.retType, generatedCallAtm, False) #retType here does not really matter, it will be cashted in the retType of dstF in all cases
-		dstExe = atm(ATM__JMP, jmp(JMP__RET, retVal))
+		dstExe = atm(ATM__JMP, jmp(JMP__RET, retVal=retVal, tgtFct=dstF))
 
 	#complete new fct info
 	dstF.retType = retType
@@ -665,7 +669,7 @@ def processAsg(ZCI, scope, tgtFct, dstVal):
 			ZCIErr(ZCI, "Invalid destination " + dstVal.toStr() + "\nto assign value " + scpTxt + " (Expected a data item based value, ASG_ASG).")
 
 	#add execution to concerned scope
-	scope.exes.append( atm(ATM__ASG, asg(dstVal, srcVal)) )
+	scope.exes.append( atm(ATM__ASG, asg(srcVal, dstVal)) )
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "data item assignment" + scpTxt + " (ASG_ASG).")
@@ -704,8 +708,8 @@ def processDclDat(ZCI, scope, tgtFct, isCst, isPub=False):
 		di.inited = False
 		scope.exes.append(
 			atm(ATM__ASG, asg(
-				val(di.Type, atm(ATM__DATITM, di), False),
-				di.initVal
+				di.initVal,
+				val(di.Type, atm(ATM__DATITM, di), False)
 			))
 		)
 		di.initVal = None
