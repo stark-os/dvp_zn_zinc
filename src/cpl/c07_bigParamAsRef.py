@@ -17,8 +17,6 @@ from zctx import *
 #for each call found, dcp big params as ref
 def dcpBigParamAsRef(zCtx, v, scope, idx):
 	shift = 0
-
-	#call
 	if v.vdat.id == ATM__CALL:
 		c = v.vdat.dat
 
@@ -58,11 +56,11 @@ def dcpBigParamAsRef(zCtx, v, scope, idx):
 # -------- EXECUTION --------
 
 #main
-def c06_bigParamAsRef(zCtx):
-	zCtx.updateLogLvl(STEP.C06)
+def c07_bigParamAsRef(zCtx):
+	zCtx.updateLogLvl(STEP.C07)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("======================== C06 BIG PARAM AS REF : beginning =======================")
+	zCtx.dbg0("======================== C07 BIG PARAM AS REF : beginning =======================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -145,7 +143,7 @@ def c06_bigParamAsRef(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("======================== C06 BIG PARAM AS REF : end =======================")
+	zCtx.dbg0("======================== C07 BIG PARAM AS REF : end =======================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
@@ -160,4 +158,4 @@ def c06_bigParamAsRef(zCtx):
 			output += f.scope.toStr()
 
 		#write out current res
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c06.dl", output)
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c07.dl", output)

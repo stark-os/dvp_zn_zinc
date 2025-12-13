@@ -83,11 +83,11 @@ def dcpSubVal(zCtx, v, scope, idx):
 # -------- EXECUTION --------
 
 #main
-def c04_dcpSubVals(zCtx):
-	zCtx.updateLogLvl(STEP.C04)
+def c05_dcpSubVals(zCtx):
+	zCtx.updateLogLvl(STEP.C05)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("=========================== C04 DCP SUB VALS : beginning ========================")
+	zCtx.dbg0("=========================== C05 DCP SUB VALS : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -189,7 +189,7 @@ def c04_dcpSubVals(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================== C04 DCP SUB VALS : end =========================")
+	zCtx.dbg0("========================== C05 DCP SUB VALS : end =========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
@@ -204,4 +204,4 @@ def c04_dcpSubVals(zCtx):
 			output += f.scope.toStr()
 
 		#write out current res
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c04.dl", output)
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c05.dl", output)

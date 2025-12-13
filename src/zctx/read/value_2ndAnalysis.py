@@ -262,50 +262,50 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 		#Seems similar to check in the whole INCLUDERS.keys() but this is not related to these actually.
 		#We are specificly targetting these 3 and not because they are includer keys but because we have specific pattern associated to them.
-		mainStc_typeID = 0
-		subStc1_typeID = 0 #subStcs for maps only
-		subStc2_typeID = 0
-		mainStc_typeName = ""
-		subStc1_typeName = "" #idem
+		tID_mainStc   = 0
+		tID_subStc1   = 0 #subStcs for maps only
+		tID_subStc2   = 0
+		tName_mainStc = ""
+		tName_subStc1 = "" #idem
 
 		#maps
 		if tgtMap:
 			if c == '(':
-				mainStc_typeName = "fmap"
-				subStc1_typeName = "GUtab"
+				tName_mainStc = "GUfmap"
+				tName_subStc1 = "GUtab"
 			elif c == '[':
-				mainStc_typeName = "mmap"
-				subStc1_typeName = "GUlst"
+				tName_mainStc = "GUmmap"
+				tName_subStc1 = "GUlst"
 			elif c == '{':
 				return ZCIErr_vap2(ZCI, "Associative notation on braces includer is not linked to anything yet", v2i)
 
 			#look for ID
-			subStc1_typeID = ZCI.getTypeIDFromName(subStc1_typeName)
-			subStc2_typeID = subStc1_typeID
+			tID_subStc1 = ZCI.getTypeIDFromName(tName_subStc1)
+			tID_subStc2 = tID_subStc1
 
 			#subStcs type must already exist yet
 			if subStc1_typeID == TYPE_ID__UNKNOWN:
 				return ZCIErr_vap2(ZCI,
 					"Here are all the available types for now " + ZCI.zCtx.listTypeNames() + \
-					"\nNo type \"" + subStc1_typeName + "\" found to be used in common data structure shortcut notation",
+					"\nNo type \"" + tName_subStc1 + "\" found to be used in common data structure shortcut notation",
 					v2i
 				)
 
 		#tab, lst
 		else:
 			if c == '(':
-				mainStc_typeName = "GUtab"
+				tName_mainStc = "GUtab"
 			elif c == '[':
-				mainStc_typeName = "GUlst"
+				tName_mainStc = "GUlst"
 			elif c == '{':
 				return ZCIErr_vap2(ZCI, "Braces includer notation is not linked to anything yet", v2i)
 
 		#mainStc type must already exist yet
-		mainStc_typeID = ZCI.getTypeIDFromName(mainStc_typeName)
-		if mainStc_typeID == TYPE_ID__UNKNOWN:
+		tID_mainStc = ZCI.getTypeIDFromName(tName_mainStc)
+		if tID_mainStc == TYPE_ID__UNKNOWN:
 			return ZCIErr_vap2(ZCI,
 				"Here are all the available types for now " + ZCI.zCtx.listTypeNames() + \
-				"\nNo type \"" + mainStc_typeName + "\" found to be used in common data structure shortcut notation",
+				"\nNo type \"" + tName_mainStc + "\" found to be used in common data structure shortcut notation",
 				v2i
 			)
 
@@ -319,16 +319,16 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 		#STEP 2: READ CONTENT
 
 		#inner types
-		innerType1 = TYPE_ID__UNKNOWN
-		innerType2 = TYPE_ID__UNKNOWN
+		tID_inner1 = TYPE_ID__UNKNOWN
+		tID_inner2 = TYPE_ID__UNKNOWN #this one for maps only
 
 		#explicitly given
 		if ZCI.get() == '$':
-			innerType1 = readType(ZCI, "inner type in common data structure shortcut", dcnKwLstToReplace=v2i.dcnKwLstToReplace)
+			tID_inner1 = readType(ZCI, "inner type in common data structure shortcut", dcnKwLstToReplace=v2i.dcnKwLstToReplace)
 			if tgtMap:
 				if ZCI.get() != ',':
-					return ZCIErr_vap2(ZCI, "Expected coma separator and a second inner type in " + mainStc_typeName + " common data structure shortcut", v2i)
-				innerType2 = readType(ZCI, "second inner type in common data structure shortcut", dcnKwLstToReplace=v2i.dcnKwLstToReplace)
+					return ZCIErr_vap2(ZCI, "Expected coma separator and a second inner type in " + tName_mainStc + " common data structure shortcut", v2i)
+				tID_inner2 = readType(ZCI, "second inner type in common data structure shortcut", dcnKwLstToReplace=v2i.dcnKwLstToReplace)
 
 		#read subvalues as long as we have some (separated by comas)
 		subVals1 = [] #lst[val]
@@ -348,12 +348,12 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 				subVals1.append(v)
 
 				#check its type also, they must all have the same one
-				if innerType1 == TYPE_ID__UNKNOWN:
-					innerType1 = v.Type
+				if tID_inner1 == TYPE_ID__UNKNOWN:
+					tID_inner1 = v.Type
 				else:
-					if v.Type != innerType1:
-						ZCIWrn(ZCI, "2nd analysis: " + str(len(subVals1)+1) + "th value given in collection has different type than expected (expected " + unpfxTypeName(ZCI.getTypeNameFromID(innerType1))[0] + ", got " + unpfxTypeName(ZCI.getTypeNameFromID(v.Type))[0] + ")" + v2i.ZCIKindIfErr_ending)
-						typeSizesMustMatch(ZCI, ", in common data structure shortcut notation" + v2i.ZCIKindIfErr, v.Type, innerType1)
+					if v.Type != tID_inner1:
+						ZCIWrn(ZCI, "2nd analysis: " + str(len(subVals1)+1) + "th value given in collection has different type than expected (expected " + unpfxTypeName(ZCI.getTypeNameFromID(tID_inner1))[0] + ", got " + unpfxTypeName(ZCI.getTypeNameFromID(v.Type))[0] + ")" + v2i.ZCIKindIfErr_ending)
+						typeSizesMustMatch(ZCI, ", in common data structure shortcut notation" + v2i.ZCIKindIfErr, v.Type, tID_inner1)
 
 				#read second subValue (for maps only)
 				if tgtMap:
@@ -376,12 +376,12 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 					subVals2.append(v)
 
 					#check its type also, they must all have the same one
-					if innerType2 == TYPE_ID__UNKNOWN:
-						innerType2 = v.Type
+					if tID_inner2 == TYPE_ID__UNKNOWN:
+						tID_inner2 = v.Type
 					else:
-						if v.Type != innerType2:
-							ZCIWrn(ZCI, "2nd analysis: " + str(len(subVals1)+1) + "th value given in collection has different type than expected (expected " + unpfxTypeName(ZCI.getTypeNameFromID(innerType2))[0] + ", got " + unpfxTypeName(ZCI.getTypeNameFromID(v.Type))[0] + ")" + v2i.ZCIKindIfErr_ending)
-							typeSizesMustMatch(ZCI, ", in common data structure shortcut notation" + v2i.ZCIKindIfErr, v.Type, innerType2)
+						if v.Type != tID_inner2:
+							ZCIWrn(ZCI, "2nd analysis: " + str(len(subVals1)+1) + "th value given in collection has different type than expected (expected " + unpfxTypeName(ZCI.getTypeNameFromID(tID_inner2))[0] + ", got " + unpfxTypeName(ZCI.getTypeNameFromID(v.Type))[0] + ")" + v2i.ZCIKindIfErr_ending)
+							typeSizesMustMatch(ZCI, ", in common data structure shortcut notation" + v2i.ZCIKindIfErr, v.Type, tID_inner2)
 
 			#look for end separator
 			optionalBlanks(ZCI, None, BLANKS_EXTENDED)
@@ -400,34 +400,29 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 
 
-		#STEP 3: CONCLUSION
+		#STEP 3: PREPARE SPECIFIC INFO
 
 		#unable to solve inner types => err (no need to check whether the 2nd one is set for maps)
-		if innerType1 == TYPE_ID__UNKNOWN:
+		if tID_inner1 == TYPE_ID__UNKNOWN:
 			return ZCIErr_vap2(ZCI, "Unable to determine inner type of common data structure shortcut notation (require explicit inner type or at least one value inside)", v2i)
 
 		#maps
+		dcns   = [] #tab[smax] (2 max)
+		params = [] #tab[val]  (3 max)
 		if tgtMap:
+			dcns = [tID_inner1, tID_inner2]
 
-			#sub vals are going to be stored in custom datItms actually
-			rawKeys           = val(subStc1_typeID, atm(ATM__LST_VAL, subVals1), True)
-			rawValuePeers     = val(subStc2_typeID, atm(ATM__LST_VAL, subVals2), True)
-			datItm_keys       = v2i.scope.nxtDcpDatItm(subStc1_typeID)
-			datItm_valuePeers = v2i.scope.nxtDcpDatItm(subStc2_typeID)
-
-			#then, real sub vals are just other refs to these datItm
-			keys       = val(subStc1_typeID, atm(ATM__DATITM, datItm_keys      ), False)
-			valuePeers = val(subStc2_typeID, atm(ATM__DATITM, datItm_valuePeers), False)
-
-			#res val is also going to be stored in a custom datItm actually
-			rawRes     = val(mainStc_typeID, atm(ATM__LST_VAL, [keys, valuePeers]), True)
-			datItm_res = v2i.scope.nxtDcpDatItm(mainStc_typeID)
-
-			#then, real res is just another ref to that datItm
-			res = val(mainStc_typeID, atm(ATM__DATITM, datItm_res), False)
+			#prepare params for calling its "init" fct
+			tInst_inner1 = zCtx.getTypeInstanceFromID(tID_inner1)
+			tInst_inner2 = zCtx.getTypeInstanceFromID(tID_inner2)
+			itmSz1       = val(zCtx.smaxType, atm(ATM__S64, tInst_inner1.dcnCommon.size), False)
+			itmSz2       = val(zCtx.smaxType, atm(ATM__S64, tInst_inner2.dcnCommon.size), False)
+			len          = val(zCtx.smaxType, atm(ATM__S64, len(subVals1)), False)
+			params       = [itmSz1, itmSz2, len]
 
 		#tab,lst
 		else:
+			dcns = [tID_inner1]
 
 			#table with only one element => explicit priorization (wasn't a tab actually)
 			if len(subVals1) == 1 and tgtEnd == ')':
@@ -435,21 +430,54 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 				ZCIDbg1(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in EXPLICIT PRIORIZATION:\n" + res.toStr())
 				return res
 
-			#res val is going to be stored in a custom datItm actually
-			rawRes     = val(mainStc_typeID, atm(ATM__LST_VAL, subVals1), True)
-			datItm_res = v2i.scope.nxtDcpDatItm(mainStc_typeID)
+			#prepare params for calling its "init" fct
+			tInst_inner1 = zCtx.getTypeInstanceFromID(tID_inner1)
+			itmSz1       = val(zCtx.smaxType, atm(ATM__S64, tInst_inner1.dcnCommon.size), False)
+			len          = val(zCtx.smaxType, atm(ATM__S64, len(subVals1)), False)
+			params       = [itmSz1, len]
 
-			#then, real res is just another ref to that datItm
-			res = val(mainStc_typeID, atm(ATM__DATITM, datItm_res), False)
 
-		#create common data structure delimitations
-		v2i.scope.header.append(asg(
-			rawRes,
-			val(datItm_res.Type, atm(ATM__DATITM, datItm_res), False)
+
+		#STEP 4: CONCLUSION
+
+		#main stc type, dcned
+		tID_mainStc_dcned   = getOrCreateSpcTypeDcn(ZCI, v2i.ZCIKindIfErr_ending, tID_mainStc, dcns)
+		tName_mainStc_dcned = zCtx.getTypeNameFromID(tID_mainStc_dcned)
+
+		#call its "init" fct => this is how our mainStc is being inited
+		v2i.scope.header.append(atm(
+			ATM__ASG,
+			asg(
+				val(
+					tName_mainStc,
+					atm(ATM__CALL, call("GT" + tName_mainStc + "_Finit", params, tID_mainStc)),
+					False
+				),
+				res
+			)
 		))
-		v2i.scope.footer.append(call("GT" + mainStc_typeName + "_Ffree", [datItm_res], TYPE_ID_UNKNOWN)) #btw, for maps, no need to free sub dat stc, maps "free()" will take this in charge
 
-		#return result
+		#now, attach each given val to it
+		params[0] = res
+		params.append(None)
+		for v in range(len(subVals1)):
+			params[1] = subVals1[v]
+			if tgtMap:
+				params[2] = subVals2[v]
+
+			#unsafe push involved
+			v2i.scope.header.append(atm(
+				ATM__CALL,
+				call("GT" + tName_mainStc_dcned + "_Funsafe__push", params, TYPE_ID__UNKNOWN)
+			))
+
+		#finally, free it in footer (btw, maps don't need to free subStcs, maps "free()" take this in charge)
+		v2i.scope.footer.append(atm(
+			ATM__CALL,
+			call("GT" + mainStc_typeName + "_Ffree", [res], TYPE_ID__UNKNOWN)
+		))
+
+		#ret res
 		ZCIDbg1(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in COMMON DATA STRUCTURE SHORTCUT NOTATION:\n" + res.toStr())
 		return res
 

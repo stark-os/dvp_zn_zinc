@@ -18,11 +18,11 @@ from obv.exe import *
 # -------- EXECUTION --------
 
 #main
-def c08_transitiveCpy(zCtx):
-	zCtx.updateLogLvl(STEP.C08)
+def c09_transitiveCpy(zCtx):
+	zCtx.updateLogLvl(STEP.C09)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("========================= C08 TRANSITIVE CPY : beginning ========================")
+	zCtx.dbg0("========================= C09 TRANSITIVE CPY : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -90,7 +90,7 @@ def c08_transitiveCpy(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================= C08 TRANSITIVE CPY : end ========================")
+	zCtx.dbg0("========================= C09 TRANSITIVE CPY : end ========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
@@ -100,4 +100,4 @@ def c08_transitiveCpy(zCtx):
 		prepareDbgDir()
 
 		#write out current res
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c08.obv", '\n'.join(zCtx.cpl.resObv))
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c09.obv", '\n'.join(zCtx.cpl.resObv))

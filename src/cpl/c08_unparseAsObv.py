@@ -541,11 +541,11 @@ def unparseGblDatItmsFP(zCtx):
 # -------- EXECUTION --------
 
 #main
-def c07_unparseAsObv(zCtx):
-	zCtx.updateLogLvl(STEP.C07)
+def c08_unparseAsObv(zCtx):
+	zCtx.updateLogLvl(STEP.C08)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("======================= C07 UNPARSE AS OBVIOUS : beginning ======================")
+	zCtx.dbg0("======================= C08 UNPARSE AS OBVIOUS : beginning ======================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -565,7 +565,7 @@ def c07_unparseAsObv(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("======================= C07 UNPARSE AS OBVIOUS : end ======================")
+	zCtx.dbg0("======================= C08 UNPARSE AS OBVIOUS : end ======================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()
@@ -575,4 +575,4 @@ def c07_unparseAsObv(zCtx):
 		prepareDbgDir()
 
 		#write out current res
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c07.obv", '\n'.join(zCtx.cpl.resObv))
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c08.obv", '\n'.join(zCtx.cpl.resObv))

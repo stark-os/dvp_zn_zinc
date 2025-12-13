@@ -18,11 +18,11 @@ from obv.exe import *
 # -------- EXECUTION --------
 
 #main
-def c09_rmUnreadLcls(zCtx):
-	zCtx.updateLogLvl(STEP.C09)
+def c10_rmUnreadLcls(zCtx):
+	zCtx.updateLogLvl(STEP.C10)
 	zCtx.dbgSepLine()
 	zCtx.dbg0("=================================================================================")
-	zCtx.dbg0("========================= C09 RM UNREAD LCLS : beginning ========================")
+	zCtx.dbg0("========================= C10 RM UNREAD LCLS : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
 
@@ -116,7 +116,7 @@ def c09_rmUnreadLcls(zCtx):
 
 	#debug
 	zCtx.dbg0("===========================================================================")
-	zCtx.dbg0("========================= C09 RM UNREAD LCLS : end ========================")
+	zCtx.dbg0("========================= C10 RM UNREAD LCLS : end ========================")
 	zCtx.dbg0("===========================================================================")
 	zCtx.dbgSepLine()
 	zCtx.dbgPause()

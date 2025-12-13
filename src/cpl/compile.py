@@ -8,12 +8,13 @@
 from cpl.c01_unmodulize    import *
 from cpl.c02_redirectGbl   import *
 from cpl.c03_processLcls   import *
-from cpl.c04_dcpSubVals    import *
-from cpl.c05_unusedFcts    import *
-from cpl.c06_bigParamAsRef import *
-from cpl.c07_unparseAsObv  import *
-from cpl.c08_transitiveCpy import *
-from cpl.c09_rmUnreadLcls  import *
+from cpl.c04_scpHeadrFootr import *
+from cpl.c05_dcpSubVals    import *
+from cpl.c06_unusedFcts    import *
+from cpl.c07_bigParamAsRef import *
+from cpl.c08_unparseAsObv  import *
+from cpl.c09_transitiveCpy import *
+from cpl.c10_rmUnreadLcls  import *
 
 
 
@@ -27,9 +28,10 @@ def compile(zCtx):
 	c01_unmodulize(zCtx)
 	c02_redirectGbl(zCtx)
 	c03_processLcls(zCtx)
-	c04_dcpSubVals(zCtx)
-	c05_unusedFcts(zCtx)
-	c06_bigParamAsRef(zCtx)
-	c07_unparseAsObv(zCtx)
-	#c08_transitiveCpy(zCtx)
-	#c09_rmUnreadLcls(zCtx)
+	c04_scpHeadrFootr(zCtx)
+	c05_dcpSubVals(zCtx)
+	c06_unusedFcts(zCtx)
+	c07_bigParamAsRef(zCtx)
+	c08_unparseAsObv(zCtx)
+	#c09_transitiveCpy(zCtx)
+	#c10_rmUnreadLcls(zCtx)
