@@ -183,18 +183,18 @@ def getOrCreateSpcTypeDcn(ZCI, ZCIKindIfErr_ending, tUndcnID, dcns):
 
 #enm typing
 def setEnmFieldsType(zCtx, fields):
-	zCtx.dbg1(ZCI, "Enumerate length: " + str(len(fields)), prtSubCtxs=False, prtLine=False)
+	zCtx.dbg1("Enumerate length: " + str(len(fields)), prtSubCtxs=False, prtLine=False)
 	if len(fields) <= 0x1_00:
-		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U8 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		zCtx.dbg1("Enumerate length indexing can be contained in U8 => using that type as parent.", prtSubCtxs=False, prtLine=False)
 		itmType = zCtx.TYPE_ID__U8
 	elif len(fields) <= 0x1_00_00:
-		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U16 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		zCtx.dbg1("Enumerate length indexing can be contained in U16 => using that type as parent.", prtSubCtxs=False, prtLine=False)
 		itmType = zCtx.TYPE_ID__U16
 	elif len(fields) <= 0x1_00_00_00_00:
-		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U32 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		zCtx.dbg1("Enumerate length indexing can be contained in U32 => using that type as parent.", prtSubCtxs=False, prtLine=False)
 		itmType = zCtx.TYPE_ID__U32
 	else:
-		zCtx.dbg1(ZCI, "Enumerate length indexing can be contained in U64 => using that type as parent.", prtSubCtxs=False, prtLine=False)
+		zCtx.dbg1("Enumerate length indexing can be contained in U64 => using that type as parent.", prtSubCtxs=False, prtLine=False)
 		itmType = zCtx.TYPE_ID__U64
 
 	#fullfill fields info

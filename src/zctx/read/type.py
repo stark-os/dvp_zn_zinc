@@ -35,14 +35,19 @@ def readType(ZCI,
 	tID = ZCI.getTypeIDFromName(tUndcnFullName)
 	if tID == TYPE_ID__UNKNOWN:
 
-		#case 1: type not found => error
+		#case 1: try enm type
+		tID = ZCI.getTypeIDFromName(tModPfx + 'N' + tRawName)
+		if tID != TYPE_ID__UNKNOWN:
+			return tID #found enm, nothing more to do => stop here
+
+		#case 2: still not found => error
 		if errIfNotExisting:
 			ZCIErr(ZCI,
 				"Available types are " + ZCI.zCtx.listTypeNames() + \
 				"\nType " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist" + ZCIKindIfErr_ending
 			)
 
-		#case 2: maybe it was not a type at all
+		#case 3: maybe it was not a type at all
 		ZCIDbg2(ZCI, "Type " + unpfxMod(tModPfx) + tRawName.replace("__", '_') + " does not exist, it may not be a type but something else.", prtLine=False)
 		ZCI.resetCtx(initialZCICtx)
 		ZCIDbg2(ZCI, "Restoring ZCI context to that position => Ended reading Z type.")
@@ -75,8 +80,8 @@ def readType(ZCI,
 	elif ZCI.zCtx.cpl.mode == CPL__MODE_Z:
 		if tID == ZCI.zCtx.refType:
 			ZCIErr(ZCI, "Use of \"ref\" type is not allowed in current compilation mode" + ZCIKindIfErr_ending)
-		if tID == ZCI.zCtx.rawType:
-			ZCIErr(ZCI, "Use of \"raw\" type is not allowed in current compilation mode" + ZCIKindIfErr_ending)
+		#if tID == ZCI.zCtx.rawType:
+		#	ZCIErr(ZCI, "Use of \"raw\" type is not allowed in current compilation mode" + ZCIKindIfErr_ending)
 
 	#got it
 	ZCIDbg2(ZCI, "Undeclinated type \"" + tUndcnFullName + "\" targetted.")

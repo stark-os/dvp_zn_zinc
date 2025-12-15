@@ -104,10 +104,10 @@ def newZCtx(
 	else:
 
 		#max prm
-		res.smaxPrmType = res.TYPE_ID__S32
-		res.smaxPrmSize = res.SIZE__U32
-		res.smaxPrmZero = val(res.smaxPrmType, atm(ATM__S32, 0), True)
-		res.smaxPrmOne  = val(res.smaxPrmType, atm(ATM__S32, 1), True)
+		res.smaxType = res.TYPE_ID__S32
+		res.smaxSize = res.SIZE__U32
+		res.smaxZero = val(res.smaxType, atm(ATM__S32, 0), True)
+		res.smaxOne  = val(res.smaxType, atm(ATM__S32, 1), True)
 
 		#set also as smax parent
 		smaxInst        = res.getTypeInstanceFromID(res.smaxType)
@@ -120,7 +120,7 @@ def newZCtx(
 	#refs
 	res.refType = res.cpl.newTyp("GUref", dcnDeg=1, size=res.smaxSize)
 
-	#raw
+	'''#raw
 	res.rawType = res.cpl.newTyp("GUraw")
 	rawTypeInst = res.getTypeInstanceFromID(res.rawType)
 	rawTypeInst.dcnCommon.nature = NATURE__STC
@@ -129,7 +129,7 @@ def newZCtx(
 		datItm(res.smaxType, "dat", False, None)
 	]
 	rawTypeInst.computeStcSize(res.cpl)
-	rawTypeInst.dcnCommon.isPub = False
+	rawTypeInst.dcnCommon.isPub = False'''
 
 	#bare metal operations
 	loadRootPrmOpes(res)
@@ -161,6 +161,13 @@ def newZCtx(
 	res.spcDcnTypes = []
 	for d in range(res.dcnDegMax):
 		res.spcDcnTypes.append( res.cpl.newTyp("GUdcn" + str(d)) )
+
+	#<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP DAT SEG 1ST ADR INIT (end of TXT SEG)
+	res.DAT = datItm(res.refType, "DAT", False, None)
+	res.cpl.gblScp.datItms.append(res.DAT)
+	res.DATVAL = val(res.refType, atm(ATM__DATITM, res.DAT), True)
+
+	#res
 	return res
 
 
@@ -207,7 +214,7 @@ class zctx:
 
 		#other types
 		sbj.refType      = 0
-		sbj.rawType      = 0
+		#sbj.rawType      = 0
 		#sbj.stcType      = None
 		#sbj.rootStcTypes = None <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< let's say they must be given by user
 		sbj.atmType      = 0
@@ -217,10 +224,14 @@ class zctx:
 		sbj.spcDcnTypes = None
 		sbj.dcnDegMax   = 0
 
-		#data
+		#p-cpl dat
 		sbj.ZCIs = None
 		sbj.pcpl = None
 		sbj.cpl  = None
+
+		#dat seg <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
+		sbj.DAT    = None #datItm
+		sbj.DATVAL = None #val
 
 		#other
 		sbj.pubByDefault = True

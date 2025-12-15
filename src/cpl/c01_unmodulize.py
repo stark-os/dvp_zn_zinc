@@ -92,7 +92,7 @@ def c01_unmodulize(zCtx):
 
 			# I.1) module addition
 			if modAdd:
-				zCtx.dbg("Detected addition to existing module \"" + unpfxMod(modPfx) + "\".")
+				zCtx.dbg0("Detected addition to existing module \"" + unpfxMod(modPfx) + "\".")
 
 				#adding to inexisting module
 				if modPfx not in zCtx.cpl.modPfxes:

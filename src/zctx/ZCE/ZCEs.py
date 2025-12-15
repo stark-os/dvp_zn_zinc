@@ -311,8 +311,8 @@ class POCall:
 		#toStr
 		d    = TERM__OUTPUT_TAB * depth
 		res  = "\n" + d + "_:\"POCall\"\n"
-		res += d + "name:\"" + str_name + "\"\n"
-		res += d + "opand1:" + str_opand1 + "\n"
+		res += d + "name:" + str_name + '\n'
+		res += d + "opand1:" + str_opand1 + '\n'
 		res += d + "opand2:" + str_opand2
 		return res
 

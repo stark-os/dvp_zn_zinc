@@ -191,9 +191,9 @@ def parseLiteralIntOrFloat(ZCI):
 
 			#read after point
 			afterPoint = readNbrAsText(ZCI, STR__DECIMAL)
-			lastIdx    = len(resText)-1
-			for r in range(len(resText)):
-				resFloatingNbr += chr_dec_toS8(afterPoint[r]) * 1/(10**(lastIdx-r))
+			lastIdx    = len(afterPoint)-1
+			for r in range(len(afterPoint)):
+				resAsFloat += chr_dec_toS8(afterPoint[r]) * 1/(10**(lastIdx-r))
 
 			#long float terminator
 			if ZCI.get() == 'l':
@@ -216,7 +216,7 @@ def parseLiteralIntOrFloat(ZCI):
 				resAsFloat = -1.0*resAsFloat
 
 			#end of value parsing (floating point)
-			return val(resType, atm(resAtmID, resFloatingNbr), True)
+			return val(resType, atm(resAtmID, resAsFloat), True)
 
 		#end of value parsing (integer)
 		if resIsNegative:
@@ -417,8 +417,8 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 			tInst_inner2 = zCtx.getTypeInstanceFromID(tID_inner2)
 			itmSz1       = val(zCtx.smaxType, atm(ATM__S64, tInst_inner1.dcnCommon.size), False)
 			itmSz2       = val(zCtx.smaxType, atm(ATM__S64, tInst_inner2.dcnCommon.size), False)
-			len          = val(zCtx.smaxType, atm(ATM__S64, len(subVals1)), False)
-			params       = [itmSz1, itmSz2, len]
+			len_         = val(zCtx.smaxType, atm(ATM__S64, len(subVals1)), False)
+			params       = [itmSz1, itmSz2, len_]
 
 		#tab,lst
 		else:
@@ -433,8 +433,8 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 			#prepare params for calling its "init" fct
 			tInst_inner1 = zCtx.getTypeInstanceFromID(tID_inner1)
 			itmSz1       = val(zCtx.smaxType, atm(ATM__S64, tInst_inner1.dcnCommon.size), False)
-			len          = val(zCtx.smaxType, atm(ATM__S64, len(subVals1)), False)
-			params       = [itmSz1, len]
+			len_         = val(zCtx.smaxType, atm(ATM__S64, len(subVals1)), False)
+			params       = [itmSz1, len_]
 
 
 
@@ -446,19 +446,14 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 
 		#call its "init" fct => this is how our mainStc is being inited
 		v2i.scope.header.append(atm(
-			ATM__ASG,
-			asg(
-				val(
-					tName_mainStc,
-					atm(ATM__CALL, call("GT" + tName_mainStc + "_Finit", params, tID_mainStc)),
-					False
-				),
-				res
-			)
+			ATM__CALL,
+			call("GT" + tName_mainStc + "_Finit", params, tID_mainStc)
 		))
 
-		#now, attach each given val to it
+		#attach main stc as method caller (1st param)
 		params[0] = res
+
+		#and then, attach each given vals to it
 		params.append(None)
 		for v in range(len(subVals1)):
 			params[1] = subVals1[v]
@@ -501,22 +496,50 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 				return ZCIErr_vap2(ZCI, "Missing content after multiple-bytes notation", v2i)
 
 			#prepare sequence
-			seq = [] #lst[value]
+			datChkLst = [] #lst[s8]
 			while ZCI.get() in HEX_DIGITS_LOWERCASE:
-				seq.append(val(
-					ZCI.zCtx.TYPE_ID__S8,
-					atm(ATM__S8, readHexByte(ZCI)),
-					True
-				))
+				datChkLst.append(readHexByte(ZCI))
 				if ZCI.inc():
 					break
 
 			#missing characters
-			if len(seq) == 0:
+			if len(datChkLst) == 0:
 				return ZCIErr_vap2(ZCI, "Missing valid hexadecimal characters in multi-bytes notation", v2i)
 
-			#finish result
-			res = val(ZCI.zCtx.rawType, atm(ATM__LST_VAL, seq), True)
+			#some shortcuts
+			sm_t = ZCI.zCtx.smaxType
+			sm_n = "GUsmax"
+			r_t  = ZCI.zCtx.refType
+
+			#add raw dat in dat seg
+			datChkIdx    = len(ZCI.zCtx.cpl.resObv.dats)
+			datChkIdxVal = val(sm_t, atm(ATM__S64, datChkIdx), True)
+			ZCI.zCtx.cpl.resObv.dats.append(lst_toTab(datChkLst))
+
+			#create a ref to this dat chk
+			datChkRef = datItm(r_t, 'R' + str(datChkIdx), False, None)
+			v2i.scope.datItms.append(datChkRef)
+
+			#res will be that ref (dcpDI)
+			res = val(r_t, atm(ATM__DATITM, datChkRef), True)
+
+			#check for a valid BAD ope between 2 smax (required for init val)
+			smaxBAD = zCtx__findMatchingOperator(ZCI.zCtx, "Obad", [sm_t, sm_t], [sm_n, sm_n])
+			if smaxBAD is None:
+				ZCIInt(ZCI, "Unable to find a valid BAD operator between 2 smax, in 2nd analysis.", prtSubCtxs=False, prtLine=False)
+
+			#set init val for that ref
+			initVal = val(r_t, atm( #<=> "DAT+idx"
+				ATM__CALL,
+				call(
+					smaxBAD.name,
+					[ZCI.zCtx.DATVAL, datChkIdxVal],
+					r_t
+				)
+			), False)
+			v2i.scope.header.append(atm( ATM__ASG, asg(initVal, res) ))
+
+			#ret res
 			ZCIDbg1(ZCI, "2nd analysis: Finished reading ZCI fragment \"" + ZCI.txtFormat() + "\", resulted in MULTI-BYTE NOTATION:\n" + res.toStr())
 			return res
 
@@ -560,19 +583,21 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 			if ZCI.get() != '.':
 				return ZCIErr_vap2(ZCI, "Expected field access operator '.' after enm type given as value", v2i)
 			ZCI.inc()
-			fieldName = readName(ZCI, "field name after enm type given as value" + v2i.ZCIKindIfErr_ending, dblUnderscores=True)
+			fieldModPfx, fieldRawName = readName(ZCI, "field name after enm type given as value" + v2i.ZCIKindIfErr_ending, dblUnderscores=True)
+			if fieldModPfx != 'G':
+				ZCIErr_vap2("Can't have module prefixing in enumerate field names.", v2i)
 
 			#get idx
 			idx    = -1
 			fields = tInst.dcnCommon.fields
 			for f in range(len(fields)):
-				if fields[f].name == fieldName: #found it
+				if fields[f].name == fieldRawName: #found it
 					idx = f
 					break
 
 			#no field found with given name
 			if idx == -1:
-				return ZCIErr_vap2(ZCI, "Enumerate type " + unpfxTypeName(ZCI.zCtx, tInst.name)[0] + " has no field \"" + fieldName + '\"', v2i)
+				return ZCIErr_vap2(ZCI, "Enumerate type " + unpfxTypeName(ZCI.zCtx, tInst.name)[0] + " has no field \"" + fieldRawName + '\"', v2i)
 
 			#associated idx is the final resulting value, but type is still the one of the ENM itself (not the one of the field)
 			res = val(tID, atm(ATM__U64, idx), True)
@@ -868,7 +893,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 
 
 
-		#case 3: IIN, ISU, IIA, ISA
+		#case 3: IIN, ISU
 		elif following == '[':
 			ZCIDbg1(ZCI, "2nd analysis: EXTRA OPE IIN/ISU/IIA/ISA in process.")
 			ZCI.inc()
@@ -918,7 +943,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 				ZCIErr(ZCI, "2nd analysis: Expected closing bracket in " + opeHeader[1:].upper() + " operator call" + v2i.ZCIKindIfErr_ending)
 			ZCI.inc()
 
-			#possibly having IIA / ISU
+			'''#possibly having IIA / ISA
 			if allowVFC:
 				optionalBlanks(ZCI, None)
 
@@ -943,8 +968,9 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 					#turn IIN into IIA & ISU into ISA
 					if opeHeader == "Oiin":
 						opeHeader = "Oiia"
-					elif opeHeader == "Oisu":
+					elif opeHeader == "Oisa":
 						opeHeader = "Oisa"
+			'''
 
 			#try find an appropriate ope
 			matchingOpe = zCtx__findMatchingOperator(ZCI.zCtx, opeHeader, paramTypeIDs, paramTypeNames)

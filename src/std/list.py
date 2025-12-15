@@ -44,3 +44,6 @@ def lst_insertBefore(l, idx, e):
 		if i == idx:
 			l.append(e)
 		l.append(oldL[i])
+
+def lst_toTab(l):
+	return l #do nothing in Python, keep lst

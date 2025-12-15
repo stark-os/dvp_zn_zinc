@@ -50,30 +50,31 @@ ATM__S32 = 5
 ATM__U32 = 6
 ATM__S64 = 7
 ATM__U64 = 8
-ATM__REF = 9
-ATM__CHR = 10
-ATM__STR = 11
-ATM__ZCI = 12
-ATM__VAL = 13
-ATM__TYP = 14
-ATM__SCP = 15
-ATM__ASG = 16
-ATM__JMP = 17
-ATM__FCT = 18
-ATM__CALL    = 19
-ATM__DATITM  = 20
-ATM__STM_IF  = 21
-ATM__STM_WHI = 22
-ATM__STM_SWI = 23
-ATM__TYP_DCNCOMMON = 24
-ATM__OPSEQ         = 25
-ATM__POCALL        = 26
-ATM__LST           = 27
-ATM__LST_VAL       = 28
-ATM__LST_ATM       = 29
-ATM__FFA    = 30
-ATM__FRF    = 31
-ATM__OBVEXE = 32
+ATM__F32 = 9
+ATM__F64 = 10
+ATM__REF = 11
+ATM__CHR = 12
+ATM__STR = 13
+ATM__ZCI = 14
+ATM__VAL = 15
+ATM__TYP = 16
+ATM__SCP = 17
+ATM__ASG = 18
+ATM__JMP = 19
+ATM__FCT = 20
+ATM__CALL    = 21
+ATM__DATITM  = 22
+ATM__STM_IF  = 23
+ATM__STM_WHI = 24
+ATM__STM_SWI = 25
+ATM__TYP_DCNCOMMON = 26
+ATM__OPSEQ         = 27
+ATM__POCALL        = 28
+ATM__LST           = 29
+ATM__LST_ATM       = 30
+ATM__FFA    = 31
+ATM__FRF    = 32
+ATM__OBVEXE = 33
 ATM__ATM = 99
 class atm:
 	def __init__(sbj, id, dat):
@@ -119,11 +120,15 @@ class atm:
 			res += d0 + "dat:\"S" + hexOnN(sbj.dat, 16) + '\"'
 		elif sbj.id == ATM__U64:
 			res += d0 + "dat:\"U" + hexOnN(sbj.dat, 16) + '\"'
+		elif sbj.id == ATM__F32:
+			res += d0 + "dat:\"F32_" + str(sbj.dat) + '\"'
+		elif sbj.id == ATM__F64:
+			res += d0 + "dat:\"F64_" + str(sbj.dat) + '\"'
 		elif sbj.id == ATM__REF:
 			res += d0 + "dat:\"R" + hexOnN(sbj.dat, 16) + '\"'
 
 		#lists
-		elif sbj.id in (ATM__LST_VAL, ATM__LST_ATM, ATM__LST):
+		elif sbj.id in (ATM__LST_ATM, ATM__LST):
 			res += d0 + "dat:["
 			for e in sbj.dat:
 				res += e.toStr(depth=depth+1) + ","

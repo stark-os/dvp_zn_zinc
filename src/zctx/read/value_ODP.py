@@ -22,17 +22,21 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 
 
 
-		#checking for symbol
+		#checking for sym
 		ope = readSym(ZCI)
 
-		#CASE 1: not a symbol (that can be anything and especially an includer)
-		if ope == SYM__NOT_FOUND:
+		#CASE 1: asg sym found => STOP here
+		if ope == SYM__ASG:
+			break
+
+		#CASE 2: not a sym (that can be anything and especially an includer)
+		elif ope == SYM__NOT_FOUND:
 			if ZCI.ctx.icontent.idx in ZCI.pairs.keys():
 				ZCI.forwardUntil( ZCI.pairs[ZCI.ctx.icontent.idx] ) #includer? It also belongs to the operand no matter what's inside => skip parsing its content
 			ZCI.inc()
 			continue
 
-		#CASE 2: '^'
+		#CASE 3: '^'
 		elif ope == SYM__LXO:
 			if ZCI.ctx.icontent.idx >= ZCI.stopIdx:
 				ZCI.inc()
@@ -45,7 +49,7 @@ def ODP_readAndSplitByOperators(ZCI, allowedOpes):
 				ZCI.inc() #not an operator actually => skipping it
 				continue
 
-		#CASE 3: it is a symbol but not allowed
+		#CASE 4: it is a symbol but not allowed
 		if ope not in allowedOpes:
 			ZCI.forward(SYM_LENGTHS[ope])
 			continue

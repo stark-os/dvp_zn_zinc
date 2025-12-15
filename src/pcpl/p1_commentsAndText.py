@@ -36,14 +36,14 @@ def p1_commentsAndText(zCtx):
 
 	# PREPARE FOR DETECTION
 
-	#literal strings replacement
+	#lit str
 	curStrDat = ""
 
 	#fields detection
 	inChr          = False
 	inStr          = False
 	inPotentialCom = False
-	comBegCtx      = [None] #will only contain 1 element, this is to be used as "subCtxs" in zctx.overwriteSubCtxs()
+	comBegCtx      = [None] #will only contain 1 elm, this is to be used as "subCtxs" in zctx.overwriteSubCtxs()
 	inSingleCom    = False
 	inMultiCom     = False
 
@@ -54,7 +54,7 @@ def p1_commentsAndText(zCtx):
 	isChrSet = False
 	escaping = False
 
-	#first character
+	#first chr
 	output = ""
 	c      = zCtx__get(zCtx)
 	if c == '\'':
@@ -95,27 +95,27 @@ def p1_commentsAndText(zCtx):
 			#end of comment
 			if (prevC == '*') and (c == '/'):
 				inMultiCom = False
-			prevC = c #store current character for next check
+			prevC = c #store cur chr for nxt check
 			continue
 
 
 
 		# IN FIELD : chr
 
-		#in character => translate it into byte notation
+		#in chr => translate it into byte notation
 		if inChr:
 			if not escaping:
 
-				#end sequence
+				#end seq
 				if c == '\'':
 
-					#too early : no character has been set yet
+					#too early : no chr has been set yet
 					if not isChrSet:
 						zCtx.err("Character definition requires at leat 1 element (empty character found).")
 					inChr = False
 					continue
 
-				#special case : starting escape sequence
+				#special case : starting escape seq
 				if c == '\\':
 					escaping = True
 					continue
@@ -124,10 +124,10 @@ def p1_commentsAndText(zCtx):
 			else:
 				escaping = False
 
-			#escaping or not => set character
+			#escaping or not => set chr
 			output += '(' + BN_PFX + BN_fromChr(zCtx, c, escaping=escaping) + "$chr)" #parentheses should not be mandatory because casht must be prioritary in any way (safety)
 
-			#check character length
+			#check chr len
 			if isChrSet:
 				zCtx.err("Character definition allows only 1 element (at least 2 found).")
 			isChrSet = True
@@ -137,31 +137,26 @@ def p1_commentsAndText(zCtx):
 
 		# IN FIELD : str
 
-		#in string => translate it into multi-byte notation
+		#in str => translate it into multi-byte notation
 		if inStr:
 			if not escaping:
 
-				#end sequence
+				#end seq => set lit str
 				if c == '"':
-
-					#store aside for further treatment (multi-byte notation)
-					zCtx.pcpl.litStr.append(curStrDat)
-
-					#set corresponding data item instead
-					output += zCtx.pcpl.nextLitStrDIName() + ".dat"
+					output += "str{kind=^Str.KIND.LIT,dat=^Str.lit{len=" + str(len(curStrDat) >> 2) + ",dat=``" + curStrDat + "}}"
 					inStr = False
 					continue
 
-				#special case : starting escape sequence
+				#special case : starting escape seq
 				if c == '\\':
 					escaping = True
 					continue
 
-			#turn back to regular character mode
+			#turn back to regular chr mode
 			else:
 				escaping = False
 
-			#escaping or not => set character
+			#escaping or not => set chr
 			curStrDat += BN_fromChr(zCtx, c, escaping=escaping)
 			continue
 
@@ -195,15 +190,15 @@ def p1_commentsAndText(zCtx):
 
 
 
-		# OUT OF FIELD (non-text, non-comment, non-potential-comment)
+		# OUT OF FIELD (non-txt, non-comment, non-potential-comment)
 
-		#characters detection
+		#chr detection
 		if c == '\'':
 			inChr    = True
 			isChrSet = False
 			continue
 
-		#strings detection
+		#str detection
 		if c == '"':
 			curStrDat = ""
 			inStr     = True

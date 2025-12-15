@@ -142,10 +142,10 @@ def processTypeDcl(ZCI, isPub):
 		if len(newTypeInst.dcnCommon.fields) == 0:
 			ZCIInt(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDatItmSeq cannot return 0-length list)
 
-		#special case: no "raw" type allowed
+		'''#special case: no "raw" type allowed
 		for di in newTypeInst.dcnCommon.fields:
 			if di.Type == ZCI.zCtx.rawType:
-				ZCIErr(ZCI, "Structure type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" contains a field of type \"raw\" => forbidden, in type declaration ZCI (DCL_TYP).")
+				ZCIErr(ZCI, "Structure type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" contains a field of type \"raw\" => forbidden, in type declaration ZCI (DCL_TYP).")'''
 
 		#compute size
 		newTypeInst.computeStcSize(ZCI.zCtx.cpl)
@@ -156,9 +156,9 @@ def processTypeDcl(ZCI, isPub):
 		parentID   = readType(ZCI, "type declaration ZCI (DCL_TYP).") #read type given as 2nd argument
 		parentInst = ZCI.getTypeInstanceFromID(parentID)
 
-		#special case: no "raw" type allowed
+		'''#special case: no "raw" type allowed
 		if parentID == ZCI.zCtx.rawType:
-			ZCIErr(ZCI, "Type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" is being copied from \"raw\" type => forbidden, in type declaration ZCI (DCL_TYP).")
+			ZCIErr(ZCI, "Type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" is being copied from \"raw\" type => forbidden, in type declaration ZCI (DCL_TYP).")'''
 
 		#copying itself, no matter the declination (error case seems obvious, though required)
 		if parentInst.dcnCommon == newTypeInst.dcnCommon:
@@ -648,13 +648,57 @@ def processAsg(ZCI, scope, tgtFct, dstVal):
 	#read src value to be assigned
 	srcVal = readVal(ZCI, "source value in assignment" + scpTxt + " (ASG_ASG).", scope, cstOnly=cstOnly)
 
-	#datItm does not exist yet => also dcl it
+
+
+	#CASE 1: tgt a datItm
 	if dstVal.vdat.id == ATM__DATITM:
+
+		#does not exist yet => also dcl it
 		if not alreadyDclDatItmOrField(dstVal.vdat.dat, scope.datItms):
 			ZCIDbg0(ZCI, "Also dcl dat itm \"" + dstVal.vdat.dat.name + "\", it did not exist in cur scope yet (ASG_ASG).", prtLine=False)
 			scope.datItms.append(dstVal.vdat.dat)
 
-	#something else than datItm val
+
+
+	#CASE 2: asg ope (IIA, ISA)
+	elif dstVal.vdat.id == ATM__CALL:
+		dstCall = dstVal.vdat.dat
+		opeHeader = ""
+		if dstCall.name.startswith("Oiin"):
+			opeHeader = "Oiia"
+		elif dstCall.name.startswith("Oisu"):
+			opeHeader = "Oisa"
+		else:
+			ZCIErr(ZCI, "Invalid destination " + dstVal.toStr() + "\nto assign value " + scpTxt + " (Expected a data item based value, ASG_ASG).")
+		ZCIDbg0(ZCI, "Finally, remaining ZCI is not a data item assignment, but rather a IIA/ISA VFC.", prtLine=False)
+
+		#src val to asg is given as last param in asg ope instead
+		dstCall.paramVals.append(srcVal)
+
+		#find asg ope
+		paramsTypeIDs   = [] #tab[smax]
+		paramsTypeNames = [] #tab[str]
+		for v in dstCall.paramVals:
+			paramsTypeIDs.append(v.Type)
+			paramsTypeNames.append(ZCI.getTypeNameFromID(v.Type))
+		ope = zCtx__findMatchingOperator(ZCI.zCtx, opeHeader, paramsTypeIDs, paramsTypeNames)
+		if ope is None:
+			ZCIErr(ZCI, "No operator " + opeHeader[1:].upper() + " for parameters (" + ','.join(paramTypeNames) + ") " + scpTxt + " (VFC_VFC).")
+
+		#turn asg into VFC
+		processVFC(ZCI, scope, tgtFct, val(
+			ope.retType,
+			atm(
+				ATM__CALL,
+				call(ope.name, dstCall.paramVals, ope.retType)
+			),
+			False
+		))
+		return
+
+
+
+	#CASE 3: something else
 	else:
 
 		#ffa chain can be accepted if targettable
@@ -802,27 +846,6 @@ def c02_redirectGbl(zCtx):
 	zCtx.dbg0("======================== C02 REDIRECT GLOBAL : beginning ========================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
-
-	#before loading any gbl ZCI, load lit str saved at step P1
-	for i in range(zCtx.pcpl.litStrIdx+1):
-		hs = zCtx.pcpl.litStr[i] #hex str (2 hex chr per chr)
-
-		#transform lit str as raw val
-		seq = [] #lst[val]
-		for c in range(int(len(hs)/2)):
-			seq.append(val(
-				zCtx.TYPE_ID__S8,
-				atm(ATM__S8, hex_toS8(hs[2*c], hs[2*c+1]) ),
-				True
-			))
-
-		#add datItm dcl
-		di = datItm(zCtx.rawType, "GE__" + str(i), True, val(
-			zCtx.rawType,
-			atm(ATM__LST_VAL, seq),
-			True
-		))
-		zCtx.cpl.gblScp.datItms.append(di)
 
 	#manually set resource access
 	manualAccess_set   = False

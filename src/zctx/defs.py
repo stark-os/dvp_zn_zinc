@@ -35,8 +35,9 @@ ROOT_TYPES = (
 	"f32", "f64"
 )
 
-#specific type ID
-TYPE_ID__UNKNOWN = -1
+#types
+TYPE_ID__UNKNOWN         = -1
+TYPE_EXACT_NAME__INVALID = "<INVALID_TYPE>"
 
 #byte notations
 BN_PFX = '`'

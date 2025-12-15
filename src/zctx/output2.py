@@ -94,6 +94,6 @@ def ZCIDbg2(ZCI, msg, prtSubCtxs=False, prtLine=True):
 #modules
 def zCtx__dbgMods(zCtx):
 	unpfxMods = ""
-	for mp in zCtx.cpl.modPfxs:
+	for mp in zCtx.cpl.modPfxes:
 		unpfxMods += "\n - " + unpfxMod(mp)
 	zCtx.dbg0("Available modules are :" + unpfxMods)

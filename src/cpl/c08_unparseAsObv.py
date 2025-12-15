@@ -24,63 +24,36 @@ from obv.val import *
 
 #value
 def unparseVal(zCtx, depth, v):
-	zCtx.dbg0("Unparsing VAL " + v.toStr(depth=1))
+	zCtx.dbg1("Unparsing VAL " + v.toStr(depth=1))
 
 	#value type gives sz (in bits!)
 	obvSz = 8 * zCtx.getTypeInstanceFromID(v.Type).dcnCommon.size
 
 	#lit int
 	if v.vdat.id in (ATM__S8,  ATM__U8):
-		zCtx.dbg0("Unparsed VAL (lit 8b).")
+		zCtx.dbg1("Unparsed VAL (lit 8b).")
 		return obvVal(OBV_VAL__LIT,  obvSz, hexOnN(v.vdat.dat, 2))
 	if v.vdat.id in (ATM__S16, ATM__U16):
-		zCtx.dbg0("Unparsed VAL (lit 16b).")
+		zCtx.dbg1("Unparsed VAL (lit 16b).")
 		return obvVal(OBV_VAL__LIT, obvSz, hexOnN(v.vdat.dat, 4))
 	if v.vdat.id in (ATM__S32, ATM__U32):
-		zCtx.dbg0("Unparsed VAL (lit 32b).")
+		zCtx.dbg1("Unparsed VAL (lit 32b).")
 		return obvVal(OBV_VAL__LIT, obvSz, hexOnN(v.vdat.dat, 8))
 	if v.vdat.id in (ATM__S64, ATM__U64):
-		zCtx.dbg0("Unparsed VAL (lit 64b).")
+		zCtx.dbg1("Unparsed VAL (lit 64b).")
 		return obvVal(OBV_VAL__LIT, obvSz, hexOnN(v.vdat.dat, 16))
 
 	#datItm
 	if v.vdat.id == ATM__DATITM:
 		name  = '_'*(depth+1) + v.vdat.dat.name
-		zCtx.dbg0("Unparsed VAL (datItm).")
+		zCtx.dbg1("Unparsed VAL (datItm).")
 		return obvVal(OBV_VAL__DATITM, obvSz, name + "+0000")
 
 	#call
 	if v.vdat.id == ATM__CALL:
 		unparseCall(zCtx, depth, v.vdat.dat)
-		zCtx.dbg0("Unparsed VAL (call).")
+		zCtx.dbg1("Unparsed VAL (call).")
 		return obvVal(OBV_VAL__REG, obvSz, "r")
-
-	#raw data
-	if v.vdat.id == ATM__LST_VAL:
-		return obvVal(OBV_VAL__PTR, 8*zCtx.smaxSize, "NULL") #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TMP
-
-		'''
-		#obv syntax
-		begBlanks  = OBV__SEP * depth
-		obvNamePfx = '_' * (depth+1)
-
-		#create dat chk for this val
-		datChk = [] #tab[s8]
-		for c in v.vdat.dat:
-			if c.vdat.id != ATM__S8:
-				zCtx.int("Have non-S8 value in VAL LST " + v.toStr(), prtSubCtxs=False, prtLine=False)
-			datChk.append(c.vdat.dat)
-
-		#add to dat seg
-		datChkIdx = len(zCtx.cpl.resObv.dats)
-		zCtx.cpl.resObv.dats.append(datChk)
-
-		#get a ref to it
-		obvSz = 8 * zCtx.smaxSize
-		zCtx.cpl.resObv.exes.append(obvExe( "p2d", obvSz, ["DAT+", obvNamePfx + "..."], begBlanks ))
-		zCtx.dbg0("Unparsed VAL (lst[val]).")
-		return obvExe(OBV_VAL__..., obvSz, ...)
-		'''
 
 	#ffa
 	if v.vdat.id == ATM__FFA:
@@ -113,7 +86,7 @@ def unparseVal(zCtx, depth, v):
 
 #datItm
 def unparseDclDat(zCtx, depth, di):
-	zCtx.dbg0("Unparsing DCL DAT.")
+	zCtx.dbg1("Unparsing DCL DAT.")
 	begBlanks = OBV__SEP * depth
 
 	#sizes
@@ -140,7 +113,7 @@ def unparseDclDat(zCtx, depth, di):
 
 	#rsv
 	zCtx.cpl.resObv.exes.append(obvExe( "rsv", obvSz, [name, rsvSz], begBlanks ))
-	zCtx.dbg0("Unparsed DCL DAT.")
+	zCtx.dbg1("Unparsed DCL DAT.")
 
 
 
@@ -160,7 +133,7 @@ def upcasting(zCtx, srcOV, dstOV, begBlanks):
 		zCtx.cpl.resObv.exes.append(obvExe( "v2" + dstKind, dstOV.sz, [zeroTxt, dstOV.txt], begBlanks ))
 
 def unparseAsg(zCtx, depth, a):
-	zCtx.dbg0("Unparsing ASG " + a.toStr(depth=1))
+	zCtx.dbg1("Unparsing ASG " + a.toStr(depth=1))
 	begBlanks = OBV__SEP * depth
 
 	#src, dst
@@ -194,7 +167,7 @@ def unparseAsg(zCtx, depth, a):
 
 	#res
 	zCtx.cpl.resObv.exes.append(obvExe( ist, srcOV.sz, [srcOV.txt, dstOV.txt], begBlanks ))
-	zCtx.dbg0("Unparsed ASG.")
+	zCtx.dbg1("Unparsed ASG.")
 
 
 
@@ -211,8 +184,8 @@ def TMP_COND_UNPARSE(zCtx, ov, begBlanks):
 		kindTxt = 'P'
 	zCtx.cpl.resObv.exes.append(obvExe( "CMP", 0, [kindTxt + ':' + ov.txt], begBlanks ))
 
-def unparseStmIf(zCtx, i, depth, begEnd=True):
-	zCtx.dbg0("Unparsing IF " + i.toStr(depth=1))
+def unparseStmIf(zCtx, depth, i, begEnd=True):
+	zCtx.dbg1("Unparsing IF " + i.toStr(depth=1))
 	begBlanks = OBV__SEP * depth
 
 	#condition
@@ -220,18 +193,18 @@ def unparseStmIf(zCtx, i, depth, begEnd=True):
 	TMP_COND_UNPARSE(zCtx, condOV, begBlanks)
 
 	#ok
-	unparseScope(zCtx, depth+1, i.ifScope)
+	unparseScp(zCtx, depth+1, i.ifScope)
 
 	#ko
 	if i.elsScope is not None:
-		unparseScope(zCtx, depth+1, i.elsScope)
-	zCtx.dbg0("Unparsed IF.")
+		unparseScp(zCtx, depth+1, i.elsScope)
+	zCtx.dbg1("Unparsed IF.")
 
 
 
 #whi
-def unparseStmWhi(zCtx, w, depth, begEnd=True):
-	zCtx.dbg0("Unparsing WHI " + w.toStr(depth=1))
+def unparseStmWhi(zCtx, depth, w, begEnd=True):
+	zCtx.dbg1("Unparsing WHI " + w.toStr(depth=1))
 	begBlanks = OBV__SEP * depth
 
 	#iterCond
@@ -239,14 +212,14 @@ def unparseStmWhi(zCtx, w, depth, begEnd=True):
 	TMP_COND_UNPARSE(zCtx, condOV, begBlanks)
 
 	#scope
-	unparseScope(zCtx, depth+1, w.scope)
-	zCtx.dbg0("Unparsed WHI.")
+	unparseScp(zCtx, depth+1, w.scope)
+	zCtx.dbg1("Unparsed WHI.")
 
 
 
 #swi
-def unparseStmSwi(zCtx, s, depth, begEnd=True):
-	zCtx.dbg0("Unparsing SWI " + s.toStr(depth=1))
+def unparseStmSwi(zCtx, depth, s, begEnd=True):
+	zCtx.dbg1("Unparsing SWI " + s.toStr(depth=1))
 	begBlanks = OBV__SEP * depth
 
 	#tgt
@@ -262,19 +235,19 @@ def unparseStmSwi(zCtx, s, depth, begEnd=True):
 		TMP_COND_UNPARSE(zCtx, caseOV, begBlanks)
 
 		#case scope
-		unparseScope(zCtx, depth+1, s.scopes[c])
+		unparseScp(zCtx, depth+1, s.scopes[c])
 		c += 1
 
 	#def case
 	if len(s.scopes) > len(s.cases):
-		unparseScope(zCtx, depth+1, s.scopes[c])
-	zCtx.dbg0("Unparsed SWI.")
+		unparseScp(zCtx, depth+1, s.scopes[c])
+	zCtx.dbg1("Unparsed SWI.")
 
 
 
 #jmp
 def unparseJmp(zCtx, depth, j):
-	zCtx.dbg0("Unparsing JMP " + j.toStr(depth=1))
+	zCtx.dbg1("Unparsing JMP " + j.toStr(depth=1))
 	begBlanks = OBV__SEP * depth
 
 	#brk
@@ -321,13 +294,13 @@ def unparseJmp(zCtx, depth, j):
 
 		#ret
 		zCtx.cpl.resObv.exes.append(obvExe( "bck", 0, [], begBlanks ))
-	zCtx.dbg0("Unparsed JMP.")
+	zCtx.dbg1("Unparsed JMP.")
 
 
 
 #call
 def unparseCall(zCtx, depth, c):
-	zCtx.dbg0("Unparsing CALL " + c.toStr(depth=1))
+	zCtx.dbg1("Unparsing CALL " + c.toStr(depth=1))
 	begBlanks = OBV__SEP * depth
 
 	#too much params
@@ -378,7 +351,7 @@ def unparseCall(zCtx, depth, c):
 
 	#ivq
 	zCtx.cpl.resObv.exes.append(obvExe( "ivq", 0, [c.name], begBlanks ))
-	zCtx.dbg0("Unparsed CALL.")
+	zCtx.dbg1("Unparsed CALL.")
 
 
 
@@ -425,7 +398,7 @@ def unparseScp(zCtx, depth, scope):
 
 #fcts
 def unparseFct(zCtx, f):
-	zCtx.dbg0("Unparsing FCT " + f.toStr())
+	zCtx.dbg0("Unparsing FCT " + f.name)
 	if not f.ext:
 
 		#obv exe
@@ -461,7 +434,7 @@ def unparseTypesFP(zCtx):
 	dcnFP   = []
 	for tID in range(len(zCtx.cpl.types)):
 		tInst = zCtx.cpl.types[tID]
-		zCtx.dbg0("Unparsing DCL TYP " + tInst.name)
+		zCtx.dbg1("Unparsing DCL TYP " + tInst.name)
 
 		#skip root types
 		if tID in zCtx.rootTypes or \
@@ -516,7 +489,7 @@ def unparseTypesFP(zCtx):
 
 	#output
 	zCtx.cpl.resFP += '\n'.join(undcnFP) + '\n' + '\n'.join(dcnFP) + '\n'
-	zCtx.dbg0("Unparsed DCL TYPs.")
+	zCtx.dbg1("Unparsed DCL TYPs.")
 
 #gbl datItms
 def unparseGblDatItmsFP(zCtx):
