@@ -128,7 +128,7 @@ def newZCtx(
 		datItm(res.smaxType, "len", False, None),
 		datItm(res.smaxType, "dat", False, None)
 	]
-	rawTypeInst.computeStcSize(res.cpl)
+	rawTypeInst.computeStcSize(res)
 	rawTypeInst.dcnCommon.isPub = False'''
 
 	#bare metal operations
@@ -152,7 +152,7 @@ def newZCtx(
 			datItm(res.smaxType, "id", False, None),
 			datItm(res.refType, "dat", False, None)
 		]
-		atmTypeInst.computeStcSize(res.cpl)
+		atmTypeInst.computeStcSize(res)
 		atmTypeInst.dcnCommon.isPub = False
 
 	#dcn related

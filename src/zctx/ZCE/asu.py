@@ -83,7 +83,7 @@
 				tInst.dcnCommon.fields.append( datItm(typeID, name, False, None) )
 
 			#compute size
-			tInst.computeStcSize(sbj.cpl)
+			tInst.computeStcSize(sbj)
 
 
 

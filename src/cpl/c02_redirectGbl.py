@@ -148,7 +148,7 @@ def processTypeDcl(ZCI, isPub):
 				ZCIErr(ZCI, "Structure type \"" + unpfxTypeName(ZCI.zCtx, fullName)[0] + "\" contains a field of type \"raw\" => forbidden, in type declaration ZCI (DCL_TYP).")'''
 
 		#compute size
-		newTypeInst.computeStcSize(ZCI.zCtx.cpl)
+		newTypeInst.computeStcSize(ZCI.zCtx)
 
 	#process type content: type-copy syntax
 	else:

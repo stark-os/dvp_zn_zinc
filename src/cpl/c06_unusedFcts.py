@@ -17,9 +17,9 @@ from zctx import *
 #tiny tool
 def addCallNameIfValIsCall(calledFcts, v):
 	if v.vdat.id == ATM__CALL:
-		callName = v.vdat.dat.name
-		if callName not in calledFcts:
-			calledFcts.append(callName)
+		c = v.vdat.dat
+		if c.name not in calledFcts:
+			calledFcts.append(c.name)
 
 
 
@@ -42,6 +42,7 @@ def listCalled(calledFcts, scope):
 		#if
 		elif x.id == ATM__STM_IF:
 			addCallNameIfValIsCall(calledFcts, x.dat.cond)
+			listCalled(calledFcts, x.dat.ifScope)
 			if x.dat.elsScope is not None:
 				listCalled(calledFcts, x.dat.elsScope)
 
@@ -55,8 +56,8 @@ def listCalled(calledFcts, scope):
 			addCallNameIfValIsCall(calledFcts, x.dat.tgt)
 			for c in x.dat.cases:
 				addCallNameIfValIsCall(calledFcts, c)
-			for ss in x.dat.scopes:
-				listCalled(calledFcts, ss)
+			for s in x.dat.scopes:
+				listCalled(calledFcts, s)
 
 		#jmp
 		elif x.id == ATM__JMP:
@@ -94,6 +95,8 @@ def c06_unusedFcts(zCtx):
 	popLst     = [] #lst[smax]
 	rmFctNames = [] #lst[str]
 	for f in range(len(zCtx.cpl.fcts)):
+
+		#fct not called => rm it
 		fName = zCtx.cpl.fcts[f].name
 		if fName not in calledFcts:
 			zCtx.dbg0("Function \"" + fName + "\" is never called in program => removing it from result.")
@@ -102,7 +105,8 @@ def c06_unusedFcts(zCtx):
 			#dbg
 			rmFctNames.append(fName)
 
-	#rm them (popLst is in asc order, no idx shift to operate)
+	#rm them (popLst is in asc order => turn it in dsc order to work without having to shift idxes)
+	popLst.reverse()
 	for i in popLst:
 		zCtx.cpl.fcts = lst_remove(zCtx.cpl.fcts, i)
 

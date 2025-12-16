@@ -180,21 +180,9 @@ class typ:
 		sbj.dcns      = None #tab[smax]
 		sbj.dcnCommon = None #typ_dcnCommon
 
-	def computeStcSize(sbj, cpl):
+	def computeStcSize(sbj, zCtx):
 		if sbj.dcnCommon.nature != NATURE__PRM:
-			sbj.dcnCommon.size = 0
-
-			#padding according to arch type
-			paddingStep = 32
-			if cpl.opts["ARCH"] == "64":
-				paddingStep = 64
-
-			#compute size
-			for f in sbj.dcnCommon.fields: #NOTE THAT HERE, WE DO SUM SIZES AND NOT STC-SIZES ! Structures contained inside another structure are always considered as pointers.
-				realFieldSize = cpl.types[f.Type].dcnCommon.size
-
-				#padding size to 32b/64b multiple
-				sbj.dcnCommon.size += pad(realFieldSize, paddingStep)
+			sbj.dcnCommon.size = len(sbj.dcnCommon.fields) * zCtx.smaxSize
 
 #scope
 class scp:

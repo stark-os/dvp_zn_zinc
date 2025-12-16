@@ -34,7 +34,7 @@ def dcpBigParamAsRef(zCtx, v, scope, idx):
 				dcpDI_val = val(pVal.Type, atm(ATM__DATITM, dcpDI), False)
 
 				#param contains now a REF to the dcpDI
-				c.paramVals[p] = val(pVal.Type, atm(ATM__FRF, frf(dcpDI)), False)
+				c.paramVals[p] = val(zCtx.refType, atm(ATM__FRF, frf(dcpDI)), False)
 
 				#the dcpDI contains the val
 				lst_insertBefore(scope.exes, idx, atm(
@@ -63,6 +63,10 @@ def c07_bigParamAsRef(zCtx):
 	zCtx.dbg0("======================== C07 BIG PARAM AS REF : beginning =======================")
 	zCtx.dbg0("=================================================================================")
 	zCtx.dbgPause()
+
+
+
+	#STEP 1: DCP BIG PARAM VALS IN CALLS
 
 	#gather every easily accessible scopes
 	scopes = [zCtx.cpl.gblScp]
@@ -140,6 +144,25 @@ def c07_bigParamAsRef(zCtx):
 		#inc scp idx
 		zCtx.dbgPause()
 		s += 1
+
+
+
+	#STEP 2: TURN BIG PARAMS INTO REF IN FCTS
+
+	'''
+	#shortcuts
+	r    = zCtx.refType
+	r_sz = zCtx.getTypeInstanceFromID(r).dcnCommon.size
+
+	#for each fct
+	for f in zCtx.cpl.fcts:
+		for p in range(len(f.params)):
+			paramSz = zCtx.getTypeInstanceFromID(f.params[p].Type).dcnCommon.size
+			if paramSz > r_sz:
+				f.params[p].Type = f.params[p]
+	'''
+
+
 
 	#debug
 	zCtx.dbg0("===========================================================================")

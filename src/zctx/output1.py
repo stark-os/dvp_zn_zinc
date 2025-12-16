@@ -24,6 +24,7 @@
 		#msg
 		out += msg
 		log_intLF(out)
+		log_dbg0LF("Types ID table: " + sbj.listTypeNames())
 
 		#exit
 		import traceback #<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< can be useful
@@ -80,7 +81,7 @@
 
 		#additional ver spacing
 		if prtSubCtxs or prtLine:
-			out += "\n\n\n"
+			out += "\n"
 
 		#subCtxs
 		if prtSubCtxs:
@@ -103,7 +104,7 @@
 
 		#additional ver spacing
 		if prtSubCtxs or prtLine:
-			out += "\n\n\n"
+			out += "\n"
 
 		#subCtxs
 		if prtSubCtxs:
@@ -126,7 +127,7 @@
 
 		#additional ver spacing
 		if prtSubCtxs or prtLine:
-			out += "\n\n\n"
+			out += "\n"
 
 		#subCtxs
 		if prtSubCtxs:

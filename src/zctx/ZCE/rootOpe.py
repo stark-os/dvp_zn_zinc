@@ -106,11 +106,16 @@ def loadRefOpes(zCtx):
 			dcnTypeInst    = zCtx.getTypeInstanceFromID(dcnType)
 			dcnTypeObvSize = 8 * dcnTypeInst.dcnCommon.size
 
-			#create dcned ref type ref[rootType]
-			dcnedRefType            = zCtx.cpl.newTyp("GDref_" + dcnTypeInst.name, dcnCommon=refTypeInst.dcnCommon)
-			dcnedRefTypeInst        = zCtx.getTypeInstanceFromID(dcnedRefType)
-			dcnedRefTypeInst.dcns   = [dcnType]
-			dcnedRefTypeInst.parent = zCtx.refType
+			#get dcned ref type ref[rootType]
+			dcnedRefTypeName = "GDref_" + dcnTypeInst.name
+			dcnedRefType     = zCtx.getTypeIDFromName(dcnedRefTypeName)
+
+			#create it if not already done
+			if dcnedRefType == TYPE_ID__UNKNOWN:
+				dcnedRefType            = zCtx.cpl.newTyp(dcnedRefTypeName, dcnCommon=refTypeInst.dcnCommon)
+				dcnedRefTypeInst        = zCtx.getTypeInstanceFromID(dcnedRefType)
+				dcnedRefTypeInst.dcns   = [dcnType]
+				dcnedRefTypeInst.parent = zCtx.refType
 
 			#params
 			p1.Type = dcnedRefType

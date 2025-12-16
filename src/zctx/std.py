@@ -93,7 +93,7 @@ class atm:
 			ATM__SCP,	ATM__ASG,		ATM__JMP,		ATM__TYP_DCNCOMMON,
 			ATM__FCT,	ATM__OPSEQ, 	ATM__POCALL,	ATM__STM_IF,
 			ATM__CALL,	ATM__STM_WHI,	ATM__STM_SWI,	ATM__OBVEXE,
-			ATM__FFA,	ATM__ATM
+			ATM__FFA,	ATM__FRF,		ATM__ATM
 		):
 			res += d0 + "dat:" + sbj.dat.toStr(depth=depth+1)
 

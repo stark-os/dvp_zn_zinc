@@ -641,7 +641,7 @@ def secondAnalysis(ZCI, allowVFC, v2i):
 				for fDI in tInst.dcnCommon.fields:
 					if fDI.name == fieldName:
 						break
-					fieldOffset += ZCI.zCtx.getTypeInstanceFromID(fDI.Type).dcnCommon.size
+					fieldOffset += ZCI.zCtx.smaxSize
 				fieldOffsets.append(fieldOffset)
 
 			#main stc, also a dcp datItm
@@ -877,7 +877,7 @@ def secondAnalysisIncludingExtraOpes(ZCI, allowVFC, v2i):
 					if f.name == rawName: #found it
 						fieldType = f.Type
 						break
-					offset += ZCI.zCtx.getTypeInstanceFromID(f.Type).dcnCommon.size
+					offset += ZCI.zCtx.smaxSize
 
 				#no field found with given name
 				if fieldType == TYPE_ID__UNKNOWN:
@@ -1097,7 +1097,7 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only us
 		#should never occur
 		ZCIInt(ZCI, "Got invalid nbr of operands in 2nd analysis and value can't be null (wrong ope name given ?).")
 
-	#check for every operator alternative
+	#check for every ope alt
 	matchingFct = zCtx__findMatchingOperator(oriZCI.zCtx, opeHeader, paramTypeIDs, paramTypeNames)
 
 	#still no one found
@@ -1108,9 +1108,9 @@ def applySecondAnalysis(curPOCall, oriZCI, v2i, allowVFC=False): #oriZCI only us
 			"\n2nd analysis: No operator " + curPOCall.name.upper() + " matching for parameters (" + ','.join(paramTypeNames) + ")" + v2i.ZCIKindIfErr_ending
 		)
 
-	#result
+	#res
 	return val(
 		matchingFct.retType,
-		atm(ATM__CALL, call(opeHeader + '_' + '_'.join(paramTypeNames), paramVals, matchingFct.retType)),
+		atm(ATM__CALL, call(matchingFct.name, paramVals, matchingFct.retType)),
 		False
 	)

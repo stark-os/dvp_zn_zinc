@@ -357,7 +357,7 @@ def processForStm(ZCI, scope, tgtFct):
 			if di.name == "len":
 				iterDIType = di.Type
 				break
-			offset += ZCI.zCtx.getTypeInstanceFromID(di.Type).dcnCommon.size
+			offset += ZCI.zCtx.smaxSize
 
 		#no "len" field found
 		if iterDIType == TYPE_ID__UNKNOWN:

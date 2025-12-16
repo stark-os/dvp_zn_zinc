@@ -75,7 +75,7 @@ def unparseVal(zCtx, depth, v):
 
 	#frf
 	if v.vdat.id == ATM__FRF:
-		name  = '_'*(depth+1) + v.vdat.dat.name
+		name  = '_'*(depth+1) + v.vdat.dat.di.name
 		return obvVal(OBV_VAL__PTR, obvSz, name + "+0000")
 
 	#unknown
@@ -317,7 +317,7 @@ def unparseCall(zCtx, depth, c):
 		zCtx.int("Got a call to non-existing fct \"" + c.name + "\", " + c.toStr())
 
 	#params
-	regObvSz = 8 * zCtx.smaxSize
+	regObvSz = zCtx.smaxSize << 3
 	for p in range(len(c.paramVals)):
 		paramReg = OBV__PARAMS[p]
 
@@ -326,10 +326,17 @@ def unparseCall(zCtx, depth, c):
 		if paramValOV.kind == OBV_VAL__REG:
 			zCtx.int("Still having subcalls when unparsing in OBV call " + c.toStr(), prtSubCtxs=False, prtLine=False)
 
-		#params bigger than ARCH SIZE => problem
-		tgtFct_paramObvSz = 8 * zCtx.getTypeInstanceFromID(tgtFct.params[p].Type).dcnCommon.size
+		#fct expected param sz & given param sz
+		tgtFct_paramObvSz = zCtx.getTypeInstanceFromID(tgtFct.params[p].Type).dcnCommon.size << 3
+		paramObvSz        = zCtx.getTypeInstanceFromID(  c.paramVals[p].Type).dcnCommon.size << 3
+
+		#still having big paramVals => problem in previous cpl steps
+		if paramObvSz > regObvSz:
+			zCtx.int("Still having call parameter " + str(p+1) + " greater than arch size (" + str(paramObvSz) + " > " + str(regObvSz) + ") in call " + c.toStr(), prtSubCtxs=False, prtLine=False)
+
+		#however, big params in fct itself => OK, we will just ensure to upcast them until #ref only
 		if tgtFct_paramObvSz > regObvSz:
-			zCtx.int("Still having call parameter greater than arch size (" + str(tgtFct_paramObvSz) + " > " + str(regObvSz) + ") in call " + c.toStr(), prtSubCtxs=False, prtLine=False)
+			tgtFct_paramObvSz = regObvSz
 
 		#upcasting if needed
 		upcasting(zCtx,
@@ -346,7 +353,7 @@ def unparseCall(zCtx, depth, c):
 			ist = "d2r"
 		elif paramValOV.kind == OBV_VAL__PTR:
 			ist   = "p2r"
-			obvSz = regObvsSz #use whole reg if passing REF instead of actual value
+			obvSz = regObvSz #use whole reg if passing REF instead of actual value
 		zCtx.cpl.resObv.exes.append(obvExe( ist, obvSz, [paramValOV.txt, paramReg], begBlanks ))
 
 	#ivq
@@ -547,5 +554,5 @@ def c08_unparseAsObv(zCtx):
 	if log_lvl[0] >= LOG__LVL_DBG0:
 		prepareDbgDir()
 
-		#write out current res
-		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c08.obv", '\n'.join(zCtx.cpl.resObv))
+		#write out obv res
+		writeFile("dbg/" + path_name(zCtx.initialCtx.filename) + ".c08.obv", zCtx.cpl.resObv.unparse())
