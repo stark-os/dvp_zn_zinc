@@ -1,0 +1,168 @@
+t1 ZPL Features : Segregate and Aggregate
+
+t2 Modularity
+
+p The modularity in the ZPL is one of the simplest things to understand and use. \
+It concerns an abstract representation of some code into named boxes that we call \b"modules"\b. \
+Every thing that is defined inside a module is now dissociated from the rest of the code as it \ubelongs\u to its module. \
+This offers a lot of possibilities for example when organizating huge projects or if we want to protect the use of certain parts of the code.
+
+
+t3 Modules
+
+l It is possible to declare modules as much as wanted simply using the \mmod\m keyword.
+" z Figure 28
+mod MyModule {
+    ... //everything declared here now belongs to module "MyModule"
+}
+"
+
+p To access to a ZCE from a given module, we use the \umodule symbol\u \m^\m. \
+I know, some developers of you would say : "Wait, this symbol is already used in almost all programming languages for the XOR operator...". \
+That's true, and, spoiler, this is also the case for the ZPL but we will see this later when we will talk about \uoperators\u. \
+For the moment, just remember that this symbol means "from module" \bif directly followed\b by the name of the module we are looking for. \
+Then, we use a dot \m.\m (or \ufield access symbol\u) as delimiter to get the name of the element inside the module.
+
+l Let's look at an example :
+" z Figure 29
+mod MyModule1 {
+    int myInt = 2
+}
+
+mod MyModule2 {
+    int myInt = 4
+}
+
+int a = ^MyModule1.myInt //targetting element "myInt" from first module
+int b = ^MyModule2.myInt //same thing for the other module (a=2, b=4)
+"
+
+p We also call this \m^.\m notation the "module prefix". \
+Please note that the modularity effect only affects ZCEs that are \bdeclared\b inside a module, not every element that can be named inside. \
+This notion can lead to some surprises if using elements inside modules that have the same name as some global ones. \
+Please take a look at this typical example :
+" z Figure 30
+int myInt = 3 //declaring an EXTERNAL data item
+
+mod MyModule {
+    int myInt = 5
+
+    int mySecondInt = myInt //targetting the EXTERNAL "myInt" (3)
+
+    int myThirdInt = ^MyModule.myInt //targetting "myInt" from module "MyModule" (5)
+
+    int myFouthInt = mySecondInt //no EXTERNAL data item "mySecondInt" exists => COMPILATION ERROR
+}                                //Even if we are inside module, we MUST specify the exactly name of the element we want to target.
+                                 //The module prefix is mandatory as it is now part of the data item name.
+
+// In short, PLEASE REMEMBER : When targetting something, NO MODULE means EXTERNAL.
+"
+
+p As for data items, a module must be declared before being used. \
+However, a particular thing in that declaration is that we saw that we can access to them from the inside. \
+There is also a shortcut notation to target the module we are currently into : using an empty module prefix :
+" z Figure 31
+mod MyModule1 {
+    int myInt = 2
+
+    int mySecondInt = ^MyModule1.myInt //explicitely naming the module to target
+
+    int myThirdInt = ^.myInt           //implicitely targetting the current one (shortcut notation)
+}
+"
+
+
+
+t3 Modular ZCEs
+
+p Among all the ZCEs that we saw for the moment, the only ones that are affected by modularity are data items and types. \
+We only used examples of data items until now. \
+However some other ZCE are also concerned by modularity. \
+Here is the list of all the ZCEs that are affected by modules :
+- types
+-
+- data items
+-
+- functions (including methods)
+-
+- enumerates
+-
+
+l We will see them and their "modularity" behavior as we will move forward in the documentation.
+
+
+
+t2 Code extensibility
+
+t3 Imports
+
+p When talking about code modularity, we often think about splitting content into several files. \
+Here in the ZPL, modularity has nothing to deal with that because modules are clearly defined by some keywords and braces includers. \
+However, this kind of feature is also part of the language under a specific process that we call "importation". \
+This is the role of the EXT_IMP ZCI that basically consists in using the keyword \mimp\m followed by the path to the file to import.
+" z Figure 32
+//File /path/to/myFirstFile.z :
+
+  myInt = 5
+
+
+
+//File /path/to/another/file/mySecondFile.z :
+
+  //importing code
+  imp /path/to/myFirstFile.z
+
+  mySecondInt = myInt //"myInt" is accessible since the code from the first file has been imported
+"
+
+p A Z importation is nothing more than a raw copy of the imported file into the file that called it. \
+The line numbers in both files does not change (useful when dealing with compilation errors or debugging). \
+Relative paths are also allowed for importation as soon as the path of the targetted file is not starting with a \m/\m. \
+Every relative path starts from the \bdirectory\b in which the file calling the import is located.
+
+p An important thing to consider when importing code is that ZCIs cannot be shared between several files. \
+Each Z file used or imported for compilation must have a consistent ZCS by itself. \
+This allows the precompiler to analyse the current file, including maybe some importation ZCIs, then, if so, import other files etc...
+
+
+
+t3 Modules extensibility
+
+p Modules offers the possibility to be extended as much as wanted. \
+This allows users to define elements inside a module in multiple times. \
+We do so by using the \madd\m keyword as a supplement to regular module declaration :
+" z Figure 33
+mod MyModule {
+    ...        //declaring some stuff
+}
+
+mod add MyModule {
+   ...             //adding other declarations to "MyModule"
+}
+"
+p Of course, adding to a module that has not been declared before produces a compilation error. \
+One of the advantages of defining a module in multiple declarations is that you use several files to define all you need. \
+This is very useful when a module is getting big and you want to split it into some parts.
+
+
+
+t3 Dynamic linking
+
+p Depending on your usage of the ZPL, you may want to use shared libraries in your code (\m.so\m files). \
+We will not explain in details what are shared libraries, it is completely out of the scope of the ZPL. \
+In just a few words : Shared libraries are binary files, resulting generally from C compilation, made for Linux-GNU operating systems, and holding a lot of functions and constants. \
+An executable program can access to the features of a shared library by linking with it.
+
+l Linking a Z program with a shared library is possible by using an EXT_USE ZCI (keyword \muse\m).
+" z Figure 34
+use path/to/my/shared/library.so
+"
+
+p The Z compiler should be able to read the content of the targetted shared library to extract some information from it. \
+Then, the features included in that library will be assumed "declared" by the compiler so you will be able to use them in your program.
+
+
+
+
+b
+l \lZPL_Features-DataRepresentation\lPrevious page\l\ar\lZPL_Features-Execution\lNext page\l

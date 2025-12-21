@@ -1,0 +1,280 @@
+t1 ZPL Features : Common Data Structures
+
+t2 The fantastic four
+
+p As we said in the last chapter, in this one, we will talk about \
+additionnal shortcut notations rather than real "new Z features". \
+Actually, this chapter does not even cover internal Z features at \
+all. The data structures we will see here are \u\b\cff0000not\c\b\u \
+defined as part of the ZPL itself (as the primitive type \mboo\m we \
+saw earlier for example). They must be declared by the user using for \
+example a standard library before using them in the code.
+
+p However, the ZPL includes those shortcuts as they bring simplicity \
+and they shorthen the code in a good way. Moreover, those syntaxes \
+are used in lots of programming languages so developpers should be \
+able to get it easilly. Finally, for better flexibility, its is \
+possible to tell the compiler to interpret those notations or not \
+using the INTERPRET_COMMON_STRUCTURES compilation option. (By default \
+set to \mON\m).
+
+p The syntaxes we will see here concerns 4 data structures considered \
+in Z as "common data structures". These are \utables\u (\mtab\m), \
+\ulists\u (\mlst\m), \umaps\u (\mmap\m) and \uflies\u (\mfly\m). \
+They are all collection types. As we said before, such things are not \
+included in the ZPL language itself be it must be declared before \
+beeing used and it is mainly the role of \ustandard libraries\u. \
+They should bring you the definitions of those data structures \
+alongside with lots of methods to manage them.
+
+p \cff0000\b\uWARNING :\u\b Depending on your implementation of those \
+data structures, you may have different behavior in your code. Even \
+if the shortcut syntaxes are producing the same code, as a result, \
+the methods called with their content are not given by the compiler. \
+You may have to look into your standard library to see how things are \
+made inside.\c
+b
+
+t3 Pointer collections
+
+p The first data structure we will see is the most simple collection \
+type that can be made in Z... well almost. The really most basic type \
+that can be use to hold a collection of items is the primitive \
+\mref\m actually. However, using it directly is not always that \
+simple: storing and retrieving elements inside, managing memory \
+allocation when changes occur, keeping the total collection length \
+appart... Here is an example of how we can use pointers to store a \
+collection of items:
+" z Figure 103
+//let's say we want to store 'shr' elements
+ptr[shr] data   = new(8) //Let's allocate 8 bytes : Here we consider that "new()" refers to your system's memory allocation
+int      length = 4      //8 bytes => 4*2 bytes (assuming here that 'shr' are allocated on 2 bytes)
+
+//storing elements in data
+data[0] =    5s //As a recall here, operator IIA used with parameters : ptr[shr],int,shr
+data[1] =   -2s //This line is equivalent to a VFC_VFC ZCI like : iia(data,1,-2s)
+data[2] =  120s // In order to have this working, you must have this operator defined in your LLI.
+data[3] = 1289s
+
+//retrieving an element from the collection
+shr thirdItem = data[2] //Here it is the IIN operator : data[2] => iin(data,2)
+
+//retrieving the last element
+shr last = data[length-1]
+"
+
+p Don't worry about having such operators defined in your LLI because that kind of interaction with pointers are the most basic things required to work with dynamic amounts of data. \
+Such operations should always be declared in a certain way in your LLI. \
+In my opinion, it is very hard to work without it (not to say impossible).
+
+p Until here, nothing seems to be really difficult because we only used our collection statically. \
+The complexity goes as soon as we want to make something dynamic such as adding or removing an element. \
+Here is how we can make this :
+" z Figure 104
+//adding an element
+newData = new(length+2) //step 1 : allocate 2 bytes more
+for e on length {
+    newData[e] = data[e] //step 2 : refill the new data with the old content
+}
+newData[length] = 52s //step 3 : set the new value
+length += 1           //step 4 : increase length
+free(data)            //step 5 : free old content
+data = newData        //step 6 : switch to new data address
+
+//removing an element
+newData = new(length-2) //step 1 : allocate 2 bytes less
+for e on length {
+    if e != indexOfTheElementToRemove { //step 2 : refill the new data with the old content
+        newData[e] = data[e]            //         excluding the one we want to remove
+    }
+}
+length -= 1           //step 4 : decrease length
+free(data)            //step 5 : free old content
+data = newData        //step 6 : switch to new data address
+"
+
+p The problem here is not the complexity of those operations, this is typically the kind of thing that should be put inside a method for that collection type. \
+The problem is that we can't just add or remove a few bytes in our collection, we can only allocate a complete new collection and refill it as we want. \
+This is not a problem on regular x86_64 computers with lots of memory, especially when dealing with tiny collections but when dealing with huge amount of data, \
+we are not always able to allocate a new collection each time we want to add or remove a tiny part of it. \
+Moreover, refilling it one by one each time make those operations really long and inefficient.
+
+
+t3 Tables
+
+p For those reasons, pointer collections are pretty useful when used as static collections. \
+When creating one, we give it a length and then, we only set/get data to/from it. \
+This is also what \utables\u are meant to be. \
+Tables are nothing more than pointer collections with and additionnal "length" field. \
+As you can see in our example, to know how many elements we have in our table, we used an external data item. \
+In tables, we included it to the structure so that we can use it when imported in a function/method/operator :
+" z Figure 105
+typ tab[1] { int length, ptr[0] data } //declinated type of degree 1
+
+//operator IIN for : tab[shr],int
+shr [](tab[shr] t, int index) {
+    if index >= t.length { ret -1s } //return -1s if getting out of bounds
+    ret t.data[index]
+}
+
+//operator IIA for : tab[shr],int,shr
+voi [](tab[shr] t, int index, shr value) {
+    if index >= t.length { ret } //do nothing if getting out of bounds
+    t.data[index] = value
+}
+
+//declare a table
+myShortTable = tab { 3, ``000000000000 }
+
+//set and get an element inside of it
+myShortTable[1] = 35s
+s = myShortTable[1] //35s
+
+//set and get elements out of bounds
+myShortTable[12] = 25s //doing nothing
+s2 = myShortTable[12]  //-1s
+"
+
+p You see here that you are completely free of doing whatever you want with your data structures, even the most common ones. \
+These are just examples of how you can manage them but the actual behavior is completely free to be anything given by you or your standard library. \
+The main idea is that each common data structure has been thought in a particular way but you can actually create a structure that works completely differently if you want.
+
+p Alright, now it is time to talk a bit about shortcut notations. \
+If you remember, in previous chapters, we talked about VALUE ZCEs and the 2nd analysis with literal expressions... \
+To sum up the thing, when expecting to have a VALUE ZCE, a VAP is launched which is a process divided in 2 steps : 1st and 2nd analysis. \
+The first one is about ODP (operators) and the second one mainly about literal values. \
+This second analysis is where common structure's shortcut notations are treated.
+
+p Every common data structure shortcut notation is based on an includer symtax. \
+One thing we did not see but that is part of the compilation process is that after transforming your Z code into a list of ZCI, \
+those ZCIs are decomposed into DZCI ("Decomposed ZCI"). \
+Actually, we don't analyze the integrity of ZCIs as raw text but we use their decomposed format to work with them more easilly.
+
+p A DZCI is a serie of element that can be just text or includer elements. \
+The objective is to separate includers from the rest of the raw code. \
+Here is a simple example of how DZCI works : take into account includers in its 
+
+
+t3 Lists
+
+p Bla.
+
+
+t3 Maps
+
+p Bla.
+
+
+t3 Flies
+
+p Files cannot be passed as function parameters. \
+Flies cannot be declared without initial value. \
+Flies will be replaced by a generated type at compile time.
+
+
+
+
+t2 Shortcut notations
+
+t3 Declaration
+
+p Each of these fantastic four has a shortcut notation that can help to code faster, more clearly using symbols rather than full words. \
+Those notations mainly concerns the declaration of those structures. \
+Because those structures are not meant to be part of any LLI and for better flexibility, \
+these shortcuts are only interpreted if the compilation option INTERPRET_COMMON_STRUCTURES in enabled.
+
+p If you remember, in the chapter on VALUE ZCEs, we saw that in the Value Analysis Process (VAP), in the second analysis, the compiler will check for some litteral expressions. \
+In these expressions, we talked about the LITERAL INCLUDERS concerning the 4 common data structures : \mtab\m, \mlst\m, \mmap\m, \mfly\m. \
+Those literal expressions are what we call the "shortcut notations" for the fantastic four.
+
+l Here are the patterns targetted to identify a VALUE ZCE as one of them :
+" z Figure XX
+//1 - a LITERAL tab is detected if:
+
+    //VALUE is an empty parentheses includer
+    a = ()
+    //<=> (equivalent to)
+    a = tab {}
+
+    //VALUE is a parentheses includer with at least ONE coma inside
+    b = (element1, element2) //element1 & element2 are interpreted as VALUE ZCEs as well
+    //<=>
+    //in GLOBAL scope (element1 & element2 must be constant):
+    b = tab { length=2, data=``... } //concatenation of element1 & element2 constant values
+    //in LOCAL scope:
+    b = tab { length=2, data=new(2*#ptr) }
+    b[0             ] = element1
+    b[1*b->item_size] = element2
+
+
+//2 - a LITERAL lst is detected if:
+
+    //VALUE is an empty bracket includer
+    a = []
+    //<=>
+    a = lst {}
+
+    //VALUE is a brackets includer with at least ONE coma inside
+    b = [element1, element2] //element1 & element2 are VALUE ZCEs as well
+    //<=>
+    //in LOCAL scope:
+    b = lst { length=2 }
+    b + element1
+    b + element2
+
+
+//3 - a LITERAL map is detected if:
+
+    //VALUE is an empty brackets includer preceeded by a colon
+    a = :[]
+    //<=>
+    a = map {}
+
+    //VALUE is a brackets includer PRECEEDED BY A COLON with at least one assignment inside
+    b = :[
+        key1 = value1    //as soon as an assignment symbol is detected (equal sign \m'='\m not following another one),
+    ]                    //both sides are considerated as other VALUE ZCEs (\i"key1"\i & \i"value1"\i here).
+    //<=>
+    in LOCAL scope:
+    b = map { length=1l }
+    b + map_couple[k,v] { key1, value1 } //here, \i"k"\i and \i"v"\i are the types of the VALUE ZCEs given
+                                         //previously by \i"key1"\i and \i"value1"\i respectively
+
+
+//4 - a LITERAL fly is detected if:
+
+    //VALUE is an empty braces includer
+    a = {}
+    //in that case, compiler will raise an error because it makes no sens to set an empty fly.
+    //  I know, that seems weird to allow a syntax that always produces an error,
+    //  but this is allowed for consistency reasons :
+    //  Braces includers at beginning of VALUE ZCEs are reserved for flies.
+
+    //VALUE is a braces includer with at least one assignment inside (same thing as for maps)
+    b = {
+        field1 = value1 //field1 will be read as a regular field name in structure declarations
+    }                   //value1 is a VALUE ZCE (associated to field1)
+    //<=>
+    //in GLOBAL scope:
+    typ <stc> { //generated structure
+        field1 = value1
+    }
+    b = <stc> {}
+    //in LOCAL scope:
+    //declare a generated structure in GLOBAL scope as before, and then, back in LOCAL scope:
+    b = <stc> {} //same thing actually
+
+    //field names are optionnal in flies, that means that you can define them with a VALUE only.
+    //here is an example of 
+"
+
+
+t3 .
+
+p .
+
+
+
+
+b
+l \lZPL_Features-Statements\lPrevious page\l\ar\lZPL_Features-PrecompilerDirectives\lNext page\l

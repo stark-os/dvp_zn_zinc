@@ -1,0 +1,70 @@
+t0c ZINC : DOCUMENTATION [0.1.0]
+
+lc THIS DOCUMENT DESCRIBES ALL THE PROCESSES OF ZINC.
+
+b
+pc In this document, you will find all the information about ZINC. \
+However, this does NOT include any documentation about the Z \
+programming language or related libraries.
+
+pc If you want to get some information about a specific function or \
+type or whatsoever concerns a Z library, you may take a look at STDZ \
+(the default Z standard library) :
+lc \l\lhttps://zlang.org/stdz\l
+b
+
+pc \bPLEASE READ CAREFULLY ALL OF THE SECTIONS OF THIS DOCUMENTATION \
+BEFORE REPORTING ANYTHING.\b
+
+"
+|**********************************************************************|
+| LICENSE :                                                            |
+|                                                                      |
+| ZINC                                                                 |
+| Copyright (C) 2023 Sebastien SILVANO                                 |
+|                                                                      |
+| This program is free software; you can redistribute it and/or modify |
+| it under the terms of the GNU General Public License as published by |
+| the Free Software Foundation; either version 2 of the License, or    |
+| (at your option) any later version.                                  |
+|                                                                      |
+| This program is distributed in the hope that it will be useful,      |
+| but WITHOUT ANY WARRANTY; without even the implied warranty of       |
+| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        |
+| GNU General Public License for more details.                         |
+|                                                                      |
+| You should have received a copy of the GNU General Public License    |
+| along with this program.                                             |
+|                                                                      |
+| If not, see <https://www.gnu.org/licenses/>.                         |
+'----------------------------------------------------------------------'
+"
+
+b
+b
+b
+b
+
+%
+
+l This documentation is in dual format :
+- All in one page
+You are currently reading the whole document as one large page. \
+Every chapter is available by just scrolling down.
+-
+- Individual pages
+Another possibility for consulting the different chapters is to get \
+into individual pages view, one per chapter. \
+To do so, please click \lZCC/ZCC_Introduction\lhere\l.
+-
+
+
+
+b
+b
+b
+b
+b
+b
+b
+b

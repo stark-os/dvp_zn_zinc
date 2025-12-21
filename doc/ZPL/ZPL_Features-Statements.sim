@@ -1,0 +1,615 @@
+t1 ZPL Features : Statements
+
+p Programming statements are the main tools for bringing dynamism in your program. \
+They are generally present in every programming language under pretty similar forms. \
+If you are familiar with programming in general, whatever language you used, \
+you should easilly find your way into Z statements.
+b
+
+t2 Conditions
+
+t3 Basics
+
+p The most basic statement in every algorithm is the conditionnal execution (commonly called "if"). \
+This statement allow your program to execute a certain block of code or not depending on a user defined condition. \
+In Z, such statement can be made using the STM_IF_ ZCI :
+" z Figure 81
+if CONDITION { DO_SOMETHING }
+"
+p The content between braces includers must be ZCIs. \
+It is possible to put nothing in it. \
+As for function declarations, this braces includer defines a \c0000ff\bscope\b\c \
+so data items declared inside of it are \cff0000\bnot\b\c accessible from the outside. \
+However, accessibility of higher scope elements is still possible (as usual).
+
+p Conditions in Z are VALUE ZCEs that can be of any type however the final result will be cashted into the minimal size type which is \mbyt\m. \
+The content of the IF statement is only executed if the condition is different from 0 (\m`00\m to be precise). \
+In programming in general, we call that kind of binary status values : "boolean". \
+In ZPL, we don't have booleans as root types as we said in previous chapters but the type \mboo\m is assumed to be the generic name for a boolean element. \
+By the way and as a recall, VALUE literal patterns \mtrue\m and \mfalse\m correspond to the 2 status of a boolean element so they can be used in conditions.
+" z Figure 82
+//defining type "boo" (may be in a standard library)
+typ boo byt
+
+//IF statement always executing its content
+if true {
+    ...
+}
+
+//IF statement never executing its content
+if false {
+    ...
+}
+
+//IF statement executing its content depending on a more variable thing
+a = ...
+if a {
+    ...
+}
+"
+
+p Comparing to what we saw in previous chapters, this should be quite simple to understand isn't it ? \
+Statements in general are not the hardest part of the language. \
+Besides, as an everlasting logic, this simplicity turns them into a pretty complex thing in compilation (at least in low-level scope). \
+Programming complexity always remains balanced between user's knowledge and the compiler.
+
+
+t3 Extensions
+
+p IF statements can be extended by an opposite side execution content using the \mels\m keyword (corresponding to "else"). \
+This keyword must be followed by another ZCI block given using braces includers. \
+This new content will only be executed if the condition is \bNOT\b true.
+" z Figure 83
+byt a = ...
+
+//IF statement with an "els" extension
+if a { SOME_ZCIs } els { SOME_OTHER_ZCIs }
+
+// SOME_ZCIs will be executed if "a" is true (differs from `00)
+// SOME_OTHER_ZCIs will be executed if "a" is false (equals `00)
+"
+
+p Another extension can also be added to an IF statement to allow a simpler syntax : "else if" blocks. \
+Those blocks are pretty similar to the "else" blocks except that they also hold another condition on themselves. \
+We use the keyword "elf" to add this extension to an IF statement.
+" z Figure 84
+byt a = ...
+
+//IF statement with an "elf" extension
+if a { SOME ZCIs } elf CONDITION_2 { SOME_OTHER_ZCIs }
+
+// SOME_ZCIs will be executed if "a" is true
+// SOME_OTHER_ZCIs will be executed if "a" is false AND if CONDITION_2 is true
+
+
+
+//This is exactly the same thing as this :
+if a {
+    SOME_ZCIs
+} els {
+    if CONDITION_2 { SOME_OTHER_ZCIs }
+}
+"
+
+p As explained in this example, "elf" extensions don't bring anything new to the code. \
+They can be completely replaced by "if-els" statements nested in each other. \
+However, using the "elf" syntax is a way much user friendly in most cases and it often allows compilation optimizations.
+
+p This may not be that obvious because we only used one "elf" extension in our examples. \
+Indeed, we can use as many "elf" extensions as we want in an IF statements. \
+To do so, we simply repeat the extension pattern as many time as we want.
+" z Figure 85
+byt a = ...
+byt b = ...
+byt c = ...
+
+//IF statement with multiple "elf" extensions
+if a {
+    EXEC1
+} elf b {
+    EXEC2
+} elf c {
+    EXEC3
+} //and so on...
+
+//Here is a brief explanation of the execution workflow here :
+//  a is true => execute EXEC1 and that's it.
+//  Else => looking at the rest of the statement
+//
+//    b is true => execute EXEC2 and that's it.
+//    Else => looking at the rest of the statement
+//
+//      c is true => execute EXEC3
+//      Else => do nothing at all
+"
+
+p By the way, it is also possible to use both "elf" \uand\u "els" extensions to IF statements. \
+However, because "els" extension stands for "the remaining cases", we can only use it once and only at the end of the statement. \
+Here is how big an "if-elf-els" statement can be.
+" z Figure 86
+byt a = ...
+byt b = ...
+byt c = ...
+...
+
+if a {      //initial statement
+    EXEC1
+} elf b {   //first sub-case
+    EXEC2
+} elf c {   //second sub-case
+    EXEC3
+} elf ... { //...
+    ...
+} els {     //last case (every condition is false => last remaining case)
+    EXECN
+}
+"
+
+p One last thing concerning IF statements : extensions can be made on several ZCIs. \
+To better represent conditionnal branching if large IF statements, the ZPL allows you to use extensions of IF statements as completely distinc ZCIs. \
+That means 2 syntaxes are allowed for STM_IF_ ZCIs :
+" z Figure 87
+//here is also an STM_IF_ ZCI
+elf CONDITION { CONTENT }
+
+//here is an STM_IF_ as well
+els { CONTENT }
+"
+
+p Obviousy, because those extensions are related to an initial IF statement, the compiler will raise an error if you declare such things alone. \
+You must first give a regular "if CONDITION { EXEC }" before using any extension. \
+At compile time, those extensions will be attached to the initial IF statement.
+
+l As a conclusion on this part, here is a last example of the use of IF statements and the advantages of using "elf" extensions as well :
+" z Figure 88
+byt a = ...
+byt b = ...
+byt c = ...
+byt d = ...
+
+//using "elf" extensions
+if a {    //initial statement
+    EXEC1
+} elf b { //first sub-case (still on the same initial ZCI, at line 7)
+    EXEC2
+}
+
+elf c {   //second sub-case (here we are on a new ZCI)
+    EXEC3
+}
+elf d {   //thirs sub-case (here we are also on a new ZCI)
+    EXEC4
+} els {   //last case
+    EXECN
+}
+
+
+
+//WITHOUT "elf" extensions
+if a { //inital statement
+    EXEC1
+} els {
+    if b { //first sub-case
+        EXEC2
+    }
+
+    els {
+        if c { //second sub-case
+            EXEC3
+        }
+
+        els {
+            if d { //thirs sub-case
+                EXEC4
+            }
+
+            els { //last case
+                EXECN
+            }
+        }
+    }
+}
+
+//CONCLUSION : Use "elf" extensions, it is great !
+"
+
+
+t3 Industrial redirections
+
+p A typical case of using IF statements is when dealing with \uexecution \bredirection\b\u. \
+This is a really common thing that we have in lots of situations when making a selection between multiple executions or behaviors. \
+Let's take a basic example :
+" z Figure 89
+SCENE_A = `00
+SCENE_B = `01
+SCENE_C = `02
+SCENE_D = `03
+SCENE_E = `04
+
+byt scene = ... //select the scene we are currently in
+
+if scene == SCENE_A {
+    EXEC_A //execution if we are currently in scene 1
+}
+
+elf scene == SCENE_B {
+    EXEC_B //execution if we are currently in scene 2
+}
+
+elf scene == SCENE_C {
+    EXEC_C //execution if we are currently in scene 3
+}
+
+elf scene == SCENE_D {
+    EXEC_D //execution if we are currently in scene 4
+}
+
+elf scene == SCENE_E {
+    EXEC_E //execution if we are currently in scene 5
+}
+
+els {
+    EXEC_U //execution for an unknown scene
+}
+"
+
+p In those cases, another Z statement is more approprioate (also really common in other programming languages) : the "Switch". \
+In some programming languages you can have it named like "Switch-Case" or "Match-Case" statement but in Z, it is just "Switch". \
+This statement consists in using the keyword \mswi\m followed by a braces includer. \
+However, unlike IF statements, this braces includer does not defines a sub-zone of ZCIs directly but a more specific pattern :
+" z Figure 90
+swi VALUE_TO_ANALYZE {
+    VALUE1 { EXEC1 }
+    VALUE2 { EXEC2 }
+    VALUE3 { EXEC3 }
+    VALUE4 { EXEC4 }
+    ...
+    def    { EXECU } //using keyword "def" means "if nothing matches" ("els" equivalent)
+                     //"def" is OPTIONNAL
+}
+"
+p Every "VALUE" field is a VALUE ZCE. \
+Depending on the value to analyze, the execution will go in one direction or another. \
+\cff0000\b\uWARNING :\u\b The redirection will be made by using the CEQ operator (\m==\m). \
+Please take care of the types used in your VALUE ZCEs.\c
+
+p This kind of statement is more appropriate in our example of execution redirection (figure 80). \
+Moreover, using it instead of "if-elf-els" allows optimizations in low-level compilation. \
+As for users, this is also shorter and less risky than using tons of IF extensions (avoiding mistakes in conditions) :
+" z Figure 91
+SCENE_A = `00
+SCENE_B = `01
+SCENE_C = `02
+SCENE_D = `03
+SCENE_E = `04
+
+byt scene = ... //select the scene we are currently in
+
+//same thing as the previous example but using a SWITCH statement
+swi scene {
+    SCENE_A { EXEC_A }
+    SCENE_B { EXEC_B }
+    SCENE_C { EXEC_C }
+    SCENE_D { EXEC_D }
+    SCENE_E { EXEC_E }
+    def     { EXEC_U }
+}
+
+//CONCLUSION : Shorter, simpler, lightweight syntax
+//                               => better vision of the execution workflow
+"
+
+
+t3 A perfect candidate : Enumerates
+
+p As we said a few chapters before, the most important thing we have to remember from a data item for using it remains in its name. \
+This is sometimes so important that, in some cases, we don't even require to know the value stored inside a data item for using it. \
+The only thing we want is to have a certain number of names for differenciating them between each other, but their value doesn't really matter.
+
+p This situation happens very frequently, basically, every time a selection have to be done. \
+Let's see this in our previous example :
+" z Figure 92
+SCENE_A = `00 //the values given here does not really matter.
+SCENE_B = `01 //we only need several items to differentiate.
+SCENE_C = `02
+SCENE_D = `03
+SCENE_E = `04
+
+byt scene = SCENE_C //select the scene we are currently in
+                    //(never using raw values but only using names)
+
+//rest of the code
+...
+"
+
+p Using data items with arbitrary values as we did in the above example works perfectly. \
+However, the Z also provides a ZCE specificly made for that kind of situation to simplify the thing : \benumerates\b. \
+This is also a very common element that you can find in lots of other programming languages. \
+Enumerates (or sometimes called "enums") are nothing more than regular data items except that their declaration and call are a bit shortened and optimized. \
+Here is an example of how we declare and use enumerates in Z (same example as before) :
+" z Figure 93
+enm SCENE {
+    A, B, C, D, E
+}
+
+//get selection
+s = SCENE.C
+swi s {
+    SCENE.A { EXEC_A }
+    SCENE.B { EXEC_B }
+    SCENE.C { EXEC_C }
+    SCENE.D { EXEC_D }
+    SCENE.E { EXEC_E }
+    def     { EXEC_U }
+}
+"
+
+p As you can see, we use the DCL_ENM ZCI to declare an enumerate and their values are accessed using an \ufield access symbol\u (\m.\m). \
+It is important to know that behind an enumerate, data items will be generated to fulfill the same role as in the previous versions of that example. \
+Thus, each key of an enumerate is accessible as for regular data items. \
+\b\uWarning :\u\b data items generated from enumerates are \bCONSTANT\b so you can only use them for \breading\b.
+
+p Values associated to the keys of an enumerate are unsigned integers starting from 0. \
+They are stored into data items of a certain type given in the compiler option ENUMERATES_KEYS_TYPE. \
+If this option is set to \mauto\m, the compiler will automatically choose which type to use to save memory. \
+For example, if there are less than 256 values, the keys can be stored on 1 byte of data so using \mubyt\m keys is enough.
+
+p Enumerates can also be declared inside modules and so belong to it. \
+This is quite the same thing as we do with regular data items basically. \
+Here is a tiny example of it :
+" z Figure 94
+mod MyModule {
+    enm SCENE { A, B, C, D, E }
+}
+
+//acces to values
+a = ^MyModule.SCENE.A
+b = ^MyModule.SCENE.B
+...
+"
+
+
+
+
+t2 Loops
+
+p Loops constitutes the second half of statements in general computing. \
+Unlike conditions, they can appear in more various forms that are not always that obvious to understand \
+depending on the programming language you are using. \
+In Z, they are not that hard to manage but you will have some tiny words to remember to correctly deal with them.
+b
+
+t3 Basics
+
+p When running a Z code, execution always go from the first ZCIs to the end. \
+There is no other way to go back to a previous line except by using \uloops\u. \
+Those loops can be defined by using 2 statements : "While" and "For".
+
+p A WHILE statement is pretty similar to the very first IF statement we saw just before. \
+It consists in using the keyword \mwhi\m followed by a condition and an execution block defined between braces includers :
+" z Figure 95
+whi CONDITION { DO_SOMETHING }
+"
+
+p The criterias for the condition and the execution are the same as for IF statements. \
+However, there is no extension such as "els/elf" in while loops. \
+The behavior of a while loop is quite simple : Depending on the condition, the execution block contained inside the braces includer is executed. \
+(Until now, this seems to be the same thing as IF statements) \
+The main difference is that execution will not only be done once but as many times as required until the condition becomes false.
+
+p The more appropriate way of understanding a while loop is to consider that at the end of the executed block, execution goes back to the initial condition. \
+Then, if the condition is still true, the execution block is processed one more time and so on. \
+As soon as the condition becomes false, execution pursues after the statement to execute the rest of the code.
+
+l Let's see a practical example :
+" z Figure 96
+count = `00
+
+//repeat while count is lesser than 8
+whi count < `08 {
+    count = count + 1
+}
+
+//first time:  condition is true       => execute "count = count+1"
+//second time: condition is still true => same thing
+//...
+//eighth time:  condition is now false (count is now equal to `08) => stop executing the loop
+//                                                                    (pursuing as usual)
+"
+
+p There is nothing more to say about while statements for the moment. \
+That was the easiest part of Z loops but not the most used ones. \
+We will now take a look at FOR loops which are the most used loops in computing in general.
+
+
+t3 Fixed iterativity
+
+p For loops are quite similar to while loops. \
+In one phrase, for loops are while loops including an iteration variable that is implicitely increased after each block execution. \
+Originally, they are meant to iterate a fixed number of times in order to achieve an exact number of execution. \
+However, through time and as more complex data structures came on, they have been extended into much more powerful statements.
+
+p To create a for loop, we use the keyword \mfor\m followed by a name that will be our iteration variable and then what we will call "the header". \
+This variable (which is a regular data item, I recall) is then, only accessible from inside the loop and in the loop header. \
+In Z a for loop can be written using 4 different headers that we will see just now.
+" z Figure 97
+for v HEADER { //"v" is the name that will be taken for the iteration variable
+    ...        //"HEADER" will depend on the way you want to use your FOR loop
+    ...        //"v" is accessible inside loop content as well as inside the FOR header.
+}
+"
+
+p The first header concerns a \urange\u and consists in 2 value ZCEs separated by a \urange symbol\u (\m:\m). \
+The first value will determine the type as well as the initial value of the iteration variable. \
+The second value will be cashted into the same type as the first one and corresponds to the last value our iteration variable will take. \
+Also, those values can only be be \bprimitives\b.
+
+p To do so, you may have guessed that, depending on whether the second value is greater or lesser that the first one, our iteration variable will increase or decrease. \
+The iteration step is, by default, set to 1 (-1 if decreasing). \
+However, an optional third value ZCE can also be added in the header (separated by another range symbol) to give a custom iteration step.
+" z Figure 98
+//second value greater than the first one => increasing sens
+for a 5:9 {
+    //"a" will take values 5,6,7,8,9
+    //by the way, 5 is of type "int" so "a" is of type "int"
+}
+
+//second value lesser than the first one => decreasing sens
+for b 4:-2 {
+    //"b" will take values 4,3,2,1,-1,-2
+}
+
+//custom step
+for c 4:18:2 {
+    //"c" will take values 4,6,8,10,12,14,16,17,18
+}
+
+
+
+//using mixed types
+for d in 4 : 18.3d : 2.4f {
+    //"d" is still of type "int" (4 is an "int" value)
+    // => 18.3d will be cashted into "int" (0x40324CCCCCCCCCCD on 64b => 0xCCCCCCCD on 32b => -858_993_459)
+    // => 2.4f will be cashted into "int" (0x4019999a => 1_075_419_546)
+    //Conclusion : DON'T USE MIXED TYPES
+}
+
+
+
+//using double floting point values only
+for e in 4.0d : 18d : 0.1d {
+    //"e" is a "dbl" (4.0 is a "dbl")
+    //"e" will take values 4.0d, 4.1d, 4.2d, ... 18.0d
+}
+"
+p \b\cff0000Please pay attention to type cashting !\c\b \
+You can see in that example that some uncashted values are then implicitely transformed, leading to unexpected results... \
+To avoid struggling with that I \b\cff0000highly recommend\c\b to use only values of the \u\cff0000same type\c\u in FOR headers.
+
+p Actually, such loops are not mandatory in a Z code to work. \
+Every FOR loop can be written into a WHILE equivalent. \
+Those statements are more to see like shortcuts that real features to the code. \
+Let's take a quick look at a while equivalent :
+" z Figure 99
+for a 4:16:2 {
+    ....
+}
+
+//is (practically) equivalent to
+a = 4
+whi a <= 16 {
+    ...
+    a += 12
+}
+"
+p By decomposing our FOR statement we see that actually it operates a "lesser or equal" comparison so that if the iteration variable goes too far, \
+even after the second range value, the loop will stop. \
+We can see this second value like "we must \bat least\b reach it".
+
+p The second FOR loop header is pretty simple considering the first one we just saw : the "on" header. \
+Using the keyword \mon\m followed by a value ZCE (still primitive), the compiler will consider the range as starting from 0 until the value given minus one. \
+This is pretty useful when dealing with indexes because, you will see when coding that we always start counting by 0 in every data structure you will create. \
+Another way to look at this FOR header is to consider that it will iterate a fixed number of times, the number you just mentionned :
+" z Figure 100
+ptr a = ``0011223344 //considering a certain amount of data (5 bytes here)
+
+//practical use of "on" header for indexing
+for p on 5 {
+    //"p" will take values 0,1,2,3 and 4
+
+    //we can write inside "a" at index "p"
+    a[p] = `f8
+}
+
+//practical use of "on" header for just doing X times something
+for p on 10 {
+    doSomething() //as a result, will be called 10 times
+}
+"
+p One thing that really differs from the \urange\u header is that you cannot set a custom step or trying to invert it using an ending value lesser than 0. \
+\mon\m headers (as well as every other FOR header that we will see from now) are always \bincreasing\b with a step of \b1\b. \
+By the way, this step is adapted to the type given for the iteration variable (\m`01\m for \mbyt\m, \m1s\m for \mshr\m...). \
+This is mostly important for floating point values (\mflt\m => \m1f\m, \mdbl\m => \m1d\m).
+
+p The third header of FOR loops is also very similar : the \min\m header. \
+It is nothing more than an \mon\m header with a tiny difference on the value given as maximum : \
+the compiler will not take it as is but rather look for a particular field named \mlength\m in that value. \
+That means the value you will give must be a structure type that contains at least one field with that name. \
+This kind of loop is really useful for iterating over collections of undeterminable length :
+" z Figure 101
+//declare a structure type "myStc"
+typ myStc { byt length, ptr data = null }
+
+
+
+//declare a structure item
+s = myStc { 5, ``4433221100 }
+
+
+
+//iterate IN s
+for p in s { //equivalent to "for p on s.length {"
+    s.data[p] = `0e
+}
+"
+
+p For that last header, we will not only need a structure value with a \mlength\m field but also a specific operator to be declared first. \
+The name of that last header is the OVER but we use the shorten keyword \movr\m to write it down. \
+Infact, as we said this FOR loop will call a specific operator implicitely at each iteration. \
+This one is the IIN operator (indexing index : "A[B]") made for the given structure and the type of an indexing variable (which will be the same as the \mlength\m field).
+
+p You probably guessed what this FOR loop is aimed to do. \
+The iteration variable of this one is not a primitive value as given before but a complete new element taken from the call of that indexing function. \
+The principle is quite similar to the previous \min\m header because we also have a primitive data item increasing the same way (hidden, unaccessible by the way). \
+However, the iteration variable is the result of an operation with the given structure and that increasing value.
+" z Figure 102
+//define some stuff for type "myStc"
+typ myStc { byt length, ptr data = null }
+
+byt [](myStc m, byt index) { //indexing the structure (with an index of type "byt")
+    ret m.data[index]        // => indexing its "data" field
+}
+
+
+
+//declare a structure item
+s = myStc { 5, ``00224488ff }
+
+
+
+//iterate OVER s
+for p ovr s {
+    //p will take values s[`00], s[`01], s[`02], s[`03], s[`04]
+    //    indexes are given with type "byt" because "s.length" is of type "byt"
+
+    //in that case : `00,  `22, `44, `88, `ff
+}
+
+//it is equivalent to :
+for tmp_p in s {
+    byt p = s[tmp_p] //except "tmp_p" is not accessible
+                     //in OVER headers
+    //do stuff...
+}
+"
+p This is it ! We finally reached the end of FOR loops. \
+You might find it complicated at first sight because lots of things are hidden under very \ushort\u and easilly \uswitchable\u words. \
+Welcome to the world of syntax design ! \
+It is not that simple to find short keywords or syntaxes not too heavy but also explicit enough to allow anyone to understand it. \
+Sometimes, we need to make choices and those are not done in 5 minutes. \
+It can take hours, days or even months in some cases before finding a correct way of writting it.
+
+p Here you have only 3 short human words to remember and the range header is using the \urange symbol\u (which is only used for that kind of purpose in Z). \
+I think anyone can manage to learn that without too much difficulties. \
+The tip is to start by the beginning, \urange\u header first, then \mon\m, and so on.
+
+p We are arriving to the end of the real ZPL syntaxes now. \
+At this moment, you \uare\u able to create your first program with your own types, functions, methods, modules, statements and more. \
+The next chapter will tell us about some specific shortcut syntaxes that you might not use in your first programs in my opinion. \
+However, those shortcut notations are pretty useful for dealing with more complex data structures easilly.
+
+
+
+
+b
+l \lZPL_Features-Operators\lPrevious page\l\ar\lZPL_Features-CommonDataStructures\lNext page\l

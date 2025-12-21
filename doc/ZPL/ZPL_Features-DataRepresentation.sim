@@ -1,0 +1,560 @@
+t1 ZPL features : Data Representation
+
+t2 Presentation
+
+t3 A highly important ZCE
+
+p There are various ways to write down raw values in a Z code : numbers, text, symbols, specific notations... \
+As we discussed in the first chapters, one of the main goal of the Z is to be precisely defined from the very beginning \
+to the very end to avoid ambiguity or undefined behaviors. \
+Therefore, every raw value written in a Z code must respect a certain pattern to be tolerated among the rest of the code.
+
+p In Z, we use the VALUE ZCE to manage raw data given in the code. \
+But such ZCE is not only dedicated to this. \
+Infact, every time a value is taken from the code to be used somewhere else, a VALUE ZCE is expected. \
+That concerns literal data written explicitely by the user as well as the result of function calls or data items content. \
+Therefore, those ZCEs are omnipresent in Z, making them highly important to understand. \
+If there is one thing you should really be careful while reading this documentation is this chapter.
+
+p In Z, VALUEs are required in basically every ZCI that contains an \uassignment symbol\u \
+or inside every parentheses & brackets includers, and even between operators :
+" z Figure 18
+byt a = VALUE
+
+typ f {
+    b = VALUE,
+    c = VALUE
+}
+
+l = [VALUE, VALUE, VALUE]
+
+m = fun(VALUE)
+
+fun( p[VALUE] + VALUE)
+"
+
+p Because there is a huge amount of situations in which they are needed, \
+we will not take a look at every case but we will simply explain how a VALUE is read and interpreted by the compiler. \
+All the procedures that we will see here are applied at every moment the compiler is expecting to have a VALUE ZCE.
+
+
+
+t3 Value Analysis Process (VAP)
+
+p First, remember what we saw in the sum up table of the ZPL before, a VALUE is composed of :
+- A type
+-
+- A value (yes, I wasn't really inspired)
+-
+p In order to read and correctly interpret a VALUE ZCE, an algorithm called the \uVALUE Analysis Process\u (VAP) is applied on the given content. \
+This algorithm is quite complex because there is a large variety of ways to write down values in Z. \
+The objective of this operation is to transform the maximum "human-friendly" syntaxes into "machine-friendly" data structures.
+
+l Here is the full \uVALUE Analysis Process\u :
+"
+.-----------------+---------------------------------------------------------------------------------------.
+| Striping blanks |         Remove every BLANK character found at the beginning and at the end.           |
++-----------------+---------------------------------------------------------------------------------------+
+|                 |                         Detection of an "Operating sequence"                          |
+| First analysis  |                          => Operation Decomposition Process                           |
+|                 |                                        (ODP)                                          |
++-----------------+-------------------------+-----------+---------------+---------------------------------+
+|                 |                         | Includers |  Parentheses  | Explicit priorization (subvalue)|
+|                 |                         |           |               |  => Type resulting from new VAP |
+|                 |                         |           |               |---------------------------------|
+|                 |                         |           |               |  Table shortcut notation        |
+|                 |                         |           |               |  => Type tab                    |
+|                 |                         |           |---------------+---------------------------------|
+|                 |                         |           | Brackets      | List shortcut notation          |
+|                 |                         |           |               |  => Type lst                    |
+|                 |                         |           |---------------+---------------------------------|
+|                 |                         |           | Semi-colon +  | Fixed map shortcut notation     |
+|                 |                         |           | Parentheses   |  => Type fmap                   |
+|                 |                         |           |---------------+---------------------------------|
+|                 |                         |           | Semi-colon +  | Mutable map shortcut notation   |
+|                 |                         |           | Brackets      |  => Type mmap                   |
+|                 |                         |           |---------------+---------------------------------|
+|                 |                         |           |     Braces    | Fly shortcut notation           |
+|                 |                         |           |               |  => Type generated at compile   |
+|                 |                         |           |               |     time                        |
+|                 |                         |-----------+---------------+---------------------------------|
+|                 |                         | String => Type str                                          |
+|                 |                         |-------------------------------------------------------------|
+|                 |   A literal expression  | Character => Type chr                                       |
+|                 |         matches         |-------------------------------------------------------------|
+|                 |   => It is a LITERAL    | Single-byte notation => Type s1                             |
+|                 |                         |-------------------------------------------------------------|
+|                 |                         | Multi-byte notation => Type ptr                             |
+|                 |                         |------------------+------------------------------------------|
+|                 |                         | Literal integers | Short => Type s2/u2                      |
+|                 |                         |                  |------------------------------------------|
+|                 |                         |                  | Integer => Type s4/u4                    |
+|                 |                         |                  |------------------------------------------|
+|                 |                         |                  | Long => Type s8/u8 ONLY FOR 64 ARCH |
+|                 |                         |------------------+------------------------------------------|
+|                 |                         | Literal floats   | Simple float => Type f4                  |
+| Second analysis |                         |                  |------------------------------------------|
+|                 |                         |                  | Double float => Type f8 ONLY FOR 64 ARCH |
+|                 |                         |------------------+------------------------------------------|
+|                 |                         | Structure definition => Type of the given structure         |
+|                 |-------------------------+-------------------------------------------------------------|
+|                 |                         | VALUE gave the function name                                |
+|                 |                         |  => use this function                                       |
+|                 |                         |-------------------------------------------------------------|
+|                 |                         | VALUE gave the name of a DATA ITEM                          |
+|                 |                         | refering a function ID                                      |
+|                 |   Detecting a non-void  | => use the function targetted by this ID                    |
+|                 | returning function call |-------------------------------------------------------------|
+|                 |                         | In both cases:                                              |
+|                 |                         | Function is returning void                                  |
+|                 |                         |  => COMPILATION ERROR                                       |
+|                 |                         | Else                                                        |
+|                 |                         |  => Type is the return type of the function                 |
+|                 |-------------------------+-------------------------------------------------------------|
+|                 |                         | Is a FUNCTION name => Type is fct                           |
+|                 |                         |                       Value is function ID                  |
+|                 |  Detecting a NAME only  |-------------------------------------------------------------|
+|                 |                         | Is a DATA ITEM name => Same type                            |
+|                 |                         |                        Same value                           |
+'-----------------+-------------------------+-------------------------------------------------------------'
+"
+b
+
+p Oh I told you it was not a tiny thing but stay calm, we will not see everything now because we will need to see other features before. \
+To completely understand the concepts of the the 1st analysis for example, we must explain clearly what are functions, methods, operators and priorities before getting into those mechanisms. \
+In this chapter, we will only see the second analysis and even this cannot be fully understood without covering the concept of Z functions.
+
+
+
+t2 2nd Analysis
+
+t3 Literals
+
+p It is important to understand that this second analysis is processed \bafter\b the 1st one (that we will cover later). \
+Until now, no attribute is set in the VALUE ZCE, but as soon as we get into this second half, a lot of scenarios can happen.
+
+p The first things the compiler will try to find out in this second analysis are \c00dd00\bLITERALs\b\c. \
+There are plenty of literal expressions that can be used to write down a value. \
+If the VALUE doesn't match any literal expression, the compiler will try its second option : "non-returning function call". \
+In the other hand, if a LITERAL is detected, the analysis stops here and the VALUE is set according to the correponding patern.
+
+p \b\cff0000\uWARNING :\u In the following serie of paragraphs, we will talk about some ZCEs that we did not present for the moment. \
+I give you this list now for exhaustivity reasons but you better not use the syntaxes of the features we have not seen yet. \
+Please do not give that much importance to the specificities of such ZCEs, you will probably get back here when we will define them later.\c\b
+
+l Here are all the \c00dd00LITERALs\c allowed with their corresponding matching patterns :
+
+- Single-byte notation
+The character \m`\m (60 in hex) has a specific sens in Z. This is the \braw\b symbol. \
+It is used for writing raw data that will be kept until the very end of the compilation \bas is\b. \
+Of course, this character is not detected as specific symbol if used inside a text field (literal character or string). \
+If a VALUE ZCE starts with this symbol, the compiler is expecting to have a \ubyte notation\u only.
+
+In that case, our LITERAL can be of 2 kinds : a \usingle-byte\u notation or a \umulti-byte\u notation. \
+Depending on the character following it, we will consider being in one case or in the other one. \
+After a \braw\b symbol, the compiler is expecting to have at least one character among lowercase hexadecimal digits (\m0123456789abcdef\m) or another \braw\b symbol. \
+If we have something else, an error will be raised because of invalid literal syntax.
+
+In the case we have an hexadecimal digit, we are in \usingle-byte\u notation. \
+The compiler will expect to have a second lowercase hexadecimal digit following it and then, the VALUE is considerated complete. \
+The rest of the VALUE, if not empty, will cause an error because of "too much content in literal expression".
+
+The value of that VALUE ZCE is given by the 2 hexadecimal digits and stored on one byte under the type \mbyt\m. \
+As you may have guessed, if the character following the \braw\b symbol is another \braw\b symbol, the VALUE will be detected as \umulti-byte\u notation. \
+This is the subject of the next LITERAL description.
+-
+" z Figure 19
+byt a = `00 //value   0 in decimal, 0000 0000 in binary
+byt b = `f2 //value 242 in decimal, 1111 0010 in binary
+"
+
+- Multi-bytes notation
+As described in the paragraphs before, a VALUE ZCE is detected as \umulti-byte\u notation as soon as a \braw\b symbol is detected followed by another one. \
+After this pair, the compiler will expect to have at a certain number of lowercase hexadecimal digits to read (same set as in \usingle-byte\u notation). \
+The number of hexadecimal digits following the \braw\b symbols must be even. \
+They work in pair, 2 hexadecimal digits per byte to store.
+
+As soon as another kind of character is detected, the multi-byte sequence stops. \
+The same principle as for \usingle-byte\u notation is applied on the rest of the VALUE ZCE : nothing else is allowed because the value is completely set.
+
+The value of that VALUE ZCE will be an identifier given at run time to access to where the given data sequence is stored. \
+The type of such a VALUE ZCE is set to \mptr\m.
+-
+" z Figure 20
+ptr a = ``00013eb0a1 //the byte sequence (00, 01, 3e, b0, a1) will be stored somewhere at run time.
+                     //the value stored in "a" is refering to this location.
+"
+
+- LITERAL integers
+This kind of LITERAL is not the simplest one so we will take a look at everything step by step calmly. \
+There is a large variety of possibilities to write a literal integer value in Z. \
+However, as usual, we will precisely give all the criterias the compiler will apply to detect and read a LITERAL integer VALUE ZCE. \
+To make it simple, let's consider that an integer recognition is made in 3 steps: \ibase detection\i, \idigits reading\i and \iterminator reading\i.
+
+For the first step, \ibase recognition\i, the compiler will simply read the first character of the VALUE. \
+If it is a \unon-zero decimal\u digit (\m123456789\m), the VALUE ZCE is identified as LITERAL integer \
+and we assume that the number is written under the \bdecimal\b base.
+
+If this first character is a negative sign (\m-\m), it is identified as LITERAL integer as well and the number is \
+assumed to be written under the \bdecimal\b base as well. Of course, the VALUE value will be stored as negative.
+
+Last but not least, if we have \m'0'\m as first character, the VALUE ZCE is also identified as LITERAL integer \
+but we are not able to decide which base to use for the moment. \
+To do so, we must read the next character. \
+If there is no next character, then this second analysis stops here and the VALUE ZCE is of type \mint\m with value \m0\m (simplest case). \
+Otherwise, this next character is used to determine in which base the number is written.
+
+To write under \bbinary\b base, use character \m'b'\m. \
+To write under \boctal\b base, use character \m'o'\m. \
+To write under \bhexadecimal\b base, use character \m'x'\m. \
+Only those bases are allowed for writting integers, every other character will cause an error.
+
+We have now finished with the first step, \ibase recognition\i. \
+If the first character of the VALUE is anything else than what we exposed (\m-0123456789\m), \
+the VALUE ZCE stays undefined so it will not continue the next 2 steps.
+
+The second step is \idigits reading\i. \
+This one is pretty straightforward. \
+At this moment, we consider that the VALUE value is set to 0. \
+Then, we will simply read all of the VALUE content to get its value. \
+Depending on the detected base, we will expect to have only certain characters.
+
+When in binary base, we expect to have only binary digits (\m01\m) starting from the third character (after prefix \m0b\m). \
+When in octal base, we expect to have only octal digits (\m01234567\m) starting from the third character (after prefix \m0o\m). \
+When in hexadecimal base, we expect to have only octal digits in lowercase format (\m0123456789abcdef\m) starting from the third character (after prefix \m0x\m). \
+When in decimal base, if the number is not negative, we expect to have only decimal digits (\m0123456789\m) starting from the first character. \
+In that same base, if the number is negative, we expect to have the same thing starting from the second character (after negtaive sign).
+
+There is also a special character allowed when reading digits in any of those bases : the underscore (\m_\m). \
+In this context, they are just \i"spacing underscores"\i because they do not have a proper numerical value, \
+they are just allowed for better number representation and visibility.
+
+As soon as we finish reading digits (no more character or non-digit found), we go to the third step: \iterminator reading\i. \
+The content following the VALUE value of an integer is called the \bterminator\b. \
+It serves to determine which type will be given to the VALUE ZCE.
+
+If no terminator is set (no character left), the VALUE is of type \mint\m. \
+If it is \m's'\m, the VALUE is of type \mshr\m. \
+If it is \m'l'\m, the VALUE is of type \mlng\m. \
+If it is \m"u"\m, the VALUE is of type \muint\m (\uunsigned integer\u). \
+If it is \m"us"\m, the VALUE is of type \mushr\m (\uunsigned short\u). \
+If it is \m"ul"\m, the VALUE is of type \mulng\m (\uunsigned long\u).
+
+If something else is read as terminator, there are 2 possibilities : \
+If it is a dot (\m.\m), the VALUE ZCE changes into \uLITERAL float\u. \
+Else, an "invalid literal integer terminator" error will be raised.
+
+Just a last thing to consider about terminators: \
+If a terminator defines a LITERAL integer with an \uunsigned\u type \band\b the VALUE is detected negative, \
+the compiler will raise an error for "unsigned terminator set on negative value".
+-
+" z Figure 21
+//most common cases
+int a = 12      //positive decimal
+shr b = -35s    //negative decimal (with short terminator)
+lng c = 56_000l //using underscores (with long terminator)
+
+//using non-decimal bases
+int  d = 0x56
+ushr e = 0b0010_0100__0010_0001us //using unsigned short terminator
+lng  f = 0o126l
+shr  g = 0s
+
+//less common cases in other programming languages
+int  h = -
+lng  i = -l
+int  j = -_
+uint k = -_u
+int  l = 0x_
+ulng m = 0oul
+
+//non-integers: Those examples are NOT LITERAL integers
+int n = _    //starting with underscore
+int o = _l   //even with a long terminator
+
+//error cases: Those examples are INCORRECT LITERAL integers
+int p = 0pl  //invalid base 'p'
+int q = 31q  //invalid terminator 'q'
+int r = -32u //negative value with unsigned terminator
+"
+
+- LITERAL floats
+Now that we went through LITERAL integers, we can talk about LITERAL floats easier. \
+Those LITERALS are the only way to write down decimal values in Z (that we call "floating point values" for technical reasons). \
+We saw earlier that a LITERAL integer can become a LITERAL float as soon as a dot character is found while trying to find out its terminator. \
+This is the most common way to write a LITERAL float. \
+However, the process does not stop here. Let's go further.
+
+When a LITERAL float is detected from an integer, the value of that ZCE has already been read & interpreted. \
+However, such a value could have been written under binary, octal, hexadecimal or decimal base which is \bnot completely allowed\b in LITERAL floats. \
+Actually, the only base allowed for writting LITERAL floats is the \udecimal\u one. \
+So the first thing you have to know is that LITERAL floats that came from LITERAL integers in non-decimal bases are rejected by the precompiler (an error is raised).
+
+Then, if we are in decimal base, the value previously read from the LITERAL integer is kept but we will continue reading digits as previously done in step 2 because \
+we expect to have other digits after the current dot character found (for the decimal part). \
+Finally, as for LITERAL integers, as soon as there is no more digits to read (end of VALUE or non-digit detected), we go to the final \iterminator reading\i step \
+(specific to LITERAL floats this time).
+
+The \iterminator reading\i step for LITERAL floats is quite similar to the one for LITERAL integers. \
+However, please read carefully the following because it might differ a bit from the syntaxes commonly used in programming languages. \
+If no terminator is set (no character left), the VALUE is of type \mflt\m. \
+If it is \m'd'\m, the value is of type \mdbl\m. \
+Else, the same kind of error as for LITERAL integers will be raised because of invalid terminator set.
+
+Until now, each time a VALUE ZCE has been detected associated with a specific LITERAL, \
+it is read and interpreted so that its second analysis stops without going further with other kind of LITERAL. \
+The second analysis continues only if the current VALUE ZCE is still \uundefined\u.
+
+One last thing to know about that LITERAL is that an \uundefined\u VALUE ZCE can become a LITERAL float if it starts with a dot character. \
+In that case, the value stored in the integer part is 0 and the rest of the value read after the dot is making the decimal part of the number. \
+In those situations, the process of reading the next digits is the same as for LITERAL floats coming from LITERAL integers \
+(which is the same as for LITERAL integers themselves: only decimal digits and underscores allowed).
+-
+" z Figure 22
+//common cases
+flt a = 1.3  //integer 1 => float 1.3
+dbl b = 2.4d //integer 2 => float 2.4 => double 2.4
+
+//less common cases
+flt c = .
+dbl d = .d
+flt e = 130_250.567_623_654
+flt f = -15.
+
+//error cases
+flt g = 0x36. //invalid base for writting literal float
+flt h = 3..2  //invalid terminator '.'
+"
+
+- LITERAL Structure definition
+For this one, the syntax looks like some other LITERALs that we will see later so please read carefully this one before going further. \
+A VALUE ZCE is detected as LITERAL structure if it starts with a name following by a braces includer only. \
+Blanks are allowed between the name and the includer.
+
+As soon as a LITERAL structure is detected, the given name will be analyzed to check if it is a correct structure name. \
+If there is no \bdeclared\b structure with this name yet, an error is raised. \
+Else, the VALUE ZCE is set of the type given as name and the content between the includers will be analyzed next.
+
+The braces includers defines a zone in which the user can write down which value to set to each of the structure instance fields. \
+The content inside the includer will be split by comas and blanks as well as empty lines are ignored at beginning & end of each chunk. \
+Each chunk corresponds to a field of the structure instance to be set. \
+There are two ways of initializing those fields : using \uexplicit\u naming and using \uimplicit\u naming.
+
+For each chunk inside the includer, the compiler will look for a name followed by an assignment symbol (an equal sign \m'='\m not followed by another one). \
+Blanks are allowed between them. \
+If so, we consider using the \uexplicit\u naming so the name given before the assignment symbol must be one of the field names of the structure. \
+By doing this, you specify which field of the structure is targetted by each chunk. \
+Of course, if the name given corresponds to a field already set by another chunk, an error will be raised because of "same field set twice". \
+Also, after the assignment symbol of an explicit chunk is expected a VALUE ZCE. This last thing will finally be used to set the targetted field value.
+
+If a chunk is not detected as \uexplicit\u, it is then considered using \uimplicit\u naming. \
+In that case, the compiler will automatically detect which field to target for it. \
+Following the order in which the structure fields are given in its declaration, the first non-already set field will be taken as target. \
+Also, the content of the chunk will be completely interpreted as VALUE ZCE to associate with the targetted field.
+-
+" z Figure 23
+//declare a structure "myStructure"
+typ myStructure {
+    byt myField1,
+    chr myField2,
+    chr myField3 = 'j'
+}
+
+// ----> Here is the important part
+a = myStructure {
+    myField1 = `0e, //chunk with explicit naming
+    'h'             //chunk with implicit naming (1st non-already set field: myField2)
+}                   //default value for myField3 will be set because nothing have been specified here
+
+b = myStructure {
+    myField3 = 'e', //chunk with explicit naming (3rd field)
+    `ff,            //chunk with implicit naming (1st non-already set field: myField1)
+    'y'             //chunk with implicit naming (2nd non-already set field: myField2)
+}
+"
+
+- LITERAL Characters
+As well as we have a notation for writing single bytes in Z, we also have a notation for writing a single character. \
+Using the byte/multi-byte notation, you can write text using exact digital values. \
+That means you must know exactly which value corresponds to which character in your encoding table.
+
+To solve this, a more textual syntax exists for writing characters. \
+Using a \bcharacter\b symbol means that a \bcharacter\b LITERAL is being defined. \
+The compiler is expecting to have any \utextual character\u following the symbol and then another \bcharacter\b symbol at the end to mark the end of the LITERAL.
+
+You may have seen I talked about "textual characters" only in those LITERALs. \
+Indeed, there is only a certain number of characters allowed: \
+lowercase alphabet \mabcdefghijklmnopqrstuvwxyz\m, \
+uppercase alphabet \mABCDEFGHIJKLMNOPQRSTUVWXYZ\m, \
+numbers \m0123456789\m, \
+symbols \m_ .,;:!?-+*/%=&|#$"<>@()[]{}~^`\m and \
+escaped characters.
+
+In the principle, we should say that only \bone\b byte character must be given to have a valid LITERAL character. \
+However, there are exceptions to this that are \uescaped characters\u. \
+You might have noticed that the backslash character is not mentionned in textual symbols. \
+This is because using this character is telling the compiler that we are giving an escaped character.
+
+When writing an escaped character, the compiler will expect to have a second character following the backlash symbol. \
+Depending on that second character, the LITERAL will take a specific value. \
+To illustrate the thing properly, we will give all the allowed escaped characters in the example at the end.
+
+The VALUE ZCE of LITERAL characters are of type \mchr\m and takes the value of the ASCII value of the textual character.
+-
+" z Figure 24
+a = 'z' //value 7a (in hex) will be stored
+b = '5' //value 35 (in hex) will be stored
+
+//here are every allowed escaped characters
+ALERT           = '\a' //bell symbol            (07 in hex)
+BACKSPACE       = '\b' //backspace              (08 in hex)
+ESCAPE          = '\e' //escape symbol          (1b in hex)
+FORM_FEED       = '\f' //form feed              (0c in hex)
+LINE_FEED       = '\n' //line feed              (0a in hex)
+CARRIAGE_RETURN = '\r' //carriage return        (0d in hex)
+HORIZONTAL_TAB  = '\t' //horizontal tabulation  (09 in hex)
+VERTICAL_TAB    = '\v' //vertical tabulation    (0b in hex)
+NULL            = '\0' //NULL byte              (00 in hex)
+BACKSLASH       = '\\' //regular backslash      (5c in hex)
+SIMPLE_QUOTE    = '\'' //single quote character (27 in hex)
+DOUBLE_QUOTE    = '\"' //double quote character (22 in hex)
+"
+
+- LITERAL Strings
+When a VALUE ZCE starts with a double quote character (\m'"'\m), it is detected as LITERAL string. \
+This LITERAL is a shortcut for writting a specific structure LITERAL. \
+Every character read after the starting double quote will be considerated as piece of data under text format as for LITERAL characters. \
+This behaviour stops as soon as another double quote is found.
+
+A LITERAL String will store a \mstr\m structure. \
+When the whole string text has been read, the raw data is stored in its \i"data"\i field \
+and its \i"length"\i is set to the number of bytes read under \mlng\m format.
+
+The same mechanism as for LITERAL characters is applied for escape characters with the difference that \
+Nothing else is allowed after the terminating double quote in the VALUE ZCE. \
+The type of such a VALUE is set to \mstr\m.
+-
+" z Figure 25
+a = "blabla"
+//is a shortcut for
+a = str { length=6l, data=``626c61626c61 }
+
+b = "hey \'you" //OK
+c = "hey \"me"  //OK as well
+"
+
+- LITERAL Includers
+There are 4 types of includers that can be considerated as LITERAL values. \
+As for LITERAL Strings, those includers are shortcuts to specific structure LITERALs.
+
+Those structures are \utables\u (\mtab\m), \ulists\u (\mlst\m), \umaps\u (\mmap\m) and \uflies\u (\mfly\m). \
+We will not take a look at what are those structures for now because there is a lot of other thing we must see before. \
+Moreover, these expressions are interpreted only if the compiler option INTERPRET_COMMON_STRUCTURES is enabled. \
+Just remember that those other literal notations also exist and that if we find them at this stage, we will process the VALUE ZCE as one of these common structures.
+-
+
+p In the previous chapter, we saw that there were only 7 root types in Z so that only 7 types are defined by default. \
+However, in VAP, more types can be given to some value patterns... \
+Do we have to declare such types before using their VALUE pattern ? \
+The answer is : Yes. \
+Infact, the non-root types possibly attributed in VAP are assumed to be very generic types that the user is able to declare himself \
+as first requirements before getting into complex data structures and algorithms.
+
+p This is basically the role of a \ustandard library\u. \
+In this documentation, the types assumed to be declared in the standard library are at most :
+- boo : Booleans
+-
+- chr : Characters
+-
+- fct : function pointers
+-
+- fly : Flies
+-
+- lst : Lists
+-
+- map : Maps
+-
+- tab : Tables
+-
+- str : Strings
+-
+p That doesn't mean such types are required to make a working Z code, \
+however, to be able to use the full Z syntax with all of its shortcuts notations, such types must be declared before.
+
+
+t3 Non-void returning function call (!VFC)
+
+p As said before, this is the second option for identifying a VALUE ZCE in the 2nd analysis. \
+If the VALUE is a "name" (function name) \udirectly\u followed by a parentheses includer, it is detected as a non-returning function call (or "!VFC"). \
+We have not seen exactly what are Z functions for the moment so we will just give a quick explanation of which pattern is expected to match with this option. \
+A function "name" basically consist in a set of letters, numbers, underscores and dots. \
+As for data items, functions must be declared. \
+If such a pattern is detected in a VALUE ZCE, the compiler will look for a declared function with the "name" given and then identify.
+" z Figure 26
+a = my_function_name(...) //The compiler will look for a declared function "my_function_name".
+                          //  Let's say that this function is declared.
+                          //  Functions also have an attribute called the "return type".
+                          //  Let's say that this one has a return type of "int".
+                          // => the VALUE ZCE is of type "int"
+                          //    the VALUE value will depend on the function's content (unpredictible)
+                          //VALUE is identified => end of the second analysis
+
+b = my_void_function_name(...) //The compiler will look for a declared function "my_function_name".
+                               //  Let's say that this function is declared as well and it has a return type of "voi" (void).
+                               // => COMPILATION ERROR : "Could not get a value from a VOID returning function call".
+
+c = my_function_name (...) //Note that blanks are NOT allowed between function name and parentheses.
+                           //If so, it will NOT be interpreted as a function call.
+                           //Here, 2nd analysis continues to the 3rd option : NAME only
+"
+
+p When trying to find out a function with the given name, the compiler can behave in 2 ways. \
+First, if we are in \uglobal scope\u, the compiler will only have the visibility over \bconstant functions\b (we will see this later). \
+Else, every function is visible for targetting.
+
+p In all cases, if a declared function matches the given name but it is returning \mvoi\m, the compiler will raise an error. \
+We need a \bnon-void\b returning function call to have a valid VALUE. \
+The type of the VALUE ZCE will be the returning type of the function found.
+
+p There is also a case to take into account : if no declared function matches the given name, what happens ? \
+In that case, there is still a possibility to find out to which function the given name refers. \
+The compiler will look for this name in the declared data items.
+
+p If a data item matches, it will be considered that it holds a function ID. \
+However, to prevent hazardous behavior, the compiler will raise an error if the data item found is not of type \mfct[...]\m (which are reserved types for function IDs). \
+If a data item has been found with the given name \band\b it is of type \mfct[...]\m, then the function corresponding to this ID will be targetted.
+" z Figure 27
+//Let's say that function "my_function" exists and its return type is "int".
+fct[int] a = my_function //storing ID of that function in a data item
+
+b = a() //calling function "my_function" using data item "a"
+        // => VALUE type is "int" because "a" is of type "fct[int]"
+"
+p It the example above, our data item holding the function ID can be called as a regular function does because the value has been correctly set before. \
+However, its is possible that the same kind of data item holds an invalid function ID. \
+In that case, we are not able to determine which function to call and also what is the resulting value to get from it.
+
+p For this reason, such executions are not 100% guaranteed at runtime. \
+Depending on your compiler options, it can lead to RUNTIME/FATAL errors or, in the worst case, to undetermined executions in your program.
+
+
+
+t3 NAME only
+
+p Here we are in the simplest case of VALUE ZCE identification. \
+If no LITERAL matches and no function call pattern has been detected, the last option in this 2nd analysis is the "NAME only" attribution.
+
+p This one is very simple. \
+The VALUE ZCE must be the exact same name as a function or data item name. \
+If it is refering to a \udata item\u, the VALUE ZCE will hold the same type and value. \
+If it is refering to a \ufunction\u, the VALUE ZCE will have as \mfct[<targetted function return type>]\m as type and the function ID as value. \
+We already used a VALUE like this in the last example (Figure 27).
+
+p That's it for VALUE ZCEs. \
+Remember that every VALUE that does not fit with one of the defined cases will be rejected by the compiler because of "Unknown value pattern".
+
+
+
+
+b
+l \lZPL_Features-Memory\lPrevious page\l\ar\lZPL_Features-SegregateAndAggregate\lNext page\l

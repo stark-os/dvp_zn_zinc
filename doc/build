@@ -1,0 +1,18 @@
+#!/bin/bash
+
+
+
+# -------- DEFINITION --------
+
+#CXD
+CXD=$(dirname $(readlink -f $0))
+
+
+
+
+
+
+# -------- EXECUTION --------
+
+#bld
+$CXD/build_html #includes build_sim so no need to call it

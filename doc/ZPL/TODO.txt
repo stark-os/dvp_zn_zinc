@@ -1,0 +1,2 @@
+SOMETHING TO FIX IN THE WHOLE ZPL DOC :
+  - Type and function decarations have no existence chronology : any type or function declared somewhere in the code can be used anwhere else (including before its declaration ZCI).

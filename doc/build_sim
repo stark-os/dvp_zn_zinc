@@ -1,0 +1,49 @@
+#!/bin/bash
+
+
+
+# -------- ZPL --------
+
+#reset previously generated main page
+cp ZPL/ZPL_firstpage.sim ZPL.sim
+
+#for each page
+for f in \
+	ZPL_Introduction.sim                   \
+	ZPL_Usage.sim                          \
+	ZPL_Features-GeneralConcepts.sim       \
+	ZPL_Features-Memory.sim                \
+	ZPL_Features-DataRepresentation.sim    \
+	ZPL_Features-SegregateAndAggregate.sim \
+	ZPL_Features-Execution.sim             \
+	ZPL_Features-Operators.sim             \
+	ZPL_Features-Statements.sim            \
+	ZPL_Features-CommonDataStructures.sim  \
+	ZPL_Features-PrecompilerDirectives.sim \
+	ZPL_WhyZPL.sim                         \
+	ZPL_OtherLanguages.sim                 \
+	ZPL_end.sim
+do
+	head --lines -2 ZPL/$f >> ZPL.sim
+done
+
+
+
+
+# -------- ZINC --------
+
+#reset prev gen main page
+cp ZINC/ZINC_firstpage.sim ZINC.sim
+
+#for each page
+for f in \
+	ZINC_Introduction.sim             \
+	ZINC_Precompilation.sim           \
+	ZINC_Compilation-Globals.sim      \
+	ZINC_Compilation-Locals.sim       \
+	ZINC_Compilation-Enhancements.sim \
+	ZINC_Compilation-OBV.sim          \
+	ZINC_end.sim
+do
+	head --lines -2 ZINC/$f >> ZINC.sim
+done

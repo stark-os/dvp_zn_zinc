@@ -1,0 +1,213 @@
+tu Why the ZPL ?
+
+t2 General bases
+
+t3 Language
+
+l Let's put some bases about programming languages before attacking :
+
+p We saw that a Z code must be compiled into specific machine code to be executed on a computer. \
+Actually, this is the case of every other programming languages even thoses who are interpreted. \
+We will not discuss about it now because it is not the suject of this section but I invite you to search \
+on the internet how hardware interferes with software, that could help you understand.
+
+p Now, because that code is always specific to the targetted machine, we commonly use tons of labels and symbols, \
+specific compilation commands and much more things that makes the code and its compiler(s) so hard to explore and understand. \
+Moreover, for some of the components required to produce machine code, you often have to use several sort of applications \
+such as \lhttps://www.gnu.org/software/make/\lMake\l, \lhttps://cmake.org\lCMake\l, \lhttps://www.gnu.org/software/bc/\lbc\l, \
+\lhttps://www.gnu.org/software/bison/\lBison\l... to barely use the original sources.
+
+p It is important to note that most of the machines we use nowadays works on that kind of technology. \
+Even if it has no Linux kernel, it probably runs in Cusing some standard libraries respecting by the way \
+the same complexity of anyother C standard library. Also, please notice that those technologies are open-source \
+so they are widely used over the world, concerning countless platforms and their influence on the future of computing is very strong.
+
+
+
+t3 Interfaces
+
+p We know that computers knows only one language, their \bSPECIFIC\b machine language. \
+Because they need to have specific interactions, adapted to their own architecture and hardware setup, \
+we must also admit that we have to interract with them using only one interface : Their own specific one ? Isn't it ?
+
+p Well, let's take a look deeper on this... Actually, there is not only one interface to communicate with computers today. \
+Some of them uses a kernel so user programs must talk to the kernel to access to hardware, and some just don't have any.
+
+p Some can communicate to external devices so they have to manage at least 2 kind of specific languages, \
+one for each device and the one of the computer itself.
+
+p Even components inside your computer may use a large variety of interfaces to communicate between them.
+
+p That makes a lot of translations to handle by our machines. \
+People are working hard to make new technology and components communicate with the existing. \
+That often implies creating new standards to get more performance or whatever. \
+But guess what, it works ! It's working well ! And more, making this allow people to manage very complex \
+systems from the very first line of code to the very last tiny powered wire of your machine.
+
+p The thing is that using interfaces is not new and it is used everywhere on technology nowadays, even in software development itself. \
+However, the big majority of programming languages today uses the C as "low-level" interface. \
+That means that their efforts are focused on creating a working and optimized C code and the rest of the work is kept as is until machine code.
+
+
+
+t2 Legacy & Future
+
+t3 C Implementations
+
+p We saw just earlier that almost every programming language used today is based on C. \
+However, current C implementations does not use proper interfaces to build a working assembly code. \
+Let me explain :
+
+p To start, even without looking at compilation, the very first thing you have to think about is which files will you require \
+to generate your assembly code. The standard C library you are using should contain all you need but I beg you to try to find out \
+every tiny dependency file you really require for your compilation. Actually, this is not that easy for 2 reasons.
+
+p First, depending on the machine architecture targetted by your program, a same file can differ so you might want to get \
+the file corresponding to your target. Second, because there is sometimes multiple files with the same name that can fit \
+with a specific importation, we use importation directories in compilation commands to specify in which directory \
+to look for the required files.
+
+p That makes it even harder when you look at the "Makefile"s used to call the tremendous amount of compilation commands. \
+The second step seems to be to understand the Makefile itself by starting to replace the countless number of variables \
+defined at the top of the file if you are lucky, else, in some other ".mk" files hidden in different places in the project.
+
+p What ? You can't find any Makefile in your project ? Oh, yes, I forgot to mention that for most of those projects, \
+even the Makefile is to be generated using sometimes bash scripts or for some other using external applications such as \
+\lhttps://www.gnu.org/software/automake/\lautomake\l or huge applications like \lhttps://cmake.org/\lCMake\l.
+
+p Let's see, you just wanted to compile a C code right ? Maybe you learnt a bit of assembly to be able to debug your generated file, \
+and maybe you even learnt which mechanisms are used in your standard C library ; even more, maybe you learnt every single interaction \
+that must be done until the very tiny system call that must be handled to make your operation. Well, that's good, but that's not enough. \
+You must pass through the wonderful world of makefile generators and so learn new syntaxes, new files, new processes and so on !
+
+p As a result, when everything you need is correctly installed and you know how to generate your assembly product, \
+you might probably want to see which are the C statements that corresponds to some part of the the assembly. \
+And so here goes another step : Even if you previously filtered which are the only files required to your generation, \
+to understand which code is yours, you will have to pass through tons of variable preprocessor macros and I insist on the word VARIABLE. \
+Because yes, a macro is not meant to be statically defined, it can be undefined at any moment and re-defined elswhere with some other value. \
+That's also why you better read ALL of your code from the very beginning to the part that interests you to be sure \
+the definition you have is the correct one.
+
+p All of those things are factors contributing in making the code unreadable and/or untrustworthy, \
+disorganized, heavy and reserved to experts only. I did not talk about compilation options and the absurdity \
+of flag madness but there are plenty of other things that makes the C programming language so hard to handle \
+at low-level scope and until even assembly result. Even that assembly result will have its own syntax depending on \
+which is the targetted Assembler application used to generate the machine code. In that sens, the C programming language \
+has no proper interface on which anybody can plug their specificity and it will work. \
+You will have to check the whole code of your standard library and compiler to see whether a certain feature can be added or not, \
+or whether you can add a new architecture or whatever. Finding your way in a C implementation is like a giant game \
+in which only experts or the most courageous and persistent programmers can reach.
+
+
+t3 A widely shared dream
+
+p The complexity of C implementations of today is the main reason why there is so many programmers \
+dreaming about new performant languages. \
+Beeing able to get machine code from any little human-readable orders is like having the power of the sun \
+in the palm of our hands. But we are far from reaching this that simply today. \
+So many links are made in so many places on our machines. Where to start ? Where to end ? \
+It is not like we could always write down at least the number of files we need to make even an empty C program.
+
+p For the more "programmers" of you, you could say that it is not that hard to even create a C application working today. \
+Things are not that hard because every required element is perfectly set at his place on the systems you are currently using, \
+or should I say, when things are perfectly configured. That complexity is also striking the development of new kinds of \
+operating systems today because they have to fit only one fixed structure whether it matches with their philosophy or not. \
+Any movement on what's in place can make the giant pyramid fall down. The worst in this is not that it may no longer work, \
+but that you may never know which is the real impact of your modifications on the system. \
+Lucky you if you find documentation that mentions it.
+
+p Those old implementations are far from being simple. They have been made to work. Not to be edited. \
+Moreover, the amount of options and compatibility have been added by different kind of people from different companies over the time. \
+Those hundreds of tiny patches have turned our low-level interfaces into a big "spaghetti meal" as some people like to call them, \
+eaten by millions of people around the world because it is the only one complete enough.
+
+p The second biggest reason why people is dreaming about another low-level language is that C is so poor in high-level features \
+that most of the high-level structures or functions have to be developped. No map, no linked-list, even no length value in tables ! \
+C++ could have brought solution to that... It could, but it has given so much more complexity that it is now harder to understand \
+the ++ layer than the C itself.
+
+
+t3 The Vision of the ZPL
+
+p Those 2 reasons are why I decided to go deeper, deeper and deeper again. \
+Deeper to see each dependency, every link made to regular GNU/Linux kernels, every translation made from C to assembly \
+and even sometimes the differences between the existing assembly languages. \
+This is why I decided that the Z must not be compiled into C but deeper again, \
+and in a more shareable way so that any kind of architecture can take advantage of it the easiest way as possible.
+
+p That's why I decided that the Z must not be just another language-to-C compiler, but rather a language-to-Interface compiler. \
+Provide some Low-Level Interface directives (commonly called LLI) and combine them with the result of any Z code \
+and it should work perfectly.
+
+l <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< TOO complicated, to simplify
+p The cost is that an LLI has to be done, but the gain is that the Z code keeps beeing the same. \
+Now the good point is that because the result of the Z compilation is only made of function calls and very basic memory access, \
+it can be used in the very low-level layers of any system such as machine code. \
+The thing to define is where to fix the LLI boundaries and give the result all the keys to make the translations of \
+every tiny function call into specific machine code.
+
+p This is also why I do want to fill the Z standard library with the more functions as possible, to allow anyone to use \
+the power of the machine, using accessible and user friendly functions in a clean and consistent tree \
+(which is the main role of the Z moduling, we will see it later on this document).
+
+_
+
+p As a conclusion and as a sum up of why the Z programming language is like that, remember that, of course, that requires an effort \
+of translation over some standards (UART/PCIE3/USB/...) but the objective is to give to everyone a chance to take advantage of \
+the innovations of anyone else.
+
+p \u\bPS:\b\u As for non-C based languages, they are, for the majority old languages made to work on old specific hardware so \
+they did not offers the advantages of today's technology. That's bad but maybe the effort would be too hard to make them compatible. \
+For me, developping on those machines makes improvement restrained to only a tiny little part of the existing world. \
+There is no point in wasting energy on such things, unless a bridge can be made between those worlds to make them better together.
+
+
+
+
+b
+l \lZPL_LLIs\lPrevious page\l\ar\lZPL_OtherLanguages\lNext page\l
+t2 Inspiration
+
+p The Z syntax is not a C syntax with addons & shortcuts nor completely a high-level syntax \
+that have been made "compilable". It is a kind of hybrid \u\ihigh/low-level\i\u. \
+It was born by the fusion of 3 things :
+
+- What programmers usually consider being intuitive :
+There are plenty of good features in various programming languages but most of the time, \
+those features are practical for programmers but costs performance or hides a huge amount of stuff \
+and complex mechanisms. \
+I also filtered the good features that does almost the same thing as some others already implemented \
+not to get beginners too confused. \
+I tried to keep only the good parts of common programming languages. \
+(primitive structures based on python syntax, modules & methods a bit like in Object Oriented Programming, \
+intuitive numeric representations...).
+-
+
+- The very basic of any programming languages (C concepts) :
+Thoses things works since decades now but their conception sometimes hides undefined behaviors. \
+Also, C parsing is based on patern recognition so compiling a C code is not always an exact science. \
+Nowadays, those mechanisms have been proven and work well, \
+however, I am certain that using a more strict C syntax in our codes would simplify \
+the compilation process and shorten the amount of time spent on it.
+-
+
+- The need to have a completely independant programming language :
+This is the strength of the Stark Philosophy. \
+I didn't want to use tons of dependencies in which I will only use a tiny part of it \
+to get my result and then move on. \
+The objectives behind this self-containment are described with more details \
+in the Stark Phylosophy : 1 - Strength.
+-
+
+p The Z has multiple inspirations but the default compiler and its default standard library \
+have been made together by themselves (and at the same time by the way). \
+ZCC requires methods & structures defined in STDZ but STDZ needs ZCC process to be finished \
+(to know exactly what is the syntax to use).
+
+p Moreover, this documentation as well as the one of ZCC has been written at the same time too \
+and that was really helpful. \
+When a programming concept is being established, writing the thing down with precise context \
+and even sometimes precise naming produces side effects very often. \
+Things that seems to be obvious and working well sometimes hides undesirable behaviors. \
+In Z, no compromises have been made : \
+Everything allowed must be written, the rest must be rejected by the compiler.

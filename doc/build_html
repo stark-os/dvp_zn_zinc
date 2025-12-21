@@ -1,0 +1,78 @@
+#!/bin/bash
+
+
+
+# -------- DEFINITIONS --------
+
+#CXD
+CXD=$(dirname $(readlink -f $0))
+
+
+
+
+# -------- TOOLS --------
+
+#add .html extension in page links
+function addHtmlExtInPageLinks() {
+	sed -e 's@\\lPrevious page@.html\\lPrevious page@' -e 's@\\lNext page@.html\\lNext page@' $1
+}
+
+
+
+
+
+
+# -------- EXECUTION : PREPARATION --------
+
+#build doc
+$CXD/build_sim
+
+#clean previous generation
+rm --recursive --force html
+mkdir                  html
+
+
+
+
+
+
+# -------- EXECUTION : MULTIPAGES DOCUMENT BUILD --------
+
+#for each multipage document
+for d in ZPL ZINC; do
+	mkdir html/$d
+
+	#temporary directory
+	rm --recursive --force tmp
+	mkdir                  tmp
+	cd                     tmp
+
+	#add HTML extensions
+	sed 's@'$d/$d'_Introduction@'$d/$d'_Introduction.html@' ../$d.sim > $d.sim #take in main page
+	for f in $(ls ../$d); do
+		addHtmlExtInPageLinks ../$d/$f > $f
+	done
+	sed 's@../'$d'\\lReturn@../'$d'.html\\lReturn@' --in-place ${d}_end.sim #end page special case
+	rm ${d}_firstpage.sim #no longer useful
+
+	#generate HTML pages
+	for f in $(ls); do
+		sim $f --convert html > ../html/${d}/${f%%.sim}.html
+	done
+	mv ../html/$d/$d.html ../html #take out first page
+
+	#remove temporary directory
+	cd ..
+	rm --recursive --force tmp
+done
+
+
+
+
+
+
+# -------- EXECUTION : ANNEXES BUILD --------
+
+#auto-compilation
+sim bootstrap.sim --convert html > html/bootstrap.html
+sim history.sim   --convert html > html/history.html

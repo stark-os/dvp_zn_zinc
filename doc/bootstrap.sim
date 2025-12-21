@@ -1,0 +1,85 @@
+t0 Auto-compilation Principle
+
+
+
+
+- What :
+    Produce a compilation result from the sources AND the result itself.
+-
+
+
+- Why :
+    Guarantee that the production of the result is ONLY based on \
+internal mechanisms of the used sources.
+-
+
+
+- How :
+    1) Use external mechanisms 100% controled to produce a first version. \
+Then, from this first result, generate the second one (that is, \
+actually, the first generated one).
+
+    2) Make use of manual compilation of the producer, and then use it to \
+generate the second version (That is, as well, the first generated \
+one).
+-
+
+
+- Absurd :
+    1) In all cases, we need the result we want to produce before it \
+exists (as initial item).
+
+    2) Even if we had the result as initial item, this one must be the \
+same as the one we want to generate so the generation seems \
+useless as it will not bring anything more to it.
+-
+
+
+- Feasibility :
+	Besides the 2 absurdities given above, this auto-compilation \
+guarantee based on internal mechanisms is POSSIBLE. If it is \
+possible to represent schematically internal mechanisms serving for \
+producing a result and this representation is consistent, then any \
+algorithmic operator (that can be human, material, virtual...) is \
+able to carry out a first compilation that would respect EVERY \
+internal mechanism at 100%. Therefore, the second absurdity is \
+closed as long as the main objective is preceded by an implicit \
+principle : "Having a result that would be useable in the same \
+FORMAT than the one targetted.". Indeed, if a human wrote on a \
+paper all the operations that an executable file should do, it \
+would not become useless to create the executable file that would \
+fit the same role now.
+-
+
+
+- Strategy :
+	1) For limitating at maximum rate the differences related to the \
+used mechanisms, it is preferable to use the MANUAL method \
+because this one does not require any external supply of \
+knowledge (gain of time and complexity).
+
+	2) To also understand better and ajust the internal mechanisms of \
+the producer, using MANUAL compilation allow fixing, modeling \
+and re-architecturing the targetted structure faster, the ins \
+and outs.
+
+	3) The "right to make a mistake" is essential. More than just a \
+permission, it is the MEAN by which we can guarantee respecting \
+the mechanisms used. By comparing the result from a manual \
+compilation and an automatic one, we can adjust more easilly on \
+one side or on the other one depending on the targetted result : \
+Either the manual operator has made a mistake, or a mechanism has \
+an imprevisible behavior to be fixed.
+-
+
+b
+b
+
+- Concerned Projects :
+    zcc, ccc, v
+-
+
+
+b
+
+l Thanks for reading, \arI.A.

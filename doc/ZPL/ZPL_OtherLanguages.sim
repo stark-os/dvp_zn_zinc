@@ -1,0 +1,66 @@
+tu Note on other languages
+
+t2 C
+
+p Originally, the ZPL was supposed to be a kind of tiny project. \
+It wasn't even necessarily a language. The history behind this is quite simple :
+
+p Actually I saw that people around me and on the internet thought that \
+the C programming language was hard to learn and requires too much rigour and harsh training to use it. \
+When needing to do a tiny little script quickly, the C wasn't even an option : "leave it !"
+
+p For "little task" usage, use Python or Shell scripts instead. \
+In less than 50 lines, you do more than hundreds of lines of C code, \
+and you don't have to create all of the basic tools for manipulating strings or any complex structure.
+
+
+
+t2 Lua
+
+p .
+
+
+
+t2 GO
+
+p .
+
+
+
+t2 V
+
+p .
+
+
+
+t2 Python (3)
+
+p .
+
+
+
+t2 C++
+
+p For me, there is mostly one reason explaining the poor number of tools available in C standard libraries and its name is C++. \
+I clearly don't understand why people has been so interested in such a language. \
+Every time I think about it, a short circuit occurs in in my head. \
+Nobody even tried to do something better that the existing ?
+
+p Am I the only one considerating that there is A WAY TOO MUCH things to manage data ? \
+Am I the only one who finds it too COMPLICATED for beginners ? \
+"C++ is too big to be melted again. Don't waste time in re-inventing the wheel."
+
+p Hmm... Alright. But I am not afraid of this giant. \
+I am a believer so I believe I can do a performance-similar language that can either suits to beginners, \
+high-level programmers and low-level programmers.
+
+p The only reason I could ever find to explain this passion is that it is the only language that offers lots of \
+useful libraries AND that is close enough to a C code. \
+There are also some practical shortcuts in bonus and that's great, I do not condemn that however, \
+too much things are so complicated... Too bad.
+
+
+
+
+b
+l \lZPL_WhyZPL\lPrevious page\l\ar\lZPL_end\lNext page\l

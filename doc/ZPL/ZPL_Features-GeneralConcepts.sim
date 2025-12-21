@@ -1,0 +1,431 @@
+t1 ZPL Features : General Concepts
+
+
+
+
+t2 Repartition
+
+t3 The very basis
+
+p First, I apologise for the number of trigrams used in this documentation. \
+My objective is to define everything that can ever exist in a Z program. \
+That concerns code, as well as abstract data representation, as well as \
+compilation mechanisms or anything that can be related to the Z Programming \
+Language.
+
+p I will do my best to allow anyone to understand as much as possible what is \
+inside the ZPL, block after block, element after element, defining every tiny \
+little piece of any kind, including the vocabulary to use to get rid of any \
+ambiguity.
+
+l Here is a table representing what constitutes the ZPL in its globallity :
+"
+.-----+----------+----------------+------------------+---------------------.
+|     |          |                |                  | Behavior            |
+|     |          |                |                  | Name                |
+|     |          |                |    Data Items    | Scope               |
+|     |          |                |                  | Type                |
+|     |          |                |                  | Value               |
+|     |          |                +------------------+---------------------+
+|     |          |                |                  | Kind                |
+|     |          |                |    Statements    | Inner values        |
+|     |          |                |                  | Outer executions    |
+|     |          |                +------------------+---------------------+
+|     |          |                |                  | Content             |
+|     |          |                |    Functions     | Name                |
+|     |          |                |                  | Parameters          |
+|     |          |                |                  | Return Type         |
+|     |          |     Z Code     +------------------+---------------------+
+|     | Abstract |    Elements    |                  | Data items          |
+|     | Elements |      (ZCE)     |                  | Functions           |
+|     |          |                |     Modules      | Modules             |
+|     |          |                |                  | Name                |
+|     |          |                |                  | Types               |
+|     |          |                +------------------+---------------------+
+|     |          |                |                  | Default value       |
+| ZPL |          |                |                  | Methods             |
+|     |          |                |      Types       | Name                |
+|     |          |                |                  | Nature              |
+|     |          |                |                  | Parent              |
+|     |          |                |                  | Size                |
+|     |          |                +------------------+---------------------+
+|     |          |                |      Values      | Type                |
+|     |          |                |                  | Value               |
+|     |          |----------------+------------------+---------------------+
+|     |          | Low-Level Data |    Low-Level     |    Machine Code     |
+|     |          | Representation | Interface (LLI)  |      Execution      |
+|     |          |     (LLDR)     |     Bridger      |                     |
+|     |----------+----------------+------------------+---------------------+
+|     |          |  Z Code Files  | Z Code Structure | List of Z Code      |
+|     |          |                |   (ZCS) parsing  | Instructions (ZCI)  |
+|     |          |----------------+------------------+---------------------+
+|     |          |                |                  | Current Module      |
+|     |          |   Z compiler   |                  | Current Scope       |
+|     |          |  (from Z to ?  |    Z Compiler    | Declared Data Items |
+|     |   Real   |  depending on  |      Context     | Declared Functions  |
+|     | Elements |  the targetted |                  | Declared Modules    |
+|     |          |      LLI)      |                  | Declared Structures |
+|     |          |                |                  | Declared Primitives |
+|     |          |----------------+------------------+---------------------+
+|     |          | Low-Level Data |    Low-Level     |    Machine code     |
+|     |          | Representation | Interface (LLI)  |   Executable file   |
+|     |          |  (LLDR) Files  |      Calls       |  (ELF for example)  |
+'-----+----------+----------------+------------------+---------------------'
+"
+
+p To make the Z Programming Language clearer and accessible to anyone, \
+I decided to create both REAL and ABSTRACT elements inside of it. \
+Real elements are the files you write and the produced results, and abstract \
+elements are the virtual entities you manipulate in your code, represented \
+under the Z syntax.
+
+p Both parts are important because this abstraction is the key to understand \
+very complex processes step by step. This documentation has been built in the \
+sens of using: first, abstract elements, and then: explaining how those \
+virtual things are converted into real programming interactions.
+
+p The concept of the ZPL and its documentation have not been made to allow \
+people to understand how machine works in the inside. It has been made to \
+allow anyone to speak an intermediate language.
+
+
+t3 Real Elements
+
+p First let's take a look at Real Elements. What you need to create a valid Z \
+program is: a text file with Z code in it, a Z compiler.
+
+
+t3 Abstract Elements
+
+p Now that we know the concrete process of creating a working machine code executable program from Z code, \
+we should take a look at what is inside a Z code actually. \
+A Z code file is nothing more than a text file respecting a certain structure called the Z Code Structure (ZCS). \
+This ZCS is made of Z Code Instructions (ZCI) that will be interpreted by the compiler to create a machine executable code.
+
+p After this ZCS/ZCI barrier has been reached, users can express themselves as they want to create several kinds of elements. \
+This ZCS has been made to give to the ZPL an exact way of parsing Z code with no ambiguity neither undefined behavior. \
+As users learn the different existing ZCIs that can be made in Z, they are able to create or remove abstract code element \
+such as data items, methods, modules and more.
+
+
+
+
+t2 Z Code Structure (ZCS)
+
+t3 Z Code Instructions (ZCIs)
+
+p The very first thing you must know about the ZPL syntax is how to create code with valid ZCS. \
+At start, you may sometimes face the compilation error : "Invalid Z Code Structure.". \
+If even one character in your code does not respect the ZCS rules, the compiler will raise this fatal error.
+
+p The principle of the ZCS is quite simple. \
+Each code line is considerated as a Z Code Instruction (or ZCI). \
+Also, every detected ZCI must correspond to one of the following table :
+"
+.----------+---------+-----------------------------------------------.
+| Category |  Name   | Short description                             |
++==========+=========+===============================================+
+| DCL      | DCL_DAT | Declaration of a  DATA ITEM                   |
+|          | DCL_ENM | Declaration of an ENUMERATE                   |
+|          | DCL_FCT | Declaration of a  FUNCTION                    |
+|          | DCL_MOD | Declaration of a  MODULE                      |
+|          | DCL_PRM | Declaration of a  PRIMITIVE                   |
+|          | DCL_STC | Declaration of a  STRUCTURE                   |
++----------+---------+-----------------------------------------------+
+| ASG      | ASG_ASG | Assignation of a VALUE into a data item       |
++----------+---------+-----------------------------------------------+
+| VFC      | VFC_VFC | Void returning FUNCTION call                  |
++----------+---------+-----------------------------------------------+
+| JMP      | JMP_BRK | BREAK jump                                    |
+|          | JMP_CTN | CONTINUE jump                                 |
+|          | JMP_RET | RETURN jump                                   |
++----------+---------+-----------------------------------------------+
+| STM      | STM_IF_ | IF statement                                  |
+|          | STM_WHI | WHILE statement                               |
+|          | STM_FOR | FOR statement                                 |
+|          | STM_SWI | SWITCH statement                              |
++----------+---------+-----------------------------------------------+
+| EXT      | EXT_IMP | External IMPORTATION                          |
+|          | EXT_LNK | External LINKING                              |
+'----------+---------+-----------------------------------------------'
+"
+
+p If a ZCI does not match to one of those given in that table, it will be rejected and so the ZCS is invalid. \
+We will not see in details every ZCI for now because there are some things you should know before getting into it. \
+Also I prefer giving you the information of each ZCI step by step as we move forward in the documentation.
+
+p Exact patterns used in ZCI recognition are given in a specific chapter of this documentation. \
+We will not refer to them during the current chapter because the objective is first to show everything \
+that exists in Z using some examples by the way so we may use only a tiny part of what it is possible to do in Z. \
+You can refer to those exact patterns at every moment to see exactly which syntax is allowed \
+(and so, how it will be interpreted by the compiler).
+
+
+t3 Lines & ZCI segregation
+
+p Before getting further on which are the requirements for each ZCI, there is an important thing to know \
+about the ZCS segregation process : \
+Because the ZPL is meant to work on UNIX-like operating systems at first, its line-by-line ZCI segregation is based \
+on the detection of LINE_FEED characters (or '\\n', in hexadecimal: 0a).
+
+p Any Z code, contained in a text file or given as a byte stream will be read from the very first byte \
+to the end until a LINE_FEED character has been reached. \
+Then the current line is analyzed and we continue reading our text to get the next ZCI and so on. \
+This is the main rule on how your code is split in ZCIs. \
+However, there are 3 special cases in which it is not applicable :
+- Multi-ZCI line
+The semicolon character ';' (outside text fields) marks the end of the current ZCI. \
+Content after this character will now be considerated as the next ZCI until the end of line \
+(or until another semicolon is found). Using this, it is possible to write several ZCIs on the same line.
+-
+- Multi-line ZCI
+Using backslash character (outside text fields) as last character of a line makes the precompiler ignore \
+the LINE_FEED so the next line will be considerated as part of the current one (as they were only one). \
+This way it is possible to have one ZCI on several lines.
+-
+- Includers
+Depending on the type of ZCI that will be detected, you will have to define what we call \c0000ff"includers"\c in Z. \
+We will see in the next section what are includers precisely but for the moment just remember that includers required \
+by a ZCI are considerated as part of it no matter what's inside.
+-
+
+p A word on text encoding : Any byte stream given will be interpreted as a regular ASCII text. \
+If you are using some multiple-bytes characters (due to a specific encoding), those characters will be interpreted as single bytes (as regular ASCII does). \
+For most of the commonly used encodings such as UTF-8 or ISO 8859-1, ASCII is included as \i"standard"\i basis. \
+Therefore, for such encodings their multi-bytes characters will stay unchanged and stored under the form of a regular byte sequence. \
+This can be pretty useful when writing text strings using non-english alphabet or some other specific symbols. \
+If your final application is able to print out your text with your specific encoding, using the ZPL should not affect that.
+
+
+t3 Includers
+
+p In Z, some part of the code can be defined between special characters to significate that it belongs to a subgroup. \
+Those subgroups are what we call \c0000ff"includers"\c.
+
+l There are 3 types of includers :
+- Parentheses : defined between NON-TEXT characters \m'('\m and \m')'\m
+-
+- Brackets    : defined between NON-TEXT characters \m'['\m and \m']'\m
+-
+- Braces      : defined between NON-TEXT characters \m'{'\m and \m'}'\m
+-
+l NON-TEXT means : "outside of characters and strings" (We will see what are characters and strings later).
+
+p A pretty obvious thing about includers is that any includer openned must be closed. \
+If an includer opens and never closes until the end of the file, the compiler will raise a fatal error. \
+As a result, an includer cannot be defined over multiple files. \
+Each Z code file must have a valid ZCS structure to be analyzed by the compiler and then, importation of other files can be done.
+
+p Also, one really important thing about includers is : they don't allow half definition of themselves. \
+That means if an includer opens inside another one, the outside includer can't be closed while the inner one is still open. \
+Let's picture this using some examples :
+" z Figure 1
+//Here is a correct includer's inclusion
+{
+    some code inside braces includer
+    (
+      some code inside
+      parentheses includers
+    )
+}
+
+//Now let's see what happen if we don't close the inner includer
+{
+    some code inside braces includer
+    (
+      some code inside
+      parentheses includers
+} //=> ERROR HERE : Missing ending character for includer '('.
+)
+"
+
+p Note that in thoses examples, the ZCS was not respected at all : we only used sentences written as code and not valid ZCIs. \
+However, depending on the kind of ZCI you are currently writing, you may not always have to write only valid ZCIs inside. \
+Some includers must contain specific syntaxes that are \bnot\b ZCIs.
+
+p To sump up what we said, remember that your code will be considerated as a list of ZCI. \
+However, some of those ZCIs can also define some specific content using \c0000ffincluders\c for delimitation. \
+The rules that must be applied to what is inside those includers is specific to the ZCI it belongs to.
+" z Figure 2
+lng fun(        //Don't mind about the syntax. Here, it is a valid DEF_FCT ZCI
+    byt param1,
+    chr param2  //content inside its parentheses includers respect some rules
+) {
+    param1 + param2 //content inside its braces includers respect some other rules
+    ret param1
+}
+
+a = str { 1, 0l } //Don't mind about the syntax as well.
+                  //Here, it is a valid DAT_ASG ZCI with braces includers as well.
+                  //Its braces includer does not respect the same rules as the one just before
+                  //because this includer is used in another ZCI with a different context.
+"
+
+p As you may have seen, content between includers has be written on multiple lines. \
+Because includers needs their corresponding peer to end, their content can be written on any number of lines \
+without affecting the ZCS indeed. It is important to remember that as soon as you are inside an includer, \
+you have to obey to the rules that the ZCI imposes specificly.
+
+p Let's see one last practical example. \
+Some ZCIs requires includers that can contain other ZCIs inside. \
+Therefore, it is possible to have ZCIs equiped with includers containing other ZCIs, \
+themselves containing other inner ZCIs as well.
+
+l Let's see it using an abstract representation of the ZCS :
+" z Figure 3
+shr a = 8s      //Here we have a first ZCI of type ASG_ASG.
+if a == 5 {     //Here we have a second ZCI of type STM_IF_
+    functionA() // but this one also has a braces includer that contains other ZCIs.
+    functionB() // This last ZCI is also of type VFC_VFC
+}
+
+//Let's see how those lines of code will be interpreted as ZCS using an abstract representation :
+[
+    zci{ //ZCI 1
+        type     = ASG_ASG,
+        sequence = [t"shr", t"a", t"=", t"8s"] //only text fragments
+    },
+
+    zci{ //ZCI 2
+        type     = STM_IF_,
+        sequence = [
+            t"a == 5",
+            b[         //braces includer that must hold other ZCIs because it is inside an STM_IF_
+                zci{
+                    type = VFC_VFC,           //ZCI 3
+                    sequence = [t"functionA"]
+                },
+                zci{
+                    type = VFC_VFC,           //ZCI 4
+                    sequence = [t"functionB"]
+                }
+            ]
+        ]
+    }
+]
+"
+
+p I know those mechanisms can appear complicated to do simple things infact, \
+but understanding them is what will make you being completely independant when developping in Z. \
+If you go too fast and directly try to code something, you will certainly be unable to understand your own issues. \
+Coding is not a simple thing and it has never been. \
+Please take your time and move forward at your own speed to make sure you've understood everything.
+
+p This whole documentation has been made to be read from the beginning to the end so that you have everything you need to know as you go further. \
+Nobody should go on without reading the documentation of a language, just by intuition and pray to have a working code. \
+Thoses rules are what makes the ZPL an exact science, precisely defined, and trustworthy. \
+The difference between a Z programmer and one of another programming language should be that the Z one knows things \bbefore\b using them.
+
+p In my opinion, it is about both the documentation and the language syntax parsing tolerance. \
+The documentation must be readable, understandable and complete without having too much useless paragraphs. \
+However, if the language also tolerate too much patterns to make anybody happy, you can't talk about all the cases individually.
+
+
+
+t3 Scopes
+
+p In previous sections we have seen what are includers and how do they work with ZCIs. \
+There is another thing we must define before getting further on Z Code Elements (ZCE) declarations and uses : SCOPES. \
+This has a very important part in the understanding of a Z code so please be attentive to all the explanations given.
+
+l In Z, there are 3 kinds of scope :
+- \b\cdd00ddGLOBAL\c\b scope
+-
+- \b\c1111ffFUNCTION\c\b specific scope
+-
+- \b\c00dd00STATEMENT\c\b specific scope
+-
+b
+
+p While reading Z code, the compiler will travel over different scopes. \
+At start, it is in \cdd00ddGLOBAL\c scope, that means that everything that is declared will be in \cdd00ddGLOBAL\c scope. \
+That includes data items, types, structures, functions and modules but we will define exactly what are those things later. \
+For now, just remember that everything that requires a SCOPE gets it by the current compiler state.
+
+p Now, as soon as the compiler reaches a \ufunction declaration ZCI\u (DCL_FCT), \
+its scope will change into a \c1111ffFUNCTION\c \uspecific\u one. \
+Every new declaration made inside the function's content will now have its scope set to \mFUNCTION <function_name>\m scope. \
+Note that this scope is \uSPECIFIC\u to this particular function. \
+If a ZCE is declared on another function, its scope will be different because it will be related to this other function specificly.
+
+p This \c1111ffFUNCTION\c specific scope application is valid for each ZCI that is \b\uDIRECTLY\u\b defined inside \
+the function's content (inside its braces includers). \
+As soon as the function declaration is done (end of the ZCI), the compiler turns back into \cdd00ddGLOBAL\c scope.
+
+p Note that I mentioned that \c1111ffFUNCTION\c specific scope is applied only on declarations that are \b\uDIRECTLY\u\b made \
+in function's content. \
+Infact, there is also another possibility of scope value for a declared ZCE : the \c00dd00STATEMENT\c specific scope.
+
+p For this last kind of scope, the principle is quite the same as for \c1111ffFUNCTION\c ones. \
+The only thing that differs is that the compiler will turn into \c00dd00STATEMENT\c specific scope if it reaches \
+a \ustatement declaration ZCI\u (all the ZCIs starting with "STM_"). \
+Also, as soon as the statement finished (end of the ZCI), the scope turns back into its previous state \
+(function specific or statement specific depending on what was the scope before entering in that statement).
+
+l Let's see a more visual example of scope attribution :
+" z Figure 4
+int a         //declaring a data item "a" in GLOBAL scope
+
+voi f1(){     //function declaration ZCI => turning into FUNCTION specific scope
+    int b     //declaring a data item "b" in FUNCTION scope "f1"
+}             //end of function declaration => turning back into GLOBAL scope
+
+int c         //declaring a data item "c" in GLOBAL scope
+
+voi f2(){     //another function declaration ZCI => turning into FUNCTION specific scope again
+    int d     //declaring a data item "d" in FUNCTION scope "f2"
+
+    if true { //statement declaration ZCI => turning into STATEMENT specific scope
+        int e //declaring a data item "e" in STATEMENT scope "if_1"
+
+        if false { //statement declaration ZCI again
+            int f  //declaring a data item "f" in STATEMENT scope "if_2"
+
+        }          //end of the second statement
+    }              //end of the first statement
+
+    int g //declaring a data item "g" in FUNCTION specific scope "f2"
+
+} //end of function declaration => going back to global scope
+"
+
+p It is important to know that the current scope is held by the compiler itself. \
+Indeed, depending on the current scope, some ZCI are allowed and some aren't. \
+Here is the table of all ZCIs and their rules in each scope :
+"
+.------------+--------------.
+|    Scope   | ZCIs ALlowed |
++============+==============+
+|            | DCL_PRM      |
+|   GLOBAL   | DCL_STC      |
+|    only    | DCL_MOD      |
+|            | DCL_FCT      |
++------------+--------------+
+|            | VFC_VFC      |
+|            | JMP_BRK      |
+|  FUNCTION  | JMP_CTN      |
+|    and     | JMP_RET      |
+| STATEMENT  | STM_IF_      |
+|   only     | STM_WHI      |
+|            | STM_FOR      |
+|            | STM_SWI      |
++------------+--------------+
+|            | DCL_DAT      |
+|            | DCL_ENM      |
+|    BOTH    | ASG_ASG      |
+|            | EXT_IMP      |
+|            | EXT_LNK      |
+'------------+--------------'
+"
+p Those rules are almost identically the same as lots of other programming languages actually. \
+That can appear complicated because you have a precise table of what is allowed and what is not, \
+but I am pretty sure that if you already used another programming language before, \
+you will easilly find your way in Z scopes.
+
+l We can also use the term of LOCAL scope when not in GLOBAL scope (in FUNCTION/STATEMENT).
+
+
+
+
+b
+l \lZPL_Introduction\lPrevious page\l\ar\lZPL_Features-Memory\lNext page\l

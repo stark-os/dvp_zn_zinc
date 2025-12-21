@@ -1,0 +1,981 @@
+t1 ZPL Features : Operators
+
+p Now that we explained functions in general, there is a special kind of function we \bmust\b talk about before going further : \uoperators\u. \
+All the things we said before on regular functions also applies to operators (must be declared before use, return type & parameters definitions...). \
+However, some additionnal things makes them different such as their name and how parameters can be passed into them...
+
+b
+t2 Presentation
+
+t3 Names and Notations
+
+p The first thing that makes an operator different from regular function is the name. \
+Regular functions can only be named with the following alphanumeric charset : \mabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_\m. \
+Operators are named using symbols only such as \m+\m, \m*\m or \m|<<\m for example. \
+Some of them even uses includers in their name like operator \m[]=\m.
+
+p To call an operator, we use its symbolic notation rather than using the regular way for functions. \
+This notation can differ from an operator to another but let's take a simple example :
+" z Figure 60
+int f(int a, int b) { //just declaring a regular function.
+
+    r = a + b         //Here, in this ASG_ASG ZCI, the value given is "a + b".
+                      //"+" is the symbol for a certain operator.
+                      //This operator must be called using pattern "FIRST_OPERAND + SECOND_OPERAND",
+                      // it is its symbolic notation.
+    ...               //We can't call it as regular functions : "+(FIRST_OPERAND,SECOND_OPERAND)".
+}
+"
+p An important thing to have in mind when using operators is that their symbolic notation is made for users only so during compilation, \
+every operator will be replaced by a regular function name. \
+This implies that every operator has a specific name to be replaced at compile time.
+
+p Such function names can not be used as we do for regular functions. \
+They are reserved for operators only and nothing in your code can refer to them. \
+Let's say that for the previous example, our operator \m+\m has an internal name \mplus\m. \
+The previous example would be compiled this way :
+" z Figure 61
+int f(int a, int b) {
+    r = a + b
+    ...
+}
+
+//will become after compilation :
+int f(int a, int b) {
+    r = plus(a,b) //function "plus" cannot be called in Z, it is an internal name
+    ...           // generated at compile time.
+}
+"
+p As you can see, operators are nothing more than functions under symbolic notation. \
+Operands are passed as parameters to an internal function only accessible by the compiler. \
+I insist on that point, internal operator names are not accessible in a Z code. \
+That means you can define any data item, function, module or whatever with the internal name of an operator without affecting it. \
+The Z compiler knows how to differentiate the user's content from its internal operator naming.
+
+
+t3 Declarations
+
+p You may have noticed that in our example, we used an operator without having declaring it. \
+In that case, the compiler would have raised an error. \
+So, how can we declare such an operator ? \
+Well, here, nothing more simple, we simply declare it as a regular function :
+" z Figure 62
+int +(int a, int b) {
+    ... //do something
+}
+
+v = 5 + 6 //then we can use it
+"
+p As you can see, we only used the symbol name for declaration and the symbolic notation for the use of that operator. \
+Actually, in a Z program, you will never have to care about the real internal name of the operator you are targetting. \
+The only thing you must keep in mind is that every operator have one and that they will be replaced during compilation. \
+This is very important and I insist on this because it can really help you when dealing with combinations of several operators in the same line.
+
+p Something that can be pretty obvious to say about operators : We can't declare them inside modules. \
+Why ? Because it would complicate the syntax which is the opposite of why we use symbolic notations.
+" z Figure 63
+int +(int a, int b) {
+    ... //do something
+}
+
+mod MyModule {
+    int +(int a, int b) {
+        ... //do something else
+    }
+}
+
+v1 = 5 + 6           //regular use
+v2 = 5 ^MyModule.+ 6 //modular use => too complicated => lost interest of operators
+                     // => Compilation ERROR at line 6 : "No operator can be declared inside modules"
+"
+p By the way, in those examples, we used "a" and "b" as parameter's names : there is no restriction in the names you want to use in operator declarations. \
+The only thing that matters is the number of elements and their type.
+
+
+t3 Exhaustive table
+
+p There is a fixed amount of operators that can be defined in Z. \
+Those operators are divided into categories each referenced by their first letter. \
+Here is an index of all Z operators and their categories :
+"
+.--------------+------------------+------+------------+---------.
+|   Category   |     Operator     | Name |  Notation  | Trigram |
++==============+==================+======+============+=========+
+|    Single    |      Invert      |  ~   |     ~A     |   sin   |
+|     (S)      |        Not       |  !   |     !A     |   sno   |
++--------------+------------------+------+------------+---------+
+|  Decisional  |        And       |  &&  |   A && B   |   dan   |
+|     (D)      |        Or        |  ||  |   A || B   |   dor   |
++--------------+------------------+------+------------+---------+
+|              |     Multiply     |  *   |   A  * B   |   amu   |
+|  Arithmetic  |      Divide      |  /   |   A  / B   |   adi   |
+|     (A)      |      Modulo      |  %   |   A  % B   |   amo   |
+|              |      Power       |  **  |   A ** B   |   apo   |
++--------------+------------------+------+------------+---------+
+| B-rithmetic  |        Add       |  +   |    A + B   |   bad   |
+|     (B)      |     Subtract     |  -   |    A - B   |   bsu   |
++--------------+------------------+------+------------+---------+
+|              |        And       |  &   |    A & B   |   lan   |
+|              |         Or       |  |   |    A | B   |   lor   |
+|              |   Exclusive Or   |  ^   |    A ^ B   |   lxo   |
+|   Logical    |     Left shift   |  <<  |   A << B   |   lls   |
+|     (L)      |    Right shift   |  >>  |   A >> B   |   lrs   |
+|              | Left byte-shift  |  |<< |   A |<< B  |   llb   |
+|              | Right byte-shift |  >>| |   A >>| B  |   lrb   |
+|              |     Left roll    |  <<- |   A <<- B  |   llr   |
+|              |    Right roll    |  ->> |   A ->> B  |   lrr   |
++--------------+------------------+------+------------+---------+
+|              |      Equals      |  ==  |   A == B   |   ceq   |
+|              |    Not equals    |  !=  |   A != B   |   cne   |
+| Conditionnal |    Lesser than   |  <   |   A <  B   |   clt   |
+|     (C)      |   Greater than   |  >   |   A >  B   |   cgt   |
+|              | Lesser or equal  |  <=  |   A <= B   |   cle   |
+|              | Greater or equal |  >=  |   A >= B   |   cge   |
++--------------+------------------+------+------------+---------+
+|              |      Index       | []   |    A[B]    |   iin   |
+|              |   Index assign   | []=  |  A[B] = C  |   iia   |
+|   Indexing   |       Sub        | [:]  |   A[B:C]   |   isu   |
+|     (I)      |    Sub assign    | [:]= | A[B:C] = D |   isa   |
+|              |      Among       |   ?  |   A  ? B   |   iam   |
+|              |    Not among     |  !?  |   A !? B   |   ina   |
++--------------+------------------+------+------------+---------+
+|              |       Size       |  #   |     # A    |   fsz   |
+|    Fixed     |    Reference     |  @   |     @ A    |   frf   |
+|     (F)      |       Casht      |  $   |    A $ B   |   fca   |
+|              |   Field access   |  .   |     A.B    |   ffa   |
+'--------------+------------------+------+------------+---------'
+"
+p As shortcuts, we will use the bigrams AO,BO,LO... for Arithmetic Operator, B-rithmetic operator, Logical operator... \
+You can also see that each operator has its own trigram : we will also use them as shortcuts in this documentation to talk about a specific operator.
+
+p If you have experienced other programming languages, you may already recognize most of them as such operators are really common. \
+However, you should really care about what they are in Z because you may realize that the operations we commonly use everywhere are not that precisely define in almost all programming language. \
+Even myself, when thinking about a way to allow such syntax, I realized that most of the operators I thought I was familiar with were not behaving so obviously \
+and they can hide a part of mystery if used a tiny bit out of their scope.
+
+
+t3 Auto-assignment shortcut
+
+p Alongside with some of the Z operators, an auto-assignment shortcut notation also exist to allow faster coding and less repetitive sequences. \
+Only DOs, AOs, BOs and LOs are concerned by this. \
+This notation consists in adding an equal sign to the operator symbol in order to significate "apply this to itself". \
+Let's see an example of it :
+" z Figure 64
+int a = 5
+
+//regular call to operator "bad" : "a + 5" and storing it into "a"
+a = a + 5
+
+//shortcut notation of auto-assignment : using "+=" instead of "+"
+a += 5 // this is equivalent to "a = a + 5" (same thing as before)
+"
+
+p As you can see in this example, we used the same operands in both cases, except we called the shortcut as a VFC. \
+\bThose notations are only allowed in VFC.\b \
+Actually, the compiler does not care if you are using it as a VFC or not because these are just notations being replaced by their corresponding pattern. \
+However, their decompostions will turn them into ASG ZCIs so you may have surprises if using them as !VFC. \
+To better understand the trick, let's see an example of a bad use of it :
+" z Figure 65
+int a = 5
+int b = 6
+
+//no-shortcut example
+a = b >>| 2 //regular "lrb" operator (=> everything is OK)
+            //we could represent it like "a = lrb(b,2)"
+
+//good shortcut example
+b >>|= 2 //lrb operator with auto-assignment shortcut
+         // => "b >>|= 2" will be replaced by pattern "b = b >>| 2"
+         //
+         //So final result will be :
+         // "b = b >>| 2"
+         //or we could represent it like :
+         // "b = lrb(b,2)"
+         //
+         //You see that we used the shortcut as a VFC as we had just : "lrb_shortcut(b,2)"
+         //As a result, we have an assignment : "b = ..."
+         // => Everything is OK
+
+//bad shortcut example
+a = b >>|= 2 //lrb operator with auto-assignment shortcut
+             // => "b >>|= 2" will be replaced by pattern "b = b >>| 2"
+             //
+             //So final result will be :
+             // "a = b = b >>| 2"
+             //or we could represent it like :
+             // "a = b = lrb(b,2)"
+             //
+             //You see that we used the shortcut as a !VFC as we had : "a = lrb_shortcut(b,2)"
+             //As a result, we have twice an assignment : "a = b = ..."
+             // => Invalid ZCI (after ODP that we will see later) : Compilation ERROR
+"
+p As last word a last word on this, those notations are simply additionnal shortcuts to be less repetitive in certain cases. \
+This exists in lots of programming languages and that is a pretty cool and easy-to-implement add-on so I decided to include it in the ZPL as well. \
+Note that they are completely optionnal in your code, you can use their explicit equivalent instead.
+
+
+
+t2 Naming process
+
+t3 Variability
+
+p Until now, it seems that we have only 35 operators available in Z. \
+Actually, the number is a way much bigger than that. \
+Infact, one particularity of an operator is that when declaring or using it, the \uoperand(s) type(s)\u are taken into account to target the corresponding content. \
+When declaring an operator, it seems obvious that you must respect the number of parameters it requires (letters A,B,C & D in the table). \
+However, the types you give to those parameters will define a specific variant of that operator for this combination of operands. \
+Let's see an example :
+" z Figure 66
+//declaring "BAD" for int,int ('+' operator)
+int +(int a, int b) {
+    ...
+}
+
+//declaring "BAD" for flt,shr ('+' operator)
+int +(flt a, shr b) {
+    ...
+}
+
+//2 int VALUEs detected => BAD(int,int) will be used
+v1 = 5 + 6
+
+//first flt VALUE and then shr VALUE detected => BAD(flt,shr) will be used
+v2 = 3.f + 1s
+
+//first shr VALUE and then flt VALUE detected => BAD(shr,flt) will be used
+v3 = 3s + 1.f //however, this one has not been defined => Compilation ERROR
+"
+p You see that there is a huge number of variants that can be defined for each operator. \
+As a result, no implicit casht is applicable to operator's parameters, you must give the correct types to each operand. \
+Also, this example shows an important aspect as well; operands order is important ! \
+The same operation for parameters of type (flt,shr) can behave differently from (shr,flt) parameters.
+
+p That also means that, in order to use operators with any root type, we must have to declare a variant for every combination of parameters ? \
+The answer is... Yes. I know it can appear complicated for nothing at first sight. \
+Logically, because root types are holding numerical values, those operators could be defined by default in the compiler itself \
+as we assume this is what is done in other programming languages ?
+
+p This is precisely the point of operators variability. \
+The objective of forcing the declaration of each operator variant in Z is to give anyone the possibility to understand exaclty how its code will behave. \
+Unlike lots of programming languages, in Z you are able to know exaclty what kind of computation will made with your data even in weird combinations \
+such as 32 bit floating points values alongside with 8 bit integer values for example. \
+This precision contributes in the transparency of the programming language, making it, first: \ucomprehensible to everyone\u, and second: \ucustomizable\u.
+
+p A last thing we must see in operators variants is the choice of the return type. \
+You might not even have thought about that in some other programming langages but knowing which format your operator will use as output is \cff0000\bhighly\b\c important, \
+mostly when combining several operations together.
+
+p In Z, the return type is not a criteria of variability. \
+Also, the only restriction in the choice of the output type is that it must be "non-void" (we must have something to return). \
+The only exceptions are the 2 IO IIA and ISA which are kind of specific operators among the others but we will talk about them later. \
+So basically, you are free to say that a regular addition using parameters of type (shr,flt) will return a byt or whatever as you like. \
+Note that this is not without effect at compile time ! \
+The compiler knows that your resulting value will be of the type you defined so your code must be consistent with this to work properly.
+
+p Just a little tip if you want to know the return type of an operation in other programming languages : \
+If not mentionned in the language's documentation, most of the time, the return type is the type of the first operand. \
+Test it before assuming it true.
+
+
+t3 Operator inheritance
+
+p Remember when we talked about the METHODS_SUPPORTS_INHERITANCE compilation option concerning types and their parent ? \
+We have a kind of simimal thing with the OPERATORS_SUPPORTS_INHERITANCE compilation option. \
+However, as usual, operators are always the most complicated ones so we will take a look at what that means exactly in that case.
+
+p As a recall, inheritance for methods means that when a VALUE ZCE calls a method, the compiler will first look into its own methods, \
+and if not found, will look in its parent type methods as well, and so on. For operators, the mechanism is the same except that \
+most operators have multiple parameters and not only one. \
+In that case, the compiler will apply the same mechanism for each required type one by one.
+" z Figure 67
+typ lng2 lng //create "lng2", a child type of lng
+
+//create only (shr,lng) variant
+byt +(shr a, lng b) {
+    ...
+}
+
+//operate a "shr" and a "lng2"
+shr  s = 4s
+lng2 l = 8l
+
+A = s + l //first argument is a "shr"  => look for (shr,...) variants : FOUND SOME
+          //passing to next arg
+          //second argument is a "lng" => look for (shr,lng2) variants : NONE FOUND
+          //                           => try its parent (shr,lng)     : FOUND
+"
+p For a little number of types created by hand as so, it is not that revolutionnary ; we could have made our own alternative. \
+However, when dealing with declinated types, you may not want to create a specific variant for each combination. \
+This is where this kind of mechanism is pretty useful. \
+Also, because the Z inheritance system is based on type-copy declaration, such inheritance processes implicitely guarantees \
+that elements have the same size and structuration as their parent so the operations applied should work without too much damage.
+
+p It can appear quite simple at first sight but this logic is not always that simple. \
+You must keep in mind that parameters are resolved one after the other to avoid making mistakes. \
+I am saying that because some cases can lead to confusion between generic behavior (using parent's operators) and specific content (child operators). \
+To better see what can happen, we should see a typical example of possible confusion :
+" z Figure 68
+typ shr2 shr //create child types of "shr" and "lng"
+typ lng2 lng
+
+//create 2 variants for "BAD"
+byt +(shr2 a, lng b) {
+    ...
+}
+flt +(shr a, lng2 b) {
+   ...
+}
+
+//operate a "shr2" and a "lng2"
+shr2 s2 = 4s
+lng2 l2 = 8l
+
+A = s2 + l2 //which variant will be used ? At first sight, it is not obvious...
+           //Let's apply the algorithm :
+           //    first argument is a "shr" => look for (shr,...) : FOUND SOME (only one)
+           //    passing to next arg
+           //    second argument is a "lng" => look for (shr,lng)       : NONE FOUND
+           //                               => try its parent (shr,lng) : FOUND
+           //variant used : (shr2,lng)
+
+//In that case, the first variant will be used as an alternative for (shr2,lng) and (shr2,lng2)
+//and the second variant will only be available for (shr,lng2)
+//For the last possible combination (shr,lng), we have no operator available here.
+// => Remember : Parameters are resolved one after the other.
+"
+
+p As a conclusion on this tiny section, operator inheritance is a great feature to define only generic content that will be shared to any child type. \
+Also, making operators for very specific types is still possible and the compiler will always use them if available so that's a good point. \
+However, one thing we should particularly pay attention to is when dealing with both specific and generic parameters. \
+As a global advice, I recommend you to only use this inheritance mechanism with declinated types. \
+As for your specific things, use only the exact type combination you defined will save you time and energy.
+
+
+t3 Free-type : Allowing implicit casht
+
+p To continue on operators variability, there is a last syntax we have not covered yet : the any symbol (\m?\m). \
+This symbol can be added at the end of a parameter type in operator declarations to tell the compiler to allow any type for this parameter. \
+That is very useful for tons of reasons but not active by default.
+
+l Considering our last example :
+" z Figure 69
+//declaring another variant with free-type "b"
+byt +(shr a, int? b) {
+	...
+}
+
+shr s = 10s
+lng l = 20l
+
+//Now, the combination (shr,lng2) has an operator
+B = S + L //However "L" will be cashted into "int" so pay attention !
+
+//Note that it does not affect the first 2 variants.
+//If we can find the operator with the correct type or their parents, we will take it.
+//Free-type variant are the last alternative if nothing has been found (and the non-free types are valid).
+"
+
+l By the way, inheritance is still possible with free-types :
+" z Figure 70
+B = s2 + 3.2 //having (shr2,flt) => last variant will be used (shr,int?)
+                                    because "shr" is parent of "shr2" (same mechanism as before)
+"
+
+p What is important to remember with this syntax is the non-prioritary behavior. \
+A specific definition will always been taken even if a "free-type" declaration exists.
+
+
+t3 Default definitions
+
+p By default, in Z, no variant of any operator is declared as a built-in feature (except for FOs but this is the subject of the next section). \
+The thing is that, for the most basic things such as arithmetic operations or data access using pointers, the content to code is too deep to be written in Z. \
+How can we describe an addition between 2 integers deeper than that for example :
+" z Figure 67
+int +(int a, int b) {
+   ... //content ?
+}
+"
+p Here is where the ZPL stops and so, where the LLIs begin. \
+As we said at the very beginning, the Z programming language tries to cover the maximum amount of the user code as possible, and as generic as possible, \
+to allow anyone to use the same code/language/resources on any platform, and so, to benefit the full control of their machine. \
+A Z compiler does not know on which target the code will be executed : the compilation process produces a completely generic data format \
+that must be formatted again to fit with the corresponding target.
+
+p This second data formatting is called "bridging" and it is made using an LLI corresponding to the platform you want to make the executable code for. \
+It is the role of the LLI to link the more specific things of your system to the generated result from the Z compiler. \
+Therefore, the most basic operations of a Z program should be defined in the LLI and not in the Z code itself. \
+However, the Z compiler must be aware of what is to be defined in the LLI and what is not.
+
+p This is why a Z compiler always requires an LLI inventory file (commonly called \minventory.cfg\m) that lists every function already defined in LLI. \
+Every function listed in this file will be assumed as they were declared as built-in features. \
+Then, the Z compilation will be able to generate a result refering to them but without knowing what it is exactly. \
+It will be the charge of the LLI to make the final connections with the real system and then, make something working and completely consistent.
+
+p As a conclusion on this part, I would recommend you to put the minimum things as possible in LLIs to make your Z code the more shareable. \
+However, in very low-level operations with root types or pointers, if you cannot get deeper in Z, it is the role of the LLI to hold it.
+
+
+t3 Special category : FOs
+
+p Now that we explained the variability of Z operators and how the most basic of them should be declared, \
+we will get back on the table to look a bit at those categories. \
+The main reason we separate operators in categories is because of \bpriorities\b. \
+We will explain a bit in what does it consist but first, a thing you must know is that one category is different from the others : \uFO\u.
+
+p Infact FOs are internal operators that will be processed by the compiler itself. \
+They will be replaced by internal functions as every operator do but then, they will be re-processed again by the compiler so that at the end of compilation, \
+no trace of those operations will remain in the code. \
+Also, they are \cff0000\bnot\b\c customizable as we saw in our previous examples and they have no variant definition of themselves. \
+In short, \ufixed operators are \bfixed\b by the compiler and you can't modify them.\u
+
+p That's a lot of information, I aggree. \
+Let's simply consider an example :
+" z Figure 68
+//calling a fixed operator
+int a = 5
+lng b = #a //no need to declare an int variant "#(int)", this operator is internally defined by the compiler
+
+//using it with a different type
+dbl c = 2.25
+lng d = #c //the exact same function will be called, this is not a variant "#(lng)"
+
+//At the end of the Z compilation, every FO will be completely processed.
+//Only the resulting value will stay as we had LITERAL VALUEs.
+"
+p You understood now that FOs are operators computed at \ucompile time\u. \
+Now, because they are not defined by the user, we must see what do they require and what do they give in return. \
+This is really not obvious because most of the time, they do not work with VALUEs given as parameters but with other things such as type or data item names. \
+Let's define a bit more precisely thoses FOs :
+"
+.----------------+------+--------------------------+----------------+-----------------------------------.
+|    Operator    | Call |   Required parameter(s)  |   Return type  |            Description            |
++================+======+==========================+================+===================================+
+|      Size      |  #A  | A:type or data item name |      lng       | Returns the size occupied by the  |
+|                |      |                          |                | data item A (depends on his type  |
+|                |      |                          |                | only so a raw type name can be    |
+|                |      |                          |                | given as well).                   |
+|                |      |                          |                | If a structure data item/type is  |
+|                |      |                          |                | given, the size of the whole      |
+|                |      |                          |                | structure will be returned.       |
++----------------+------+--------------------------+----------------+-----------------------------------+
+|    Reference   |  @A  | A:data item name         | ptr[type of A] | Returns a ptr value holding the   |
+|                |      |                          |                | reference to the given data item  |
+|                |      |                          |                | in memory.                        |
++----------------+------+--------------------------+----------------+-----------------------------------+
+|     Casht      | A$B  | A:Any VALUE              | Type given in  | Returns value of A cashted under  |
+|   (explicit)   |      | B:Type name              |       B        | type B.                           |
+|                |      |                          |                | (Subject of the next section)     |
++----------------+------+--------------------------+----------------+-----------------------------------+
+|  Field Access  | A.B  | A:Any VALUE              |     Method     | If A is a structure element,      |
+|                |      | B:method/field name      |  return type   |               AND                 |
+|                |      |                          |       or       |      B is a field name of A       |
+|                |      |                          |   field type   |  => return field element of A.    |
+|                |      |                          |                | Else:                             |
+|                |      |                          |                |  B must be a method name of the   |
+|                |      |                          |                |  type given by A. The result will |
+|                |      |                          |                |  be the output of the method.     |
+'----------------+------+--------------------------+----------------+-----------------------------------'
+"
+p I know, I know, there is a lot of information here. \
+In that case, examples should be more appropriate than words :
+" z Figure 69
+//custom structures for the example
+typ myStc {
+    byt fieldA,
+    flt fieldB
+}
+typ myStc2 {
+    int firstField,
+    lng secondField
+}
+
+//declare some variables
+byt    A     = `0f
+shr    B     = 5s
+dbl    C     = 3.5
+ptr    D     = ``005fe313506811aa //pointer refering to 8 bytes of data
+ptr    Empty = null               //pointer refering to nothing
+myStc  F     = myStc { `32, 1.5f }
+myStc2 G     = myStc2 { 5, 8l }
+
+
+
+//execution
+voi execution() {
+
+    // ---- 1 : SIZE ----
+
+    //from data items
+    lng sz_A = #A //value is 1 because A is of type 'byt' (memory allocation for a 'byt' is always 1 byte)
+    lng sz_B = #B //depending on the architecture : 1, 2 or 4 bytes (memory allocation for a 'shr')
+    lng sz_C = #C //depending on the architecture : 4 or 8 bytes (memory allocation for a 'dbl')
+
+    //from types names
+    lng sz_byt = #byt //same value as sz_A (allocation size for a 'byt')
+    lng sz_shr = #shr //same value as sz_B (allocation size for a 'shr')
+    lng sz_dbl = #dbl //same value as sz_C (allocation size for a 'dbl')
+
+    //using pointers
+    lng sz_ptr   = #ptr   //allocation size for a 'ptr'
+    lng sz_D     = #D     //same value as sz_ptr because D is of type 'ptr'
+    lng sz_Empty = #Empty //same thing as well
+
+    //The primitive size of a pointer does not care about the pointed data itself.
+    //It only returns the size of the PRIMITIVE that holds the reference (which is, in all cases, a 'ptr')
+
+    //using structures
+    lng sz_F = #F //allocation size for the whole structure 'myStc' (which is the sum of the size of each element),
+                  //so here, sz_F = sz_byt + sz_flt (fieldA is a 'byt' and fieldB is a 'flt')
+    lng sz_G = #G //same thing but here, G is of type 'myStc2' so the resulting size is : sz_int + sz_lng
+
+
+
+    // ---- 2 : REFERENCE ----
+
+    //data items
+    ptr[byt] r_A = @A //reference to the memory segment where A is allocated
+    ptr[shr] r_B = @B //reference to the memory segment where B is allocated
+
+    //value ZCE given
+    ptr[int] r_5 = @5        //makes no sens => Compilation error
+    ptr[lng] r_9 = @ (3 + 6) //same thing    => Compilation error
+
+
+
+    // ---- 3 : CASHT (explicit) ----
+
+    //elements of different size
+    lng A_asLng = A $ lng //A_asLng holds the value of A but cashted in the memory segment of a 'lng'
+                          //The additionnal bytes are filled with 0.
+    byt B_asByt = B & byt //B_asByt holds the value of B but cashted in the momory segment of a 'byt'
+                          //The missing bytes are cut off.
+
+    //elements of the same size
+    ptr[int] D_asIntPtr = D $ ptr[int] //data is copied from D to D_asIntPtr without any difference
+
+    //other value ZCEs
+    ptr somePtr = (5 + 8) $ ptr //"5 + 8" returns a value of type 'int', then cashted into 'ptr'.
+                                //somePtr holds the value 13
+
+
+    // ---- 4 : FIELD ACCESS ----
+
+    //basic structure elements
+    byt F_fieldA     = F.fieldA
+    int G_firstField = G.firstField
+
+    //structure elements as VALUE ZCEs
+    byt fieldA_ofNull   = (null $ myStc).fieldA    //WARNING: Will certainly cause runtime crash !
+    lng secondField_ofF = (F $ myStc2).secondField // (memory access to the wrong place)
+
+    //undefined field => Compilation error
+    result1 = F.anotherField
+
+    //there are other cases but it concerns methods and we will see that in a future chapter
+}
+"
+
+
+
+
+t2 Priorization
+
+t3 1st Analysis: ODP
+
+p The symbolic notation of operators allows you to combine them together in order to operate more complex computation \
+with a simpler vision as if we had regular function calls. \
+The thing is that dealing with multiple symbolic notations can quickly become unfair as the most intuitive way of understanding a combination \
+is not always the more obvious to describe in terms of \bpriority\b.
+
+p If you remember, in previous chapters, we described how a VALUE ZCE is analyzed to get its data and type (the VAP). \
+This VAP is made in 2 analysis in which we already described the second one. \
+The first analysis however, was too complicated at this time because it concerns operators. \
+Now we can get back to this as we will need to understand that to freely use operators with each other.
+
+p When analyzing a VALUE ZCE, as first analysis, the compiler will look for certain characters in the given VALUE. \
+If an operator character is detected, an "operating sequence" is detected and so, \
+an \uOperation Decomposition Process\u (ODP) will be applied to the current VALUE ZCE.
+" z Figure 70
+mod MyModule {
+    int myVariable = 2
+}
+
+//           "ptr[int]" is to consider as one block, it will be replaced by a name
+int a = 3l + #ptr[int] //'[' and ']' are no longer in ODP
+
+//          "^MyModule.myVariable" is also to consider as one block, same reason as above
+int b = 4s / ^MyModule.myVariable //'^' and '.' are no longer in ODP
+"
+p The objective of this ODP is to transform complex combination of operators into an explicit chain of function calls. \
+As soon as the VALUE ZCE is cleared from any operator (everything has been replaced by function calls), we can continue to the second analysis.
+
+
+t3 ODP : Priority groups
+
+p To perform such decomposition, some priority rules are applied on 2 scales. \
+The first scale in ODP priorization concerns \upriority groups\u. \
+The main reason operators have been categorized is to form those priority groups.
+
+l Here is the table of all 6 priority groups :
+"
+.----------+--------------------------.
+| Priority |         Category         |
++==========+==========================+
+| Highest  | IO(iin,iia,isu,isa) + FO |
++----------+--------------------------+
+|          |            SO            |
++----------+--------------------------+
+|          |            DO            |
++----------+--------------------------+
+|          |         AO + LO          |
++----------+--------------------------+
+|          |            BO            |
++----------+--------------------------+
+|  Lowest  |     CO + IO(iam, ina)    |
+'----------+--------------------------'
+"
+p Now, the following can be a bit confusing at first sight so please be attentive : it is \bvery \cff0000very\c \uimportant\u\b. \
+The groups with the lowest priorities are processed \ufirst\u. \
+As a consequence, operators of higher priority groups stick to their operand better than the lowest ones.
+
+l Here is a tiny example of this phenomenon :
+" z Figure 71
+v = A + B * C
+
+//lowest priorities are processed first => '+' are processed before '*'
+v = bad(A, B * C)
+
+//then, higher priorities
+v = bad(A, amu(B,C))
+
+//As a consequence, B and C are more "sticked" to operator AMU(*) than BAD(+).
+// => AOs are prioritary over BOs
+
+//explicit priorizing representation
+v = A + (B * C)
+"
+
+p A really important thing you can see in this example is how the VALUE ZCE is split as we are replacing operators. \
+The content of the VALUE ZCE before the operator symbol is set as first operand and the rest on the right side is for the second one. \
+To make it simple, each time an operator is replaced, the VALUE ZCE is split in 2 parts on the operator symbol.
+" z Figure 72
+v = A + B * C
+
+//processing operator '+' => split VALUE ZCE into 2 parts
+ "A + B * C" => ["A", "B * C"]
+//so we have 2 VALUE ZCEs
+v = bad(
+    A,    //first  VALUE ZCE
+    B * C //second VALUE ZCE
+)
+
+//then, each value ZCE will be processed individually and so on.
+"
+
+p At every moment, we don't care about what is in both sides of the VALUE ZCE we are splitting, \
+we only separate the raw content in 2 parts and so, we have now 2 new VALUE ZCEs to consider. \
+The compiler is made to start with one VALUE ZCE and then, deal with as many VALUE ZCE as necessary.
+
+l By the way, you may wonder what does it mean to have "B-rithmetic" operators for additions and subtractions ? \
+The only reason is because they are arithmetic operators like the others but they have lowest priority among them... \
+So we call them "B-rithmetic" as for "secondary arithmetic".
+
+p Now that we saw how it works in details, let's see a more complete example, dealing whith operators from lots of priority groups :
+" z Figure 73
+v = A + B && C $ D * ! E == F
+
+//lowest priority here: CO "=="
+v = ceq(
+    A + B && C $ D * ! E,
+    F
+)
+
+//next: BO "+"
+v = ceq(
+    bad(
+        A,
+        B && C $ D * ! E
+    ),
+    F
+)
+
+//next: AO "*"
+v = ceq(
+    bad(
+        A,
+        amu(
+            B && C $ D,
+            ! E
+        )
+    ),
+    F
+)
+
+//next: DO "&&"
+v = ceq(
+    bad(
+        A,
+        amu(
+            dan(
+                B,
+                C $ D
+            ),
+            ! E
+        )
+    ),
+    F
+)
+
+//next: SO "!"
+v = ceq(
+    bad(
+        A,
+        amu(
+            dan(
+                B,
+                C $ D
+            ),
+            sno(E)
+        )
+    ),
+    F
+)
+
+//next: FO "$"
+v = ceq(
+    bad(
+        A,
+        amu(
+            dan(
+                B,
+                fca(C,D)
+            ),
+            sno(E)
+        )
+    ),
+    F
+)
+
+//There we go !
+//No operator left, only function calls and no abiguity can be made concerning priorities.
+"
+p In this example, I have used both operators with one and 2 parameters. \
+But we did not explain how single operand operation work. \
+Basically, the only difference with 2 operand operators is that the compiler will expect to only have a VALUE ZCE \b\uafter\u\b the operator symbol.
+" z Figure 74
+//correct
+v = A + ! B // => bad(A, !B)     //operator SNO(!) only has one value AFTER symbol
+            // => bad(A, sno(B))
+
+//incorrect
+v = A + B ! C // => bad(A, B ! C) //operator SNO(!) has value BEFORE and AFTER itself
+              // => Compilation ERROR :
+              //        "B ! C" : operator SNO requires only one argument
+"
+
+p Also, you may note that I did not use several operators of the same priority group. \
+What happens when we have multiple operators of the same priority group to take into account ? \
+This is the subject of the next section.
+
+
+t3 ODP : Progressive priorizing
+
+p Here is the second scale of ODP. \
+This one is the simplest part, pretty straightforward. \
+When replacing operators in a VALUE ZCE in a specific priority group, we can have multiple operators to format at the same time. \
+In that case, the compiler will apply what we call the \bprogressive priorizing\b.
+
+p The progressive priorizing consists in first splitting the VALUE ZCE by the operator symbols targetted, making a list of certain number of elements. \
+Then, couples are made from left to right (in the reading sens) to build a bigger VALUE ZCE until only one remains at the end. \
+Here is an example :
+" z Figure 75
+//here, we only have BOs => the whole ODP is made in the same priority group
+v = A + B + C - D + E
+
+//processing BOs: splitting by symbols "A + B + C - D + E" => ["A", "B", "C", "D", "E"]
+v = ...
+
+//then, gathering by couples from left to right
+v = bad(A,B) ...
+v = bad( bad(A,B), C) ...
+v = bsu( bad(bad(A,B), C), D) ...
+v = bad( bsu( bad(bad(A,B), C), D), E) //final result
+
+//indent representation
+v = bad(
+    bsu(
+        bad(
+            bad(A,B),
+            C
+        ),
+        D
+    ),
+    E
+)
+
+//explicit priorizing representation
+v = (((A+B) + C) - D) + E
+"
+p This behavior is the easiest way to deal with priorities but it does not produce intuitive priorization if we only use it. \
+This is why we also separate this into priority groups.
+
+p In several examples you can see that we also used an "\u\bE\bxplicit \bP\briorizing \bR\bepresentation\u" (EPR) for showing how the priorization operates. \
+This is also a feature of the ZPL to manage explicit operators priorization and we will see in the next section how this works. \
+(By the way, no need to remember the trigram "EPR", we will not use it elsewhere)
+
+
+t3 ODP : Includers
+
+p This section is very important important because it concerns some kind of "obvious" things \
+that might not be that simple for the Z compiler to manage. \
+As we saw in previous examples, it is possible to use parentheses includers to explicitely force the priorization in ODP. \
+Also, we saw that some IOs uses brackets includers as symbolic notation.
+
+p Infact, when managing priority groups and progressive priorizing, the ODP won't care about any includer. \
+However, this is in the second analysis, when trying to solve the resulting values from ODP, that includers are checked. \
+Depending on includers nature, contents will result in other VAPs, making them completely distinct from the outside.
+
+p It simply consists in calling another sub-VAP inside every \uparentheses\u includer not involved in a function call. \
+As a result, content inside parentheses is a whole independant VALUE ZCE by itself. \
+Therefore, it will always be considered as highest priority because \usolved by itself\u, and only after that, it will be given to the rest of the original value we were targetting. \
+Here is an example with more details :
+" z Figure 76
+v = A + (B - f(C)) $ C[D] - g(E, F)
+
+//after whole ODP
+v = bad(
+    A,
+    bsu(
+        fca(
+            "(B - f(C))", //parentheses includer NOT RELATED to function call
+            "C[D]"        // (containing another parentheses includer RELATED to a function call this time)
+        ),
+        "g(E, F)" //parentheses includer RELATED to function call
+    )
+)
+
+//in 2nd analysis
+//  - "(B - f(C))" will be processed as "explicit priorizing sequence" in 2nd analysis
+//    => VAP on "B - f(C)"
+//  - "C[D]" will be processed as indexing sequence (will be finalized as iin or iia)
+//    => VAP on "C" to combine with VAP on "D"
+//  - "g(E, F)" will be processed as function call
+//    => VAP on "E" & "F" to insert into a call to function "g" (no VAP on "g", this is read as a NAME)
+
+//Recall:
+//  Name directly followed by a parentheses includer is considered as function call.
+//  f(...)  => function call
+//  f (...) => not a function call (blank in between)
+"
+
+
+t3 ODP : More than 2 operands
+
+p The only operators that have more than 2 operands in Z are IOs related with brackets includers. \
+As we said just before, these kind of operators are more specifically managed because of their "inside" and "ouside" operands. \
+They are not as trivial as others so we will take a look at each of them individually.
+
+p First, for the 2 "sub", the only difference with regular indexing is that we will expect to have not 2 VALUE ZCEs given instead of 1 as for specifying a \urange\u. \
+This is done by using a \u\brange symbol\b\u (colon ':') as separator between the 2 VALUE ZCEs. \
+Here is an example of ISU comparing to IIN :
+" z Figure 77
+//index (IIN)
+v1 = A[B]
+
+//sub (ISU)
+v2 = A[B:C] //B & C are 2 distinct VALUE ZCEs
+
+//after ODP, the result will be :
+v1 = iin(A,B)
+v2 = isu(A,B,C)
+"
+
+p Secondly, the 2 "assignment" operations, as the name implies, are used when \uassigning\u a value to an \uindexed\u data item. \
+That's why we said a few paragraphs ago that IIA and ISA are particular operators, \
+they are not implied in the whole VAP but they are only called when assigning to an indexing data item.
+" z Figure 78
+//assignment to a regular data item
+v = SOME_VALUE1
+
+//assignment to an indexing data item
+v[A] = SOME_VALUE2
+
+//assignment to an indexing data item using SUB syntax
+v[A:B] = SOME_VALUE3
+"
+
+p For these 2 exceptions, their symbolic notations are also replaced, they won't remain assignments at the end but only VFCs (void returning function calls). \
+Here are some examples of that first step of ODP with those tricky operators :
+" z Figure 79
+//1 - simple index
+v1 = A[B + C * D]
+
+//first step of ODP
+v1 = iin(A, B + C * D) //then each parameter will continue in ODP
+                       //("A" and "B + C * D" are 2 distinct VALUE ZCEs)
+
+
+//2 - index assign
+v[A] = B
+
+//first step of ODP
+iia(v,A,B) //VFC. Operator iia ALWAYS have to return void.
+
+
+
+//3 - sub assign
+v[A:B] = C
+
+//first step of ODP
+isa(v,A,B,C) //VFC as well. Same thing as for iia.
+
+
+
+//4 - more complex case
+v[A+B:C $ D] = E#F
+
+//first step of ODP
+isa(v, A+B, C $ D, E#F) //each parameter is a VALUE ZCE that will be analyzed in ODP
+"
+
+p Here is a more complete example of ODP :
+" z Figure 80
+v[x:y] = A || B & C[D] <= ~ E + @ F $ G
+
+//after ODP
+isa(
+    v, x, y,
+    cle(
+        lan(
+            dan(A,B),
+            iin(C,D)
+        ),
+        bad(
+            sin(E),
+            fca(frf(F), G)
+        )
+    )
+)
+"
+p We did not get into details of this ODP here. \
+I recommend you to try decomposing it yourself step by step to better understand the mechanisms. \
+Also, remember that the function names that will be set are more complex than that actually. \
+The functions to be called at the end will depend on the types of the parameters given (section on operator \uvariability\u).
+
+b
+p That was a pretty heavy chapter. \
+However, it is a highly important part of the ZPL, no other chapter will be that big. \
+By the way, a big part of the things we saw here are assumed in other programming languages as kind of "obvious" principles. \
+Describing them here may have shown you that such obvious mechanisms are not always that simple and so, can lead to abiguous situations.
+
+p Alright, we are now able to create custom code properly set up with correct typing and naming. \
+We can also combine values together to produce quite complex results. \
+Now we are missing one of the main principles of programming : \bdynamism\b. \
+The things we did until now were only static uses of syntaxes. \
+In the next chapter, we will see the different statements the ZPL offers to create dynamic algorithms.
+
+
+
+
+b
+l \lZPL_Features-Execution\lPrevious page\l\ar\lZPL_Features-Statements\lNext page\l

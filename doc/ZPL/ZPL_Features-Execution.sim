@@ -1,0 +1,728 @@
+t1 ZPL Features : Execution
+
+t2 Functions
+
+p We discussed a lot about memory, it is now time to talk about execution. \
+There is basically only one ZCE that really concerns the execution of a Z program : \bfunctions\b. \
+However, behind this simple word is hidden a lot of declinations with their own behavior, rules and stuff. \
+We will cover every single one of them step by step starting from the simplest cases to the more complex constructions.
+
+b
+
+t3 Definitions
+
+p A function is a block of code referenced by a name that will be executed every time we call it in a program. \
+Also, functions are not completely dissociated from the rest of the code, we can give them some values as input and get back some values in output as well. \
+Functions are nothing more than execution \bpatterns\b defined from a certain start to a certain end. \
+We must define what goes inside and outside a function.
+
+p The input values of a function are called \u"parameters"\u and the output value is called a \u"returning value"\u. \
+Note that a function can have several parameters but only one returning value is allowed. \
+Function parameters are data items automatically declared at the beginning of the function, ready to be used inside of it. \
+However, as we saw earlier, data items only survives in their declared scope so function parameters are only available inside their function's content.
+
+p As for types and data items, functions must be declared to be used. \
+Let's see how we declare a function. \
+Because parameters are data items, we must at least give the information of their type and name (regular declaration). \
+The returning value of a function is not a data item but a VALUE ZCE so when declaring a function, we only require the type of the returning value.
+
+l With those informations, we can now declare functions using the DCL_FCT ZCI as in the example below :
+" z Figure 35
+byt myFunction(shr alpha, int beta) { //DCL_FCT ZCI : The parentheses includer contains the list of parameters,
+    ... //function content            // the braces includer contains function's content.
+    ...                               //"byt" is the return type
+    ...                               //"shr alpha" is the first parameter (as for regular data item declaration)
+    ...                               //"int beta" is the second parameter
+    ...
+    ...                               //data items "alpha" & "beta" are accessible inside function's content
+    ...
+}                                     //Here is where the function declaration ends
+
+//Here, "alpha" & "beta" are no longer accessible, we are outside of the function's scope
+"
+
+
+t3 Parameters
+
+p In the previous example, the parameters we set were VARIABLE data items for the same reason as data items are VARIABLE by default. \
+To ask for a constant parameter, we use the same keyword as for data items :
+" z Figure 36
+byt myFunction(cst shr alpha, int beta) { //"alpha" is CONSTANT, "beta" is still VARIABLE
+   ...                                    //This is the exact same thing as declaring a constant data item.
+}
+"
+
+p Also, we can declare functions with no parameters. \
+They will require no input values to be executed.
+" z Figure 37
+byt myFunction() { //no parameters given, however parentheses are still required
+    ...
+}
+"
+
+p Another interesting thing we can do with parameters is giving them default values. \
+In Z functions, every parameter can have a default value. \
+We do this by using an assignment symbol as we do when assigning a value to a data item. \
+Givin a default value to a parameter makes it optional, which means we can call the function without giving those parameters, \
+their value will be automatically set to the default one.
+" z Figure 38
+byt myFunction(cst shr alpha, int beta = -30) {
+    ...
+}
+
+//Calling "myFunction"
+byt a = myFunction(25s, 18) //alpha will be "25s" and beta "18"
+byt b = myFunction(0s)      //alpha will be "0s" and beta "-30" (default value set)
+"
+
+p A tiny thing to know about default values is that only the last parameters can have one. \
+This behavior is only for practical reasons. \
+We can't have required parameters following defaulted parameters, we won't be able to know which parameter is targetted and which one is skipped.
+" z Figure 39
+byt myFunction(cst int alpha, int beta=-30, int gamma, int delta=4, int epsilon) { ... }
+
+//Calling "myFunction"
+byt a = myFunction(5,6,7,8) //alpha=?,beta=?,gamma=?,delta=?,epsilon=?
+"
+p Actually, it is always possible to set every parameter using a completion rule but that produces non-obvious codes and so, lots of mistakes. \
+The ZPL is meant to be intuitive and the rules applied inside of it are thought and tested to help users and not to bring complexity. \
+This is why default values are only allowed in last parameters : the required ones are set before, and then, each optionnal can be set, one after another.
+" z Figure 40
+byt myFunction(cst int alpha, int beta, int gamma=30, int delta=4, int epsilon=-5) { ... }
+
+//Calling "myFunction"
+byt a = myFunction(5,6)       //5, 6, 30, 4, -5
+byt b = myFunction(5,6,7)     //5, 6,  7, 4, -5
+byt c = myFunction(5,6,7,1,8) //5, 6,  7, 1,  8
+"
+
+p Parameters with a default value can also be called using their name inside function call. \
+The syntax is pretty similar, we only use an assignment symbol to specify the parameter targetted and the value to set explicitely. \
+This is a practical way to set values to defaulted parameters without having to set every other parameters.
+" z Figure 41
+//same example as before
+byt myFunction(cst int alpha, int beta, int gamma=30, int delta=4, int epsilon=-5) { ... }
+
+//Calling "myFunction"
+byt a = myFunction(5,6)           //5, 6, 30, 4, -5
+byt b = myFunction(5,6,epsilon=8) //5, 6, 30, 4,  8 <-here, epsilon is explicitely set but not gamma & delta
+"
+
+
+t3 The "return" jump
+
+p We talked about "returning values" and "return types" because every function \bmust\b end by returning something. \
+To do so, we use the JMP_RET ZCI with the value we want to return, and this will be the output of the function. \
+As soon as such a ZCI is reached, the function's execution stops and the returning value is set. \
+Those ZCIs can only be used \binside\b function's content by the way.
+
+l In our example, we can complete our function like so :
+" z Figure 42
+byt myFunction(shr alpha, int beta) {
+    ret `0a                           //JMP_RET ZCI with value `0a given
+    ...                               //The rest will never be executed (output value returned just before)
+}
+
+byt myFunction2() {                           //inside another function
+
+    byt myVariable = myFunction(4s, 3) //ASG_ASG ZCI with a VALUE ZCE detected as a non-void returning function call
+                                       // => execute function "myFunction" with values 4s & 3 given respectively to parameters alpha & beta
+                                       //then, when "myFunction" ends, the value returned will be set inside "myVariable"
+    ... //rest of function's content
+}
+"
+
+
+
+
+t2 Calling specificities
+
+t3 Modularity
+
+p As you see, in the example above, functions are identified by their name only. \
+A function cannot be declared with the same name as one already existing (or you will get a compilation error). \
+By doing so, we can't have any ambiguity of which function will be called when executing our code. \
+This is the same principle as for data items actually.
+
+p Keeping it straight, functions are also declarable inside modules. \
+It offers the same advantages as the modularity applies on the name of the function when calling it.
+" z Figure 43
+//global function
+shr myFunction() {
+    ...
+}
+
+//function inside module
+mod MyModule {
+    int myFunction() {
+        ...
+    }
+}
+
+//calling function from module "MyModule"
+int a = ^MyModule.myFunction()
+
+//calling global function
+shr b = myFunction()
+"
+
+
+t3 Void Function Calls (VFC)
+
+p We saw that functions have some input parameters (that can be empty) and also a returning value. \
+Actually, this returning value can also be empty. \
+We call such functions "void" considerating they "return void". \
+Such functions \b\ushould not\u\b return anything as there will be nothing to catch it (we will have a compilation \uwarning\u by the way).
+
+p It is still possible to use the JMP_RET ZCI as for non-void functions. \
+The only difference is that we must use it without any value. \
+The function execution will simply stop there.
+" z Figure 44
+//declaring a void function "f"
+voi f(int i) {
+    ... //no need to return anything, a JMP_RET ZCI is not required
+}
+
+//another example
+voi g(int i) {
+    ...
+    ret    //using a JMP_RET ZCI without any value
+    ...    //the rest of the function's content will be skipped
+}
+"
+l By the way, in programming in general, we call content that will never be executed : "dead code".
+
+p As we said, it is not impossible to call a non-void function as a void one. \
+But because a void returning function does not return anything, we cannot do the opposite. \
+We cannot use their "void" returning value to store it in VALUE ZCEs as we saw in previous chapters. \
+The only way we can call void functions is by using the VFC_VFC ZCI (which is basically the same syntax as for non-void functions calls in VALUE ZCEs).
+" z Figure 45
+//considerating the same void functions "f" and "g" as before
+...
+
+//adding a non-void function "h" as well
+byt h() { ret `05 }
+
+
+
+//calling void "f"
+f(5) //this ZCI is a VFC_VFC
+
+//calling non-void "h"
+h() //returned value will be lost (=> Compilation warning)
+
+//using void "f" in VALUE ZCE
+byt b = f(3) //makes no sens, a VALUE ZCE of type "byt" is expected (=> Compilation ERROR)
+
+//passing void parameters as input
+g( f(3) ) //"g" is expecting to have an "int" parameter
+          //but f is "void" so the result of "f(3)" is not a correct value
+          // => Compilation ERROR as well
+"
+p As you might have noticed, we often use trigrams "VFC" for "\bV\boid returning \bF\bunction \bC\ball" and "!VFC" for "non-\bV\boid returning \bF\bunction \bC\ball". \
+However the ZCI VFC_VFC is detected if a function is \ucalled\u as void, whatever return type we have. \
+This is mainly all we could say about void returning functions.
+
+
+t3 Self call
+
+p Some of you may find that chapter a bit boring as we did not cover really \uZ specific\u things until now. \
+Alright then, it is time to see something new, or at least, not very common as I have never seen such thing like that elsewhere : the \bself call\b. \
+Let me explain.
+
+p When a non-void returning function is called as void (using a VFC_VFC ZCI), we say that this function is "called in \bself mode\b". \
+This opposes to the calls in "\bregular mode\b" in which we use the returning value to put it somewhere else. \
+We say such thing supposing that if we call a function in \uself mode\u, the function's content only affects what it has in itself (parameters) \
+whereas in \uregular mode\u, it affects the output only.
+" z Figure 46
+//declaring a non-void function
+byt f(int a) { ... }
+
+//calling "f" in self mode
+f(5)
+
+//calling "f" in regular mode
+byt b = f(4)
+"
+
+p Well, something is missing here. \
+Actually, if you do such thing, your compiler will raise a compilation warning as we did not specify our function as explicitely self callable. \
+We do such thing by using the half-keyword \mself\m as last function parameters. \
+It is a half-keyword because this word is only a keyword when used in this context but you can use it as regular name anywhere in your code without conflict, even in function name.
+" z Figure 47
+//declaring a regular non-void function
+byt f(int a) { ... }
+
+//declaring a non-void function self-callable
+byt g(int a, self) { ... }
+
+//calling "f" in self mode (=> Compilation warning as we did not use the return value)
+f(5)
+
+//calling "g" in self mode (no Compilation warning as it is self-callable)
+g(4)
+"
+
+p As you can see, adding this keyword is like adding a parameter but we don't have to give it neither a type or value. \
+It is just a keyword, not treated like a real parameter. \
+By the way, remember that if we have parameters with default values, we must put them at the end, so in that case, where do we set our self keyword ? \
+The answer is : \uyou must put it at the very end\u (last parameter).
+
+p Now that we presented the syntax, it is time to talk about the reason of that feature (not very useful for the moment). \
+Okay, first, let's clarify something : "self" \bis\b a parameter, even a default parameter, constant, of type \mboo\m and defaulted to literal value \mfalse\m.
+
+p That means we can use this "self" data item like every other parameter in our function. \
+That also mean that we can't have another parameter named "self" in self-callable functions (seems obvious). \
+However, as we said, in regular functions, that makes no problem to use that name as parameter as we are completely out of the scope of self-calls. \
+\cff0000\bI insist on that : There is a big difference between a function with a parameter named "self" and a self-callable function !!!\b\c \
+The next paragraph will tell you why.
+" z Figure 48
+//declaring a self-callable function
+byt f(int a, self) { ... }
+
+//declaring a regular function with a parameter named "self"
+byt g(int a, boo self=false) { ... } //"g" is NOT self-callable
+
+//However, in both cases, the local data item "self" exists and can be used.
+"
+
+p You may have guessed the most interesting part of self-calls now : \
+when a self-callable function is called in self mode, that special parameter is set to value \mtrue\m. \
+Else, it is kept unset (so defaulted to \mfalse\m). \
+That behavior has the effect of allowing your function to work differently depending on how you call it without having to specify anything manually at each call.
+
+p The information of the "self" parameter is provided by the compiler at compile time. \
+This reduces the risk of making mistakes and also allows much more operators mechanisms (that we will see in the next chapter). \
+\bHowever, this replacement is only effective on self-callable functions !\b. \
+In every other cases, even if you have a "self" parameter, its value will not be affected.
+
+l Here is a typical example of self-call advantage :
+" z Figure 49
+//declaring a structure type
+typ myStc { byt fieldA, byt fieldB }
+
+//declaring a self-callable function "setFieldA"
+myStc setFieldA(myStc s, byt valueToSet, self) {
+    myStc target
+
+    //SPOILER: We have not seen IF statements for the moment
+    if self { //using "self" like any other data item
+        target   = s                              //self-call => target parameters themselves
+        s.fieldA = valueToSet                     //             (concentrating on parameters themselves)
+    } els {
+        target   = myStc { valueToSet, s.fieldB } //regular call => create a new element as target
+    }                                             //                (concentrating on output)
+
+    //returning corresponding target
+    ret target
+}
+
+
+
+//let's declare some things
+myStc a = myStc { `03, `04 }
+myStc b = myStc { `03, `04 }
+myStc c = myStc { `03, `04 }
+myStc d = myStc { `03, `04 }
+
+//calling in regular mode
+myStc ext = setFieldA(a, `ff) //Here, "a" is NOT affected by the value replacement (keeping the same value).
+                              //However, the value returned is another element with the altered value.
+                              //Execution is EXTERNALLY oriented.
+
+//calling in self-mode
+setFieldA(a, `ff) //Here, "a" is affected by the value replacement of its fieldA (now set to "myStc { `ff, `04 }").
+                  //The returned value is "a" itself but we don't really care about this (it could be anything).
+                  //Execution is SELF oriented.
+
+//forcing regular mode
+setFieldA(c, `dd, self=false) //Same thing as the first call except that the output value is lost.
+                              //"c" is not affected neither by the way => Useless call + POTENTIAL MEMORY LOSS
+
+//forcing self-mode
+myStc ext2 = setFieldA(d, `ee, self=true) //Same thing as the second call except that the altered value is also
+                                          //returned into "ext2".
+                                          // => "ext2" & "d" refers to the same memory content !
+"
+p As we said before, if our function was not self-callable, the 2 first cases would have do the same thing (externally oriented). \
+However, \ubecause it is self-callable\u, the compiled is able to set the "self" parameter value.
+
+p The 2 last cases are breaking the fundamental logic of self-calls so \bI recommend not to use them\b or be very careful \
+(especially when in concerns memory allocation). \
+You may say : even in those typical examples, that feature does not bring a huge thing, \
+it could have been skipped if it was just made for that kind of purpose. \
+We can do the same by using a regular parameter and giving it a value manually at each call.
+
+p At the very beginning, self-callable functions only concerned a special kind of functions that are \boperators\b. \
+That feature has been extended to every function as it offers a shortcut notation and avoids mistakes when setting the value of the self parameter. \
+We will see operators in the next chapter so you will be able to understand the power of such a thing. \
+I encourrage you to follow that documentation step by step in the correct order, \
+especially when dealing with operators because there is a huge amount of thing to know before getting into some features.
+
+
+t3 Implicit cashting
+
+p In a previous chapter we talked about the principle of "type cashting" in Z when having "type mismatch" between a data item and its assigned value. \
+We have seen that, depending on the compilation option IMPLICIT_CASHT_ALLOWED, the compiler could implicitly add a cashting operation \
+to convert the value into the correct type before assigning it. \
+When calling a function (void or not), this phenomenon is also applicable to the VALUE ZCEs given as input parameters.
+
+p Still depending on the same compilation option, the compiler will implicitely casht the VALUE ZCEs given in a function call to the correct types required. \
+Let's see an example of this :
+" z Figure 50
+//declaring a function that requires parameters (int,byt,flt)
+voi f(int a, byt b, flt c) {
+    ...
+}
+
+//calling f with VALUE ZCEs of wrong type (shr,dbl,lng) => each will be cashted in their corresponding type
+f(5s, 33.459838, -1_123_500)
+"
+
+p That's it for regular functions. \
+We covered all that concerns functions in general but we are far from having covered the subject. \
+There are still plenty of things to say but this concerns specific kind of functions that we will see in the next sections and chapters.
+
+
+
+t2 Methods
+
+p The ZPL mainly contains 2 features that can help you finding your way in huge programs with a lot of functions. \
+Those things are also great tools to guide programmers into more precise naming and cleaner organizations. \
+The first feature is the \umodularity\u as we saw previously : code can be segmented into abstract blocks and that concerns both \umemory\u and \uexecution\u. \
+The second main feature for organizing Z code concerns execution only and it is related to \utypes\u : \bmethods\b.
+b
+
+t3 General
+
+p Until now, the functions we declared were \bglobal\b, that means we declared them in \uglobal\u scope and they are accessible by just using their name as is. \
+There is another kind of function that can be declared in Z, more specific than the global ones : \bmethods\b. \
+If you remember, in the previous chapters, we saw that types have a \mmethods\m attribute. \
+A method is a function declared specifically for a given \utype\u.
+
+l We declare a method using the targetted type followed by a \ufield access symbol\u (\m.\m) as prefix in function name:
+" z Figure 51
+byt int.myFunction() { //method "myFunction" for type "int"
+    ret `0a
+}
+
+byt shr.myFunction() { //same thing for type "shr"
+    ret `0b
+}
+"
+
+p If you remember, functions can only be called in global scope unless it is \bconstant\b. \
+Until now, we only declared variable ones so we couldn't actually call them as we did in our examples. \
+To be more correct, in the following examples, we will use a function to represent the current execution of our function calls.
+
+p Getting back to methods : Methods are made \bfor\b elements of their type. \
+They are meant to operate some actions on any element of the concerned type. \
+Therefore, we can't call them using their name only like regular functions, we must give something of the specific type as well. \
+The easiest way to call a method is to use a data item as input of the concerned type :
+" z Figure 52
+//declarations
+byt int.myFunction() { ret `0a } //method for type "int"
+byt shr.myFunction() { ret `0b } //same method for type "shr"
+
+
+
+//execution
+voi execution() {
+
+    //calling using a data item
+    int i       = 7
+    byt result1 = i.myFunction() //calling int.myFunction() using data item "i"
+
+    //same thing using a "shr"
+    shr s       = 8s
+    byt result2 = s.myFunction() //calling shr.myFunction() using data item "s"
+}
+"
+p As you can see, to call a method, we must use a \ufield access symbol\u directly after an element of the required type \
+and then we use the same syntax as for regular functions. \
+We skipped mentionning the type of the method before using it, \
+the compiler knows which method to call because of the type of the element that calls it.
+
+
+t3 Inheritance
+
+p When creating a type, it has no specific methods of its own. \
+But if you remember, types supports inheritance so, as a consequence, child types can also access to their parent's methods \
+(still depending on the METHODS_SUPPORTS_INHERITANCE compilation option).
+" z Figure 53
+byt int.myFunction() { ret `0a } //method for type "int"
+
+//create a child type of "int"
+typ intChild int
+
+
+
+//first execution
+voi execution1() {
+
+    //calling method from parent
+    intChild ic = 5
+    byt result1 = ic.myFunction() //myFunction does not exist for this type => check in parent type's methods
+                                                                            // and so, call int.myFunction()
+}
+
+
+
+//declaring a specific variant for type "intChild"
+byt intChild.myFunction() { ret `a0 }
+
+
+
+//second execution
+voi execution2() {
+
+    //now using its own method
+    byt result2 = ic.myFunction() //same text as line 13 but different behavior
+}
+"
+p As you can see, the parent's methods always goes in second place over the own methods of a type. \
+You can see the parent type's methods as a "rescue option" or a "more generic version" of the real type. \
+It can also be a good way to organize your code to create child types of already existing elements \
+just to be able to create more specific methods more adapted to particular purposes.
+
+p This is also basically how declinated type methods work. \
+When a declinable type is created, every declination is a child type of the undeclinated instance. \
+That allows you to create specific methods for a particular declination, but also generic methods \
+accessible by every declination as well as the undeclinated one.
+" z Figure 54
+//declarations
+typ table[1] { //create a declinable type "table" of degree 1
+    int    length,
+    ptr[0] data    //pointer of the specific type
+}
+
+//create a method for the undeclinated version (just "table")
+voi table.doSomething() { ... }
+
+//create a method for the specific int declination
+voi table[int].doSomething() { ... }
+
+
+
+//execution
+voi execution() {
+
+    //the generic method "doSomething" is used by default
+    table[byt] t1 = { 0, NULL }
+    t1.doSomething()
+
+    //however, for an element of the specific "int" declination, the specific method will be used
+    //(should be more appropriate than using the generic one)
+    table[int] t2 = { 0, NULL }
+    t2.doSomething()
+}
+"
+
+p In object oriented programming languages, we have the same kind of thing with object's methods and "overriding" mechanisms. \
+Also, in most cases, the keyword \msuper\m is used to call the method of the parent type even if an overriding method exist. \
+In Z, we don't have such keyword : \
+In the next chapter we will take a look at the \uexplicit cashting operator\u thanks to what you can call any method of any type on any value you want \
+(including calling parent methods instead of child overrides).
+
+
+t3 Source element
+
+p To call methods, we used what we call a "source element" (a data item until now). \
+This source element is not explicitely passed as parameter in methods however they can access to it actually. \
+In modern computing languages, we often call this source element an "object" as it matches with Object Oriented Programming (OOP) principles. \
+In Z, there is no "objects" but "types" are a kind of fitting to this role a bit.
+
+p To access to the source element of a method from the inside, you must use the \mtyp\m keyword. \
+\cff0000\bHowever, be very careful on your compiler options when playing with method's source elements !\b\c \
+This part is not that obvious so please be very attentive.
+
+l There are 2 cases to consider in methods :
+- Methods for \bstructure\b types
+-
+- Methods for \bprimitive\b types
+-
+
+p First, let's take a look at the easiest ones : \
+In methods for \ustructure\u types, the \mtyp\m keyword always targets a pointer on the source structure. \
+In Z, since data items containing structures are \ualways\u pointers, that means that we can use it the same way as outside the method.
+" z Figure 55
+//declarations
+typ myStc { int f1, int f2 } //declare a structure
+
+//create a method to access to f1
+int myStc.getF1() {
+    ret typ.f1      //access to the source element using keyword "typ"
+}
+
+
+
+//execution
+voi execution() {
+
+    //create a data item of type "myStc" (implicit declaration)
+    s = myStc { 9, 5 }
+
+    //we can access to the fields of s by just using the field access symbol
+    f1_field = s.f1
+
+    //but we can also use the method declared before
+    f1_field = s.getF1()
+}
+"
+p In this example, we accessed to the source structure \ms\m inside method \mgetF1\m by using the keyword \mtyp\m. \
+Because \mmyStc\m is a \b\ustructure\u\b type, we can use the \mtyp\m keyword as we had the data item \ms\m directly. \
+That's why we could access to its field \mf1\m at line 6.
+
+p It is very important to consider that the source element passed inside the method does \bnot\b contain a copy of the structure. \
+Everything you will do on \mtyp\m will be applied on the source element as well.
+" z Figure 56
+//declarations
+typ myStc { int f1, int f2 } //declare a structure
+
+//create a method to access to field f1
+int myStc.getF1() {
+    ret typ.f1
+}
+
+//create a method to WRITE into field f2
+voi myStc.setF2(int valueToSet) {
+    typ.f2 = valueToSet
+}
+
+
+
+//execution
+voi execution() {
+
+    //same as previously
+    s = myStc { 9, 5 }
+
+    //setting field f2 of s
+    s.setF2(6)              //now s is { 9, 6 }
+}
+"
+p You see in that example that \ms\m is affected because it is a structure and so, in its methods, \
+the \mtyp\m keyword directly refers to its content (as a pointer does). \
+Now, as for primitive methods, things are a little bit different.
+
+p I repeat and insist but it is important for you to know that primitives, oppositely to structures \
+are \bnot\b pointers to data somewhere but they \bare\b them, they hold their actual data in themselves. \
+Therefore, when calling a function, parameters can only be \bcopies\b of such values given at function call. \
+This makes a huge difference is how primitives and structures must be treated in functions in general.
+" z Figure 57
+typ myStc { int f1, int f2 }
+
+//create a function that modifies its parameters locally
+voi f(myStc a, shr b) {
+    a.f1 = -9
+    b    =  8s
+}
+
+
+//execution
+voi execution() {
+
+    //create both PRIMITIVE and STRUCTURE
+    shr   p = 1s
+    myStc s = myStc { 2, 3 }
+
+    //calling f
+    f(s, p)
+
+    //now p is still "1s"
+    //but s is now { -9, 3 }
+	// Only the address of s has been copied in function's parameters.
+    // For p, the value itself has been copied, it is not a pointer.
+}
+"
+
+
+
+t2 Execution structuration
+
+p In this chapter we used samples of function declarations in global scope which is a correct thing in term of ZCS. \
+However, we often used the global scope to call them which, I recall, is not allowed in the ZCS (VFC_VFCs or ASG_ASGs with function calls). \
+We can only call functions inside others (at least non-constant ones). \
+That can appear quite weird and limiting isn't it ?
+
+p The reason we did apply this rule is hidden under a very important notion we did not cover yet : the "main" execution. \
+Now please take a minute to consider the following because \uyou will \bneed to know\b this\u and it is \unot that hard to understand\u actually. \
+So please take a seat and look at that before going further and being frustrated with compilation errors for the wrong reasons.
+
+t3 Main
+
+p When launching a program, we need to have an entry point for execution, somewhere to \c0000ffstart\c. \
+On UNIX systems, the kernel will look for a region (which is nothing more than a function) with a specific name and then start our execution from there. \
+I am pretty sure most of you who have already programmed a bit would say : "Obviously, you are talking about the \bmain\b function !". \
+Well, in that case, too bad for you, you missed the point. \
+You don't need a "main" function to make your program executable on UNIX systems, instead you require a \m_start\m one. \
+This is the function your kernel will look for to start executing your code.
+
+p The reason most of programming languages use a "main" function is to be able to do things before user execution and also format its parameters under a better format. \
+Also, using the same standard allows any system/kernel to have its own preferences, without affecting the code. \
+For the same reasons, in Z \bLLIs\b, we also require to have a "main" function as well to be used as first and only entry point.
+
+p It is important to note that every linking with a possible "_start" region or whatever will be made by the \bLLI\b actually. \
+The ZPL does not care about such mechanisms, you can totally compile a Z code without any execution function like that. \
+This is basically what we do when creating shared libraries, we don't have a main execution but only portions of code (similar to a raw list of functions and constants).
+
+p However, when you will try to make a runnable code, your \bLLI\b will look for a "main" function to link it properly to your system's requirements. \
+Then, you will have to follow the rules of your LLI to know exactly how this works. \
+Fortunately, if you use the LLIs I worked on, here is the standard I applied for declaring a "main" function :
+" z Figure 58
+byt main(tab[str] args) { //Giving no parameter is also possible.
+    ret `00               //In the other case only one is allowed and must be of type "tab" or "tab[str]" (name is free).
+}                         //The return value can be either "byt" or "voi" (then considering it as void-calling it).
+
+// The parameter in input is a list of strings corresponding to the arguments given when executing the program.
+// If not defined, it will simply be ignored.
+// When reaching the end of that main function, the returned value will be the one returned by the application itself.
+// If no one is set, return value `00 is assumed.
+"
+" bash Figure 59
+#Example in a terminal:
+
+  #compiling my program
+  zcc myProgram.z       #assuming it generates a runnable file : "myProgram"
+
+  #executing it with arguments
+  ./myProgram arg1 arg2 arg3... #(arg1,arg2,arg3...) will be passed into myProgram under the first parameter of "main".
+
+  #getting return code of myProgram
+  echo $? #will print "0" in that case
+"
+p By the way, you may wonder what happen if you declare a "_start" function in your runnable code. \
+Will it override the custom LLI creation ? \
+Well, actually, Z function names are not taken as is in compilation. \
+A naming mechanism guarantees to your LLI that you are dealing with functions given by a Z code instead of anything else. \
+So the answer is no, you will just create another function that will be named differently at the end, that's it.
+
+
+t3 Functionnal programming
+
+p Knowning that, we can go back to our previous examples when we called functions in global scope. \
+We said that, according to the ZCS, we can only call functions inside of others (or itself atcually). But why ? \
+Global scope is meant to hold a certain number of \ucode blocks\u (functions) as well as \ugeneric constant values\u for the whole program \
+(The rest of the declarations such as modules, types... are only useful for the compiler by the way).
+
+p Calling a function is not a \ucompile time\u action, it is done at \urun time\u so we move our execution through the correct region of the code. \
+Plus, as we said, the first execution of our code will be located in the "main" function. \
+That means, if a function is called outside another one, it can never be called.
+
+p By extension, no runtime interaction can be executed in global scope. \
+That's why we do not allow any function call in global values as well. \
+This is what we call the "functionnal programming". \
+There you go for the execution structuration of Z programs.
+
+b
+p Until now, we used pretty boring examples because we did not really operate dynamic content. \
+We only used fixed values to apply them somewhere explaining how data can access to/from functions. \
+To make the thing more interesting, we could use combinations of parameters to produce something different depending on the input for example. \
+Infact, the reason we did not use such dynamism until now is because most of that computation is only possible \
+thanks to another specific kind of function, subject of the next chapter.
+
+
+
+
+b
+l \lZPL_Features-SegregateAndAggregate\lPrevious page\l\ar\lZPL_Features-Operators\lNext page\l

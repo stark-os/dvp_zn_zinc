@@ -1,0 +1,470 @@
+t1 ZPL Features : Memory
+
+t2 Memory organization : TYPEs
+
+t3 Regular TYPEs
+
+p Types are the most basic Z Code Elements (ZCE). \
+A type is a \bfixed data structure patern\b that can be used to manage any kind of data in a specific way. \
+By default, in Z, there are 12 built-in types : \mboo\m, \mbyt\m, \mshr\m, \mint\m, \mlng\m, \mubyt\m, \mushr\m, \muint\m, \mulng\m, \mflt\m, \mdbl\m and \mptr\m. \
+They are called \i"root types"\i.
+
+p You may find lots of other types available in your Z standard library but you can also create yours. \
+To declare new types, you must use a type declaration ZCI. \
+Those ZCIs are only allowed in GLOBAL scope.
+
+p Before getting into type declaration, you must know that there are 2 ways of declaring a type in Z. \
+You can either use the \i"type copy"\i syntax or the \i"structures declaration"\i syntax. \
+Here are some examples :
+" z figure 5
+//A 3-fields ZCI starting with keyword "typ" means : TYPE DECLARATION
+
+//3rd field is a name => type-copy syntax (new type "myNewType" from the already existing "ubyt" type)
+typ myNewType ubyt
+
+//3rd field is a braces includer => structure declaration syntax
+typ myNewStructureType { //members of a structure types are called "fields"
+    shr  a, //1st field of myNewStructureType
+    int  b, //2nd field
+    ulng c  //3rd field
+}
+"
+p You see that a type can only be declared from already existing types. \
+Declaring a \i"copy type"\i means creating a type based on an already existing one. \
+Declaring a \istructure type\i (or just \u"\istructure\i"\u) means creating a assembly from a collection of already existing types. \
+Basically, every type in Z is declared from older types until the very firsts built-in that we just saw.
+
+p The starting \mu\m in root types stands for "\bu\bnsigned" meaning they will only be used to represent positive values. \
+However, in this documentation, I will almost always use their signed equivalent for practical reasons (\mbyt\m, \mshr\m...). \
+Depending on your standard library and how your compiler is configured, you may struggle to operate between signed and unsigned types. \
+This kind of mixity is not always possible and often leads to pretty hard issues when dealing with large numbers. \
+As a general advice, I would recommend you to only use unsigned types together, signed types together, and floating point types together, but not mixing them.
+
+p You can declare types using both syntaxes as you want to create your own data patterns. \
+Structures can be declared from other structures and copies can be made from structures :
+" z figure 6
+typ alpha {
+    byt b,
+    byt c
+}
+
+typ beta {
+    alpha d
+}
+
+typ gamma beta
+typ delta alpha
+
+typ epsilon {
+    gamma e,
+    delta f
+}
+"
+
+p Remember what we saw in the previous ZPL sump up table, types have 6 attributes : \udefault value\u, \umethods\u, \uname\u, \unature\u, \uparent\u and \usize\u. \
+First let's focus on the \unature\u attribute. \
+A type can only have \c0000ff\bprimitive\b\c or \cff0000\bstructure\b\c as nature. \
+As you might have guessed, as soon as a type is declared using the structure declaration syntax, it is a \b"structure"\b so it is written in its \unature\u attribute. \
+However, if a type is declared using the type-copy syntax, its \unature\u will be taken from the source type given. \
+That means that a copy of a \c0000ffprimitive\c becomes a \c0000ffprimitive\c. \
+But as soon as a \cff0000structure\c is created, its copies can only be \cff0000structures\c as well. \
+The 12 root types are considered \c0000ffprimitive\c by the way.
+
+p Now, let's take a look at memory usage. \
+The \usize\u attribute of a type gives the information of how many bytes are concerned by an element of this type. \
+A \c0000ffprimitive\c has the same \usize\u as its original type. \
+A \cff0000structure\c type has at least the \usize\u of the sum of each of its fields' \usizes\u. \
+The size of each root types depends on the targetted architecture (and so LLI).
+
+l However, here is a table of the recommended sizes for root types on both 32 & 64 bits architectures :
+"
+.-----------+-------------------.
+|           | Recommended sizes |
+| Root type |---------+---------|
+|           |   32b   |   64b   |
++===========+=========+=========+
+|    boo    |    1B   |    1B   |
+|  byt/ubyt |    1B   |    1B   |
+|  shr/ushr |    2B   |    2B   |
+|  int/uint |    4B   |    4B   |
+|    flt    |    4B   |    4B   |
+|  lng/ulng |    8B   |    4B   |
+|    dbl    |    8B   |    4B   |
+|    ptr    |    8B   |    4B   |
+'-----------+---------+---------'
+"
+
+p The \uname\u attribute of a type is given in the second field of the declaration ZCI and it must be unique : A type cannot be declared twice. \
+As for the \uparent\u and \mmethods\u attributes, here is an an important thing we must see : Z types supports inheritance. \
+Every time a type is declared using the type-copy syntax, it becomes a child type of its source. \
+Depending on whether the compiler option METHODS_SUPPORTS_INHERITANCE is activated or not, this behavior can have an impact on type's methods.
+
+p If active, that means that a element of a given type can access to every method of its parent type as they were its own, \
+and this recursively until the very first parent defined (that can be either a root element or just a structure by the way). \
+We have not seen what are methods yet but this is not important for the moment, we will see this later.
+
+
+t3 TYPE declination
+
+p One last thing we must see before passing to another ZCE is \btype declination\b. \
+To allow, more specific links between types, it is possible to create what we call "declinations" to Z types. \
+This doesn't change the real nature of your type but only makes it "virtually" related to another Z type as a specific variant. \
+On the other hand, there are rules to use type declinations that relies on the type declaration itself : let me explain.
+
+p When declaring a type, the name of the new type to declare can be followed by a brackets includer. \
+Inside this brackets includer, we only allow to have a positive integer number in decimal format (\m0123456789\m). \
+This number defines the type declination \bdegree\b. \
+From now on, the rest of our declaration is able to use other types that are \unot explicitely named\u but only given as indexes from 0 to the degree-1. \
+
+p We call these unnamed types "implicit sources". \
+They are not required in the type declaration in itself, but if necessary, they can be used using indexes as we just said. \
+When a type has been declared with a certain declination degree, we can use it by giving a list of types to be included to it to resolve the implicit sources.
+
+l This notion is not always trivial to understand so let's get into some examples :
+" z Figure 7
+//declare a type using the "structure declaration" syntax
+typ myDeclinableType[2] { //degree is 2 so we can use indexes "0" & "1"
+    lng a,
+    0   b, //index "0" means the first given type
+    1   c  //index "1" means the second given type
+}
+
+//available types are :
+myDeclinableType[byt,byt] //degree is 2 so we must give 2 types as implicit sources
+myDeclinableType[byt,shr]
+myDeclinableType[lng,int]
+...
+
+
+
+//declare a regular type using the "type-copy syntax"
+typ myLngIntType myDeclinableType[lng,int] //here, myLngIntType is NOT declinable
+
+
+
+//declare a declinable type using the "type-copy" syntax
+typ myInvertedDeclinableType[2] myDeclinableType[1,0] //"1" & "0" are indexes of myInvertedDeclinableType
+
+//available types are :
+myInvertedType[byt,byt] //same as myDeclinableType[byt,byt]
+myInvertedType[byt,shr] //equivalent to myDeclinableType[shr,byt]
+myInvertedType[lng,int] //equivalent to myDeclinableType[int,lng]
+...
+
+
+
+//also another example :
+typ myDeclinableTypeWithBytAsFirst[1] myDeclinableType[byt,0] //here, myDeclinableTypeWithBytAsFirst is of degree 1
+                                                              //but myDeclinableType is still of degree 2
+                                                              //index "0" is of myDeclinableTypeWithBytAsFirst
+//available types are :
+myDeclinableTypeWithBytAsFirst[shr] //equivalent to myDeclinableType[byt,shr]
+myDeclinableTypeWithBytAsFirst[int] //equivalent to myDeclinableType[byt,int]
+myDeclinableTypeWithBytAsFirst[byt] //equivalent to myDeclinableType[byt,byt]
+...
+
+
+
+//more complicated examples of available types :
+myDeclinableTypeWithBytAsFirst[myDeclinableType[int,lng]] //equivalent to myDeclinableType[byt,myDeclinableType[int,lng]]
+myDeclinableType[
+    myDeclinableType[byt,shr],
+    myDeclinableType[int,lng]
+]
+myInvertedType[ //same thing as the previous one (line 46)
+    myDeclinableType[int,lng],
+    myDeclinableType[byt,shr]
+]
+...
+"
+p As you can see, when calling a declinated type, we give the list of the types we want to use for declination. \
+The implicit sources of a declinable type will be associated by their indexes in the given list (0 for the first one, 1 for the second one, ...). \
+It is important to know that a declinated type has \bno real link\b with its implicit sources, even when resolved. \
+Everything related to the implicit sources remains completely independant with it.
+
+p Indeed, type declination is purely a \unaming related feature\u that allows you to create additionnal types for specific behavior. \
+More precisely, each time a declinated type is called, a specific type is declared with a name generated at compile time. \
+There will be no link between that newly created type and its implicit sources because it will be a completely different and independant name.
+
+p Another thing about type declination is that every Z type has an "undeclinated" version of itself. \
+For types without declination degree given, they already are undeclinated, no problem. \
+For the others, instead of giving the list of the types to set as implicit sources, we can just skip this and consider having a regular undeclinated type. \
+This way, we use the "undeclinated" version of our type. \
+
+p Of course, when using an undeclinated type, we can have implicit sources to resolve to have a complete consistent type. \
+To fix this, every implicit source of a non-declinated type is set with the value given in compiler option UNDECLINATED_IMPLICITSOURCE. \
+It is very important to \
+Also, every declinated type is a child type of its undeclinated one. \
+
+l As an example, here is how the common type "map" \ucan\u be declared :
+" z Figure 8
+//Before all, let's say compilation option UNDECLINATED_IMPLICITSOURCE is set to "ubyt" (default value in ZCC).
+
+//a list type structure, declination degree 1
+lst[1] {
+    ...
+}
+
+//maps can be of any kind of keys to any kind of values, declination degree 2
+typ map[2] {
+    lst[0] keys,  //lst[?], we have an implicit source to resolve to give a complete type to "keys"
+    lst[1] values //same thing
+}
+
+//declinated maps are declared so we can use them :
+map[int,shr] will have {lst[int] keys, lst[shr] values} => implicit sources resolved
+...
+
+//however, undeclinated type "map" also exists so we can use it
+map ... //because compilation option UNDECLINATED_IMPLICITSOURCE is set to "ubyt",
+        //it will be resolved as it was a map[ubyt,ubyt]
+        //
+        //HOWEVER, IT IS NOT THE SAME TYPE AS map[ubyt,ubyt] !!!
+        //Even if it has the same content, they are 2 completely different types !
+        //Moreover, "map[ubyt,ubyt]" is a child type of "map".
+        //
+        //This difference mainly affects their methods.
+        //Methods of "map" are accessible by any of its declination,
+        // however methods of "map[ubyt,ubyt]" are only accessible to specific "map[ubyt,ubyt]" elements.
+        //
+        //This is the main goal of undeclinated types.
+        //They have been made to allow declaring generic methods between every declination.
+"
+p Note that a declination degree of 0 is possible and it means "no declination" as if it was an undeclinable type. \
+Actually, to be more accurate, at compile time, every type has a declination degree, it is only defaulted to 0 if not given explicitely.
+
+
+t3 Default values of TYPEs
+
+p We are now arriving to the last part of type declaration : attribution of \udefault values\u. \
+When declaring a type, we can also give some default values that will be applied on instantiated elements. \
+To completely understand this part, we must see some other ZCEs so we will just talk about the syntax for now. \
+Default values can be given in type declarations using what we call an \b\uassignment symbol\u\b. \
+This symbol is \bVERY IMPORTANT\b because it is used everywhere in lots of ZCEs so please remember this definition :
+
+l An assignment symbol is an equal sign (\m=\m) not directly followed by another one.
+
+p In type declarations, depending on the syntax you use, you can have one or more assignment symbols to give one or more default values. \
+If you are using the "type-copy" syntax, only one default value can be given. \
+An assignment symbol can be added at the end of line as delimiter. \
+In other cases, for the "structure declaration" syntax, every field can have its own default value.
+
+l You can take a look at those examples :
+" z Figure 9
+//type-copy syntax
+typ myType byt = VALUE //content marked as VALUE is a ZCE that we will see later
+
+//structure declaration syntax
+typ myType2 {
+    shr field1 = VALUE,
+    int field2 = VALUE,
+    lng field3          //no default value for this field
+}
+"
+p We will discuss about what can be those values later. \
+Just note that they must be \bconstant\b.
+
+
+
+
+t2 Memory storage : DATA ITEMs
+
+t3 Definition
+
+p Now that we talked about types, we can focus more easilly on the most essential part of programming : \bmemory management\b. \
+This is the very first base of every programming language & feature, even over execution management, permissions or whatever. \
+In Z, we create/delete/edit memory blocks using what we call \uDATA ITEMs\u. \
+They are both the simplest and the most used ZCEs in Z.
+
+p A DATA ITEM has 5 attributes : \ubehavior\u, \uname\u, \uscope\u, \utype\u, and \uvalue\u. \
+Let's cover the simplest parts first : The \ubehavior\u attribute can only be CONSTANT or VARIABLE. \
+Its is defining whether the value stored in the DATA ITEM can be modified only once (CONSTANT) or several times (VARIABLE). \
+This attribute is only applicable at compile time. \
+There is no guarantee that a CONSTANT DATA ITEM value cannot be modified multiple times during execution.
+
+p We already talked about \uscopes\u and \utypes\u before. \
+The \uname\u attribute of a DATA ITEM is given by the user or sometimes generated by the compiler : it identifies the DATA ITEM from the others. \
+The \uvalue\u attribute is the data currently stored into the data item (memory block). \
+The size of the allocated memory block is given by the \utype\u.
+
+p You must know that DATA ITEMs are the \u\bonly\b\u memory elements you can manipulate in a Z code. \
+It can contain every kind of data you want actually, from tiny little numbers to high quality pictures \
+or even 3D objects with their physical characteristics, sounds, everything a computer can store and manipulate.
+
+p The lifecycle of a DATA ITEM is quite simple. \
+As for types, DATA ITEMs must be \udeclared\u first to be used. \
+Then, we can read/write data from/into it. \
+Finally, at the end of its scope, it is automatically released so we can't access to it anymore.
+
+
+t3 Explicit declaration
+
+p First, we must see how to declare a data item before going further. \
+There are several ways of declaring a data item. \
+The easiest one is using a basic DCL_DAT ZCI (explicit data item declaration) like this :
+" z Figure 10
+int alpha //declaring a data item of |type "int"
+          //                         |name "alpha"
+          //                         |scope (seems to be global here)
+          //                         |behavior VARIABLE (by default)
+          //                         |value (undefined ?)
+"
+
+p By doing so, we declared an empty data item with apparently no initial value. \
+At this moment a memory block is allocated to hold the data item value according to its \utype\u size. \
+The inital value to be set in this memory block depends on the \utype\u as well but also on the declaration ZCI. \
+When using a DCL_DAT ZCI as in the previous example, the initial value to be written is the \udefault value\u of the \utype\u. \
+If the type's \udefault value\u has not been set, the allocated memory block will stay the same as initially given by the computer.
+" z Figure 11
+//declaring 2 types
+typ myType      int
+typ myOtherType int = DEFAULT_VALUE
+
+//declaring some data items
+myType      alpha //alpha is allocated with unpredictible value
+myOtherType beta  //beta is allocated with initial value set to : DEFAULT_VALUE
+"
+
+p Now that we can declare data items, it is possible to write into them using ASG_ASG ZCIs. \
+We do so simply by using their names followed by an \uassignment symbol\u, then followed by the value to be written into it.
+" z Figure 12
+int alpha     //declaring the same data item as before
+alpha = VALUE //writting value : VALUE
+"
+
+p As we saw on Figure 10, data items have VARIABLE behavior by default. \
+To declare a CONSTANT data item, we must use the "cst" keyword before the type in the DCL_DAT ZCI. \
+Declaring constants instead of variables is a good way to protect values in data items for being overwritten by something else. \
+Also, to make it simpler, we call VARIABLE data items just "variables" and CONSTANT data items just "constants".
+" z Figure 13
+int alpha    //variable "alpha"
+cst int beta //constant "beta"
+
+//However, remember that a constant cannot be modified (correct word is "assigned") multiple times !
+//If you try to do so, you will get a compilation error.
+
+alpha = VALUE1 //first assignment into "alpha" : OK
+beta  = VALUE2 //first assignment into "beta"  : OK
+
+alpha = VALUE3 //second assignment into "alpha" : OK
+beta  = VALUE4 //second assignment into "beta"  : COMPILATION ERROR
+"
+
+p Another syntax for declaring data items is a shortcut for both declaring \band\b assigning an explicit value at the same time. \
+It is also considerated as an ASG_ASG ZCI :
+" z Figure 14
+int alpha = VALUE //declare a variable "alpha" + set value to : VALUE
+"
+p By the way, depending in which scope you declare your data item, you will be able to give it a variable value or not. \
+To make things clear, variable values are not allowed in global scope so variable value will only assignable in local scope (function or statement). \
+Things about values will going to be clearer in further chapters.
+
+
+t3 Implicit declaration
+
+p One last way of declaring data items in Z is by using \bIMPLICIT TYPE RECOGNITION\b. \
+For the moment, we only saw what we call EXPLICIT declarations. \
+Infact, we told the compiler we want to declare a data item with a specific type (\mint\m in our examples). \
+But the ZPL also allows you to use a shorter and more implicit syntax to let the compiler guess which type to use in a data item.
+
+l Let's see an example :
+" z Figure 15
+alpha = 6 // Here, we also a declare an "int" variable "alpha" + assign a value to it
+          // We did not mention the type explicitly, the compiler "guessed" it.
+          // Also, this ZCI is still an ASG_ASG
+"
+p At first sight, that looks like we don't need to declare data items before using them. \
+Infact, the syntax is the exact same thing as we are classically assigning to an already declared data item. \
+The thing is that we assigned a value (using a VALUE ZCE) into an non-declared data item. \
+We have not seen what are VALUE ZCEs exactly for now but the thing is that those ZCEs have a \utype\u attribute as well as data items. \
+This is why the compiler can guess which type to use for non-declared data items being first assigned this way. \
+In our example, the compiler knows that this data item is of type \mint\m because the VALUE ZCE has type \mint\m.
+
+p \cff0000PLEASE BE CAREFUL\c, it can be very tricky to differentiate assignments of already declared data items from implicit declarations sometimes. \
+That's a great thing to consider and that's also what makes this syntax a bit \udangerous\u, at least for VARIABLES. \
+Actually, there is no confusion in implict declarations of CONSTANTS because the keyword "cst" must remain :
+" z Figure 16
+alpha = 5    //This can be either :
+             //    Implicit syntax for declaring a VARIABLE of type "int"
+             //    + assigning value 5 to it.
+             //Or:
+             //    Modifying value of the already declared data item "alpha"
+             //
+             // => This syntax can be confusing
+
+cst beta = 6 //This can only be :
+             //    Implicit syntax for declaring a CONSTANT of type "int"
+             //    + assigning value 6 to it.
+             //Else:
+             //    If "beta" already exists, we got a COMPILATION ERROR
+             //    because we can't declare another data item with the same name.
+             //
+             // => This syntax CANNOT be confusing
+"
+
+p The thing with implicit VARIABLE declaration is that you must know if a data item with the same name \
+(constant or variable, it doesn't matter) has already been declared or not before. \
+If a data item with the same name has already been declared before, AND IS STILL DECLARED, \
+then the ZCI will be detected as a regular assignment to that data item. \
+If not, the ZCI will be interpreted as an implicit declaration with type detection from the value given. \
+(Reminder: Data items are automatically undeclared at the end of their scopes)
+
+
+t3 Cashting
+
+p We know how to declare data items with a specific type, but we also know we can give them some default values that also have their own types \
+(used for implicit typing). \
+Now, what if we declare a data item with an explicit type and we give it a default value with a different type ? \
+This phenomenon is very common and we call that a \u"type mismatch"\u :
+" z Figure 17
+byt myBytVar = VALUE1 //let's say VALUE1 is of type 'int' => type mismatch
+
+flt myFltVar = VALUE2 //let's say VALUE2 is of type 'flt' => everything is OK
+myFltVar = VALUE3     //let's say VALUE3 is of type 'dbl' => type mismatch again
+"
+
+p In Z no type mismatch is allowed. \
+However, that kind of syntax is possible thanks to what we call : the \u\bimplicit cashting\b\u. \
+To be more general, what we call \b"cashting"\b in Z is the action of converting an element from a certain type to another one. \
+Usually, in other programming languages, we call that "type casting" but here, \
+we use the expression of "type cashting" because of the \u\bcashting symbol\b\u used in \uexplicit cashting\u. \
+This has nothing to do with money, the truth is that it was the only symbol left in the ASCII table to be assigned to such a highly important operation.
+
+p We will come back on \uexplicit cashting\u and the \ucashting symbol\u in further chapters \
+but now let's concentrate on \uimplicit cashting\u in data item declarations. \
+In our example, we tried to put a value of a certain type into a data item of another type. \
+In that case, the compiler can operate a casht operation on the value you wrote to convert it into the type of the data item. \
+The only condition for the compiler to operate that is to have the compilation option IMPLICIT_CASHT_ALLOWED enabled. \
+If so, implicit casht are made everywhere in your code without warning you; else, you will have a compilation error at every type mismatch.
+
+p Alright, now let's explain how cashting works exactly. \
+The objective of a cashting is to change the type of a value while keeping its data as is. \
+Before going further, you must know that this is not always completely possible depending on the types you are targetting. \
+You can always casht any type into any other, however you may have data loss sometimes. \
+There are 3 possibilities in type cashting : destination type uses more/less/the same memory space as the source type.
+
+p In the first case, the destination type holds data on more bytes than required by the original value. \
+So, the value is written on the lowest significant bytes and the rest of the memory segment is filled with 0. \
+In the second case, the destination type is not enough to hold the full data of the input value so the overflow is cut off (lost) in the output value. \
+Finally, if the types have the same sizes, the data is kept as is.
+
+p \bIt is important to consider that definition of the ZPL type cashting !\b \
+Indeed, in lots of other programming languages, more complex operations are made in some cases such as cashting a floting point value into an integer for example. \
+In Z, the type cashting uses the same mechanisms, whatever type is concerned. \
+We are only dealing with memory sizes and not with value conversion \
+(as an example, in C, \m5.f\m casted into \mint\m makes \m5\m, in Z the equivalent makes \m1084227584\m).
+
+b
+l Before getting into the next chapter, one last note about data items :
+
+p For the more technicals of you, you probably wonder why I am not including a kind of "memory addess" attribute in data items. \
+The thing is that what you know as being a "memory address" in some other programming languages does exist in a certain way in Z \
+under the more generic name of "reference" but you shouldn't focus on this for the moment, we will talk about this later. \
+THERE IS NO OTHER ATTRIBUTE IN A DATA ITEM THAN THOSE DEFINED ABOVE. \
+The only identifier of a data item is, and will forever be, its \b\cff0000name\c\b.
+
+
+
+
+b
+l \lZPL_Features-GeneralConcepts\lPrevious page\l\ar\lZPL_Features-DataRepresentation\lNext page\l

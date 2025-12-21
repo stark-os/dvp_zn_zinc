@@ -1,0 +1,18 @@
+t1 ZPL Features : Precompiler Directives
+
+t2 Precompilation sequence
+
+t3 Items
+
+p \m<item_name>\m.
+
+
+t3 Configuration
+
+p \m#CFG\m \m#!CFG\m.
+
+
+
+
+b
+l \lZPL_Features-CommonDataStructures\lPrevious page\l\ar\lZPL_LLIs\lNext page\l

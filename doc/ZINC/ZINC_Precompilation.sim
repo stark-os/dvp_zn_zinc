@@ -1,0 +1,103 @@
+t1 Precompilation
+
+p There are 3 precompilation steps in ZINC: P1 to P3. The main objective is to \
+provide a more data structured ZCS for compilation instead of raw text files.
+
+p The precompilation process is run on the very first file given to compile. \
+However, its execution is not completely straightforward. These 3 steps will \
+be executed as much as required, depending on dependencies involved in the \
+program, making it a recursive process. More details in step P3.
+
+
+
+
+b
+t2 P1 - Comments and Text
+
+t3 Objective
+
+p The 1st step of the precompiler concerns comments removal and text \
+transformation. The objective is to remove every kind of text that can \
+perturbate further parsing.
+
+p This must be done as the very beginning of everything, because text and \
+comments can contain any kind of information, including complete parts of Z \
+code, precompiler directives or anything.
+
+p These 2 operations must be done at the same time because a string can \
+contain a comment indicator or vice versa... We must know if we are in a \
+comment or in a string to interpret correctly the character we are currently \
+analyzing.
+
+
+t3 Comments
+
+p Nothing really important to say here, just complete removal of everything \
+between single line and multi-line comments. Everything contained in a comment \
+is ignored until its end, even if another sub-comment is involved, an escape \
+character (\m\\\m) is used or anything.
+
+p We can't escape a comment. It is the most powerful syntax tool in the \
+language as it allows the compiler to see or not some part of the original file.
+
+
+t3 Text
+
+p Here, the word "text" refers to both characters and strings as in the Z \
+programming language define them, \uunder their literal representation\u \
+(using simple quotes \m'\m delimiters for characters and double quotes \
+delimiter \m"\m for strings).
+
+p String content is stored as multi-byte sequence to remove any potential \
+syntaxical character from code. To be interpreted as a real string at the end, \
+it is wrapped under the following:
+" z Figure 1
+//original code
+a = "hello"
+
+//after p1 step
+a = str{
+    kind = ^Str.KIND.LIT,
+    dat  = ^Str.lit {
+        len=...,  //length is also computed
+        dat=``... //multi-byte sequence
+    }
+}
+"
+p Characters are also replaced by their corresponding byte sequence. Note that \
+non-ASCII characters raises error as they are to be interpreted as strings.
+
+p Also, escaping character \m\\\m is taken into account in text parsing so \
+that special characters can be ignored (\m'\m or \m"\m for example), and some \
+meta characters can be invoqued (\m\\n\m or \m\\a\m for example). If an \
+escaped character is not special or does not correspond to a meta character, \
+it raises an error.
+
+
+
+
+t2 P2 - Directives
+
+t3 Objectives
+
+p This step will transform precompiler directives into Z code. \
+Z precompiler directives are made to manipulate text fragments more easilly \
+among some Z code.
+
+p Precompiler directives \uwill \bNOT\b interact the real code itself\u, they \
+manipulate \utextual fragments\u only.
+
+in addition to the real code.
+
+p .
+
+
+
+t2 Step 3 : Segregate ZCIs
+
+p .
+
+
+
+b
+l \lZINC_Introduction\lPrevious page\l\ar\lZINC_Compilation\lNext page\l

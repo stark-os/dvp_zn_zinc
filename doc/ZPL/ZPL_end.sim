@@ -1,0 +1,298 @@
+tu Lexicon
+
+p This documentation uses a lot of expressions, most of them created \
+especially for the ZPL. Words are very important in this syntax. \
+You will note that every technical word is precisely chosen for describing a \
+situation or an element, even for the most abstract thing.
+
+l Here is the list of the ZPL \usymbols\u :
+- Addition symbol \m+\m
+-
+- AND symbol \m&\m
+-
+- Any symbol \m?\m
+-
+- Assignation symbol \m=\m
+-
+- Division symbol \m/\m
+-
+- Equality symbol \m==\m
+-
+- Field Access symbol \m.\m
+-
+- Fixed collection symbol \m(,)\m
+-
+- Generic container symbol \m{}\m
+-
+- Index symbol \m[]\m
+-
+- Module symbol \m^.\m
+-
+- Modulo symbol \m%\m
+-
+- Negativity symbol \m-\m
+-
+- Opposition symbol \m~\m
+-
+- OR symbol \m|\m
+-
+- Product symbol \m*\m
+-
+- Range symbol \m:\m
+-
+- Variable collection symbol \m[,]\m
+-
+- XOR symbol \m^\m
+-
+p Not every symbol is clearly mentionned in the documentation. \
+However, if one is listed, that means it has at least a \usymbolic notation\u \
+associated to that symbol (especially for operators). \
+This listing does not add more information about the ZPL syntax, it can only \
+help you to consider the sens behind the use of one another symbol.
+
+p As you might have noticed, the Z programming language uses trigrams for \
+almost everything. Here is the list of ALL the used trigrams in Z alongside \
+with their signification:
+
+l Non-Keyword trigrams :
+- ASG: Assignment
+-
+- BCB: Braces Begin ('{')
+-
+- BCE: Braces End   ('}')
+-
+- BKB: Brackets Begin ('[')
+-
+- BKE: Brackets End   (']')
+-
+- BLK: Blank
+-
+- CFG: Configuration
+-
+- CMC: Cascading Method Call
+-
+- CPL: Compiler
+-
+- DAT: Data
+-
+- DCL: Declaration
+-
+- EPR: Explicit Priorizing Representation
+-
+- EXT: External
+-
+- JMP: Jump
+-
+- LIT: Litteral
+-
+- LPI: Linux Programming Interface
+-
+- ODP: Operators Decomposition Process
+-
+- OOP: Object Oriented Programming
+-
+- PAB: Parenthesis Begin ('(')
+-
+- PAE: Parenthesis End   (')')
+-
+- PAV: Pointer As Variable
+-
+- PRM: Primitive
+-
+- RAW: Raw Text (not analyzed yet)
+-
+- RTY: Return Type (equivalent to TYP + void)
+-
+- STC: Structure
+-
+- STM: Statement
+-
+- VAP: Value Analysis Process
+-
+- VAV: Variable As Variable
+-
+- VFC: Void Function Call
+-
+- ZCE: Z Code Element
+-
+- ZCI: Z Code Instruction
+-
+- ZCS: Z Code Structure
+-
+- ZPL: Z Programming Language
+-
+
+b
+l Operators trigrams :
+- ADI: Arithmetic Divide
+-
+- AMO: Arithmetic Modulo
+-
+- AMU: Arithmetic Multiply
+-
+- BAD: B-rithmetic Add
+-
+- BSU: B-rithmetic Subtract
+-
+- CEQ: Conditionnal Equals
+-
+- CGT: Conditionnal Greater or Equal
+-
+- CGT: Conditionnal Greater Than
+-
+- CLE: Conditionnal Lesser or Equal
+-
+- CLT: Conditionnal Lesser Than
+-
+- CNE: Conditionnal Not Equal
+-
+- DAN: Decisional And
+-
+- DOR: Decisionnal Or
+-
+- FCA: Fixed Casht
+-
+- FFA: Fixed Field Access
+-
+- FRF: Fixed Reference
+-
+- FSZ: Fixed Size
+-
+- IAM: Indexing Among
+-
+- IIA: Indexing Index Assign
+-
+- IIN: Indexing Index
+-
+- INA: Indexing Not Among
+-
+- ISA: Indexing Sub Assign
+-
+- ISU: Indexing Sub
+-
+- LAN: Logical And
+-
+- LLB: Logical Left Byteshift
+-
+- LLR: Logical Left Roll
+-
+- LLS: Logical Left Shift
+-
+- LOR: Logical Or
+-
+- LRB: Logical Right ByteShift
+-
+- LRR: Logical Right Roll
+-
+- LRS: Logical Right Shift
+-
+- LXO: Logical Xor (Exclusive Or)
+-
+- SDC: Single Decrement
+-
+- SIC: Single Increment
+-
+- SIN: Single Invert
+-
+- SNO: Single Not
+-
+
+b
+l Z Keywords trigrams:
+- asu: asume
+-
+- brk: Break
+-
+- byt: Byte
+-
+- ctn: Continue
+-
+- cst: Constant
+-
+- dbl: Double
+-
+- def: Default
+-
+- elf: elif (which is itself a contraction of "else if")
+-
+- els: else
+-
+- enm: Enumerated
+-
+- fct: Function
+-
+- flt: Float
+-
+- fwd: Forward
+-
+- imp: Import
+-
+- int: Integer
+-
+- lng: Long
+-
+- lnk: Link
+-
+- mod: Module
+-
+- ptr: Pointer
+-
+- ret: Return
+-
+- shr: Short
+-
+- swi: Switch
+-
+- typ: Type
+-
+- voi: Void (funtion return type)
+-
+- whi: While
+-
+
+b
+l Other very common trigrams used in Z programs:
+- boo : Boolean
+-
+- chr : Character
+-
+- lst : List (simple linked list to be precise)
+-
+- map : Map
+-
+- str : String
+-
+- tab : Table
+-
+- unt : Unit
+-
+
+
+
+
+
+tu Last Note
+
+l I will not be very long on this last note :
+
+p Please consider that the Z programming language is a FREE and OPEN SOURCE \
+product. This language including its concept, standard library, compiler and \
+this documentation took an important amount of time, energy and thinking to be \
+achieved.
+
+lc Please respect the work done.
+
+b
+
+b
+
+l Thanks for reading this documentation.
+l I hope you will enjoy using this programming language.
+
+l Let's Code !\arBy I.A.
+
+
+
+
+b
+l \lZPL_OtherLanguages\lPrevious page\l\ar\l../ZPL\lReturn to the beginning\l

@@ -1,0 +1,160 @@
+t1 Usage
+
+
+
+
+t2 How to use it
+
+p There are 3 steps from a Z code to become an executable program: \
+\ucompile\u from Z to OBV, \ucompile\u from OBV to OBJ, and finally \ulink\u \
+from OBJ to ELF. Let's see this step by step in the sections below.
+
+
+t3 File formats: Z, OBV, OBJ, ELF
+
+l A Z code consists in one text file (or stream) respecting the Z syntax.
+p This file can't be used as is, it must to be compiled using a Z compiler. \
+The first official Z compiler is \
+\lhttps://stark-os.org/repos/stark-os/dvp/zn/zinc\lZINC\l. \
+It has been made by myself respecting the Z syntax as I do guarantee it. \
+If using Z for the first time, you may use it to be sure not to have \
+unexpected results.
+
+p Z compilation result in 2 files: one \bOBV\b file (ending in \m.obv\m), and \
+a \bfingerprint\b (ending in \m.cfg\m). They are both text files that you can \
+freely read and edit if you want.
+
+p The OBV file contains your code compilation result in \
+\lhttps://stark-os/repos/dvp/obv/obv\lOBV syntax\l which is a low-level \
+representation of memory and execution involved in your program, but not ready \
+yet to be run as is by your computer.
+
+p You will have to compile it into machine code file format (ELF for Linux \
+based operating systems). To do so, you have 2 more steps to go through: \
+\ucompile\u from OBV to OBJ format, and finally, \ulink\u this OBJ into an \
+executable ELF file. We will explain these 2 next steps in the next sections.
+
+p Note that Z and OBV are text files, readable and editable easilly, but OBJ \
+and ELF files are not. Infact, these last formats contains machine code \
+instructions and a whole organisation in several parts in the inside... \
+You will need to use specific applications to read and analyze them.
+
+p If you want to check your compilation result in detail, and debug it with \
+more precision, you might consider looking at the OBV result first. \
+You can even try running your OBV code in a more visual way, directly using \
+\lhttps://stark-os/repos/dvp/obv/obv-run\lOBV-Run\l to have a better idea of \
+what is going to happen at runtime in your program.
+
+
+t3 Fingerprint file
+
+p The second file you got from a Z compilation is a \m.cfg\m file called a \
+\i"fingerprint"\i. As the name and extension implies, it is not a proper code \
+file but a information sum up about what you just compiled, what have been \
+processed in your code (types, functions, ...).
+
+p Although it is an easilly readable and editable file, the format used in \
+fingerprint files is very important. Infact, these files are made to be used \
+in other Z compilations too, even though they are not "real code".
+
+p Before going into how to use them, let's see in which case we may need them, \
+and to do so, we will have to talk a bit about the executable ELF format and \
+how your Z code is going to be stored in it.
+
+
+t3 ELF format
+
+p As we said earlier, the final result you are going to need to run your Z \
+code is an ELF executable file (at least one) containing instructions in \
+machine code to be run directly by your computer. This format is specific to \
+your machine, and it is made to be directly sent to your CPU for execution.
+
+p Therefore, there is no use of having function names, variables or any kind \
+of fancy things in it: your machine don't work with such things. If you are \
+curious enough, you may know that your CPU has a very different environment \
+than the one you use when coding in Z or any structured language.
+
+p Since your CPU works only with memory regions and registers, all of the \
+abstract things you may create and use in Z will no longer exist at run time.
+
+p Well, this might not a problem for your program to run efficiently, as long as \
+it is standalone. The complexity comes when you want to share some \
+functionnalities of a program with another, or involve partial compilation on \
+huge projects to reduce compilation duration for example.
+
+p The ELF format, standing for "Executable and Linkable Format", as its name \
+implies, is made to provide potential \ulinks\u with other ELF files. \
+Infact, this "linking" feature is the reason why the generation of an \
+\u\bexecutable\b ELF file\u is always made in 2 steps: a first \ucompilation\u \
+into OBJ file and then a final \ulinking\u.
+
+l Let's see how these steps work in the next section.
+
+pc \b\i\uDISCLAIMER:\u I know these concepts seems a bit too deep for someone \
+just willing to start coding in Z, but the few things this sections cover are \
+extremely important to understand, in order to master how Z code works, even \
+for a beginner writing its first lines of code in Z.\i\b
+
+pc \b\i\uInfact\u, the easiest way to start coding in Z for the first time is to \
+depend on a kind of \u"core" library\u with some ready-to-use resources, and so, \
+rely on \uELF linking\u at some point.\i\b
+
+
+
+t3 Executable ELF: The 2 last steps
+
+
+There are 2 ways of sharing resources from an ELF to another: \ustatic \
+linking\u and \udynamic linking\u.
+
+p As we said, we need to get over OBJ compilation first: \bcompile\b, and \
+then \blink\b. These 2 steps have been discociated completely to allow better \
+flexibility with resource sharing between compiled resources.
+
+p As we said earlier, the first step we need to go through is to compile some \
+code from our source language into an OBJ file. In our case, the Z compilation \
+produces an OBV file, so we are going to use it to convert it into OBJ.
+
+l This is the role of \lhttps://stark-os.org/repos/dvp/obv/obv2obj\lOBV2OBJ\l.
+
+p This step produces a \m.obj\m file containing machine code (in an ELF format \
+by the way) but it is not ready to be executed yet. Infact, instructions have \
+been processed but the whole process memory segmentation is not included in \
+this result.
+
+p An object file has no idea about the final result you are going to make. \
+It is mainly an aggregation of machine code instructions corresponding to the \
+code you gave as input. \b\uHowever\u\b, the other important thing this step \
+provides is a \b\urelocation tables\u\b.
+
+p ... <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< \
+To get a complete ELF executable file, we need to know everything that concerns our code.
+
+p Since a fingerprint gives information about a compiled piece of code, it can \
+be a precious resource for other programs that would like to depend on it. \
+There are several cases on which you will need to use a fingerprint file:
+
+p The objective of that file is to be used at compile time with some
+This can be nice for you to see if something went wrong in your code, but \
+infact, this
+
+p One last important thing about this second step is library linking. \
+The machine code file by your Z compiler will use built-in Z features that must be given to your NC code \
+to make it work. Those features are present in a "standard library", more precisely, \ba Z standard library\b.
+
+p A Z standard library consist in Z codes that can be compiled into dynamic libraries. \
+Those are not executable but will be used by any other Z code to give it access to all of the Z features. \
+Of course, a Z standard library must be completely independant from any other Z sources, \
+it only requires internal C features (included by the C standard library used).
+
+p The default Z standard library is STDZ :
+l STDZ : \lhttps://zlang.org/stdz\l\l
+
+p Mind that the paths to an NC compiler and standard dynamic libraries can be configured in ZCC \
+to have direct executable compilation in one command.
+
+
+
+
+b
+l \lZPL_Introduction\lPrevious page\l\ar\lZPL_Features-GeneralConcepts\lNext page\l

@@ -1,0 +1,248 @@
+t0 History
+
+t1 Compilers in General
+
+t2 Creating a programming language
+
+p Creating a language is not a small thing, especially when it is \
+multi-purpose and with a high range of abstraction. The internet is \
+full of people saying this is bad to create its new language if it \
+produces the same result as the good old ones at the end.
+
+p However, among them, how many really knew what it cost to make a \
+compiler ? Stop being paralyzed about those who talk, step aside \
+those who code.
+
+
+
+t2 Why you should create your programming language
+
+p Let us be clear one second. \
+Creating a compiler, no matter how hard it is, is the best way to \
+develop skills in terms of algorithmic strategies, vast project \
+management, step by step problem solving and so on...
+
+p However, before engaging in such a project, have in mind that \
+compilation principle, in a low-level extend, requires \bway\b more \
+in \uyour head\u than in the code itself. Before being even able to \
+have an idea of what you are going to make, you first need to acquire \
+all the information about the result you want to produce.
+
+p Here already, getting that knowledge can be a real nightmare if you \
+don't know where to look for, the documentations you have talks so \
+much about useless stuff but the essential is missing... If you go \
+deep enough, you may even find partially correct documents, last \
+updated years ago by some random guy, posted online by someone else \
+who still had it on his home cloud... or worst, inexistant documents.
+
+p Anyway, consider that, depending on what you are going to do, the \
+first thing to do is to know where you go, so that you can draw the \
+line between the input you want to have and the result you want to \
+produce out of it. Seems pretty obvious isn't it ?
+
+l \u\bNow listen to this carefully:\b\u
+
+p Why do I insist that much on getting knowledge ? \
+Is it not the compiler code in itself the hardest thing to do ?
+
+p Indeed, after having made ZINC, I can tell you now that the longest \
+part was to code the compiler in itself, you're right. \
+However, \uas soon as you know the boundaries of your project, you \
+should be able to measure how hard it will be to make it.\u
+
+p By consequent, you can decide \uright now\u, \cff0000\bbefore \
+having written one line of code\b\c, if you really want to invest \
+yourself in \it or not.
+
+p These warnings you will find on the internet saying "making your \
+own compiler is bad" are not completely to reject. They mean "don't \
+run too fast, you probably don't know how hard and how loooooooooong \
+it is to achieve !".
+
+
+
+t2 Why you should NOT create your programming language
+
+p I know, people wants to code. But people are willing to make funny \
+things when they code, or powerful projects by using their low-level \
+layers of applications. However, making a compiler is not that much \
+funny. Why ?
+
+p Well, if I asked you to write down every single mechanism involved \
+in a C to ASM compiler for example, you would certainly require a \
+gigantic university whiteboard to draw them all, and I am not sure it \
+would be enough though.
+
+p Now, considering you have the whole plan for your compiler in head \
+and you write it down. Congrats! You made yourself a working C to ASM \
+compiler! Wonderful! Now, if you make some mistakes, you have error \
+messages, cool, but if it works, \uit seems like\u you have the same \
+result as if you were using any other C compiler.
+
+p Even if you know what changes, or anything, everything you can \
+really be proud of, and enjoy about your project, everything is \
+either in your head, in some hidden lines of code in your compiler \
+project, or in an unreadable-for-human binary format file.
+
+l \uNo, there is not that much "fun" in making a compiler.\u
+
+
+t2 Available open source compilers
+
+p Making its own compiler can be a really good experience for someone \
+really passionate, eager to know more, even if the goal is not to \
+conquire the entire planet with it. There are a lot of open source \
+compilers online, claiming to be made for "academic purpose" or even \
+sometimes "for fun".
+
+p Looking at the size and complexity of these projects, often taken \
+over by dozens of people over the years, improving the thing again \
+and again: for most of them, \uthey are no longer just tiny \
+projects\u made "for fun".
+
+p You don't have to be ashame to propose your compiler to the world. \
+No one asked you to make the best compiler ever, especially if you \
+worked on it alone and learned everything by yourself, on your free \
+time.
+
+p We don't all have contacts all over the world to guide us on \
+the right places to look for information, or have been in computing \
+since childhood.
+
+p The world of low-level development has always been a subject of \
+repulsion, most of the time criticsized by people that didn't even \
+know that much about it. "Everything is already done nowadays", "this \
+is not where we need to innovate", "don't re-invent the wheel", and \
+the best one: "compilers have been made so long ago, they have been \
+reviewed by tons of people, they are too big to be reinvented".
+
+p If you were too confident in your work today, this last one should \
+have cooled you down. Infact, this is what I heard all the time at \
+school when I tried to understand deep things and see how it works.
+
+p What a desilusion when I first tried to play with the "so nice" \
+open source tools that are available on the internet. "This is open \
+source, you can edit it and make a custom one if you want!" \
+Good luck for editing & recompiling your favorite C compiler...
+
+p We are all blind, behind the curtain of our everyday compilers that \
+provides us something we don't know everything about. I can't say it \
+is bad, but you can't say it is good neither.
+
+
+
+
+
+
+t1 ZINC
+
+p This compiler has a big history and has been through a lot of names \
+and trials before being what it is now.
+
+t2 First try
+
+p At start, a python version of that Z compiler was written but the \
+syntax itself wasn't developed enough for continuing. At this time, \
+the compiler was named ZCC for Z Compiler Collection (in reference to \
+GCC) because I designed it so that it could be used as a \
+multi-language compiler.
+
+p From Z code, unparse a result in a wide \
+variety of other languages (lua, kotlin, V...). The command & order \
+redirection were in BASH, the compiler in Python and a tiny part was \
+in C (for default types information).
+
+
+t2 The bootstrap query
+
+p When Z came to be more structured on paper, the whole repository \
+has been remade. My final goal for ZCC has always been to have a full \
+Z written compiler.
+
+p This is a very common thing in low-level languages and compiler, \
+and actually, it makes sens: the syntax is made to provide a powerful \
+tool for complex development. What better candidate than the compiler \
+itself to use it and so, prove its efficiency in multiple algorithmic \
+cases.
+
+p On top of that, it allows you to cut any external dependency in the \
+compiler so that you can now use your language without having to host \
+another environment or anything. Seems really nice but this implies \
+that you can compile the code of your own compiler before even having \
+it in your hands...
+
+p This "auto-compilation" can be solved using different techniques. \
+These techniques allows you to build compilers using other versions \
+or fragments of itself: Doing so has a name, we say that we \
+"bootstrap" a certain version of our compiler.
+
+p This is definitely not an easy thing to do, especially when you \
+don't have an exact & complete idea of your language rules and the \
+produced result. The wise advice in that kind of situation would be \
+to first have a working compiler using an external resource, and then \
+bootstrap it and its further versions.
+
+p I gave some more details about why and how bootstraping a compiler \
+in \mdoc/bootstrap.sim\m.
+
+
+
+
+t2 Bootstrap enemy: standards
+
+p For ZINC (ZCC at this moment), I tried several things to make a \
+first version completely in C or Python. \
+... \
+Anyway, I started writting ZCC in full Z.
+
+
+
+t2 Two ways development
+
+p Because I did not have a working Z compiler when developing ZCC, I \
+had to work blind imaginating the compilation result. Moreover, I \
+first thought I could compile manually each file I wrote as soon as I \
+finish it but that's not that simple.
+
+p First, to guarantee a real compilation, I must have at least a \
+first complete chain from the Z source to the result. I can't test \
+anything until I have at least a first version working in C/ASM or \
+whatever (even without a number of features). Secondly, compiling \
+manually is a \bvery very\b long process so I wanted to do it as less \
+as possible.
+
+l Therefore, I decided to change my strategy one more time.
+
+p Now, in the first time, I code every step for both precompilation and \
+compilation, \uin Z\u. That represents the huge majority of the time \
+spent on ZCC. The main advantage of this period is that I could \
+modify the whole Z syntax and ZCC structure at will.
+
+p I did reorganize the ZCC process chain very often, for technical \
+reasons. \uI had to write down everything\u to see that a step must \
+be executed before another one etc...
+
+p Then, as soon as I had a first complete ZCC working in my head and \
+on paper, I could now compile it by hand in C. To do so, I separated \
+my screen to have on my left the ZCC steps (in Z) and the C \
+translation to the right.
+
+p I DID EXACTLY WHAT ZCC WOULD HAVE DONE IF IT WORKED AT THIS TIME. \
+Then, I just had to compile the resulting C with any C compiler and \
+so, I would have my first working ZCC executable.
+
+p A way to verify my rigour in hand-compiling is to compile ZCC using \
+its freshly created binary. We can now compare the result of a human \
+brain with the machine. As soon as I had the very first C version of \
+ZCC working, I uploaded it on a dedicated branch in the ZCC repository.
+
+p IT IS CRUCIAL TO KEEP THIS RESULT SOMEWHERE IF I DON'T WANT TO \
+COMPILE ZCC MANUALLY ONE MORE TIME. Actually, as soon as I have \
+somewhere any version of ZCC executable, there will be no problem \
+but I prefer being SAFE.
+
+p By doing such things, we made the first compilation of a Z code (by hand). \
+And now, we have the more Z-compilant Z compiler ever. \
+By the way, I prefer rely on the machine-compiled version of ZCC than on the manual one.
+
+l Thanks for reading, \arI.A.

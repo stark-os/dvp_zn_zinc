@@ -1,0 +1,160 @@
+t1 Introduction
+
+
+
+
+t2 Overview
+
+t3 Sum Up
+
+p The Z Programming Language (ZPL) is a high-range, multi-purpose language for \
+programming at least on Linux based operating systems.
+
+p As a necessity for Stark, the Z programming language is made primarily \
+to provide a fully Stark Philosophy compliant syntax for Stark OS development.
+
+p Therefore, it respects that philosophy at maximum level. \
+You can check out the Stark Philosophy in details \
+\lhttps://stark-os.org/stark-philosophy\lhere\l.
+
+
+t3 Objectives
+
+l The ZPL has 3 main goals:
+- Open mechanism (Stark Phy: MIRFEO)
+Be accessible by anyone, in both meanings: \uavailable resources\u (open \
+source, easy to acquire) and \uaffordable knowledge\u (how to use it, build \
+it, understand it).
+
+This second point is the most important part in that case: \
+Anybody should be able to understand this language \bentierly\b and easilly.
+
+No hidden processes, no particular cases unexplained, every single interaction \
+with every single byte of data must be covered by this documentation.
+-
+- Simplicity (Stark Phy: KOTE)
+Keeping only the essential parts of the syntax, getting rid of legacy concepts \
+no longer in use, redefining what really matters and putting away the rest.
+
+Instead of covering only the major points among a massive variety of \
+possibilities, reduce the covered perimeter to what we care about only.
+-
+- Fit either low-level as well as high-level programming
+Give the possibility to code either fast and implicitly using shortcut \
+notations and custom elements (high level) or go deeper with more control on \
+data interactions (low level).
+
+The compilation input must be easy to read/write by human, and the result must \
+be as close as possible as machine code, so that the remaining effort to have \
+runnable code is minimized.
+
+This is achieved mainly by creating high-level concepts and elements, and \
+turning them progressively into low-level code, considering the machine needs \
+and constraints. This is what we call \i"high-range"\i compilation here.
+-
+
+
+
+
+t2 A brief word about the language
+
+t3 Features
+
+p The Z programming language provides a lot of high-level features such as \
+custom modularity, types & methods, either implicit or explicit typing, \
+structure shortcut syntaxes, various kind of operator definition...
+
+p Those features are all described in this documentation, in the most complete \
+and accurate way as I could. I am NOT hiding anything, or skipping steps to \
+make it simpler, smaller, faster or anything.
+
+p \b\uAs a consequence\u\b, the more advanced programmers of you may \uwant to \
+skip the beginning\u to get directly to the fancy stuff and code... \
+\bWAIT A SECOND! \b \uPlease read at least the following:\u
+
+l \cff0000\bThis language has its \uown mechanisms\u and its \uown vocabulary\u.\b\c
+l \cff0000\bYou will find a lot of similarities with other programming languages.\b\c
+l \cff0000\b\uHOWEVER\u, the Z programming language intend to be \uPRECISELY DEFINED\u \
+from the user's very first character to the computer's very last memory bit.\b\c
+l \cff0000\bIf anything is missing, this is a mistake, please report it.\b\c
+
+l \cff0000\bDO NOT mix this documentation with any external resource:\b\c
+l \cff0000\bZ is not C like, GO like, a kind of V, a ZIG alternative...\b\c
+l \cff0000\bEvery concept in Z must be considered EX NIHILO.\b\c
+l \cff0000\bThis way you should \unever\u struggle with any kind of error or "weird behavior".\b\c
+
+p Always remember that everything in a Z code is \bPRECISELY DEFINED\b from \
+the very first character to the very last one, whereas in C, things are more \
+like a soup of paterns that can sometimes lead to ambiguity or even behavior \
+divergence depending on the compiler you use.
+
+p One more thing: We have seen in the last section that the use of a standard \
+library is highly recommended for a better experience. Such a library contains \
+all the basic structures, functions and tools required by every kind of \
+program, for lots of different purposes.
+
+p You might take a look at it before going too fast into your code : \
+maybe the function you want to make already exists ?
+
+
+
+t3 The flexibility challenge
+
+p One of the challenge behind the Z is to provide a \usmall and intuitive \
+syntax\u, easilly understood by a \ubeginner\u, as well as a little bit \
+\uheavier syntax\u for more \uadvanced developers\u willing to optimize their \
+memory and computation usage.
+
+p To make it work, the Z is equiped with a large tolerance range. \
+You can use implicit type declaration, automatic operation targetting, and \
+some other fancy things that help you write a functionnal code quickly.
+
+p However, these contraptions implies that you are going to use default \
+values, types, operators and so on... \u\bimplicitely\b\u. \
+For more advanced users looking for debugging precision and performance \
+efficiency through memory usage and computation time, you should also be \
+able to customize these "defaults" with your own creations.
+
+p To allow this flexibility, the language has been organized as a collection \
+of different objects and concepts, either abstract or concrete, under a tree \
+structure that we will see throughout this documentation.
+
+p Every single element in Z has been precisely defined, so that you should \
+easily find out what is going to be used in your code at compile time. \
+Also, this implies, besides most of other low-level programming languages, \
+that some obvious operations might required to be defined \umanually\u instead \
+of having them by default, ready to use, provided by the compiler.
+
+p This is why you might want to take a look at the Z standard library to check \
+out all the things that are defined as "basic definitions".
+
+
+t3 Strictness & Restrictions
+
+p At first sight, this it can appear that thoses concepts are very constraining but how can you guarantee \
+that your software will work if you only have a partial vision of it and the rest will produce some potentially \
+not working code ? or maybe a working one but does it really what it should ? Replacing only specific patterns \
+to turn them into C is good but not as exact, as safe and as fast as working with a fixed structured syntax \
+that can be parsed without ambiguity.
+
+p If you look at some Z code examples & libraries, \
+you will see that this language looks like any other programming language. \
+There seems to be no restriction at first sight but actually, every line of code respects the Z code structure \
+(ZCS that we will see later). \
+This also guarantees that the generated result will produce a fully expected and understandable result \
+that could even have been determined by anyone who read the documentation.
+
+p Developing ZCC, STDZ, and the Z documentation all together was a pretty hard work \
+especially when a particular concept comes to be completely remade or surendered for some technical reason. \
+This is precisely in this kind of situation that you understand how important it is to have strict definitions \
+of what is allowed and what is not, why doing a thing and why forbidding another, \
+how some text will be interpreted and what are the different possibilities...
+
+p Having a precise plan turns the thing into a trustworthy reference book \
+instead of a too restrictive rules manual.
+
+
+
+
+b
+l \l../ZPL\lPrevious page\l\ar\lZPL_Usage\lNext page\l
