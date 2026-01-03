@@ -33,7 +33,7 @@ def loadConvertFcts(zCtx):
 			#fct exes: "cvt p1" (obv exe), "ret p1"
 			f.scope.exes.append(atm(
 				ATM__OBVEXE,
-				obvExe("cvt" + t1Name + '_' + t2Name, t2ObvSize, ["__Lp1+0000"], OBV__BEGBLANKS_FCT)
+				obvExe("cvt", t2ObvSize, [t1Name + '_' + t2Name, "__Lp1+0000"], OBV__BEGBLANKS_FCT)
 			))
 			f.scope.exes.append(atm(
 				ATM__JMP,

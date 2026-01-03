@@ -8,6 +8,9 @@ However, its execution is not completely straightforward. These 3 steps will \
 be executed as much as required, depending on dependencies involved in the \
 program, making it a recursive process. More details in step P3.
 
+p At start, we parse the Z file given as input, character per character from \
+beginning to end.
+
 
 
 
@@ -17,14 +20,14 @@ t2 P1 - Comments and Text
 t3 Objective
 
 p The 1st step of the precompiler concerns comments removal and text \
-transformation. The objective is to remove every kind of text that can \
+transformation. The objective is to remove every kind of literal text that can \
 perturbate further parsing.
 
 p This must be done as the very beginning of everything, because text and \
 comments can contain any kind of information, including complete parts of Z \
 code, precompiler directives or anything.
 
-p These 2 operations must be done at the same time because a string can \
+p Also, these 2 operations must be done at the same time because a string can \
 contain a comment indicator or vice versa... We must know if we are in a \
 comment or in a string to interpret correctly the character we are currently \
 analyzing.
@@ -65,7 +68,8 @@ a = str{
 }
 "
 p Characters are also replaced by their corresponding byte sequence. Note that \
-non-ASCII characters raises error as they are to be interpreted as strings.
+literal characters must contain only one byte. Non-ASCII characters can be \
+used, but multi-byte characters will produce an error.
 
 p Also, escaping character \m\\\m is taken into account in text parsing so \
 that special characters can be ignored (\m'\m or \m"\m for example), and some \
@@ -78,26 +82,128 @@ it raises an error.
 
 t2 P2 - Directives
 
-t3 Objectives
+t3 Objective
 
-p This step will transform precompiler directives into Z code. \
-Z precompiler directives are made to manipulate text fragments more easilly \
-among some Z code.
+p This step will transform precompiler directives into Z code. Z precompiler \
+directives are made to manipulate text fragments more easilly among the Z code \
+itself. After this step, no more precompiler directive should remain. If so, \
+error(s) will be raised.
 
-p Precompiler directives \uwill \bNOT\b interact the real code itself\u, they \
-manipulate \utextual fragments\u only.
+p Precompiler directives \uwill \bNOT\b interact the real Z code\u, they only \
+manipulate \utextual fragments\u, as an upper layer, in addition to the real \
+code.
 
-in addition to the real code.
+p As for previous steps, parsing is made by reading the whole file byte per \
+byte, but this time, we may need to operate multiple readings. Infact, when a \
+directive is processed, the original text is replaced in the file (in process \
+memory, no changes in the actual file), and these changes can involve other \
+directives in the new content.
 
-p .
+
+t3 Parsing process
+
+p The process is made as a loop: First, we read the whole file, looking for a \
+\m#\m character and process the directive (if possible). If it does not \
+correspond to a directive pattern, it is simply skipped. Else, we try to \
+process the directive according to its kind.
+
+p Each directive has its own requirements to be executed properly. If \
+everything is okay, we can emit a replacement text for that directive as a \
+result. Going back to our global parsing, we can now replace the directive \
+text with this.
+
+p It is important to keep the reading head \b\ubefore\u\b directive text when \
+parsing it because the replacement text \bmust also be parsed\b. If the \
+directive couldn't be processed, a "PCPL failure item" is created as internal \
+object, and parsing continues skipping this \m#\m character.
+
+p A PCPL failure doesn't mean there is an error somewhere in the given text. \
+It rather means the directive couldn't be processed \b\uyet\u\b for some \
+reason. Having a directive inside another one can be the reason. Infact, in \
+that case, the inner directive must be processed first to allow the outter one \
+to have a full valid content.
+
+p Depending on if a replacement has been made during parsing or not, when we \
+finished parsing the whole file content, we will go over it one more time, or \
+stop here. "No more changes" means "we have been through all the text at least \
+once." so no need to parse again.
+
+p This re-parsing is also limited to avoid infinite recursivity in directive \
+definitions. This is the role of the compilation option \mPCPL_DIRECTIVES_MAX_RETRIES\m.
+
+
+t3 Additional details
+
+p Precompiler arithmetic directive allow the use of the following operators: \
+\m-\m, \m+\m, \m*\m, \m/\m, \m&\m, \m|\m and \m^\m. These are purely \
+\unumerical\u operations (no text or collection-like behavior). Operands are \
+being read as decimal numbers within 64b range (from 0 to 2**64-1 included).
+
+p Arithmetic operations are split in ranks to allow a bit of priorization: \
+Higher priority operators are computed first, with their side operands, and \
+then, we proceed to lower ranks. There are 2 ranks right now: \
+l 1st rank (highest priority): \m*\m, \m/\m, \m&\m, \m|\m, \m^\m
+l 2nd rank (lowest  priority): \m-\m, \m+\m
+
+p \uNote:\u At the end of that step, every \m#\m remaining in the code should \
+refer to an FSZ operator.
+
 
 
 
 t2 Step 3 : Segregate ZCIs
 
-p .
+t3 Objective
+
+p This step is the first to really consider the Z code syntax itself. The \
+objective is to split our piece of code (still raw text until now) into a \
+valid ZCS.
+
+p In that step, we won't analyze ZCIs themselves but their delimitations. \
+We simply read the code as we did before, but this time, we are storing it \
+under text fragments, in ZCIs objects.
+
+p These objects keeps the information of their context (where do they come \
+from: filename, line, column...), and some other useful information such as \
+the indexes of every includer detected inside and their corresponding peer. \
+These informations are crucial as we will only deal with ZCI objects during \
+the compilation process.
+
+p Of course, to determine the beginning and end of a ZCI, the rules described \
+in the ZPL documentation are applied (semicolon, escape character for line \
+feeds, includers).
+
+
+t3 Imports
+
+p An other thing that is done during that step is the decomposition of EXT_IMP \
+ZCIs. Each time we are going to store a ZCI, we look if it is an EXT_IMP. If \
+so, instead of storing it, we will try to import the file and run the full \
+precompiler on it (3 steps).
+
+p Processing an import is a recursive operation. As soon as it is done, the \
+resulted ZCIs are stored instead of the EXT_IMP originally detected. In any \
+other case, we simply store the ZCI as is (to be parsed in further steps).
+
+p Because of the recursivity behavior of importations, each time we go into \
+it, the current file and context we were in are saved somewhere else, and we \
+go into a "sub-context".
+
+p Of course, if a sub-context for a certain file has already been opened for a \
+file, it cannot be opened again. However, for a better user experience, the \
+ZPL allows you to import a file several times.
+
+p To respect that, if an importation for a file has alread been made, it will \
+simply be ignored next time it will be imported. This way, you can possibly \
+forget to import some resource, but you will not struggle with libraries \
+requirering dependencies at multiple levels.
+
+b
+p After this, every sub-context is closed, and the compilation process can \
+really start, using only the given list of unparsed ZCIs as input. (You may \
+have understood that no EXT_IMP ZCI remains among them)
 
 
 
 b
-l \lZINC_Introduction\lPrevious page\l\ar\lZINC_Compilation\lNext page\l
+l \lZINC_Introduction\lPrevious page\l\ar\lZINC_Compilation-Globals\lNext page\l

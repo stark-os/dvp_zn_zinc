@@ -1,26 +1,189 @@
 t1 Compilation: Globals
 
+t2 ZAEs Organization in compiler
+
+t3 Scope parsing logic
+
+p The global scope is the main scope and the \uhighest\u in our program; it \
+has no parent. User code \uis\u in that global scope by default. Therefore, \
+our unparsed ZCI list we have as entry point is defining instructions in \
+\uglobal scope\u.
+
+p The only way to create local scopes is to create \ufunctions\u, using \
+\mDCL_FCT\m ZCIs which must be declared, in all cases, in \uglobal scope\u. \
+Therefore, we must parse global scope ZCIs \bbefore\b local ones.
+
+p By the way, because functions are declared as global ZCIs, their internal \
+scope naturally has the global one as parent, and so, they are able to access \
+to global ZAEs.
+
+p This same logic applies for scopes declared inside functions (using \
+statements for example): Local scopes always have access to their parent's \
+content (upper scopes). As a result, we must parse \uhigher scopes\u first, \
+and then finish with the lowest ones.
+
+
+t3 Storing ZAEs
+
+p Using that scope parsing logic, everything in a Z code can be stored using, \
+for example, a tree like this:
+"
+CPL_instance
+└── gbl_scp
+    │
+    ├── Type     tG1
+    ├── Type     tG2
+    ├── DataItem dG3
+    ├── DataItem dG4
+    │
+    ├── Function A
+    │   └── lcl_scp A
+    │       ├── DatItm dA1
+    │       ├── Exe    eA2
+    │       └── Exe    eA3
+    │
+    ├── Function B
+    │   └── lcl_scp B
+    │       ├── DatItm    dB1
+    │       ├── Statement eB2
+    │       │   └── lcl_scp eB2
+    │       │       ├── Exe eB2.e1
+    │       │       └── Exe eB2.e2
+    │       ├── Exe eB3
+    │       └── Exe eB4
+    │
+    └── Function C
+        └── lcl_scp C
+            ├── DatItm dC1
+            └── Exe    eC2
+"
+
+p There is a big difference between the global scope and local ones. The \
+global scope is aim to be a \udefinition place\u to declare \ustatic\u things \
+(types, functions, process-static memory items...). It \ucan't have dynamic\u \
+things like local scope executions or any runtime dependant resources \
+(function calls, statements...).
+
+p Because of this, in ZINC, all the things that are global scope specific are \
+not stored in it, but directly in the main compiler instance. Scope objects \
+are mainly used for local purpose.
+
+p They contain data items (static memory usage for the lifetime of the scope) \
+and their executions (none for the global one) only. Of course, they still \
+have access to their parent scope to use their declared data items. The tree \
+structure looks more like this:
+"
+CPL_instance
+├── types
+│   ├── Type tG1
+│   └── Type tG2
+│
+├── gbl_scp
+│   ├── DataItems
+│   │   ├── dG3
+│   │   └── dG4
+│   └── Exes
+│
+└── functions
+    ├── Function A
+    │   └── lcl_scp A
+    │       ├── DataItems
+    │       │   └── dA1
+    │       └── Exes
+    │           ├── eA2
+    │           └── eA3
+    │
+    ├── Function B
+    │   └── lcl_scp B
+    │       ├── DataItems
+    │       │   └── dB1
+    │       └── Exes
+    │           ├── eB2
+    │           │   └── lcl_scp eB2
+    │           │       ├── DataItems
+    │           │       └── Exes
+    │           │           ├── eB2.e1
+    │           │           └── eB2.e1
+    │           ├── eB3
+    │           └── eB4
+    │
+    └── Function C
+        └── lcl_scp C
+            ├── DataItems
+            │   └── dC1
+            └── Exes
+                └── eC2
+"
+
+p This way, scope related ZAEs can rely on generic elements such as types and \
+functions, non-scope ZAEs. Therefore, it seems logic that we should parse them \
+first, skipping every other ZCI for the moment. However, there is still one \
+kind of ZAE to take into account before starting global parsing: Z modules.
+
+
+
+t2 Step 1: Unmodulize
+
+t3 Objective
+
+p Z modules are an abstract representation of code that can contain both \
+global and local ZAEs (functions declarations). However, every ZCI defined in \
+a module is contained in a braces includer, which (as a recall) stays unparsed \
+as raw text in the module declaration ZCI.
+
+p As a consequence, to know whether a global ZCI is contained in a module, we \
+must parse them first. This is why the first compilation step is called \
+\bunmodulize\b. A module is nothing more than a couple of ZCIs where every \
+declaration is to be preceeded by the given module prefix.
+
+p The objective here is to replace every module declaration ZCI \mDCL_MOD\m in \
+our ZCI list by all the ZCIs we could extract from the module. Also, these \
+extracted ZCIs must keep the information of the module they were taken from, \
+for further parsing steps.
+
+p Also, Z modules can contain other sub-modules in themselves. Thus, we must \
+also check the resulted extracted ZCIs to decompose every module completely. \
+As a result, because modules must be declared in \uglobal scope\u, it should \
+not have any remaining \mDCL_MOD\m ZCI in the code, and the current list of \
+ZCIs to be parsed are all and only global scope related.
+
+
+t3 Unmodulizing
+
+p First we will look for module declaration ZCI using the \mmod\m keyword. It \
+can be a module declaration (new module) or a module addition (module must \
+already exist). Then, taking all the text defined between the module braces
+includer, we extract global ZCIs from it using the same mechanism as in \
+precompiler step P3.
+
+p To keep track of module prefixing throughout submodule declarations, ZCI \
+objects contains in themselves a module prefix text, empty by default. When \
+module ZCIs are extracted, the resulted ZCIs are initialized with the module \
+name \badded at the end\b of their \umodule prefix\u (modPfx \m""\m => \
+\m"^MyModule."\m).
+
+p Then, the current ZCI for module declaration/addition is removed and the \
+extracted ZCIs are inserted here instead. Then, we can continue the \
+unmodulization process on the newly extracted ZCIs.
+
+p Naturally, if we have submodule declarations, the module prefix of inner \
+ZCIs will be completed accordingly to the Z modularization logic: modPfx \
+\m""\m => \m"^A."\m => \m"^A.^SubA."\m => \m"^A.^SubA.^SubSubA."\m => ...
+
+
+
+t2 Step 2: Redirect Globals
+
 t2 Objective
 
 p .
 
 
 
+
+
 t2 ?
 
-In VAP {
-  First analysis {
-      Execute an ODP.
-      This ODP results in incomplete naming, we only have the name of operators but not their parameter's types.
-      We don't know the types of the elements yet, we only split by operator symbols and reformat the ZCI with function calls.
-  }
-
-  Second analysis {
-      Litteral values and optionnally shortcut notations of common structures are processed under the rules of the ZPL.
-  }
-
-  Last discreet step : Complete the names of operators in ODP as we are now able to know each parameter type.
-}
 p .
 
 

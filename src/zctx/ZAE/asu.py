@@ -244,7 +244,7 @@
 			#check pub/prv indicator
 			if u_r == 'u':
 				isPub = True
-			if u_r == 'r':
+			elif u_r == 'r':
 				isPub = False
 			else:
 				sbj.err("Key \"" + name + "\" has invalid sharing indicator '" + u_r + "' (only 'u'/'r' allowed), in external assumed code addition file " + extAsuPath, prtSubCtxs=False, prtLine=False)

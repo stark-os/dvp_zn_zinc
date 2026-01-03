@@ -104,9 +104,6 @@ rely on \uELF linking\u at some point.\i\b
 t3 Executable ELF: The 2 last steps
 
 
-There are 2 ways of sharing resources from an ELF to another: \ustatic \
-linking\u and \udynamic linking\u.
-
 p As we said, we need to get over OBJ compilation first: \bcompile\b, and \
 then \blink\b. These 2 steps have been discociated completely to allow better \
 flexibility with resource sharing between compiled resources.
@@ -130,12 +127,15 @@ provides is a \b\urelocation tables\u\b.
 p ... <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< \
 To get a complete ELF executable file, we need to know everything that concerns our code.
 
+p There are 2 ways of sharing resources from an ELF to another: \ustatic \
+linking\u and \udynamic linking\u.
+
 p Since a fingerprint gives information about a compiled piece of code, it can \
 be a precious resource for other programs that would like to depend on it. \
 There are several cases on which you will need to use a fingerprint file:
 
-p The objective of that file is to be used at compile time with some
-This can be nice for you to see if something went wrong in your code, but \
+p The objective of that file is to be used at compile time with some...
+p This can be nice for you to see if something went wrong in your code, but \
 infact, this
 
 p One last important thing about this second step is library linking. \

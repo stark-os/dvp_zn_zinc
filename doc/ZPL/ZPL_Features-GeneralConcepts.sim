@@ -20,57 +20,86 @@ ambiguity.
 
 l Here is a table representing what constitutes the ZPL in its globallity :
 "
-.-----+----------+----------------+------------------+---------------------.
-|     |          |                |                  | Behavior            |
-|     |          |                |                  | Name                |
-|     |          |                |    Data Items    | Scope               |
-|     |          |                |                  | Type                |
-|     |          |                |                  | Value               |
-|     |          |                +------------------+---------------------+
-|     |          |                |                  | Kind                |
-|     |          |                |    Statements    | Inner values        |
-|     |          |                |                  | Outer executions    |
-|     |          |                +------------------+---------------------+
-|     |          |                |                  | Content             |
-|     |          |                |    Functions     | Name                |
-|     |          |                |                  | Parameters          |
-|     |          |                |                  | Return Type         |
-|     |          |     Z Code     +------------------+---------------------+
-|     | Abstract |    Elements    |                  | Data items          |
-|     | Elements |      (ZCE)     |                  | Functions           |
-|     |          |                |     Modules      | Modules             |
-|     |          |                |                  | Name                |
-|     |          |                |                  | Types               |
-|     |          |                +------------------+---------------------+
-|     |          |                |                  | Default value       |
-| ZPL |          |                |                  | Methods             |
-|     |          |                |      Types       | Name                |
-|     |          |                |                  | Nature              |
-|     |          |                |                  | Parent              |
-|     |          |                |                  | Size                |
-|     |          |                +------------------+---------------------+
-|     |          |                |      Values      | Type                |
-|     |          |                |                  | Value               |
-|     |          |----------------+------------------+---------------------+
-|     |          | Low-Level Data |    Low-Level     |    Machine Code     |
-|     |          | Representation | Interface (LLI)  |      Execution      |
-|     |          |     (LLDR)     |     Bridger      |                     |
-|     |----------+----------------+------------------+---------------------+
-|     |          |  Z Code Files  | Z Code Structure | List of Z Code      |
-|     |          |                |   (ZCS) parsing  | Instructions (ZCI)  |
-|     |          |----------------+------------------+---------------------+
-|     |          |                |                  | Current Module      |
-|     |          |   Z compiler   |                  | Current Scope       |
-|     |          |  (from Z to ?  |    Z Compiler    | Declared Data Items |
-|     |   Real   |  depending on  |      Context     | Declared Functions  |
-|     | Elements |  the targetted |                  | Declared Modules    |
-|     |          |      LLI)      |                  | Declared Structures |
-|     |          |                |                  | Declared Primitives |
-|     |          |----------------+------------------+---------------------+
-|     |          | Low-Level Data |    Low-Level     |    Machine code     |
-|     |          | Representation | Interface (LLI)  |   Executable file   |
-|     |          |  (LLDR) Files  |      Calls       |  (ELF for example)  |
-'-----+----------+----------------+------------------+---------------------'
+.-----+----------+----------------+---------------------.
+|     |          |                | Behavior            |
+|     |          |     Values     | Type                |
+|     |          |                | Real value          |
+|     |          |----------------+---------------------+
+|     |          |                | Externality         |
+|     |          |                | Sharing indicator   |
+|     |          |                | Name                |
+|     |          |     Types      | Nature              |
+|     |          |                | Size                |
+|     |          |                | Declination degree  |
+|     |          |                | Parent              |
+|     |          |                | Fields              |
+|     |          |----------------+---------------------+
+|     |          |                | Externality         |
+|     |          |                | Sharing indicator   |
+|     |          |                | Behavior            |
+|     |          |   Data Items   | Name                |
+|     |          |                | Type                |
+|     |          |                | Default value       |
+|     |          |                | Fields              |
+|     |          |----------------+---------------------+
+|     |          |                | Parent              |
+|     |          |     Scope      | Data Items          |
+|     |          |                | Executions          |
+|     |          |----------------+---------------------+
+|     |          |   Assignments  | Source value        |
+|     | Abstract |                | Destination value   |
+|     | Elements |----------------+---------------------+
+|     |  (ZAE)   |                | Condition           |
+|     |          | IF statements  | If scope            |
+|     |          |                | Else scope          |
+|     |          |----------------+---------------------+
+|     |          |                | Iteration condition |
+|     |          | FOR statements | Iteration data item |
+|     |          |                | Initial value       |
+|     |          |                | Iteration scope     |
+|     |          |----------------+---------------------+
+|     |          |                | Iteration condition |
+|     |          | WHI statements | Iteration scope     |
+|     |          |----------------+---------------------+
+|     |          |                | Target value        |
+|     |          | SWI statements | Cases values        |
+|     |          |                | Cases scopes        |
+|     |          |----------------+---------------------+
+|     |          |                | Name                |
+|     |          |     Calls      | Parameters values   |
+|     |          |                | Return type         |
+|     |          |----------------+---------------------+
+|     |          |     Jumps      | Kind                |
+|     |          |                | Return type         |
+|     |          |----------------+---------------------+
+|     |          |                | Externality         |
+|     |          |                | Sharing indicator   |
+|     |          |                | Name                |
+|     |          |   Functions    | Parameters          |
+|     |          |                | Return type         |
+|     |          |                | Method type         |
+|     |          |                | Inner scope         |
+|     |          |----------------+---------------------+
+|     |          |                | Data items          |
+|     |          |                | Functions           |
+|     |          |   Modules      | Submodules          |
+|     |          |                | Name                |
+|     |          |                | Types               |
+|     |----------+----------------+---------------------+
+|     |          | Z/N Code Files |   List of Z Code    |
+|     |          |                | Instructions (ZCI)  |
+|     |          |----------------+---------------------+
+|     |          |                | PCPL:Unparsed ZCIs  |
+|     |          |                | CPL:Types           |
+|     |   Real   |   Z/N to OBV   | CPL:Modules         |
+|     | Elements |    Compiler    | CPL:Big data chunks |
+|     |  (ZRE)   |                | CPL:Global scope    |
+|     |          |                | CPL:Functions       |
+|     |          |----------------+---------------------+
+|     |          |    OBV file    |    Machine code     |
+|     |          |----------------+---------------------+
+|     |          | Footprint file |  Shared code info   |
+'-----+----------+----------------+---------------------'
 "
 
 p To make the Z Programming Language clearer and accessible to anyone, \
@@ -325,7 +354,7 @@ However, if the language also tolerate too much patterns to make anybody happy, 
 t3 Scopes
 
 p In previous sections we have seen what are includers and how do they work with ZCIs. \
-There is another thing we must define before getting further on Z Code Elements (ZCE) declarations and uses : SCOPES. \
+There is another thing we must define before getting further on Z Abstract Elements (ZAE) declarations and uses : SCOPES. \
 This has a very important part in the understanding of a Z code so please be attentive to all the explanations given.
 
 l In Z, there are 3 kinds of scope :
@@ -346,7 +375,7 @@ p Now, as soon as the compiler reaches a \ufunction declaration ZCI\u (DCL_FCT),
 its scope will change into a \c1111ffFUNCTION\c \uspecific\u one. \
 Every new declaration made inside the function's content will now have its scope set to \mFUNCTION <function_name>\m scope. \
 Note that this scope is \uSPECIFIC\u to this particular function. \
-If a ZCE is declared on another function, its scope will be different because it will be related to this other function specificly.
+If a ZAE is declared on another function, its scope will be different because it will be related to this other function specificly.
 
 p This \c1111ffFUNCTION\c specific scope application is valid for each ZCI that is \b\uDIRECTLY\u\b defined inside \
 the function's content (inside its braces includers). \
@@ -354,7 +383,7 @@ As soon as the function declaration is done (end of the ZCI), the compiler turns
 
 p Note that I mentioned that \c1111ffFUNCTION\c specific scope is applied only on declarations that are \b\uDIRECTLY\u\b made \
 in function's content. \
-Infact, there is also another possibility of scope value for a declared ZCE : the \c00dd00STATEMENT\c specific scope.
+Infact, there is also another possibility of scope value for a declared ZAE : the \c00dd00STATEMENT\c specific scope.
 
 p For this last kind of scope, the principle is quite the same as for \c1111ffFUNCTION\c ones. \
 The only thing that differs is that the compiler will turn into \c00dd00STATEMENT\c specific scope if it reaches \

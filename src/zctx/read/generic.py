@@ -23,7 +23,7 @@ def endOfZCI(ZCI, ZCIKindIfErr):
 
 
 
-# REAL ZCE PARSING TOOLS (bare metal syntax-related)
+# ZRE PARSING TOOLS (bare metal syntax-related)
 
 #read hexadecimal byte
 def readHexByte(ZCI):

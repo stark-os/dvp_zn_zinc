@@ -128,8 +128,8 @@ def loadRefOpes(zCtx):
 
 			#STEP 1.1: BAD
 
-			#create ope "bad(ref p1, idxType p2)"
-			ope       = newFct("Obad_GUref_" + idxTypeName, dcnedRefType, [p1, p2], zCtx.cpl.gblScp)
+			#create ope "bad(ref[dcn] p1, idxType p2)"
+			ope       = newFct("Obad_" + dcnedRefTypeName + '_' + idxTypeName, dcnedRefType, [p1, p2], zCtx.cpl.gblScp)
 			ope.isPub = False
 
 			#datItms
@@ -162,7 +162,7 @@ def loadRefOpes(zCtx):
 			#STEP 1.2: BSU
 
 			#create ope "bsu(ref p1, idxType p2)"
-			ope       = newFct("Obsu_GUref_" + idxTypeName, dcnedRefType, [p1, p2], zCtx.cpl.gblScp)
+			ope       = newFct("Obsu_" + dcnedRefTypeName + '_' + idxTypeName, dcnedRefType, [p1, p2], zCtx.cpl.gblScp)
 			ope.isPub = False
 
 			#datItms

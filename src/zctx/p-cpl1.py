@@ -4,13 +4,13 @@
 
 #pcpl data
 class pcplDat:
-	def __init__(sbj, cfgs, itms):
+	def __init__(sbj, cfgs, itms, directivesMaxRetries):
 		sbj.inCodeItms = {}   #loaded in user code
 		sbj.inCfgItms  = itms #loaded in cfg/pcpl_itms.cfg
 		sbj.cfgs       = cfgs
 
 		#max complexity allowed in directives
-		sbj.directivesMaxComplexity = PCPL__DIRECTIVES_MAX_COMPLEXITY
+		sbj.directivesMaxComplexity = directivesMaxRetries
 
 		#indicator to know whether a PCPL directive has affected code text or not
 		sbj.failures   = [] #lst[PCPL_failure]

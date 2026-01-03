@@ -8,19 +8,6 @@ p .
 
 t2 ?
 
-In VAP {
-  First analysis {
-      Execute an ODP.
-      This ODP results in incomplete naming, we only have the name of operators but not their parameter's types.
-      We don't know the types of the elements yet, we only split by operator symbols and reformat the ZCI with function calls.
-  }
-
-  Second analysis {
-      Litteral values and optionnally shortcut notations of common structures are processed under the rules of the ZPL.
-  }
-
-  Last discreet step : Complete the names of operators in ODP as we are now able to know each parameter type.
-}
 p .
 
 

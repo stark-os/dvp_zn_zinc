@@ -1,5 +1,0 @@
-#!/bin/bash
-
-clear
-bld/build_zctx
-app/zcc /a/s/src/main.z #tst/snake/src/main.z

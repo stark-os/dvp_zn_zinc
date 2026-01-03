@@ -28,14 +28,13 @@ def newZCtx(
 	res.subCtxs      = [] #subcontexts currently in use
 	res.subCtxs.append(res.initialCtx)
 
+	#check CPL opts
+	res.checkCplOpt(cpl_opt)
+
 	#actual data holders
 	res.ZCIs = None
-	res.pcpl = newPcplDat(pcpl_cfg, pcpl_itm)
+	res.pcpl = newPcplDat(pcpl_cfg, pcpl_itm, cpl_opt["PCPL_DIRECTIVES_MAX_RETRIES"])
 	res.cpl  = newCplDat(cpl_opt, cpl_info)
-
-	#check PCPL cfgs & CPL opts
-	res.checkPcplCfg(res.pcpl)
-	res.checkCplOpt(cpl_opt)
 
 	#pub by default
 	res.pubByDefault = (cpl_opt["DEFAULT_ACCESS_PUB"] == "ON")

@@ -1,6 +1,6 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/read/type.py
 
-# ABSTRACT ZCEs PARSING TOOLS
+# ZAEs PARSING TOOLS
 
 #expecting a Z type
 def readType(ZCI,

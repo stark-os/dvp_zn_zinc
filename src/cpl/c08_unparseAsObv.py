@@ -12,8 +12,8 @@ CXD = os.path.dirname(os.path.realpath(sys.argv[0]))
 from zctx import *
 
 #obv
-from obv.exe import *
-from obv.val import *
+from obv.src.exe import *
+from obv.src.val import *
 
 
 
@@ -286,7 +286,7 @@ def unparseJmp(zCtx, depth, j):
 			elif retValOV.kind == OBV_VAL__DATITM:
 				ist = "d2r"
 			elif retValOV.kind == OBV_VAL__REG:
-				ist += "r2r"
+				ist = "r2r"
 			elif retValOV.kind == OBV_VAL__PTR:
 				ist   = "p2r"
 				obvSz = regObvSz
@@ -492,7 +492,7 @@ def unparseTypesFP(zCtx):
 
 			#everything else => can be only a type copy of a primitive
 			else:
-				undcnFP.append(line + 'p' + dcnDegTxt + ',' + zCtx.getTypeNameFromID(tInst.parent))
+				undcnFP.append(line + 'c' + dcnDegTxt + ',' + zCtx.getTypeNameFromID(tInst.parent))
 
 	#output
 	zCtx.cpl.resFP += '\n'.join(undcnFP) + '\n' + '\n'.join(dcnFP) + '\n'

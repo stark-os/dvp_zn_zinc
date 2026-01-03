@@ -131,8 +131,9 @@ def str_findFirstChr(s, c):
 
 def str_findLastChr(s, c):
 	for i in range(len(s)):
-		if s[len(s)-1-i] == c:
-			return i
+		realIdx = len(s)-1-i
+		if s[realIdx] == c:
+			return realIdx
 	return -1
 
 def str_insert(s, i, newStr):

@@ -1,16 +1,5 @@
 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> zctx/p-cpl2.py
 
-	#user dynamic access pcpl cfg
-	def checkPcplCfg(sbj, pcpl):
-		for k in pcpl.cfgs.keys():
-
-			#maximum complexity level allowed in directives
-			if k == PCPL__DIRECTIVES_MAX_COMPLEXITY_KEY:
-				sbj.dbg0("PCPL cfg \"" + PCPL__DIRECTIVES_MAX_COMPLEXITY_KEY + "\" defined in pcpl_cfg.cfg => using it instead of the default one: " + str(PCPL__DIRECTIVES_MAX_COMPLEXITY))
-				sbj.directivesMaxComplexity = str_dec_toUM(pcpl.cfgs[maxComplexityKey], 0, sys.maxsize, forbidNegative=True) #should use INT_MAX here
-
-
-
 	#each cpl option must be defined
 	def checkCplOpt(sbj, cpl_opt):
 		for o in CPL_OPT__ALLOWED.keys():

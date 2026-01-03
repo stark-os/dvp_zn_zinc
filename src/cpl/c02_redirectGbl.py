@@ -904,7 +904,7 @@ def c02_redirectGbl(zCtx):
 			#CASE 2 - BEGINNING WITH KEYWORD AND ALLOWED
 
 			#trigrams requiring a following blank
-			if ZCI.txt[3] in BLANKS:
+			if len(ZCI.txt) > 3 and ZCI.txt[3] in BLANKS:
 
 				#public kw (combinable behavior)
 				if str_cmp("pub", firstWord):
