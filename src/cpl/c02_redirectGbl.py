@@ -26,7 +26,7 @@ def processAsu(ZCI):
 	ZCIDbg0(ZCI, "Processing external assumed code addition.", prtLine=False)
 	jumpBlankZone(ZCI, "File path in external assumed code addition ZCI (EXT_ASU)")
 
-	#library linking path
+	#resource path
 	path = readName(ZCI, "File path in external assumed code addition ZCI (EXT_ASU).", blacklist=BLANKS_EXTENDED)[1]
 	if not path.startswith('/'):
 		path = os.path.normpath(ZCI.ctx.dirname + '/' + path)
@@ -36,15 +36,13 @@ def processAsu(ZCI):
 		ZCIErr(ZCI, "File " + path + " not found for external assumed code addition (EXT_ASU).")
 	ZCIDbg0(ZCI, "File \"" + path + "\" found for EXT_ASU.", prtLine=False)
 
-	#add link
+	#store & load path
 	if path not in ZCI.zCtx.cpl.extAsuFiles:
 		ZCI.zCtx.cpl.extAsuFiles.append(path)
+		ZCI.zCtx.loadExtAsu(path)
 		ZCIDbg0(ZCI, "Added file \"" + path + "\" to loaded EXT_ASU files.")
 	else:
 		ZCIDbg0(ZCI, "File \"" + path + "\" already loaded => skipping it.")
-
-	#load it
-	ZCI.zCtx.loadExtAsu(path)
 
 	#end of ZCI expected
 	endOfZCI(ZCI, "external assumned code addition ZCI (EXT_ASU).")
@@ -77,7 +75,7 @@ def processTypeDcl(ZCI, isPub):
 		ZCIErr(ZCI, "Type " + modPfxTxt + rawName.replace("__", '_') + " already exists, can't declare a new one with the same name (DCL_TYP).")
 	ZCIDbg1(ZCI, "New type does not exist yet.", prtLine=False)
 
-	#special case: don't overlap "raw" types
+	'''#special case: don't overlap "raw" types
 	if fullName.startswith("GUraw"):
 		overlap = False
 		for i in fullName[5:]:
@@ -86,6 +84,7 @@ def processTypeDcl(ZCI, isPub):
 			overlap = True
 		if overlap:
 			ZCIErr(ZCI, "Type \"" + fullName[2:] + "\" overlap with \"raw\" types => forbidden, in type declaration ZCI (DCL_TYP).")
+	'''
 
 	#explicit declination degree if any
 	dcnDeg = 0
@@ -136,8 +135,7 @@ def processTypeDcl(ZCI, isPub):
 		newTypeInst.dcnCommon.fields = readDatItmSeq(
 			ZCI, "type declaration ZCI (DCL_TYP).",
 			ZCI.zCtx.cpl.gblScp,
-			cstValsOnly           = True,
-			forbidDcnKwInTypeDcns = False
+			cstValsOnly = True
 		)
 		if len(newTypeInst.dcnCommon.fields) == 0:
 			ZCIInt(ZCI, "Must have at least 1 field in structure type.") #should never occur, right ? (readDatItmSeq cannot return 0-length list)
@@ -584,7 +582,7 @@ def processFwdDcl(ZCI, isPub):
 		optionalBlanks(ZCI, None, blanks=BLANKS_EXTENDED)
 	ZCIDbg1(ZCI, "Return type detected \"" + ZCI.getTypeNameFromID(retType) + "\".")
 
-	#requirement 1: must have the same exact parameters, except the 1st one (number, names, types)
+	#requirement 1: must have the same exact parameters, except the 1st one (number, names, type sizes)
 	paramVals = []
 	if len(dstF.params) != len(srcF.params):
 		ZCIErr(ZCI, "Can only forward functions with exact same number of parameters (expected " + str(len(srcF.params)) + ", got " + str(len(dstF.params)) + ", in DCL_FWD).")
@@ -650,18 +648,19 @@ def processAsg(ZCI, scope, tgtFct, dstVal):
 
 
 
-	#CASE 1: tgt a datItm
+	'''#CASE 1: tgt a datItm <<<<<<<<<<<<<< SHOULD NEVER OCCUR BECAUSE VAP2 NEVER RETURNS AN UNDECLARED DATA ITEM VAL
 	if dstVal.vdat.id == ATM__DATITM:
 
 		#does not exist yet => also dcl it
 		if not alreadyDclDatItmOrField(dstVal.vdat.dat, scope.datItms):
 			ZCIDbg0(ZCI, "Also dcl dat itm \"" + dstVal.vdat.dat.name + "\", it did not exist in cur scope yet (ASG_ASG).", prtLine=False)
 			scope.datItms.append(dstVal.vdat.dat)
+	'''
 
 
 
-	#CASE 2: asg ope (IIA, ISA)
-	elif dstVal.vdat.id == ATM__CALL:
+	#CASE 1: asg ope (IIA, ISA)
+	if dstVal.vdat.id == ATM__CALL:
 		dstCall = dstVal.vdat.dat
 		opeHeader = ""
 		if dstCall.name.startswith("Oiin"):
@@ -698,7 +697,7 @@ def processAsg(ZCI, scope, tgtFct, dstVal):
 
 
 
-	#CASE 3: something else
+	#CASE 2: something else
 	else:
 
 		#ffa chain can be accepted if targettable
@@ -722,7 +721,7 @@ def processAsg(ZCI, scope, tgtFct, dstVal):
 
 
 
-#data item declaration (including assignment with initial value)
+#dat itm dcl (including asg with init val)
 def processDclDat(ZCI, scope, tgtFct, isCst, isPub=False):
 
 	#debug
@@ -890,7 +889,7 @@ def c02_redirectGbl(zCtx):
 				ZCIErr(ZCI, "IF/ELIF/ELSE statements are not allowed in global scope (STM_IF_ detected).")
 			if str_cmp("for", firstWord):
 				ZCIErr(ZCI, "FOR statements are not allowed in global scope (STM_FOR detected).")
-			if str_cmp("while", firstWord):
+			if str_cmp("whi", firstWord):
 				ZCIErr(ZCI, "WHILE statements are not allowed in global scope (STM_WHI detected).")
 			if str_cmp("swi", firstWord):
 				ZCIErr(ZCI, "SWITCH statements are not allowed in global scope (STM_SWI detected).")

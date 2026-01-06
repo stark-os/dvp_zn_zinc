@@ -122,19 +122,19 @@ kind of ZAE to take into account before starting global parsing: Z modules.
 
 
 
-t2 Step 1: Unmodulize
+t2 C1 - Unmodulize
 
 t3 Objective
 
 p Z modules are an abstract representation of code that can contain both \
-global and local ZAEs (functions declarations). However, every ZCI defined in \
-a module is contained in a braces includer, which (as a recall) stays unparsed \
-as raw text in the module declaration ZCI.
+global and local ZAEs (function declarations). However, every ZCI defined in a \
+module is contained in a braces includer, which (as a recall) stays unparsed \
+as \uraw text\u in the module declaration ZCI.
 
 p As a consequence, to know whether a global ZCI is contained in a module, we \
 must parse them first. This is why the first compilation step is called \
 \bunmodulize\b. A module is nothing more than a couple of ZCIs where every \
-declaration is to be preceeded by the given module prefix.
+declaration is to be preceeded by the given module \uprefix\u.
 
 p The objective here is to replace every module declaration ZCI \mDCL_MOD\m in \
 our ZCI list by all the ZCIs we could extract from the module. Also, these \
@@ -157,47 +157,288 @@ includer, we extract global ZCIs from it using the same mechanism as in \
 precompiler step P3.
 
 p To keep track of module prefixing throughout submodule declarations, ZCI \
-objects contains in themselves a module prefix text, empty by default. When \
-module ZCIs are extracted, the resulted ZCIs are initialized with the module \
-name \badded at the end\b of their \umodule prefix\u (modPfx \m""\m => \
-\m"^MyModule."\m).
+objects contains in themselves a \umodule prefix\u text, empty by default. \
+When module ZCIs are extracted, the resulted ZCIs are initialized with the \
+module name \badded at the end\b of their \umodule prefix\u (modPfx \m""\m \
+=> \m"^MyModule."\m).
 
 p Then, the current ZCI for module declaration/addition is removed and the \
-extracted ZCIs are inserted here instead. Then, we can continue the \
+extracted ZCIs are inserted at its position instead. We can now continue the \
 unmodulization process on the newly extracted ZCIs.
 
 p Naturally, if we have submodule declarations, the module prefix of inner \
 ZCIs will be completed accordingly to the Z modularization logic: modPfx \
 \m""\m => \m"^A."\m => \m"^A.^SubA."\m => \m"^A.^SubA.^SubSubA."\m => ...
 
-
-
-t2 Step 2: Redirect Globals
-
-t2 Objective
-
-p .
+p \uNote:\u If compilation option \mATM_GENERATED_CONTENT\m is enabled, some \
+atom elements will be generated in an \mAtm\m module so you will not be able \
+to declare a module with that same name.
 
 
 
 
+t2 C2 - Redirect Globals
 
-t2 ?
+t3 Objective
 
-p .
+p Since we now have all the global ZCIs of our program, we should be able to \
+parse them all directly without using additional steps. Though compiler code \
+is split in several parts because of the amount of complexity in that step, \
+this task is made at once, and result in having parsed \bevery\b global ZCIs.
+
+p Each ZCI is analyzed and will be parsed according to its content. The use of \
+\uspecific\u and \ushort\u keywords at the beginning helps a lot for ZCI \
+identification. If one global ZCI does not match any of the allowed patterns, \
+an error "Unknown ZCI" is raised, ZCS is inconsistent.
+
+
+t3 Redirections
+
+l Here is how global redirection is made:
+"
+│   #forbidden cases
+├── "imp" keyword
+│   └── INT ERR "Must not have remaining importation ZCIs after step P3"
+│
+├── "brk/ctn/ret/if/elf/els/for/whi/swi" keyword
+│   └── ERR "ZCI only allowed in local scope"
+│
+│
+│
+│   #keyword based
+├── "pub/prv" keyword
+│   └── Set access modifier for that ZCI, but continue parsing
+│
+├── "asu" keyword
+│   └── Parse as EXT_ASU ZCI
+│
+├── "typ" keyword
+│   └── Parse as DCL_TYP ZCI
+│
+├── "enm" keyword
+│   └── Parse as DCL_ENM ZCI (gbl)
+│
+├── "fct" keyword
+│   └── Parse as DCL_FCT ZCI
+│
+├── "fwd" keyword
+│   └── Parse as DCL_FWD ZCI
+│
+├── "cst" keyword
+│   └── Parse as DCL_DAT ZCI (gbl)
+│
+│
+│
+│   #non-keyword
+├── Remaining cases
+│   ├── Starts with a VALUE ZAE
+│   │   ├── Followed by ASG symbol
+│   │   │   └── Parse as ASG_ASG ZCI (gbl)
+│   │   │
+│   │   └── Parse as VFC_VFC ZCI (gbl => will raise ERR)
+│   │
+│   └── Can only be a DCL_DAT ZCI (gbl) with explicit type given
+│
+│
+│
+│   #doesn't match any of the known cases
+└── Unknown ZCI
+    └── ERR "Unknown ZCI (Invalid ZCS)"
+"
+
+p In all of these specific treatments, ZCIs containing local scopes will keep \
+them aside, unparsed, as a list of raw ZCIs to be analyzed later. They are \
+extracted using the same process as step P3 and C1.
 
 
 
-t2 ?
+t2 C2 - EXT_ASU
 
-p .
+t3 General parsing
+
+p EXT_ASU ZCIs only have one field to parse: the external resource path. This \
+one can be either relative from the location of the source code invoking it, \
+or absolute. No extension is required, or will be added if missing for the \
+targetted file: it must be complete.
+
+p If an external resource is loaded twice, it will be skipped silently (still \
+visible using debug traces though). To process the "external assumed code" \
+footprint file, we parse it as a \u\bstandard\b\u \lhttps://github.com/iasebsil83/Config\lConfig\l \
+file first, and then we go into parsing the names given and their associated \
+values.
+
+p As a recall, we can only have \btypes\b, \bfunctions\b and \bglobal data \
+items\b defined in external footprints. To ensure a consistent compilation, we \
+need to load these external assumed ZAEs among the others. However, it is \
+\bhighly important\b to remember that they come from an \uexternal\u resource.
+
+p To know whether a type, function or data item is external or not, we add an \
+\mext\m attribute in the data structure we use for storing these ZAEs in \
+compiler code tree.
 
 
 
-t2 ?
+t2 C2 - DCL_TYP
 
-p .
+t3 General parsing
 
+p The first thing we do when parsing type declaration is to look for the given \
+new type name and check whether an instance with that type name already exists \
+or not. Note that we look for an \uundeclinated\u instance only (can't declare \
+a "declinated" type) and we take into consideration the ZCI module prefix in \
+the type name targetted.
+
+p If everything is okay, we declare the undeclinated instance with the correct \
+declination degree, and respecting the 2 declaration syntaxes: \utype copy\u \
+or \ustructure definition\u. Every inner types used in fields must be already \
+declared \bbefore\b being used (structure definition syntax).
+
+
+t3 Atoms
+
+p If compilation option \mATM_GENERATED_CONTENT\m is enabled, a constant \
+\m^Atm.typeName\m will be created alongside with a method \mtypeName.toAtm()\m \
+for converting an instance of that type into an atm (of course, the \
+\mtypeName\m used corresponds to the \bfull\b type name (including module \
+prefixes).
+" z Example
+typ alpha ...
+mod M { typ beta ... }
+
+//atm generated constants
+^Atm.alpha
+^Atm.^M.beta
+
+//atm generated methods
+alpha   a
+^M.beta b
+a_atm = a.toAtm()
+b_atm = b.toAtm()
+
+//generated methods corresponds to this:
+fct alpha.toAtm() {
+	ret atm{ id=^Atm.alpha, dat=@slf }
+}
+fct ^M.beta.toAtm() {
+	ret atm{ id=^Atm.^M.beta, dat=@slf }
+}
+"
+
+p This compilation option also assume type \matm\m as being an external \
+resource, as if it was given in a footprint file using EXT_ASU ZCI.
+
+
+
+t2 C2 - DCL_ENM
+
+t3 General parsing
+
+p Enumerate declaration creates a type with the given enumerate name. Fields \
+are parsed as data items, however they can't have a value or type associated. \
+As a result, no types are given to enumerate fields; we set them afterwards. \
+Depending on the amount of fields we have in the enumerate, we are giving the \
+type \mu8\m, \mu16\m, \mu32\m or \mu64\m (minimum size required is being used).
+
+p When refering to an enumerate value (in 2nd analysis), we will refer to the \
+fields of that created type. The resulted value \utype\u will then be the one \
+of the \ufield\u and not the enumerate type itself.
+
+
+
+t2 C2 - DCL_FCT & DCL_FWD
+
+t3 General parsing
+
+p Function declaration and forwarding are 2 ways of declaring a function in Z. \
+They have a big common part in the parsing process that creates, in both \
+cases, a \mfct\m instance with all the basic informations: is it related to a \
+type (method) ? is it dcn-dependant ? is it an operator ? Compute full name, \
+check parameters and add them as first data items in function local scope.
+
+p Return type is parsed afterwards because forwarded functions requires the \
+source function name to be given before. In regular function declaration, the \
+content given in braces includer is extracted as raw ZCIs to be parsed later \
+(local scope), and for function forwarding, no content is expected, the result \
+is directly generated as already parsed local scope execution.
+
+l Forwarded functions produce the generated equivalent Z code:
+" z Forwarded functions execution
+//some types
+typ alpha ...
+typ beta  ...
+typ gamma ...
+
+//some functions
+fct alpha.myFunc(boo p1, chr p2) s32 { ... }
+fct beta.myFuncV(u64 p1, s16 p2)     { ... }
+
+//some forwardings
+fwd gamma alpha.myFunc(boo p1, byt p2) u32
+fwd gamma beta.myFuncV(s64 p1, u16 p2)
+
+//equivalent Z code for these forwardings
+fct gamma.myFunc(boo p1, byt p2) u32 {
+	ret slf$alpha.myFunc(p1, p2)
+}
+fct gamma.myFuncV(s64 p1, u16 p2) {
+	slf$beta.myFuncV(p1, p2)
+}
+"
+
+
+
+t2 C2 - DCL_DAT
+
+t3 General parsing
+
+p When ZCI is detected as DCL_DAT ZCI, process is simple: we parse it as a \
+data item declaration: optional type name including module prefixes, raw data \
+item name, optional initial value that can also solve implicit type given. \
+Then we add it to the targetted scope. Even if initial value is already stored \
+in the data item itself, we create an \masg\m execution for that initial value \
+in the given scope too (will be useful later).
+
+
+
+t2 C2 - ASG_ASG
+
+t3 General parsing
+
+p When arriving to this kind of ZCI parsing, we already have parsed the first \
+assigment value: the destination, and we went after the assignment symbol. So \
+we only have to parse the source value to assign and then parsing may be \
+completed: we should just have to create an \masg\m instance as execution to \
+add in the targetted scope (the global one here).
+
+p Nevertheless, in Z, we can't assign into any kind of value (can't assign \
+into a literal value for example). Moreover, some "assignment-like" ZCIs also \
+have special behaviors such as when assigning into indexed value (IIA, ISA \
+operators). In these last cases, the resulted ZCI is not even an ASG_ASG but a \
+VFC_VFC.
+
+
+t3 Cases
+
+p That's why before creating an \masg\m instance, we first look at the \
+destination value we have. If it is a call to an IIA or ISA operator (no \
+matter the parameters), we process them as a VFC with the source value added \
+as last parameter.
+
+p If the destination value wasn't a call but a data item (just a targettable \
+name given to assign into), we are having a regular assignment. Actually, \
+there is still one more case that could have been found: if it was an \
+\uimplicit declaration\u ?
+
+p Not a big deal, we could just check if a data item with that name exists in \
+current scope or higher, and so declare locally if not. \bBUT\b, we don't even \
+require to do this in our case, because the second analysis mechanism we used \
+to get our ASG_ASG values never returns a "data item" value if not available \
+(already declared).
+
+p If we have an implicit declaration, second analysis will then return an \
+empty value because the name given doesn't target an existing data item. So, \
+as you can see in the previous schema of global redirections, the ZCI will be \
+directly redirected as being a DCL_DAT => problem solved.
 
 
 
